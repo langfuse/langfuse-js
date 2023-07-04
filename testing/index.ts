@@ -1,4 +1,4 @@
-import Langfuse from 'langfuse';
+import { Langfuse } from 'langfuse';
 
 async function main() {
   const langfuse = new Langfuse({
@@ -6,27 +6,19 @@ async function main() {
     publicKey: 'pk-lf-4851918d-2369-4f99-a1d3-8de59ba35a6b',
   });
 
-  const trace = langfuse.createTrace({
+  const trace = langfuse.trace({
     name: 'test',
     metadata: {
       test: 'test',
     },
   });
 
-  const span = langfuse.createSpan(
-    {
-      name: 'test',
+  const span = trace.span({
+    name: 'test',
+    metadata: {
+      test: 'test',
     },
-    trace
-  );
-
-  const generation = langfuse.logGeneration(
-    {
-      name: 'test',
-    },
-    trace,
-    span
-  );
+  });
 
   await langfuse.flush();
 }
