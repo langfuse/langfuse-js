@@ -1,6 +1,13 @@
 # Langfuse Javascript SDK
 
+[![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/posthog-js)
+[![MIT License](https://img.shields.io/badge/License-MIT-red.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
 This is a pre-release version of the langfuse SDK. For production use, please refer to the [Typescript Docs](https://langfuse.com/docs/sdk/typescript).
+
+```
+npm i langfuse
+```
 
 ## Development
 
