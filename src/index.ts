@@ -43,7 +43,9 @@ export default class Langfuse {
   };
 
   logGeneration = async (
-    body: paths['/api/public/generations']['post']['requestBody']['content']['application/json'],
+    body: WithTypedDates<
+      paths['/api/public/generations']['post']['requestBody']['content']['application/json']
+    >,
     trace?: ReturnType<typeof this.createTrace>,
     parent?: Promise<{ id: string } | undefined>
   ) => {
@@ -56,6 +58,8 @@ export default class Langfuse {
       const res = this.post('/api/public/generations', {
         body: {
           ...body,
+          startTime: body.startTime?.toISOString(),
+          endTime: body.endTime?.toISOString(),
           traceId: traceId ?? body.traceId,
           parentObservationId: parentId ?? body.parentObservationId,
         },
@@ -75,7 +79,9 @@ export default class Langfuse {
   };
 
   createSpan = async (
-    body: paths['/api/public/spans']['post']['requestBody']['content']['application/json'],
+    body: WithTypedDates<
+      paths['/api/public/spans']['post']['requestBody']['content']['application/json']
+    >,
     trace?: ReturnType<typeof this.createTrace>,
     parent?: Promise<{ id: string } | undefined>
   ) => {
@@ -88,6 +94,8 @@ export default class Langfuse {
       const res = this.post('/api/public/spans', {
         body: {
           ...body,
+          startTime: body.startTime?.toISOString(),
+          endTime: body.endTime?.toISOString(),
           traceId: traceId ?? body.traceId,
           parentObservationId: parentId ?? body.parentObservationId,
         },
@@ -107,7 +115,9 @@ export default class Langfuse {
   };
 
   createEvent = async (
-    body: paths['/api/public/events']['post']['requestBody']['content']['application/json'],
+    body: WithTypedDates<
+      paths['/api/public/events']['post']['requestBody']['content']['application/json']
+    >,
     trace?: ReturnType<typeof this.createTrace>,
     parent?: Promise<{ id: string } | undefined>
   ) => {
@@ -120,6 +130,7 @@ export default class Langfuse {
       const res = this.post('/api/public/events', {
         body: {
           ...body,
+          startTime: body.startTime?.toISOString(),
           traceId: traceId ?? body.traceId,
           parentObservationId: parentId ?? body.parentObservationId,
         },
@@ -219,3 +230,11 @@ export class LangfuseWeb {
     this.promises = [];
   };
 }
+
+type OptionalTypes<T> = T extends null | undefined ? T : never;
+
+type WithTypedDates<T> = {
+  [P in keyof T]: P extends 'startTime' | 'endTime' | 'timestamp'
+    ? Date | OptionalTypes<T[P]>
+    : T[P];
+};
