@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "pretty": "prettier --write \"./src/**/*.{js,jsx,ts,tsx,json}\"",
-    "prebuild": "npm run generateAPI && npm run pretty",
+    "prebuild": "npm i && npm run generateAPI && npm run pretty",
     "build": "tsc -p tsconfig.json",
     "prepublishOnly": "npm run build",
     "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts"
