@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import { paths } from './api/server';
+import { LangfuseData } from './lib/types';
 
 class Api {
   readonly get;
@@ -22,6 +23,24 @@ class Api {
   }
 }
 
+type EventData = LangfuseData<
+  paths['/api/public/events']['post']['responses']['200']['content']['application/json']
+>;
+type SpanData = LangfuseData<
+  | paths['/api/public/spans']['post']['responses']['200']['content']['application/json']
+  | paths['/api/public/spans']['patch']['responses']['200']['content']['application/json']
+>;
+type GenerationData = LangfuseData<
+  | paths['/api/public/generations']['post']['responses']['200']['content']['application/json']
+  | paths['/api/public/generations']['patch']['responses']['200']['content']['application/json']
+>;
+type TraceData = LangfuseData<
+  paths['/api/public/traces']['post']['responses']['200']['content']['application/json']
+>;
+type ScoreData = LangfuseData<
+  paths['/api/public/scores']['post']['responses']['200']['content']['application/json']
+>;
+
 // class logger with constructor to receive public and private keys
 export class Langfuse {
   readonly api: Api;
@@ -40,31 +59,34 @@ export class Langfuse {
   trace = (
     body: paths['/api/public/traces']['post']['requestBody']['content']['application/json']
   ): NestedTraceClient => {
-    const res = this.api.post('/api/public/traces', { body }).then((res) => {
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      if (!res.data) {
-        throw new Error('No data');
-      }
-      return res.data;
+    const promise = new Promise<TraceData>(async (resolve, reject) => {
+      const res = this.api
+        .post('/api/public/traces', { body })
+        .then((res) => {
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
-    this.promises.push(res);
-    return new NestedTraceClient(this, res);
+    this.promises.push(promise);
+    return new NestedTraceClient(this, promise);
   };
 
   generation = (
     body: WithTypedDates<
       paths['/api/public/generations']['post']['requestBody']['content']['application/json']
     >,
-    trace?: Promise<{ id: string }>,
-    parent?: Promise<{ id: string } | undefined>
+    trace?: Promise<{ id: string | null }>,
+    parent?: Promise<{ id: string | null } | undefined>
   ): NestedGenerationClient => {
-    const promise = new Promise<
-      paths['/api/public/generations']['post']['responses']['200']['content']['application/json']
-    >(async (resolve, reject) => {
+    const promise = new Promise<GenerationData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
+
+      if (!traceId) {
+        return resolve({ status: 'error', error: 'No traceId' });
+      }
 
       const res = this.api
         .post('/api/public/generations', {
@@ -77,14 +99,11 @@ export class Langfuse {
           },
         })
         .then((res) => {
-          if (res.error) {
-            reject(res.error);
-          } else if (!res.data) {
-            reject('Not found');
-          } else {
-            resolve(res.data);
-          }
-        });
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
 
     this.promises.push(promise);
@@ -95,14 +114,16 @@ export class Langfuse {
     body: WithTypedDates<
       paths['/api/public/spans']['post']['requestBody']['content']['application/json']
     >,
-    trace?: Promise<{ id: string }>,
-    parent?: Promise<{ id: string } | undefined>
+    trace?: Promise<{ id: string | null }>,
+    parent?: Promise<{ id: string | null } | undefined>
   ): NestedSpanClient => {
-    const promise = new Promise<
-      paths['/api/public/spans']['post']['responses']['200']['content']['application/json']
-    >(async (resolve, reject) => {
+    const promise = new Promise<SpanData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
+
+      if (!traceId) {
+        return resolve({ status: 'error', error: 'No traceId' });
+      }
 
       const res = this.api
         .post('/api/public/spans', {
@@ -115,14 +136,11 @@ export class Langfuse {
           },
         })
         .then((res) => {
-          if (res.error) {
-            reject(res.error);
-          } else if (!res.data) {
-            reject('Not found');
-          } else {
-            resolve(res.data);
-          }
-        });
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
 
     this.promises.push(promise);
@@ -133,14 +151,16 @@ export class Langfuse {
     body: WithTypedDates<
       paths['/api/public/events']['post']['requestBody']['content']['application/json']
     >,
-    trace?: Promise<{ id: string }>,
-    parent?: Promise<{ id: string } | undefined>
+    trace?: Promise<{ id: string | null }>,
+    parent?: Promise<{ id: string | null } | undefined>
   ): NestedEventClient => {
-    const promise = new Promise<
-      paths['/api/public/events']['post']['responses']['200']['content']['application/json']
-    >(async (resolve, reject) => {
+    const promise = new Promise<EventData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
+
+      if (!traceId) {
+        return resolve({ status: 'error', error: 'No traceId' });
+      }
 
       const res = this.api
         .post('/api/public/events', {
@@ -152,14 +172,11 @@ export class Langfuse {
           },
         })
         .then((res) => {
-          if (res.error) {
-            reject(res.error);
-          } else if (!res.data) {
-            reject('Not found');
-          } else {
-            resolve(res.data);
-          }
-        });
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
 
     this.promises.push(promise);
@@ -176,16 +193,18 @@ export class Langfuse {
             paths['/api/public/scores']['post']['requestBody']['content']['application/json'],
             'traceId' | 'observationId'
           >;
-          trace: Promise<{ id: string }>;
-          observation?: Promise<{ id: string }>;
+          trace: Promise<{ id: string | null }>;
+          observation?: Promise<{ id: string | null }>;
         }
   ) => {
-    const promise = new Promise<
-      paths['/api/public/scores']['post']['responses']['200']['content']['application/json']
-    >(async (resolve, reject) => {
+    const promise = new Promise<ScoreData>(async (resolve, reject) => {
       const traceId = 'trace' in args ? (await args.trace)?.id : args.body.traceId;
       const observationId =
         'trace' in args ? (await args.observation)?.id : args.body.observationId;
+
+      if (!traceId) {
+        return resolve({ status: 'error', error: 'No traceId' });
+      }
 
       const res = this.api
         .post('/api/public/scores', {
@@ -196,14 +215,11 @@ export class Langfuse {
           },
         })
         .then((res) => {
-          if (res.error) {
-            reject(res.error);
-          } else if (!res.data) {
-            reject('Not found');
-          } else {
-            resolve(res.data);
-          }
-        });
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
 
     this.promises.push(promise);
@@ -224,28 +240,17 @@ type WithTypedDates<T> = {
     : T[P];
 };
 
-type EventData =
-  paths['/api/public/events']['post']['responses']['200']['content']['application/json'];
-type SpanData =
-  | paths['/api/public/spans']['post']['responses']['200']['content']['application/json']
-  | paths['/api/public/spans']['patch']['responses']['200']['content']['application/json'];
-type GenerationData =
-  | paths['/api/public/generations']['post']['responses']['200']['content']['application/json']
-  | paths['/api/public/generations']['patch']['responses']['200']['content']['application/json'];
-type TraceData =
-  paths['/api/public/traces']['post']['responses']['200']['content']['application/json'];
-
 abstract class LangfuseNestedClient {
   protected readonly client: Langfuse;
-  protected readonly id: Promise<string>;
-  protected readonly traceId: Promise<string>;
-  protected readonly parentObservationId: Promise<string> | undefined;
+  protected readonly id: Promise<string | null>;
+  protected readonly traceId: Promise<string | null>;
+  protected readonly parentObservationId: Promise<string | null> | undefined;
 
   constructor(args: {
     client: Langfuse;
-    id: Promise<string>;
-    traceId: Promise<string>;
-    parentObservationId: Promise<string> | undefined;
+    id: Promise<string | null>;
+    traceId: Promise<string | null>;
+    parentObservationId: Promise<string | null> | undefined;
   }) {
     this.client = args.client;
     this.id = args.id;
@@ -316,9 +321,9 @@ class NestedSpanClient extends LangfuseNestedClient {
   constructor(client: Langfuse, data: Promise<SpanData>) {
     super({
       client,
-      id: data.then((d) => d.id),
-      parentObservationId: data.then((d) => d.id),
-      traceId: data.then((d) => d.traceId),
+      id: data.then((d) => (d.status === 'success' ? d.id : null)),
+      parentObservationId: data.then((d) => (d.status === 'success' ? d.id : null)),
+      traceId: data.then((d) => (d.status === 'success' ? d.traceId : null)),
     });
     this.data = data;
   }
@@ -332,9 +337,15 @@ class NestedSpanClient extends LangfuseNestedClient {
     >
   ): NestedSpanClient => {
     const promise = new Promise<
-      paths['/api/public/spans']['patch']['responses']['200']['content']['application/json']
+      LangfuseData<
+        paths['/api/public/spans']['patch']['responses']['200']['content']['application/json']
+      >
     >(async (resolve, reject) => {
       const spanId = await this.id;
+
+      if (!spanId) {
+        return resolve({ status: 'error', error: 'No spanId' });
+      }
 
       const res = this.client.api
         .patch('/api/public/spans', {
@@ -345,14 +356,11 @@ class NestedSpanClient extends LangfuseNestedClient {
           },
         })
         .then((res) => {
-          if (res.error) {
-            reject(res.error);
-          } else if (!res.data) {
-            reject('Not found');
-          } else {
-            resolve(res.data);
-          }
-        });
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
 
     this.client.promises.push(promise);
@@ -366,9 +374,9 @@ class NestedGenerationClient extends LangfuseNestedClient {
   constructor(client: Langfuse, data: Promise<GenerationData>) {
     super({
       client,
-      id: data.then((d) => d.id),
-      parentObservationId: data.then((d) => d.id),
-      traceId: data.then((d) => d.traceId),
+      id: data.then((d) => (d.status === 'success' ? d.id : null)),
+      parentObservationId: data.then((d) => (d.status === 'success' ? d.id : null)),
+      traceId: data.then((d) => (d.status === 'success' ? d.traceId : null)),
     });
     this.data = data;
   }
@@ -382,9 +390,14 @@ class NestedGenerationClient extends LangfuseNestedClient {
     >
   ): NestedGenerationClient => {
     const promise = new Promise<
-      paths['/api/public/generations']['patch']['responses']['200']['content']['application/json']
+      LangfuseData<
+        paths['/api/public/generations']['patch']['responses']['200']['content']['application/json']
+      >
     >(async (resolve, reject) => {
       const generationId = await this.id;
+      if (!generationId) {
+        return resolve({ status: 'error', error: 'No generationId' });
+      }
 
       const res = this.client.api
         .patch('/api/public/generations', {
@@ -395,14 +408,11 @@ class NestedGenerationClient extends LangfuseNestedClient {
           },
         })
         .then((res) => {
-          if (res.error) {
-            reject(res.error);
-          } else if (!res.data) {
-            reject('Not found');
-          } else {
-            resolve(res.data);
-          }
-        });
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
 
     this.client.promises.push(promise);
@@ -416,9 +426,9 @@ class NestedEventClient extends LangfuseNestedClient {
   constructor(client: Langfuse, data: Promise<EventData>) {
     super({
       client,
-      id: data.then((d) => d.id),
-      parentObservationId: data.then((d) => d.id),
-      traceId: data.then((d) => d.traceId),
+      id: data.then((d) => (d.status === 'success' ? d.id : null)),
+      parentObservationId: data.then((d) => (d.status === 'success' ? d.id : null)),
+      traceId: data.then((d) => (d.status === 'success' ? d.traceId : null)),
     });
     this.data = data;
   }
@@ -430,9 +440,9 @@ class NestedTraceClient extends LangfuseNestedClient {
   constructor(client: Langfuse, data: Promise<TraceData>) {
     super({
       client,
-      id: data.then((d) => d.id),
+      id: data.then((d) => (d.status === 'success' ? d.id : null)),
       parentObservationId: undefined,
-      traceId: data.then((d) => d.id),
+      traceId: data.then((d) => (d.status === 'success' ? d.id : null)),
     });
     this.data = data;
   }

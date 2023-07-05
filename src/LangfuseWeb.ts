@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import { paths } from './api/client';
+import { LangfuseData } from './lib/types';
 
 export class LangfuseWeb {
   private publicKey: string;
@@ -29,14 +30,22 @@ export class LangfuseWeb {
   score = async (
     body: paths['/api/public/scores']['post']['requestBody']['content']['application/json']
   ) => {
-    const res = this.post('/api/public/scores', { body }).then((res) => {
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      return res.data;
+    const promise = new Promise<
+      LangfuseData<
+        paths['/api/public/scores']['post']['responses']['200']['content']['application/json']
+      >
+    >((resolve, reject) => {
+      this.post('/api/public/scores', { body })
+        .then((res) => {
+          if (res.error) return resolve({ status: 'error', error: res.error });
+          if (!res.data) return resolve({ status: 'error', error: 'Not found' });
+          return resolve({ status: 'success', ...res.data });
+        })
+        .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
-    this.promises.push(res);
-    return res;
+
+    this.promises.push(promise);
+    return promise;
   };
 
   flush = async () => {
