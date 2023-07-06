@@ -1,6 +1,6 @@
 {
   "name": "langfuse",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
     "prebuild": "npm i && npm run generateAPI && npm run pretty",
     "build": "tsc -p tsconfig.json",
     "prepublishOnly": "npm run build",
-    "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts"
+    "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts && npm run pretty"
   },
   "keywords": [],
   "author": "langfuse",

@@ -94,6 +94,7 @@ export class Langfuse {
             ...body,
             startTime: body.startTime?.toISOString(),
             endTime: body.endTime?.toISOString(),
+            completionStartTime: body.completionStartTime?.toISOString(),
             traceId: traceId,
             parentObservationId: parentObservationId,
           },
@@ -235,7 +236,7 @@ export class Langfuse {
 type OptionalTypes<T> = T extends null | undefined ? T : never;
 
 type WithTypedDates<T> = {
-  [P in keyof T]: P extends 'startTime' | 'endTime' | 'timestamp'
+  [P in keyof T]: P extends 'startTime' | 'endTime' | 'timestamp' | 'completionStartTime'
     ? Date | OptionalTypes<T[P]>
     : T[P];
 };
@@ -405,6 +406,7 @@ class NestedGenerationClient extends LangfuseNestedClient {
             ...body,
             generationId: generationId,
             endTime: body.endTime?.toISOString(),
+            completionStartTime: body.completionStartTime?.toISOString(),
           },
         })
         .then((res) => {

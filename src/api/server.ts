@@ -80,6 +80,8 @@ export interface components {
       startTime?: string | null;
       /** Format: date-time */
       endTime?: string | null;
+      /** Format: date-time */
+      completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
         [key: string]: components['schemas']['MapValue'] | undefined;
@@ -98,6 +100,8 @@ export interface components {
       name?: string | null;
       /** Format: date-time */
       endTime?: string | null;
+      /** Format: date-time */
+      completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
         [key: string]: components['schemas']['MapValue'] | undefined;
@@ -119,6 +123,8 @@ export interface components {
       startTime: string;
       /** Format: date-time */
       endTime?: string | null;
+      /** Format: date-time */
+      completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
         [key: string]: components['schemas']['MapValue'] | undefined;
