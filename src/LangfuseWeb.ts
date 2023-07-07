@@ -24,7 +24,7 @@ export class LangfuseWeb {
         Authorization: 'Bearer ' + this.publicKey,
         'X-Langfuse-Sdk-Name': 'langfuse-js',
         'X-Langfuse-Sdk-Version': version,
-        'X-Langfuse-Client-Variant': 'Web',
+        'X-Langfuse-Sdk-Variant': 'Web',
       },
     });
     this.get = get;

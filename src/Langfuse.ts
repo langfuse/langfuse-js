@@ -18,7 +18,7 @@ class Api {
         Authorization: 'Basic ' + btoa(params.publicKey + ':' + params.secretKey),
         'X-Langfuse-Sdk-Name': 'langfuse-js',
         'X-Langfuse-Sdk-Version': version,
-        'X-Langfuse-Client-Variant': 'Server',
+        'X-Langfuse-Sdk-Variant': 'Server',
       },
     });
     this.get = get;
