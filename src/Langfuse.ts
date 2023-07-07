@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch';
 import { paths } from './api/server';
 import { LangfuseData } from './lib/types';
+import { version } from './lib/version';
 
 class Api {
   readonly get;
@@ -15,6 +16,9 @@ class Api {
       baseUrl: this.baseUrl,
       headers: {
         Authorization: 'Basic ' + btoa(params.publicKey + ':' + params.secretKey),
+        'X-Langfuse-Sdk-Name': 'langfuse-js',
+        'X-Langfuse-Sdk-Version': version,
+        'X-Langfuse-Client-Variant': 'Server',
       },
     });
     this.get = get;

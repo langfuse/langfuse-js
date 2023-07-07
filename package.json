@@ -1,6 +1,6 @@
 {
   "name": "langfuse",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,10 +9,11 @@
   ],
   "scripts": {
     "pretty": "prettier --write \"./src/**/*.{js,jsx,ts,tsx,json}\"",
-    "prebuild": "npm i && npm run generateAPI && npm run pretty",
+    "genversion": "genversion -p package.json --es6 --semi  ./src/lib/version.ts",
+    "prebuild": "npm i && npm run generateAPI && npm run genversion && npm run pretty",
     "build": "tsc -p tsconfig.json",
     "prepublishOnly": "npm run build",
-    "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts && npm run pretty"
+    "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts"
   },
   "keywords": [],
   "author": "langfuse",
@@ -27,6 +28,7 @@
     "eslint-plugin-n": "^15.7.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.1.1",
+    "genversion": "^3.1.1",
     "openapi-typescript": "^6.2.8",
     "prettier": "^2.8.8",
     "typescript": "^5.1.6"

@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch';
 import { paths } from './api/client';
 import { LangfuseData } from './lib/types';
+import { version } from './lib/version';
 
 export class LangfuseWeb {
   private publicKey: string;
@@ -21,6 +22,9 @@ export class LangfuseWeb {
       baseUrl: this.baseUrl,
       headers: {
         Authorization: 'Bearer ' + this.publicKey,
+        'X-Langfuse-Sdk-Name': 'langfuse-js',
+        'X-Langfuse-Sdk-Version': version,
+        'X-Langfuse-Client-Variant': 'Web',
       },
     });
     this.get = get;
