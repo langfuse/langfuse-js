@@ -1,8 +1,9 @@
 {
   "name": "langfuse",
-  "version": "0.0.15",
+  "version": "0.0.17",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/module.js",
+  "module": "dist/es.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist/"
@@ -11,7 +12,7 @@
     "pretty": "prettier --write \"./src/**/*.{js,jsx,ts,tsx,json}\"",
     "genversion": "genversion -p package.json --es6 --semi  ./src/lib/version.ts",
     "prebuild": "npm i && npm run generateAPI && npm run genversion && npm run pretty",
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && rollup -c --bundleConfigAsCjs",
     "prepublishOnly": "npm run build",
     "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts"
   },
@@ -19,6 +20,9 @@
   "author": "langfuse",
   "license": "MIT",
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.2",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.1.0",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
     "eslint": "^8.44.0",
@@ -31,6 +35,9 @@
     "genversion": "^3.1.1",
     "openapi-typescript": "^6.2.8",
     "prettier": "^2.8.8",
+    "rollup": "^3.26.2",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "rollup-plugin-visualizer": "^5.9.2",
     "typescript": "^5.1.6"
   },
   "dependencies": {
