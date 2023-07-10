@@ -162,6 +162,7 @@ export interface components {
       name: string;
       value: number;
       observationId?: string | null;
+      comment?: string | null;
     };
     /** Score */
     Score: {
@@ -172,6 +173,7 @@ export interface components {
       observationId?: string | null;
       /** Format: date-time */
       timestamp: string;
+      comment?: string | null;
     };
     /**
      * TraceIdType

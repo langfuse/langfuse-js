@@ -21,6 +21,7 @@ export interface components {
       name: string;
       value: number;
       observationId?: string;
+      comment?: string;
     };
     /** Score */
     Score: {
@@ -31,6 +32,7 @@ export interface components {
       observationId?: string;
       /** Format: date-time */
       timestamp: string;
+      comment?: string;
     };
     /**
      * TraceIdType
