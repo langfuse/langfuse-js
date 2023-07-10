@@ -88,10 +88,6 @@ export class Langfuse {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
 
-      if (!traceId) {
-        return resolve({ status: 'error', error: 'No traceId' });
-      }
-
       const res = this.api
         .post('/api/public/generations', {
           body: {
@@ -126,10 +122,6 @@ export class Langfuse {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
 
-      if (!traceId) {
-        return resolve({ status: 'error', error: 'No traceId' });
-      }
-
       const res = this.api
         .post('/api/public/spans', {
           body: {
@@ -162,10 +154,6 @@ export class Langfuse {
     const promise = new Promise<EventData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
-
-      if (!traceId) {
-        return resolve({ status: 'error', error: 'No traceId' });
-      }
 
       const res = this.api
         .post('/api/public/events', {
