@@ -235,6 +235,7 @@ export interface components {
     /** CreateTraceRequest */
     CreateTraceRequest: {
       name?: string | null;
+      userId?: string | null;
       externalId?: string | null;
       metadata?: Record<string, unknown> | null;
     };
@@ -245,6 +246,7 @@ export interface components {
       timestamp: string;
       externalId?: string | null;
       name?: string | null;
+      userId?: string | null;
       metadata?: Record<string, unknown> | null;
     };
   };
