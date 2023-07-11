@@ -159,6 +159,7 @@ export interface components {
     TraceIdTypeGenerations: 'LANGFUSE' | 'EXTERNAL';
     /** CreateScoreRequest */
     CreateScoreRequest: {
+      id?: string | null;
       traceId: string;
       traceIdType?: components['schemas']['TraceIdType'];
       name: string;
