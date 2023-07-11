@@ -355,11 +355,15 @@ class NestedSpanClient extends LangfuseNestedClient {
         paths['/api/public/spans']['patch']['responses']['200']['content']['application/json']
       >
     >(async (resolve, reject) => {
+      // use async id to ensure that the record was already created before updating
+      const spanId = await this.parentObservationId;
+      if (!spanId) return resolve({ status: 'error', error: 'Not found' });
+
       const res = this.client.api
         .patch('/api/public/spans', {
           body: {
             ...body,
-            spanId: this.id,
+            spanId,
             endTime: body.endTime?.toISOString(),
           },
         })
@@ -404,11 +408,15 @@ class NestedGenerationClient extends LangfuseNestedClient {
         paths['/api/public/generations']['patch']['responses']['200']['content']['application/json']
       >
     >(async (resolve, reject) => {
+      // use async id to ensure that the record was already created before updating
+      const generationId = await this.parentObservationId;
+      if (!generationId) return resolve({ status: 'error', error: 'Not found' });
+
       const res = this.client.api
         .patch('/api/public/generations', {
           body: {
             ...body,
-            generationId: this.id,
+            generationId,
             endTime: body.endTime?.toISOString(),
             completionStartTime: body.completionStartTime?.toISOString(),
           },
