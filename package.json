@@ -10,11 +10,11 @@
   ],
   "scripts": {
     "pretty": "prettier --write \"./src/**/*.{js,jsx,ts,tsx,json}\"",
-    "genversion": "genversion -p package.json --es6 --semi  ./src/lib/version.ts",
+    "genversion": "genversion -p package.json --es6 --semi ./src/lib/version.ts",
     "prebuild": "npm i && npm run generateAPI && npm run genversion && npm run pretty",
     "build": "rm -rf dist && rollup -c --bundleConfigAsCjs",
     "prepublishOnly": "npm run build",
-    "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts"
+    "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts && npm run pretty"
   },
   "keywords": [],
   "author": "langfuse",

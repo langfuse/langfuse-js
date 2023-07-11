@@ -34,6 +34,7 @@ export interface components {
   schemas: {
     /** CreateEventRequest */
     CreateEventRequest: {
+      id?: string | null;
       traceId?: string | null;
       traceIdType?: components['schemas']['TraceIdTypeEvent'];
       name?: string | null;
@@ -73,6 +74,7 @@ export interface components {
     TraceIdTypeEvent: 'LANGFUSE' | 'EXTERNAL';
     /** CreateLog */
     CreateLog: {
+      id?: string | null;
       traceId?: string | null;
       traceIdType?: components['schemas']['TraceIdTypeGenerations'];
       name?: string | null;
@@ -182,6 +184,7 @@ export interface components {
     TraceIdType: 'LANGFUSE' | 'EXTERNAL';
     /** CreateSpanRequest */
     CreateSpanRequest: {
+      id?: string | null;
       traceId?: string | null;
       traceIdType?: components['schemas']['TraceIdTypeSpan'];
       name?: string | null;
