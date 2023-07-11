@@ -1,4 +1,5 @@
 import createClient from 'openapi-fetch';
+import { v4 as uuidv4 } from 'uuid';
 import { paths } from './api/server';
 import { LangfuseData } from './lib/types';
 import { version } from './lib/version';
@@ -74,7 +75,7 @@ export class Langfuse {
         .catch((err) => resolve({ status: 'error', error: 'Failed to fetch' }));
     });
     this.promises.push(promise);
-    return new NestedTraceClient(this, promise);
+    return new NestedTraceClient({ client: this, data: promise });
   };
 
   generation = (
@@ -84,6 +85,8 @@ export class Langfuse {
     trace?: Promise<{ id: string | null }>,
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedGenerationClient => {
+    const id = body.id ?? uuidv4();
+
     const promise = new Promise<GenerationData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
@@ -92,6 +95,7 @@ export class Langfuse {
         .post('/api/public/generations', {
           body: {
             ...body,
+            id: id,
             startTime: body.startTime?.toISOString(),
             endTime: body.endTime?.toISOString(),
             completionStartTime: body.completionStartTime?.toISOString(),
@@ -108,7 +112,11 @@ export class Langfuse {
     });
 
     this.promises.push(promise);
-    return new NestedGenerationClient(this, promise);
+    return new NestedGenerationClient({
+      client: this,
+      id: id,
+      data: promise,
+    });
   };
 
   span = (
@@ -118,6 +126,8 @@ export class Langfuse {
     trace?: Promise<{ id: string | null }>,
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedSpanClient => {
+    const id = body.id ?? uuidv4();
+
     const promise = new Promise<SpanData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
@@ -126,6 +136,7 @@ export class Langfuse {
         .post('/api/public/spans', {
           body: {
             ...body,
+            id: id,
             startTime: body.startTime?.toISOString(),
             endTime: body.endTime?.toISOString(),
             traceId: traceId,
@@ -141,7 +152,11 @@ export class Langfuse {
     });
 
     this.promises.push(promise);
-    return new NestedSpanClient(this, promise);
+    return new NestedSpanClient({
+      client: this,
+      id: id,
+      data: promise,
+    });
   };
 
   event = (
@@ -151,6 +166,8 @@ export class Langfuse {
     trace?: Promise<{ id: string | null }>,
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedEventClient => {
+    const id = body.id ?? uuidv4();
+
     const promise = new Promise<EventData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
       const parentObservationId = parent ? (await parent)?.id : body.parentObservationId;
@@ -159,6 +176,7 @@ export class Langfuse {
         .post('/api/public/events', {
           body: {
             ...body,
+            id: id,
             startTime: body.startTime?.toISOString(),
             traceId: traceId,
             parentObservationId: parentObservationId,
@@ -173,7 +191,11 @@ export class Langfuse {
     });
 
     this.promises.push(promise);
-    return new NestedEventClient(this, promise);
+    return new NestedEventClient({
+      client: this,
+      id: id,
+      data: promise,
+    });
   };
 
   score = (
@@ -235,20 +257,17 @@ type WithTypedDates<T> = {
 
 abstract class LangfuseNestedClient {
   protected readonly client: Langfuse;
-  protected readonly id: Promise<string | null>;
   protected readonly traceId: Promise<string | null>;
-  protected readonly parentObservationId: Promise<string | null> | undefined;
 
-  constructor(args: {
-    client: Langfuse;
-    id: Promise<string | null>;
-    traceId: Promise<string | null>;
-    parentObservationId: Promise<string | null> | undefined;
-  }) {
+  // promise for trace, all other strings
+  public abstract readonly id: Promise<string | null> | string;
+
+  // undefined for trace, promise for all other; used to await parent observation before creating children
+  protected abstract readonly parentObservationId: Promise<string | null> | undefined;
+
+  constructor(args: { client: Langfuse; traceId: Promise<string | null> }) {
     this.client = args.client;
-    this.id = args.id;
     this.traceId = args.traceId;
-    this.parentObservationId = args.parentObservationId;
   }
 
   generation = (
@@ -310,15 +329,17 @@ abstract class LangfuseNestedClient {
 
 class NestedSpanClient extends LangfuseNestedClient {
   readonly data: Promise<SpanData>;
+  readonly id: string;
+  protected readonly parentObservationId: Promise<string | null>;
 
-  constructor(client: Langfuse, data: Promise<SpanData>) {
+  constructor(args: { client: Langfuse; id: string; data: Promise<SpanData> }) {
     super({
-      client,
-      id: data.then((d) => (d.status === 'success' ? d.id : null)),
-      parentObservationId: data.then((d) => (d.status === 'success' ? d.id : null)),
-      traceId: data.then((d) => (d.status === 'success' ? d.traceId : null)),
+      client: args.client,
+      traceId: args.data.then((d) => (d.status === 'success' ? d.traceId : null)),
     });
-    this.data = data;
+    this.data = args.data;
+    this.id = args.id;
+    this.parentObservationId = args.data.then((d) => (d.status === 'success' ? d.id : null));
   }
 
   update = (
@@ -357,21 +378,23 @@ class NestedSpanClient extends LangfuseNestedClient {
     });
 
     this.client.promises.push(promise);
-    return new NestedSpanClient(this.client, promise);
+    return new NestedSpanClient({ client: this.client, id: this.id, data: promise });
   };
 }
 
 class NestedGenerationClient extends LangfuseNestedClient {
   readonly data: Promise<GenerationData>;
+  readonly id: string;
+  protected readonly parentObservationId: Promise<string | null>;
 
-  constructor(client: Langfuse, data: Promise<GenerationData>) {
+  constructor(args: { client: Langfuse; id: string; data: Promise<GenerationData> }) {
     super({
-      client,
-      id: data.then((d) => (d.status === 'success' ? d.id : null)),
-      parentObservationId: data.then((d) => (d.status === 'success' ? d.id : null)),
-      traceId: data.then((d) => (d.status === 'success' ? d.traceId : null)),
+      client: args.client,
+      traceId: args.data.then((d) => (d.status === 'success' ? d.traceId : null)),
     });
-    this.data = data;
+    this.data = args.data;
+    this.id = args.id;
+    this.parentObservationId = args.data.then((d) => (d.status === 'success' ? d.id : null));
   }
 
   update = (
@@ -410,34 +433,37 @@ class NestedGenerationClient extends LangfuseNestedClient {
     });
 
     this.client.promises.push(promise);
-    return new NestedGenerationClient(this.client, promise);
+    return new NestedGenerationClient({ client: this.client, id: this.id, data: promise });
   };
 }
 
 class NestedEventClient extends LangfuseNestedClient {
   readonly data: Promise<EventData>;
+  readonly id: string;
+  protected readonly parentObservationId: Promise<string | null>;
 
-  constructor(client: Langfuse, data: Promise<EventData>) {
+  constructor(args: { client: Langfuse; id: string; data: Promise<EventData> }) {
     super({
-      client,
-      id: data.then((d) => (d.status === 'success' ? d.id : null)),
-      parentObservationId: data.then((d) => (d.status === 'success' ? d.id : null)),
-      traceId: data.then((d) => (d.status === 'success' ? d.traceId : null)),
+      client: args.client,
+      traceId: args.data.then((d) => (d.status === 'success' ? d.traceId : null)),
     });
-    this.data = data;
+    this.data = args.data;
+    this.id = args.id;
+    this.parentObservationId = args.data.then((d) => (d.status === 'success' ? d.id : null));
   }
 }
 
 class NestedTraceClient extends LangfuseNestedClient {
   readonly data: Promise<TraceData>;
+  readonly id: Promise<string | null>;
+  protected readonly parentObservationId = undefined;
 
-  constructor(client: Langfuse, data: Promise<TraceData>) {
+  constructor(args: { client: Langfuse; data: Promise<TraceData> }) {
     super({
-      client,
-      id: data.then((d) => (d.status === 'success' ? d.id : null)),
-      parentObservationId: undefined,
-      traceId: data.then((d) => (d.status === 'success' ? d.id : null)),
+      client: args.client,
+      traceId: args.data.then((d) => (d.status === 'success' ? d.id : null)),
     });
-    this.data = data;
+    this.data = args.data;
+    this.id = args.data.then((d) => (d.status === 'success' ? d.id : null));
   }
 }

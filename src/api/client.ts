@@ -16,6 +16,7 @@ export interface components {
   schemas: {
     /** CreateScoreRequest */
     CreateScoreRequest: {
+      id?: string;
       traceId: string;
       traceIdType?: components['schemas']['TraceIdType'];
       name: string;
