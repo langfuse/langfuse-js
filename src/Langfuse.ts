@@ -96,7 +96,7 @@ export class Langfuse {
           body: {
             ...body,
             id: id,
-            startTime: body.startTime?.toISOString(),
+            startTime: body.startTime?.toISOString() ?? new Date().toISOString(),
             endTime: body.endTime?.toISOString(),
             completionStartTime: body.completionStartTime?.toISOString(),
             traceId: traceId,
@@ -137,7 +137,7 @@ export class Langfuse {
           body: {
             ...body,
             id: id,
-            startTime: body.startTime?.toISOString(),
+            startTime: body.startTime?.toISOString() ?? new Date().toISOString(),
             endTime: body.endTime?.toISOString(),
             traceId: traceId,
             parentObservationId: parentObservationId,
@@ -177,7 +177,7 @@ export class Langfuse {
           body: {
             ...body,
             id: id,
-            startTime: body.startTime?.toISOString(),
+            startTime: body.startTime?.toISOString() ?? new Date().toISOString(),
             traceId: traceId,
             parentObservationId: parentObservationId,
           },
