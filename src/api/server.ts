@@ -134,7 +134,9 @@ export interface components {
       prompt?: Record<string, unknown> | null;
       metadata?: Record<string, unknown> | null;
       completion?: string | null;
-      usage?: components['schemas']['LLMUsage'];
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
       level: components['schemas']['ObservationLevelGeneration'];
       statusMessage?: string | null;
       parentObservationId?: string | null;
