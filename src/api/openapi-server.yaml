@@ -787,6 +787,12 @@ components:
           type: integer
         totalTokens:
           type: integer
+        promptTokens:
+          type: integer
+        completionTokens:
+          type: integer
+        totalTokens:
+          type: integer
         level:
           $ref: '#/components/schemas/ObservationLevel'
         statusMessage:
@@ -800,6 +806,9 @@ components:
         - traceId
         - type
         - startTime
+        - promptTokens
+        - completionTokens
+        - totalTokens
         - promptTokens
         - completionTokens
         - totalTokens

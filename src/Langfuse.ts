@@ -102,6 +102,7 @@ export class Langfuse {
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedGenerationClient => {
     const id = body.id ?? uuid();
+    const startTime = body.startTime?.toISOString() ?? new Date().toISOString();
 
     const promise = new Promise<GenerationData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
@@ -112,7 +113,7 @@ export class Langfuse {
           body: {
             ...body,
             id: id,
-            startTime: body.startTime?.toISOString(),
+            startTime: startTime,
             endTime: body.endTime?.toISOString(),
             completionStartTime: body.completionStartTime?.toISOString(),
             traceId: traceId,
@@ -143,6 +144,7 @@ export class Langfuse {
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedSpanClient => {
     const id = body.id ?? uuid();
+    const startTime = body.startTime?.toISOString() ?? new Date().toISOString();
 
     const promise = new Promise<SpanData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
@@ -153,7 +155,7 @@ export class Langfuse {
           body: {
             ...body,
             id: id,
-            startTime: body.startTime?.toISOString(),
+            startTime: startTime,
             endTime: body.endTime?.toISOString(),
             traceId: traceId,
             parentObservationId: parentObservationId,
@@ -183,6 +185,7 @@ export class Langfuse {
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedEventClient => {
     const id = body.id ?? uuid();
+    const startTime = body.startTime?.toISOString() ?? new Date().toISOString();
 
     const promise = new Promise<EventData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
@@ -193,7 +196,7 @@ export class Langfuse {
           body: {
             ...body,
             id: id,
-            startTime: body.startTime?.toISOString(),
+            startTime: startTime,
             traceId: traceId,
             parentObservationId: parentObservationId,
           },
