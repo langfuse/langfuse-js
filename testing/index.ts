@@ -5,7 +5,6 @@ async function main() {
     secretKey: 'sk-lf-1234567890',
     publicKey: 'pk-lf-1234567890',
     baseUrl: 'http://localhost:3000',
-    release: '1.2.0',
   });
 
   langfuse.generation({
