@@ -3,6 +3,9 @@
  * Do not make direct changes to the file.
  */
 
+/** WithRequired type helpers */
+type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
 export interface paths {
   '/api/public/events': {
     /** @description Add an event to the database */
@@ -12,7 +15,13 @@ export interface paths {
     post: operations['generations_log'];
     patch: operations['generations_update'];
   };
+  '/api/public/observations/{observationId}': {
+    /** @description Get a specific observation */
+    get: operations['observations_get'];
+  };
   '/api/public/scores': {
+    /** @description Get scores */
+    get: operations['score_get'];
     /** @description Add a score to the database */
     post: operations['score_create'];
   };
@@ -23,8 +32,14 @@ export interface paths {
     patch: operations['span_update'];
   };
   '/api/public/traces': {
+    /** @description Get list of traces */
+    get: operations['trace_list'];
     /** @description Add a trace to the database */
     post: operations['trace_create'];
+  };
+  '/api/public/traces/{traceId}': {
+    /** @description Get a specific trace */
+    get: operations['trace_get'];
   };
 }
 
@@ -36,50 +51,74 @@ export interface components {
     CreateEventRequest: {
       id?: string | null;
       traceId?: string | null;
-      traceIdType?: components['schemas']['TraceIdTypeEvent'];
+      traceIdType?: components['schemas']['TraceIdTypeEnum'];
       name?: string | null;
       /** Format: date-time */
       startTime?: string | null;
       metadata?: Record<string, unknown> | null;
       input?: Record<string, unknown> | null;
       output?: Record<string, unknown> | null;
-      level?: components['schemas']['ObservationLevelEvent'];
+      level?: components['schemas']['ObservationLevel'];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+      version?: string | null;
     };
-    /** Event */
-    Event: {
+    /** CreateSpanRequest */
+    CreateSpanRequest: {
+      /** Format: date-time */
+      endTime?: string | null;
+    } & components['schemas']['CreateEventRequest'];
+    /** CreateGenerationRequest */
+    CreateGenerationRequest: {
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components['schemas']['MapValue'] | undefined;
+      } | null;
+      prompt?: Record<string, unknown> | null;
+      completion?: string | null;
+      usage?: components['schemas']['LLMUsage'];
+    } & components['schemas']['CreateSpanRequest'];
+    /** Trace */
+    Trace: {
+      /** @description The unique identifier of a trace */
+      id: string;
+      /** Format: date-time */
+      timestamp: string;
+      externalId?: string | null;
+      name?: string | null;
+      release?: string | null;
+      version?: string | null;
+      userId?: string | null;
+      metadata?: Record<string, unknown> | null;
+    };
+    /** TraceWithDetails */
+    TraceWithDetails: WithRequired<
+      {
+        /** @description List of observation ids */
+        observations: string[];
+        /** @description List of score ids */
+        scores: string[];
+      } & components['schemas']['Trace'],
+      'observations' | 'scores'
+    >;
+    /** TraceWithFullDetails */
+    TraceWithFullDetails: WithRequired<
+      {
+        observations: components['schemas']['Observation'][];
+        scores: components['schemas']['Score'][];
+      } & components['schemas']['Trace'],
+      'observations' | 'scores'
+    >;
+    /** Observation */
+    Observation: {
       id: string;
       traceId: string;
       type: string;
       name?: string | null;
       /** Format: date-time */
       startTime: string;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level: components['schemas']['ObservationLevelEvent'];
-      statusMessage?: string | null;
-      parentObservationId?: string | null;
-    };
-    /**
-     * ObservationLevelEvent
-     * @enum {string}
-     */
-    ObservationLevelEvent: 'DEBUG' | 'DEFAULT' | 'WARNING' | 'ERROR';
-    /**
-     * TraceIdTypeEvent
-     * @enum {string}
-     */
-    TraceIdTypeEvent: 'LANGFUSE' | 'EXTERNAL';
-    /** CreateLog */
-    CreateLog: {
-      id?: string | null;
-      traceId?: string | null;
-      traceIdType?: components['schemas']['TraceIdTypeGenerations'];
-      name?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
       /** Format: date-time */
       endTime?: string | null;
       /** Format: date-time */
@@ -89,12 +128,44 @@ export interface components {
         [key: string]: components['schemas']['MapValue'] | undefined;
       } | null;
       prompt?: Record<string, unknown> | null;
+      version?: string | null;
       metadata?: Record<string, unknown> | null;
       completion?: string | null;
-      usage?: components['schemas']['LLMUsage'];
-      level?: components['schemas']['ObservationLevelGeneration'];
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      level: components['schemas']['ObservationLevel'];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+    };
+    /** Score */
+    Score: {
+      id: string;
+      traceId: string;
+      name: string;
+      value: number;
+      observationId?: string | null;
+      /** Format: date-time */
+      timestamp: string;
+      comment?: string | null;
+    };
+    /**
+     * ObservationLevel
+     * @enum {string}
+     */
+    ObservationLevel: 'DEBUG' | 'DEFAULT' | 'WARNING' | 'ERROR';
+    /** MapValue */
+    MapValue: (string | null) | (number | null) | (boolean | null);
+    /**
+     * TraceIdTypeEnum
+     * @enum {string}
+     */
+    TraceIdTypeEnum: 'LANGFUSE' | 'EXTERNAL';
+    /** LLMUsage */
+    LLMUsage: {
+      promptTokens?: number | null;
+      completionTokens?: number | null;
+      totalTokens?: number | null;
     };
     /** UpdateGenerationRequest */
     UpdateGenerationRequest: {
@@ -109,96 +180,27 @@ export interface components {
         [key: string]: components['schemas']['MapValue'] | undefined;
       } | null;
       prompt?: Record<string, unknown> | null;
+      version?: string | null;
       metadata?: Record<string, unknown> | null;
       completion?: string | null;
       usage?: components['schemas']['LLMUsage'];
-      level?: components['schemas']['ObservationLevelGeneration'];
+      level?: components['schemas']['ObservationLevel'];
       statusMessage?: string | null;
     };
-    /** Log */
-    Log: {
-      id: string;
-      traceId: string;
-      type: string;
-      name?: string | null;
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime?: string | null;
-      /** Format: date-time */
-      completionStartTime?: string | null;
-      model?: string | null;
-      modelParameters?: {
-        [key: string]: components['schemas']['MapValue'] | undefined;
-      } | null;
-      prompt?: Record<string, unknown> | null;
-      metadata?: Record<string, unknown> | null;
-      completion?: string | null;
-      usage?: components['schemas']['LLMUsage'];
-      level: components['schemas']['ObservationLevelGeneration'];
-      statusMessage?: string | null;
-      parentObservationId?: string | null;
-    };
-    /** LLMUsage */
-    LLMUsage: {
-      promptTokens?: number | null;
-      completionTokens?: number | null;
-      totalTokens?: number | null;
-    };
-    /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null);
-    /**
-     * ObservationLevelGeneration
-     * @enum {string}
-     */
-    ObservationLevelGeneration: 'DEBUG' | 'DEFAULT' | 'WARNING' | 'ERROR';
-    /**
-     * TraceIdTypeGenerations
-     * @enum {string}
-     */
-    TraceIdTypeGenerations: 'LANGFUSE' | 'EXTERNAL';
     /** CreateScoreRequest */
     CreateScoreRequest: {
       id?: string | null;
       traceId: string;
-      traceIdType?: components['schemas']['TraceIdType'];
+      traceIdType?: components['schemas']['TraceIdTypeEnum'];
       name: string;
       value: number;
       observationId?: string | null;
       comment?: string | null;
     };
-    /** Score */
-    Score: {
-      id: string;
-      traceId: string;
-      name: string;
-      value: number;
-      observationId?: string | null;
-      /** Format: date-time */
-      timestamp: string;
-      comment?: string | null;
-    };
-    /**
-     * TraceIdType
-     * @enum {string}
-     */
-    TraceIdType: 'LANGFUSE' | 'EXTERNAL';
-    /** CreateSpanRequest */
-    CreateSpanRequest: {
-      id?: string | null;
-      traceId?: string | null;
-      traceIdType?: components['schemas']['TraceIdTypeSpan'];
-      name?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      /** Format: date-time */
-      endTime?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components['schemas']['ObservationLevelSpan'];
-      statusMessage?: string | null;
-      parentObservationId?: string | null;
+    /** Scores */
+    Scores: {
+      data: components['schemas']['Score'][];
+      meta: components['schemas']['utilsMetaResponse'];
     };
     /** UpdateSpanRequest */
     UpdateSpanRequest: {
@@ -208,52 +210,35 @@ export interface components {
       metadata?: Record<string, unknown> | null;
       input?: Record<string, unknown> | null;
       output?: Record<string, unknown> | null;
-      level?: components['schemas']['ObservationLevelSpan'];
+      level?: components['schemas']['ObservationLevel'];
+      version?: string | null;
       statusMessage?: string | null;
     };
-    /** Span */
-    Span: {
-      id: string;
-      traceId: string;
-      type: string;
-      name?: string | null;
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level: components['schemas']['ObservationLevelSpan'];
-      statusMessage?: string | null;
-      parentObservationId?: string | null;
-    };
-    /**
-     * ObservationLevelSpan
-     * @enum {string}
-     */
-    ObservationLevelSpan: 'DEBUG' | 'DEFAULT' | 'WARNING' | 'ERROR';
-    /**
-     * TraceIdTypeSpan
-     * @enum {string}
-     */
-    TraceIdTypeSpan: 'LANGFUSE' | 'EXTERNAL';
     /** CreateTraceRequest */
     CreateTraceRequest: {
+      id?: string | null;
       name?: string | null;
       userId?: string | null;
       externalId?: string | null;
+      release?: string | null;
+      version?: string | null;
       metadata?: Record<string, unknown> | null;
     };
-    /** Trace */
-    Trace: {
-      id: string;
-      /** Format: date-time */
-      timestamp: string;
-      externalId?: string | null;
-      name?: string | null;
-      userId?: string | null;
-      metadata?: Record<string, unknown> | null;
+    /** Traces */
+    Traces: {
+      data: components['schemas']['TraceWithDetails'][];
+      meta: components['schemas']['utilsMetaResponse'];
+    };
+    /** utilsMetaResponse */
+    utilsMetaResponse: {
+      /** @description current page number */
+      page: number;
+      /** @description number of items per page */
+      limit: number;
+      /** @description number of total items given the current filters/selection (if any) */
+      totalItems: number;
+      /** @description number of total pages given the current limit */
+      totalPages: number;
     };
   };
   responses: never;
@@ -276,7 +261,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          'application/json': components['schemas']['Event'];
+          'application/json': components['schemas']['Observation'];
         };
       };
       400: {
@@ -290,6 +275,11 @@ export interface operations {
         };
       };
       403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
         content: {
           'application/json': string;
         };
@@ -304,13 +294,13 @@ export interface operations {
   generations_log: {
     requestBody: {
       content: {
-        'application/json': components['schemas']['CreateLog'];
+        'application/json': components['schemas']['CreateGenerationRequest'];
       };
     };
     responses: {
       200: {
         content: {
-          'application/json': components['schemas']['Log'];
+          'application/json': components['schemas']['Observation'];
         };
       };
       400: {
@@ -324,6 +314,11 @@ export interface operations {
         };
       };
       403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
         content: {
           'application/json': string;
         };
@@ -344,7 +339,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          'application/json': components['schemas']['Log'];
+          'application/json': components['schemas']['Observation'];
         };
       };
       400: {
@@ -358,6 +353,95 @@ export interface operations {
         };
       };
       403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
+        content: {
+          'application/json': string;
+        };
+      };
+      405: {
+        content: {
+          'application/json': string;
+        };
+      };
+    };
+  };
+  /** @description Get a specific observation */
+  observations_get: {
+    parameters: {
+      path: {
+        /** @description The unique langfuse identifier of an observation, can be an event, span or generation */
+        observationId: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          'application/json': components['schemas']['Observation'];
+        };
+      };
+      400: {
+        content: {
+          'application/json': string;
+        };
+      };
+      401: {
+        content: {
+          'application/json': string;
+        };
+      };
+      403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
+        content: {
+          'application/json': string;
+        };
+      };
+      405: {
+        content: {
+          'application/json': string;
+        };
+      };
+    };
+  };
+  /** @description Get scores */
+  score_get: {
+    parameters: {
+      query?: {
+        page?: number | null;
+        limit?: number | null;
+        userId?: string | null;
+        name?: string | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          'application/json': components['schemas']['Scores'];
+        };
+      };
+      400: {
+        content: {
+          'application/json': string;
+        };
+      };
+      401: {
+        content: {
+          'application/json': string;
+        };
+      };
+      403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
         content: {
           'application/json': string;
         };
@@ -397,6 +481,11 @@ export interface operations {
           'application/json': string;
         };
       };
+      404: {
+        content: {
+          'application/json': string;
+        };
+      };
       405: {
         content: {
           'application/json': string;
@@ -414,7 +503,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          'application/json': components['schemas']['Span'];
+          'application/json': components['schemas']['Observation'];
         };
       };
       400: {
@@ -428,6 +517,11 @@ export interface operations {
         };
       };
       403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
         content: {
           'application/json': string;
         };
@@ -449,7 +543,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          'application/json': components['schemas']['Span'];
+          'application/json': components['schemas']['Observation'];
         };
       };
       400: {
@@ -463,6 +557,54 @@ export interface operations {
         };
       };
       403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
+        content: {
+          'application/json': string;
+        };
+      };
+      405: {
+        content: {
+          'application/json': string;
+        };
+      };
+    };
+  };
+  /** @description Get list of traces */
+  trace_list: {
+    parameters: {
+      query?: {
+        page?: number | null;
+        limit?: number | null;
+        userId?: string | null;
+        name?: string | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          'application/json': components['schemas']['Traces'];
+        };
+      };
+      400: {
+        content: {
+          'application/json': string;
+        };
+      };
+      401: {
+        content: {
+          'application/json': string;
+        };
+      };
+      403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
         content: {
           'application/json': string;
         };
@@ -498,6 +640,52 @@ export interface operations {
         };
       };
       403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
+        content: {
+          'application/json': string;
+        };
+      };
+      405: {
+        content: {
+          'application/json': string;
+        };
+      };
+    };
+  };
+  /** @description Get a specific trace */
+  trace_get: {
+    parameters: {
+      path: {
+        /** @description The unique langfuse identifier of a trace */
+        traceId: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          'application/json': components['schemas']['TraceWithFullDetails'];
+        };
+      };
+      400: {
+        content: {
+          'application/json': string;
+        };
+      };
+      401: {
+        content: {
+          'application/json': string;
+        };
+      };
+      403: {
+        content: {
+          'application/json': string;
+        };
+      };
+      404: {
         content: {
           'application/json': string;
         };

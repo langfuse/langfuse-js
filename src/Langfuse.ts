@@ -1,8 +1,8 @@
 import createClient from 'openapi-fetch';
-import { v4 as uuidv4 } from 'uuid';
 import { paths } from './api/server';
 import { LangfuseData } from './lib/types';
 import { version } from './lib/version';
+import { uuid } from './utils';
 
 class Api {
   readonly get;
@@ -50,8 +50,14 @@ type ScoreData = LangfuseData<
 export class Langfuse {
   readonly api: Api;
   promises: Promise<any>[];
+  release: string | null;
 
-  constructor(params: { publicKey: string; secretKey: string; baseUrl?: string }) {
+  constructor(params: {
+    publicKey: string;
+    secretKey: string;
+    baseUrl?: string;
+    release?: string;
+  }) {
     this.promises = [];
 
     this.api = new Api({
@@ -59,14 +65,24 @@ export class Langfuse {
       secretKey: params.secretKey,
       baseUrl: params.baseUrl,
     });
+
+    this.release = params.release ?? process.env.LANGFUSE_RELEASE ?? null;
   }
 
   trace = (
-    body: paths['/api/public/traces']['post']['requestBody']['content']['application/json']
+    body: Omit<
+      paths['/api/public/traces']['post']['requestBody']['content']['application/json'],
+      'release'
+    >
   ): NestedTraceClient => {
     const promise = new Promise<TraceData>(async (resolve, reject) => {
       const res = this.api
-        .post('/api/public/traces', { body })
+        .post('/api/public/traces', {
+          body: {
+            ...body,
+            release: this.release,
+          },
+        })
         .then((res) => {
           if (res.error) return resolve({ status: 'error', error: res.error });
           if (!res.data) return resolve({ status: 'error', error: 'Not found' });
@@ -85,7 +101,7 @@ export class Langfuse {
     trace?: Promise<{ id: string | null }>,
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedGenerationClient => {
-    const id = body.id ?? uuidv4();
+    const id = body.id ?? uuid();
 
     const promise = new Promise<GenerationData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
@@ -126,7 +142,7 @@ export class Langfuse {
     trace?: Promise<{ id: string | null }>,
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedSpanClient => {
-    const id = body.id ?? uuidv4();
+    const id = body.id ?? uuid();
 
     const promise = new Promise<SpanData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;
@@ -166,7 +182,7 @@ export class Langfuse {
     trace?: Promise<{ id: string | null }>,
     parent?: Promise<{ id: string | null } | undefined>
   ): NestedEventClient => {
-    const id = body.id ?? uuidv4();
+    const id = body.id ?? uuid();
 
     const promise = new Promise<EventData>(async (resolve, reject) => {
       const traceId = trace ? (await trace)?.id : body.traceId;

@@ -2,11 +2,19 @@ import { Langfuse } from 'langfuse';
 
 async function main() {
   const langfuse = new Langfuse({
-    secretKey: 'sk-lf-8a54ace4-27dd-41e3-a24c-cd63e76e0aaf',
-    publicKey: 'pk-lf-4851918d-2369-4f99-a1d3-8de59ba35a6b',
+    secretKey: 'sk-lf-1234567890',
+    publicKey: 'pk-lf-1234567890',
+    baseUrl: 'http://localhost:3000',
+    release: '1.2.0',
+  });
+
+  langfuse.generation({
+    name: 'gen-without-trace',
+    version: '1.2.0',
   });
 
   const trace = langfuse.trace({
+    version: 'test',
     name: 'test',
     metadata: {
       test: 'test',
@@ -14,6 +22,15 @@ async function main() {
   });
 
   const span = trace.span({
+    version: '1.2.0',
+    name: 'test',
+    metadata: {
+      test: 'test',
+    },
+  });
+
+  span.event({
+    version: '1.2.0',
     name: 'test',
     metadata: {
       test: 'test',
