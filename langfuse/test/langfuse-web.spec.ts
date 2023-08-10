@@ -21,7 +21,7 @@ describe('langfuseWeb', () => {
         }
       }
 
-      if (url.includes('cloud-fail.langfuse.com')) {
+      if (url.startsWith('https://cloud-fail.langfuse.com')) {
         return {
           status: 404,
           json: () => Promise.resolve(res),
