@@ -71,7 +71,6 @@ describe('Langfuse Node.js', () => {
         output: null,
         level: 'DEFAULT',
         parentObservationId: null,
-        projectId: '7a88fb47-b4e2-43b8-a06c-a5ce950dc53a',
         completionTokens: 0,
         promptTokens: 0,
         totalTokens: 0,
