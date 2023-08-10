@@ -1,0 +1,30 @@
+{
+  "name": "langfuse-node",
+  "version": "0.1.0-beta.0",
+  "scripts": {
+    "prepublishOnly": "cd .. && yarn build"
+  },
+  "engines": {
+    "node": ">=15.0.0"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Langfuse",
+    "email": "hi@langfuse.com",
+    "url": "https://langfuse.com"
+  },
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
+  "dependencies": {
+    "axios": "^0.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "commander": "^9.3.0"
+  },
+  "files": [
+    "lib",
+    "Readme.md"
+  ]
+}

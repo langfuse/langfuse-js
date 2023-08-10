@@ -1,48 +1,72 @@
 {
-  "name": "langfuse",
-  "version": "0.0.26",
-  "description": "",
-  "main": "dist/module.js",
-  "module": "dist/es.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist/"
+  "name": "langfuse-js-mono",
+  "version": "0.1.0-beta.0",
+  "description": "Modular monorepo for all Langfuse JS/TS SDKs",
+  "workspaces": [
+    "langfuse-core",
+    "langfuse-node",
+    "langfuse"
   ],
-  "scripts": {
-    "pretty": "prettier --write \"./src/**/*.{js,jsx,ts,tsx,json}\"",
-    "genversion": "genversion -p package.json --es6 --semi ./src/lib/version.ts",
-    "prebuild": "npm i && npm run generateAPI && npm run genversion && npm run pretty",
-    "build": "rm -rf dist && rollup -c --bundleConfigAsCjs",
-    "prepublishOnly": "npm run build",
-    "generateAPI": "openapi-typescript src/api/openapi-server.yaml --output src/api/server.ts && openapi-typescript src/api/openapi-client.yaml --output src/api/client.ts && npm run pretty"
+  "author": {
+    "name": "Langfuse",
+    "email": "hi@langfuse.com",
+    "url": "https://langfuse.com"
   },
-  "keywords": [],
-  "author": "langfuse",
+  "private": true,
   "license": "MIT",
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.2",
-    "@rollup/plugin-json": "^6.0.0",
-    "@rollup/plugin-node-resolve": "^15.1.0",
-    "@types/uuid": "^9.0.2",
-    "@typescript-eslint/eslint-plugin": "^5.60.1",
-    "@typescript-eslint/parser": "^5.60.1",
-    "eslint": "^8.44.0",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-config-standard-with-typescript": "^36.0.0",
-    "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-n": "^15.7.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.1.1",
-    "genversion": "^3.1.1",
-    "openapi-typescript": "^6.2.8",
-    "prettier": "^2.8.8",
-    "rollup": "^3.26.2",
-    "rollup-plugin-typescript2": "^0.35.0",
-    "rollup-plugin-visualizer": "^5.9.2",
-    "typescript": "^5.1.6"
+  "scripts": {
+    "build": "yarn compile",
+    "lint": "eslint -c .eslintrc.js --fix langfuse-*",
+    "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
+    "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
+    "generateAPI": "openapi-typescript langfuse-core/openapi-spec/openapi-server.yaml --output langfuse-core/src/openapi/server.ts && openapi-typescript langfuse-core/openapi-spec/openapi-client.yaml --output langfuse-core/src/openapi/client.ts",
+    "test": "jest langfuse-core/* langfuse-node/* langfuse/*",
+    "test:all": "jest langfuse-core/* langfuse-node/* langfuse/*",
+    "test:core": "jest langfuse-core/*",
+    "test:node": "jest langfuse-node/*",
+    "test:fetch": "jest langfuse/*",
+    "test:integration": "jest integration-test/*",
+    "compile": "rollup -c"
   },
-  "dependencies": {
-    "openapi-fetch": "^0.6.0",
-    "uuid": "^9.0.0"
+  "devDependencies": {
+    "@babel/core": "^7.18.6",
+    "@babel/preset-env": "^7.18.6",
+    "@babel/preset-react": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
+    "@rollup/plugin-babel": "^5.3.1",
+    "@rollup/plugin-commonjs": "^22.0.1",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@types/jest": "^28.1.5",
+    "@types/node": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.7",
+    "@typescript-eslint/parser": "^5.30.7",
+    "axios": "^1.4.0",
+    "babel-jest": "^28.1.3",
+    "eslint": "^8.19.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.30.1",
+    "husky": "^8.0.1",
+    "jest": "^28.1.3",
+    "jest-environment-jsdom": "^28.1.3",
+    "openapi-typescript": "^6.2.8",
+    "prettier": "^2.7.1",
+    "rollup": "^2.77.0",
+    "rollup-plugin-dts": "^4.2.2",
+    "rollup-plugin-dts-bundle": "^1.0.0",
+    "rollup-plugin-typescript2": "^0.32.1",
+    "ts-jest": "^28.0.6",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.4.0",
+    "typescript": "^4.7.4"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,js,css,scss}": "prettier --write"
   }
 }
