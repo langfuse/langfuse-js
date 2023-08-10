@@ -114,7 +114,7 @@ export interface components {
     /** Observation */
     Observation: {
       id: string
-      traceId: string
+      traceId?: string | null
       type: string
       name?: string | null
       /** Format: date-time */
@@ -170,6 +170,7 @@ export interface components {
     /** UpdateGenerationRequest */
     UpdateGenerationRequest: {
       generationId: string
+      traceId?: string | null
       name?: string | null
       /** Format: date-time */
       endTime?: string | null
@@ -205,6 +206,7 @@ export interface components {
     /** UpdateSpanRequest */
     UpdateSpanRequest: {
       spanId: string
+      traceId?: string | null
       /** Format: date-time */
       endTime?: string | null
       metadata?: Record<string, unknown> | null

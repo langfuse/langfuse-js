@@ -41,6 +41,7 @@ describe('Langfuse Core', () => {
       expect(options.method).toBe('PATCH')
       const body = parseBody(mocks.fetch.mock.calls[2])
       expect(body).toMatchObject({
+        traceId: trace.id,
         spanId: span.id,
         version: '1.0.0',
       })
@@ -67,6 +68,7 @@ describe('Langfuse Core', () => {
       expect(options.method).toBe('PATCH')
       const body = parseBody(mocks.fetch.mock.calls[2])
       expect(body).toMatchObject({
+        traceId: trace.id,
         generationId: generation.id,
         version: '1.0.0',
       })

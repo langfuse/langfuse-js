@@ -175,18 +175,12 @@ abstract class LangfuseCoreStateless {
   }
 
   protected updateSpanStateless(body: UpdateLangfuseSpanBody): string {
-    const parsedBody: UpdateLangfuseSpanBody = {
-      ...body,
-    }
-    this.enqueue('updateSpan', parsedBody)
+    this.enqueue('updateSpan', body)
     return body.spanId
   }
 
   protected updateGenerationStateless(body: UpdateLangfuseGenerationBody): string {
-    const parsedBody: UpdateLangfuseGenerationBody = {
-      ...body,
-    }
-    this.enqueue('updateGeneration', parsedBody)
+    this.enqueue('updateGeneration', body)
     return body.generationId
   }
 
@@ -483,7 +477,7 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
   }
 
   update(body: Omit<UpdateLangfuseSpanBody, 'spanId'>): this {
-    this.client._updateSpan({ ...body, spanId: this.id })
+    this.client._updateSpan({ ...body, spanId: this.id, traceId: this.traceId })
     return this
   }
 }
@@ -494,7 +488,7 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
   }
 
   update(body: Omit<UpdateLangfuseGenerationBody, 'generationId'>): this {
-    this.client._updateGeneration({ ...body, generationId: this.id })
+    this.client._updateGeneration({ ...body, generationId: this.id, traceId: this.traceId })
     return this
   }
 }
