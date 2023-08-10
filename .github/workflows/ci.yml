@@ -14,12 +14,12 @@ concurrency:
 
 jobs:
   tests:
-    name: Test on Node ${{ matrix.node_version }}
     timeout-minutes: 3
     runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: [16, 17, 18]
+    name: Test on Node ${{ matrix.node-version }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
