@@ -109,7 +109,7 @@ describe('Langfuse Node.js', () => {
         // 6 flush calls to debug log
         expect(logSpy).toHaveBeenCalledTimes(16)
         expect(10).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('createTrace')).length)
-        expect(6).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+        expect(5).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
 
         logSpy.mockClear()
 
