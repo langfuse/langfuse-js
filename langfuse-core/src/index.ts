@@ -366,7 +366,12 @@ abstract class LangfuseCoreStateless {
 
 export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
   constructor(params: { publicKey: string } & LangfuseCoreOptions) {
-    super(params);
+    const { flushAt, flushInterval, ...rest } = params;
+    super({
+      ...rest,
+      flushAt: flushAt ?? 1,
+      flushInterval: flushInterval ?? 0,
+    });
   }
 
   async score(body: CreateLangfuseScoreBody): Promise<this> {
