@@ -1,9 +1,13 @@
-import { LangfuseCoreOptions, LangfuseFetchOptions, LangfuseFetchResponse } from '../../langfuse-core/src'
+import {
+  type LangfuseCoreOptions,
+  type LangfuseFetchOptions,
+  type LangfuseFetchResponse,
+} from "../../langfuse-core/src";
 
 export type LangfuseOptions = LangfuseCoreOptions & {
-  persistence?: 'memory'
+  persistence?: "memory";
   // Timeout in milliseconds for any calls. Defaults to 10 seconds.
-  requestTimeout?: number
+  requestTimeout?: number;
   // A custom fetch implementation. Defaults to axios in the node package.
-  fetch?: (url: string, options: LangfuseFetchOptions) => Promise<LangfuseFetchResponse>
-}
+  fetch?: (url: string, options: LangfuseFetchOptions) => Promise<LangfuseFetchResponse>;
+};

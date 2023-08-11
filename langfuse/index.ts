@@ -1,5 +1,5 @@
-import { Langfuse } from './src/langfuse'
+import { Langfuse } from "./src/langfuse";
 
-export default Langfuse
+export default Langfuse;
 
-export * from './src/langfuse'
+export * from "./src/langfuse";

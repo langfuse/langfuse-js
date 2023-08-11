@@ -1,22 +1,22 @@
-import './App.css'
-import Langfuse from 'langfuse'
-import { useEffect, useState } from 'react'
+import "./App.css";
+import Langfuse from "langfuse";
+import { useEffect, useState } from "react";
 
-const langfuse = new Langfuse('pk-lf-1234567890', 'sk-lf-1234567890', {
-  host: 'http://localhost:3000',
+const langfuse = new Langfuse("pk-lf-1234567890", "sk-lf-1234567890", {
+  host: "http://localhost:3000",
   flushAt: 1,
-})
+});
 
 function App() {
-  const [traceId, setTraceId] = useState('')
+  const [traceId, setTraceId] = useState("");
 
   useEffect(() => {
-    const id = crypto.randomUUID()
-    setTraceId(id)
+    const id = crypto.randomUUID();
+    setTraceId(id);
     langfuse.trace({
       id,
-    })
-  }, [])
+    });
+  }, []);
 
   return (
     <div className="App">
@@ -26,7 +26,7 @@ function App() {
           className="Button"
           onClick={() =>
             langfuse.score({
-              name: 'test',
+              name: "test",
               value: 1,
               traceId,
             })
@@ -36,7 +36,7 @@ function App() {
         </button>
       </header>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

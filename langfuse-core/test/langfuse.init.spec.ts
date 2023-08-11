@@ -1,94 +1,94 @@
 import {
   createTestClient,
-  LangfuseCoreTestClient,
-  LangfuseCoreTestClientMocks,
-} from './test-utils/LangfuseCoreTestClient'
+  type LangfuseCoreTestClient,
+  type LangfuseCoreTestClientMocks,
+} from "./test-utils/LangfuseCoreTestClient";
 
-describe('Langfuse Core', () => {
-  let langfuse: LangfuseCoreTestClient
+describe("Langfuse Core", () => {
+  let langfuse: LangfuseCoreTestClient;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let mocks: LangfuseCoreTestClientMocks
+  let mocks: LangfuseCoreTestClientMocks;
 
   beforeEach(() => {
-    ;[langfuse, mocks] = createTestClient({
-      publicKey: 'pk-lf-111',
-      secretKey: 'sk-lf-111',
-    })
-  })
+    [langfuse, mocks] = createTestClient({
+      publicKey: "pk-lf-111",
+      secretKey: "sk-lf-111",
+    });
+  });
 
-  describe('init', () => {
-    it('should initialise', () => {
-      expect(langfuse.host).toEqual('https://cloud.langfuse.com')
-    })
+  describe("init", () => {
+    it("should initialise", () => {
+      expect(langfuse.host).toEqual("https://cloud.langfuse.com");
+    });
 
-    it('should throw if missing api key', () => {
+    it("should throw if missing api key", () => {
       expect(() =>
         createTestClient({
           publicKey: undefined as unknown as string,
-          secretKey: 'secret key',
+          secretKey: "secret key",
         })
-      ).toThrowError("You must pass your Langfuse project's api public key.")
+      ).toThrowError("You must pass your Langfuse project's api public key.");
 
       expect(() =>
         createTestClient({
-          publicKey: 'public key',
+          publicKey: "public key",
           secretKey: undefined as unknown as string,
         })
-      ).toThrowError("You must pass your Langfuse project's api secret key.")
+      ).toThrowError("You must pass your Langfuse project's api secret key.");
 
       expect(() =>
         createTestClient({
           publicKey: undefined as unknown as string,
           secretKey: undefined as unknown as string,
         })
-      ).toThrowError("You must pass your Langfuse project's api public key.")
-    })
+      ).toThrowError("You must pass your Langfuse project's api public key.");
+    });
 
-    it('should initialise default options', () => {
+    it("should initialise default options", () => {
       expect(langfuse as any).toMatchObject({
-        secretKey: 'sk-lf-111',
-        publicKey: 'pk-lf-111',
-        host: 'https://cloud.langfuse.com',
+        secretKey: "sk-lf-111",
+        publicKey: "pk-lf-111",
+        host: "https://cloud.langfuse.com",
         flushAt: 20,
         flushInterval: 10000,
-      })
-    })
+      });
+    });
 
-    it('overwrites defaults with options', () => {
-      ;[langfuse, mocks] = createTestClient({
-        publicKey: 'pk',
-        secretKey: 'sk',
-        host: 'https://a.com',
+    it("overwrites defaults with options", () => {
+      [langfuse, mocks] = createTestClient({
+        publicKey: "pk",
+        secretKey: "sk",
+        host: "https://a.com",
         flushAt: 1,
         flushInterval: 2,
-      })
+      });
 
       expect(langfuse).toMatchObject({
-        secretKey: 'sk',
-        publicKey: 'pk',
-        host: 'https://a.com',
+        secretKey: "sk",
+        publicKey: "pk",
+        host: "https://a.com",
         flushAt: 1,
         flushInterval: 2,
-      })
-    })
+      });
+    });
 
-    it('should keep the flushAt option above zero', () => {
-      ;[langfuse, mocks] = createTestClient({
-        secretKey: 'sk',
-        publicKey: 'pk',
+    it("should keep the flushAt option above zero", () => {
+      [langfuse, mocks] = createTestClient({
+        secretKey: "sk",
+        publicKey: "pk",
         flushAt: -2,
-      }) as any
-      expect((langfuse as any).flushAt).toEqual(1)
-    })
+      }) as any;
+      expect((langfuse as any).flushAt).toEqual(1);
+    });
 
-    it('should remove trailing slashes from `host`', () => {
-      ;[langfuse, mocks] = createTestClient({
-        secretKey: 'sk',
-        publicKey: 'pk',
-        host: 'http://my-local-langfuse.com///',
-      })
+    it("should remove trailing slashes from `host`", () => {
+      [langfuse, mocks] = createTestClient({
+        secretKey: "sk",
+        publicKey: "pk",
+        host: "http://my-local-langfuse.com///",
+      });
 
-      expect((langfuse as any).host).toEqual('http://my-local-langfuse.com')
-    })
-  })
-})
+      expect((langfuse as any).host).toEqual("http://my-local-langfuse.com");
+    });
+  });
+});

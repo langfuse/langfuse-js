@@ -1,124 +1,124 @@
 import {
   LangfuseCore,
   LangfuseWebStateless,
-  LangfuseFetchOptions,
-  LangfuseFetchResponse,
-  LangfusePersistedProperty,
-} from '../../langfuse-core/src'
-import { LangfuseStorage, getStorage } from './storage'
-import { version } from '../package.json'
-import { LangfuseOptions } from './types'
+  type LangfuseFetchOptions,
+  type LangfuseFetchResponse,
+  type LangfusePersistedProperty,
+} from "../../langfuse-core/src";
+import { type LangfuseStorage, getStorage } from "./storage";
+import { version } from "../package.json";
+import { type LangfuseOptions } from "./types";
 
 export class Langfuse extends LangfuseCore {
-  private _storage: LangfuseStorage
-  private _storageCache: any
-  private _storageKey: string
+  private _storage: LangfuseStorage;
+  private _storageCache: any;
+  private _storageKey: string;
 
   constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
-    super(params)
-    const { publicKey, secretKey, ...options } = params
+    super(params);
+    const { publicKey, secretKey, ...options } = params;
 
-    if (typeof window !== 'undefined') {
-      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`
-      this._storage = getStorage(options?.persistence || 'localStorage', window)
+    if (typeof window !== "undefined") {
+      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(options?.persistence || "localStorage", window);
     } else {
-      this._storageKey = `lf_${publicKey}_langfuse`
-      this._storage = getStorage('memory', undefined)
+      this._storageKey = `lf_${publicKey}_langfuse`;
+      this._storage = getStorage("memory", undefined);
     }
   }
 
   getPersistedProperty<T>(key: LangfusePersistedProperty): T | undefined {
     if (!this._storageCache) {
-      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}') || {}
+      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || "{}") || {};
     }
 
-    return this._storageCache[key]
+    return this._storageCache[key];
   }
 
   setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void {
     if (!this._storageCache) {
-      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}') || {}
+      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || "{}") || {};
     }
 
     if (value === null) {
-      delete this._storageCache[key]
+      delete this._storageCache[key];
     } else {
-      this._storageCache[key] = value
+      this._storageCache[key] = value;
     }
 
-    this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache))
+    this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache));
   }
 
   fetch(url: string, options: LangfuseFetchOptions): Promise<LangfuseFetchResponse> {
-    return fetch(url, options)
+    return fetch(url, options);
   }
 
   getLibraryId(): string {
-    return 'langfuse'
+    return "langfuse";
   }
 
   getLibraryVersion(): string {
-    return version
+    return version;
   }
 
   getCustomUserAgent(): void {
-    return
+    return;
   }
 }
 
 export class LangfuseWeb extends LangfuseWebStateless {
-  private _storage: LangfuseStorage
-  private _storageCache: any
-  private _storageKey: string
+  private _storage: LangfuseStorage;
+  private _storageCache: any;
+  private _storageKey: string;
 
   constructor(params: { publicKey: string } & LangfuseOptions) {
-    super(params)
+    super(params);
 
-    const { publicKey, ...options } = params
-    if (typeof window !== 'undefined') {
-      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`
-      this._storage = getStorage(options?.persistence || 'localStorage', window)
+    const { publicKey, ...options } = params;
+    if (typeof window !== "undefined") {
+      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(options?.persistence || "localStorage", window);
     } else {
-      this._storageKey = `lf_${publicKey}_langfuse`
-      this._storage = getStorage('memory', undefined)
+      this._storageKey = `lf_${publicKey}_langfuse`;
+      this._storage = getStorage("memory", undefined);
     }
   }
 
   getPersistedProperty<T>(key: LangfusePersistedProperty): T | undefined {
     if (!this._storageCache) {
-      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}') || {}
+      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || "{}") || {};
     }
 
-    return this._storageCache[key]
+    return this._storageCache[key];
   }
 
   setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void {
     if (!this._storageCache) {
-      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}') || {}
+      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || "{}") || {};
     }
 
     if (value === null) {
-      delete this._storageCache[key]
+      delete this._storageCache[key];
     } else {
-      this._storageCache[key] = value
+      this._storageCache[key] = value;
     }
 
-    this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache))
+    this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache));
   }
 
   fetch(url: string, options: LangfuseFetchOptions): Promise<LangfuseFetchResponse> {
-    return fetch(url, options)
+    return fetch(url, options);
   }
 
   getLibraryId(): string {
-    return 'langfuse-frontend'
+    return "langfuse-frontend";
   }
 
   getLibraryVersion(): string {
-    return version
+    return version;
   }
 
   getCustomUserAgent(): void {
-    return
+    return;
   }
 }

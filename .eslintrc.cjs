@@ -1,5 +1,5 @@
-/* global module */
-module.exports = {
+/** @type {import("eslint").Linter.Config} */
+const config = {
   ignorePatterns: ['node_modules', 'examples', 'lib'],
   env: {
     browser: true,
@@ -36,12 +36,7 @@ module.exports = {
       },
     ],
     'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      {
-        ignoreRestSiblings: true,
-      },
-    ],
+    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", ignoreRestSiblings: true, }],
     '@typescript-eslint/prefer-ts-expect-error': 'error',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
@@ -49,6 +44,13 @@ module.exports = {
     '@typescript-eslint/no-inferrable-types': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/no-non-null-assertion': 'error',
+    "@typescript-eslint/consistent-type-imports": [
+      "warn",
+      {
+        prefer: "type-imports",
+        fixStyle: "inline-type-imports",
+      },
+    ],
     curly: 'error',
     'no-restricted-imports': [
       'error',
@@ -98,4 +100,6 @@ module.exports = {
     },
   ],
   reportUnusedDisableDirectives: true,
-}
+};
+
+module.exports = config;
