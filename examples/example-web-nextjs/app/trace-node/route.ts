@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const langfuse = new Langfuse({
     publicKey: "pk-lf-1234567890",
     secretKey: "sk-lf-1234567890",
-    host: "http://localhost:3000",
+    baseUrl: "http://localhost:3000",
     flushAt: 1,
   });
 

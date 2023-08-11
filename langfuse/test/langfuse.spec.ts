@@ -34,7 +34,7 @@ describe("langfuseWeb", () => {
         secretKey: "sk",
         flushAt: 1,
       });
-      expect(langfuse.host).toEqual("https://cloud.langfuse.com");
+      expect(langfuse.baseUrl).toEqual("https://cloud.langfuse.com");
 
       langfuse.trace({ name: "test-trace-1" });
 

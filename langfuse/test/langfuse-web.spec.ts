@@ -41,7 +41,7 @@ describe("langfuseWeb", () => {
         publicKey: "pk",
         flushAt: 10,
       });
-      expect(langfuse.host).toEqual("https://cloud.langfuse.com");
+      expect(langfuse.baseUrl).toEqual("https://cloud.langfuse.com");
 
       const id = generateUUID();
       const score = langfuse.score({
@@ -83,12 +83,12 @@ describe("langfuseWeb", () => {
     it("should throw error if score was not created", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
-        host: "https://cloud-fail.langfuse.com", // this will fail with 404
+        baseUrl: "https://cloud-fail.langfuse.com", // this will fail with 404
         flushAt: 10,
         fetchRetryCount: 2,
         fetchRetryDelay: 2,
       });
-      expect(langfuse.host).toEqual("https://cloud-fail.langfuse.com");
+      expect(langfuse.baseUrl).toEqual("https://cloud-fail.langfuse.com");
 
       const id = generateUUID();
       const score = langfuse.score({

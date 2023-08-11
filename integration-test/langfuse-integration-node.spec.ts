@@ -21,7 +21,7 @@ describe("Langfuse Node.js", () => {
     langfuse = new Langfuse({
       publicKey: LF_PUBLIC_KEY,
       secretKey: LF_SECRET_KEY,
-      host: LF_HOST,
+      baseUrl: LF_HOST,
       flushAt: 100,
       fetchRetryDelay: 100,
       fetchRetryCount: 3,

@@ -18,7 +18,7 @@ describe("Langfuse Core", () => {
 
   describe("init", () => {
     it("should initialise", () => {
-      expect(langfuse.host).toEqual("https://cloud.langfuse.com");
+      expect(langfuse.baseUrl).toEqual("https://cloud.langfuse.com");
     });
 
     it("should throw if missing api key", () => {
@@ -48,7 +48,7 @@ describe("Langfuse Core", () => {
       expect(langfuse as any).toMatchObject({
         secretKey: "sk-lf-111",
         publicKey: "pk-lf-111",
-        host: "https://cloud.langfuse.com",
+        baseUrl: "https://cloud.langfuse.com",
         flushAt: 20,
         flushInterval: 10000,
       });
@@ -58,7 +58,7 @@ describe("Langfuse Core", () => {
       [langfuse, mocks] = createTestClient({
         publicKey: "pk",
         secretKey: "sk",
-        host: "https://a.com",
+        baseUrl: "https://a.com",
         flushAt: 1,
         flushInterval: 2,
       });
@@ -66,7 +66,7 @@ describe("Langfuse Core", () => {
       expect(langfuse).toMatchObject({
         secretKey: "sk",
         publicKey: "pk",
-        host: "https://a.com",
+        baseUrl: "https://a.com",
         flushAt: 1,
         flushInterval: 2,
       });
@@ -81,14 +81,14 @@ describe("Langfuse Core", () => {
       expect((langfuse as any).flushAt).toEqual(1);
     });
 
-    it("should remove trailing slashes from `host`", () => {
+    it("should remove trailing slashes from `baseUrl`", () => {
       [langfuse, mocks] = createTestClient({
         secretKey: "sk",
         publicKey: "pk",
-        host: "http://my-local-langfuse.com///",
+        baseUrl: "http://my-local-langfuse.com///",
       });
 
-      expect((langfuse as any).host).toEqual("http://my-local-langfuse.com");
+      expect((langfuse as any).baseUrl).toEqual("http://my-local-langfuse.com");
     });
   });
 });

@@ -1,8 +1,8 @@
 import { type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {
-  // Langfuse API host (https://cloud.langfuse.com by default)
-  host?: string;
+  // Langfuse API baseUrl (https://cloud.langfuse.com by default)
+  baseUrl?: string;
   // The number of events to queue before sending to Langfuse (flushing)
   flushAt?: number;
   // The interval in milliseconds between periodic flushes

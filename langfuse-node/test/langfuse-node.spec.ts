@@ -17,7 +17,7 @@ describe("Langfuse Node.js", () => {
     langfuse = new Langfuse({
       publicKey: "pk",
       secretKey: "sk",
-      host: "http://example.com",
+      baseUrl: "http://example.com",
       flushAt: 5,
     });
 
@@ -89,7 +89,7 @@ describe("Langfuse Node.js", () => {
         langfuse = new Langfuse({
           publicKey: "pk",
           secretKey: "sk",
-          host: "http://example.com",
+          baseUrl: "http://example.com",
           fetchRetryCount: 0,
           flushAt: 1,
         });

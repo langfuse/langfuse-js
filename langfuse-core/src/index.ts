@@ -42,7 +42,7 @@ abstract class LangfuseCoreStateless {
   // options
   private secretKey: string | undefined;
   private publicKey: string;
-  host: string;
+  baseUrl: string;
   private flushAt: number;
   private flushInterval: number;
   private requestTimeout: number;
@@ -71,7 +71,7 @@ abstract class LangfuseCoreStateless {
 
     this.publicKey = publicKey;
     this.secretKey = secretKey;
-    this.host = removeTrailingSlash(options?.host || "https://cloud.langfuse.com");
+    this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20;
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? process.env.LANGFUSE_RELEASE ?? undefined;
@@ -257,7 +257,7 @@ abstract class LangfuseCoreStateless {
         this._events.emit("flush", item);
       };
       const payload = JSON.stringify(item.body); // implicit conversion also of dates to strings
-      const url = `${this.host}${item.apiRoute}`;
+      const url = `${this.baseUrl}${item.apiRoute}`;
 
       const fetchOptions: LangfuseFetchOptions = {
         method: item.method,

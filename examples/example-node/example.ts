@@ -8,8 +8,10 @@ const {
   LF_HOST = "http://localhost:3000",
 } = process.env;
 
-const langfuse = new Langfuse(LF_PUBLIC, LF_SECRET, {
-  host: LF_HOST,
+const langfuse = new Langfuse({
+  publicKey: LF_PUBLIC,
+  secretKey: LF_SECRET,
+  baseUrl: LF_HOST,
   // flushAt: 1,
 });
 
