@@ -12,6 +12,7 @@ describe('Langfuse Core', () => {
   jest.useFakeTimers()
 
   beforeEach(() => {
+    delete process.env.LANGFUSE_RELEASE;
     ;[langfuse, mocks] = createTestClient({
       publicKey: 'pk-lf-111',
       secretKey: 'sk-lf-111',
@@ -77,6 +78,110 @@ describe('Langfuse Core', () => {
           },
         },
         version: '1.0.0',
+      })
+    })
+  })
+
+  describe('trace release', () => {
+    it("should add env LANGFUSE_RELEASE as release to trace", async () => {
+      process.env.LANGFUSE_RELEASE = 'v1.0.0-alpha.1'
+      ;[langfuse, mocks] = createTestClient({
+        publicKey: 'pk-lf-111',
+        secretKey: 'sk-lf-111',
+        flushAt: 1,
+      })
+
+      langfuse.trace({
+        name: 'test-trace',
+      })
+
+      const body = parseBody(mocks.fetch.mock.calls[0])
+
+      expect(body).toMatchObject({
+        release: 'v1.0.0-alpha.1',
+      })
+    })
+
+    it("should add release to trace if set in constructor", async () => {
+      ;[langfuse, mocks] = createTestClient({
+        publicKey: 'pk-lf-111',
+        secretKey: 'sk-lf-111',
+        flushAt: 1,
+        release: 'v2',
+      })
+
+      langfuse.trace({
+        name: 'test-trace',
+      })
+
+      const body = parseBody(mocks.fetch.mock.calls[0])
+
+      expect(body).toMatchObject({
+        release: 'v2',
+      })
+    })
+
+    it("should add release to trace if set in trace", async () => {
+      langfuse.trace({
+        name: 'test-trace',
+        release: 'v5',
+      })
+
+      const body = parseBody(mocks.fetch.mock.calls[0])
+
+      expect(body).toMatchObject({
+        release: 'v5',
+      })
+    })
+
+    it("should not add release to trace if not set", async () => {
+      langfuse.trace({
+        name: 'test-trace',
+      })
+      const body = parseBody(mocks.fetch.mock.calls[0])
+      expect(body).not.toHaveProperty('release')
+    })
+
+    it("should allow overridding the release in constructor", async () => {
+      process.env.LANGFUSE_RELEASE = 'v1'
+
+      ;[langfuse, mocks] = createTestClient({
+        publicKey: 'pk-lf-111',
+        secretKey: 'sk-lf-111',
+        flushAt: 1,
+        release: 'v4',
+      })
+
+      langfuse.trace({
+        name: 'test-trace',
+      })
+
+      const body = parseBody(mocks.fetch.mock.calls[0])
+
+      expect(body).toMatchObject({
+        release: 'v4',
+      })
+    })
+
+    it("should allow overridding the release in trace", async () => {
+      process.env.LANGFUSE_RELEASE = 'v1'
+
+      ;[langfuse, mocks] = createTestClient({
+        publicKey: 'pk-lf-111',
+        secretKey: 'sk-lf-111',
+        flushAt: 1,
+        release: 'v2',
+      })
+
+      langfuse.trace({
+        name: 'test-trace',
+        release: 'v3',
+      })
+
+      const body = parseBody(mocks.fetch.mock.calls[0])
+
+      expect(body).toMatchObject({
+        release: 'v3',
       })
     })
   })

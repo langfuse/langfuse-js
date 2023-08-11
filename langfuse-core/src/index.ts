@@ -49,6 +49,7 @@ abstract class LangfuseCoreStateless {
   private removeDebugCallback?: () => void
   private debugMode: boolean = false
   private pendingPromises: Record<string, Promise<any>> = {}
+  private release: string | undefined
 
   // internal
   protected _events = new SimpleEventEmitter()
@@ -73,6 +74,7 @@ abstract class LangfuseCoreStateless {
     this.host = removeTrailingSlash(options?.host || 'https://cloud.langfuse.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
     this.flushInterval = options?.flushInterval ?? 10000
+    this.release = options?.release ?? process.env.LANGFUSE_RELEASE ?? undefined
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
@@ -107,12 +109,14 @@ abstract class LangfuseCoreStateless {
    *** Handlers for each object type
    ***/
   protected traceStateless(body: CreateLangfuseTraceBody): string {
-    const { id: bodyId, ...rest } = body
+    const { id: bodyId, release: bodyRelease, ...rest } = body
 
-    const id = bodyId || generateUUID()
+    const id = bodyId ?? generateUUID()
+    const release = bodyRelease ?? this.release
 
     const parsedBody: CreateLangfuseTraceBody = {
       id,
+      release,
       ...rest,
     }
     this.enqueue('createTrace', parsedBody)

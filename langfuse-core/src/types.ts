@@ -13,6 +13,8 @@ export type LangfuseCoreOptions = {
   fetchRetryDelay?: number
   // Timeout in milliseconds for any calls. Defaults to 10 seconds.
   requestTimeout?: number
+  // release (version) of the application, defaults to env LANGFUSE_RELEASE
+  release?: string
 }
 
 export enum LangfusePersistedProperty {
