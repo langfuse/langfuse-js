@@ -1,0 +1,21 @@
+{
+  "name": "langfuse",
+  "version": "0.1.0-beta.6",
+  "author": {
+    "name": "Langfuse",
+    "email": "hi@langfuse.com",
+    "url": "https://langfuse.com"
+  },
+  "license": "MIT",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "jest -c jest.config.js",
+    "prepublishOnly": "cd .. && yarn build"
+  },
+  "files": [
+    "lib",
+    "Readme.md"
+  ]
+}

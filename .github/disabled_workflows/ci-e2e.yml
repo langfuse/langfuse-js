@@ -1,0 +1,45 @@
+name: CI - E2E
+
+on:
+  - pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+
+      - uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Global Dependencies
+        run: yarn install
+
+      - working-directory: examples/example-expo
+        run: ls -al && ./e2e/tools/downloadApp.sh
+
+      - name: Install Dependencies
+        working-directory: examples/example-expo
+        run: |
+          yarn global add yalc 
+          yarn global add expo-cli
+          yarn global add detox-cli
+          yarn install
+
+      - run: brew tap wix/brew
+      - run: brew install applesimutils
+      - working-directory: examples/example-expo
+        run: |
+          open -a simulator
+          yarn start & yarn test
