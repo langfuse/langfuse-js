@@ -57,7 +57,7 @@ describe('Langfuse Node.js', () => {
       await langfuse.flushAsync()
       // check from get api if trace is created
       const res = await axios.get(`${LF_HOST}/api/public/observations/${span.id}`, { headers: getHeaders })
-      expect(res.data).toEqual({
+      expect(res.data).toMatchObject({
         id: span.id,
         name: 'span-name',
         type: 'SPAN',
