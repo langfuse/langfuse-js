@@ -63,7 +63,7 @@ const configs = ['langfuse', 'langfuse-node'].reduce((acc, x) => {
     {
       input: `./${x}/lib/${x}/index.d.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      plugins: [dts()],
+      plugins: [dts.default()],
     },
   ]
 }, [])

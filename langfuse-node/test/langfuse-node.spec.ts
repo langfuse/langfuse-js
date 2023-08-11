@@ -6,7 +6,7 @@ import { wait } from '../../langfuse-core/test/test-utils/test-utils'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
-const mockedFetch = jest.mocked(fetch, true)
+const mockedFetch = jest.mocked(fetch, { shallow: true })
 
 describe('Langfuse Node.js', () => {
   let langfuse: Langfuse
