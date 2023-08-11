@@ -17,11 +17,11 @@
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "dependencies": {
-    "axios": "^0.27.0"
+    "axios": "^1.4.0"
   },
   "devDependencies": {
-    "@types/node": "^18.0.0",
-    "commander": "^9.3.0"
+    "@types/node": "^20.4.9",
+    "commander": "^11.0.0"
   },
   "files": [
     "lib",
