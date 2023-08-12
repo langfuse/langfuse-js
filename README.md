@@ -55,10 +55,10 @@ yarn test:integration
 
 ## Publishing a new version
 
-1. Go to the appropriate `package.json` file. For example, for `langfuse-node`, this is `langfuse-node/package.json`.
-2. Bump the version number in the file.
-3. Add to `CHANGELOG.md` the relevant changes.
-4. On merge, a new version is published automatically thanks to the CI pipeline.
+Run `npx lerna publish --force-publish --no-private`
+
+- Bumps version number of langfuse and langfuse-node, ignores langfuse-core
+- Publishes to NPM, publishes also when there are no changes to keep the version numbers in sync
 
 ## License
 
