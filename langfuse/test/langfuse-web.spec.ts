@@ -74,6 +74,9 @@ describe("langfuseWeb", () => {
           headers: {
             "Content-Type": "application/json",
             Authorization: "Bearer pk",
+            "X-Langfuse-Sdk-Name": "langfuse-js",
+            "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
+            "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
           },
           signal: expect.anything(),
         })
