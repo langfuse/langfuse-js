@@ -59,6 +59,7 @@ Run `npx lerna publish --force-publish --no-private`
 
 - Bumps version number of langfuse and langfuse-node, ignores langfuse-core
 - Publishes to NPM, publishes also when there are no changes to keep the version numbers in sync
+- Confirm with npmjs OTP
 
 ## License
 
