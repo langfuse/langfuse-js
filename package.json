@@ -1,6 +1,5 @@
 {
   "name": "langfuse-js",
-  "version": "1.0.0",
   "description": "Modular monorepo for all Langfuse JS/TS SDKs",
   "workspaces": [
     "langfuse-core",

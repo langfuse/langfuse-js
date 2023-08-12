@@ -1,6 +1,5 @@
 {
   "name": "langfuse-core",
-  "version": "1.0.2-alpha.3",
   "main": "src/index.ts",
   "private": true
 }
