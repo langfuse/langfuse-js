@@ -1,6 +1,6 @@
 {
   "name": "langfuse-node",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
