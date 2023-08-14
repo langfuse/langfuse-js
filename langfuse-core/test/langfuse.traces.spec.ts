@@ -80,6 +80,23 @@ describe("Langfuse Core", () => {
         version: "1.0.0",
       });
     });
+
+    it("should update trace via additional POST (upserts)", async () => {
+      const trace = langfuse.trace({
+        name: "test-trace",
+      });
+
+      trace.update({
+        userId: "123456789",
+      });
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(2);
+      const body = parseBody(mocks.fetch.mock.calls[1]);
+      expect(body).toMatchObject({
+        id: trace.id,
+        userId: "123456789",
+      });
+    });
   });
 
   describe("trace release", () => {

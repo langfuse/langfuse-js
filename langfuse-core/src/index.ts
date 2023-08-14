@@ -491,6 +491,14 @@ export class LangfuseTraceClient extends LangfuseObjectClient {
   constructor(client: LangfuseCore, traceId: string) {
     super({ client, id: traceId, traceId, observationId: null });
   }
+
+  update(body: Omit<CreateLangfuseTraceBody, "id">): this {
+    this.client.trace({
+      ...body,
+      id: this.id,
+    });
+    return this;
+  }
 }
 
 abstract class LangfuseObservationClient extends LangfuseObjectClient {
