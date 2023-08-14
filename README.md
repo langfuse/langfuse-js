@@ -15,6 +15,10 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 | [langfuse](./langfuse)           | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)           | Node >= 18, Web, Edge |
 | [langfuse-node](./langfuse-node) | [![npm package](https://img.shields.io/npm/v/langfuse-node?style=flat-square)](https://www.npmjs.com/package/langfuse-node) | Node < 18             |
 
+## Documentation
+
+[→ docs.langfuse.com](https://langfuse.com/docs/integrations/sdk/typescript)
+
 ## Development
 
 This repository is broken into different packages
