@@ -53,6 +53,24 @@ describe("Langfuse Node.js", () => {
       expect(res.data).toMatchObject({ id: trace.id, name: "trace-name" });
     });
 
+    it("update a trace", async () => {
+      const trace = langfuse.trace({
+        name: "test-trace-10",
+      });
+      trace.update({
+        version: "1.0.0",
+      });
+      await langfuse.flushAsync();
+
+      const res = await axios.get(`${LF_HOST}/api/public/traces/${trace.id}`, { headers: getHeaders });
+
+      expect(res.data).toMatchObject({
+        id: trace.id,
+        name: "test-trace-10",
+        version: "1.0.0",
+      });
+    });
+
     it("create span", async () => {
       const trace = langfuse.trace({ name: "trace-name-span" });
       const span = trace.span({
@@ -85,6 +103,32 @@ describe("Langfuse Node.js", () => {
       });
     });
 
+    it("update a span", async () => {
+      const trace = langfuse.trace({
+        name: "test-trace",
+      });
+      const span = trace.span({
+        name: "test-span-1",
+      });
+      span.update({
+        version: "1.0.0",
+      });
+      span.end();
+      await langfuse.flushAsync();
+
+      const res = await axios.get(`${LF_HOST}/api/public/observations/${span.id}`, { headers: getHeaders });
+
+      expect(res.data).toMatchObject({
+        id: span.id,
+        traceId: trace.id,
+        name: "test-span-1",
+        type: "SPAN",
+        version: "1.0.0",
+        startTime: expect.any(String),
+        endTime: expect.any(String),
+      });
+    });
+
     it("create generation", async () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({ name: "generation-name-new" });
@@ -95,6 +139,38 @@ describe("Langfuse Node.js", () => {
         id: generation.id,
         name: "generation-name-new",
         type: "GENERATION",
+      });
+    });
+
+    it("update a generation", async () => {
+      const trace = langfuse.trace({
+        name: "test-trace",
+      });
+      const generation = trace.generation({ name: "generation-name-new-2" });
+      generation.update({
+        completionStartTime: new Date("2020-01-01T00:00:00.000Z"),
+      });
+      generation.end({
+        completion: "Hello world",
+        usage: {
+          promptTokens: 10,
+          completionTokens: 15,
+        },
+      });
+
+      await langfuse.flushAsync();
+
+      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+
+      expect(res.data).toMatchObject({
+        id: generation.id,
+        traceId: trace.id,
+        name: "generation-name-new-2",
+        type: "GENERATION",
+        promptTokens: 10,
+        completionTokens: 15,
+        endTime: expect.any(String),
+        completionStartTime: new Date("2020-01-01T00:00:00.000Z").toISOString(),
       });
     });
 
