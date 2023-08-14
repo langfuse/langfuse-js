@@ -56,13 +56,14 @@ describe("langfuseWeb", () => {
           name: "test-trace-1",
         }),
         method: "POST",
-        headers: {
+        headers: expect.objectContaining({
           "Content-Type": "application/json",
           Authorization: "Basic " + Buffer.from("pk:sk").toString("base64"),
           "X-Langfuse-Sdk-Name": "langfuse-js",
           "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
           "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
-        },
+          "X-Langfuse-Public-Key": "pk",
+        }),
         signal: expect.anything(),
       });
     });

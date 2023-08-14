@@ -53,6 +53,7 @@ describe("Langfuse Node.js", () => {
           headers: expect.objectContaining({
             "Content-Type": "application/json",
             Authorization: "Basic " + Buffer.from("pk:sk").toString("base64"),
+            "X-Langfuse-Public-Key": "pk",
           }),
         })
       );

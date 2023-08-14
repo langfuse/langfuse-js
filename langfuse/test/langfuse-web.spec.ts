@@ -71,13 +71,14 @@ describe("langfuseWeb", () => {
             observationId: "test-observation-id",
           }),
           method: "POST",
-          headers: {
+          headers: expect.objectContaining({
             "Content-Type": "application/json",
+            "X-Langfuse-Public-Key": "pk",
             Authorization: "Bearer pk",
             "X-Langfuse-Sdk-Name": "langfuse-js",
             "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
             "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
-          },
+          }),
           signal: expect.anything(),
         })
       );

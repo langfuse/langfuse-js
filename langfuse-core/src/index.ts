@@ -267,6 +267,7 @@ abstract class LangfuseCoreStateless {
           "X-Langfuse-Sdk-Name": "langfuse-js",
           "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
           "X-Langfuse-Sdk-Variant": this.getLibraryId(),
+          "X-Langfuse-Public-Key": this.publicKey,
           ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
         },
         body: payload,
