@@ -491,6 +491,14 @@ export class LangfuseTraceClient extends LangfuseObjectClient {
   constructor(client: LangfuseCore, traceId: string) {
     super({ client, id: traceId, traceId, observationId: null });
   }
+
+  update(body: Omit<CreateLangfuseTraceBody, "id">): this {
+    this.client.trace({
+      ...body,
+      id: this.id,
+    });
+    return this;
+  }
 }
 
 abstract class LangfuseObservationClient extends LangfuseObjectClient {
@@ -504,11 +512,21 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseSpanBody, "spanId">): this {
+  update(body: Omit<UpdateLangfuseSpanBody, "spanId" | "traceId">): this {
     this.client._updateSpan({
       ...body,
       spanId: this.id,
       traceId: this.traceId,
+    });
+    return this;
+  }
+
+  end(body?: Omit<UpdateLangfuseSpanBody, "spanId" | "endTime" | "traceId">): this {
+    this.client._updateSpan({
+      ...body,
+      spanId: this.id,
+      traceId: this.traceId,
+      endTime: new Date(),
     });
     return this;
   }
@@ -519,11 +537,21 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseGenerationBody, "generationId">): this {
+  update(body: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId">): this {
     this.client._updateGeneration({
       ...body,
       generationId: this.id,
       traceId: this.traceId,
+    });
+    return this;
+  }
+
+  end(body?: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId" | "endTime">): this {
+    this.client._updateGeneration({
+      ...body,
+      generationId: this.id,
+      traceId: this.traceId,
+      endTime: new Date(),
     });
     return this;
   }
