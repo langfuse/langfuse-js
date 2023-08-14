@@ -4,15 +4,15 @@
 
 This is the main JS/TS client for Langfuse.
 
-**Supported environments**
+## Environments
+
+**Supported**
 
 - Node.js >=18
 - Web
 - Edge: Vercel, Cloudflare Workers, etc.
 
-**Node.js <18**
-
-Use `langfuse-node` instead as it does not use `fetch` and other Web APIs
+**Using Node.js <18?** Use [`langfuse-node`](https://www.npmjs.com/package/langfuse-node) instead as it does not use `fetch` and other Web APIs
 
 ## Installation
 
@@ -23,3 +23,7 @@ yarn add langfuse
 # or
 pnpm i langfuse
 ```
+
+## Documentation
+
+[→ docs.langfuse.com](https://langfuse.com/docs/integrations/sdk/typescript)

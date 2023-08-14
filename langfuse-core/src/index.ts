@@ -504,11 +504,21 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseSpanBody, "spanId">): this {
+  update(body: Omit<UpdateLangfuseSpanBody, "spanId" | "traceId">): this {
     this.client._updateSpan({
       ...body,
       spanId: this.id,
       traceId: this.traceId,
+    });
+    return this;
+  }
+
+  end(body?: Omit<UpdateLangfuseSpanBody, "spanId" | "endTime" | "traceId">): this {
+    this.client._updateSpan({
+      ...body,
+      spanId: this.id,
+      traceId: this.traceId,
+      endTime: new Date(),
     });
     return this;
   }
@@ -519,11 +529,21 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseGenerationBody, "generationId">): this {
+  update(body: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId">): this {
     this.client._updateGeneration({
       ...body,
       generationId: this.id,
       traceId: this.traceId,
+    });
+    return this;
+  }
+
+  end(body?: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId" | "endTime">): this {
+    this.client._updateGeneration({
+      ...body,
+      generationId: this.id,
+      traceId: this.traceId,
+      endTime: new Date(),
     });
     return this;
   }
