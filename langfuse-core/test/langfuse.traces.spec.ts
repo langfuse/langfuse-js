@@ -119,6 +119,47 @@ describe("Langfuse Core", () => {
       });
     });
 
+    it("should check common release envs", async () => {
+      process.env.RENDER_GIT_COMMIT = "v1.0.0-alpha.200";
+      [langfuse, mocks] = createTestClient({
+        publicKey: "pk-lf-111",
+        secretKey: "sk-lf-111",
+        flushAt: 1,
+      });
+      delete process.env.RENDER_GIT_COMMIT;
+
+      langfuse.trace({
+        name: "test-trace",
+      });
+
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        release: "v1.0.0-alpha.200",
+      });
+    });
+
+    it("should prefer LANGFUSE_RELEASE over common release envs", async () => {
+      process.env.LANGFUSE_RELEASE = "v1.0.0-alpha.10";
+      process.env.RENDER_GIT_COMMIT = "v1.0.0-alpha.20";
+      [langfuse, mocks] = createTestClient({
+        publicKey: "pk-lf-111",
+        secretKey: "sk-lf-111",
+        flushAt: 1,
+      });
+      delete process.env.RENDER_GIT_COMMIT;
+
+      langfuse.trace({
+        name: "test-trace",
+      });
+
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        release: "v1.0.0-alpha.10",
+      });
+    });
+
     it("should add release to trace if set in constructor", async () => {
       [langfuse, mocks] = createTestClient({
         publicKey: "pk-lf-111",

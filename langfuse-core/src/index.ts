@@ -17,6 +17,7 @@ import {
 import { assert, generateUUID, removeTrailingSlash, retriable, type RetriableOptions, safeSetTimeout } from "./utils";
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
+import { getCommonReleaseEnvs } from "./release-env";
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -74,7 +75,7 @@ abstract class LangfuseCoreStateless {
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20;
     this.flushInterval = options?.flushInterval ?? 10000;
-    this.release = options?.release ?? process.env.LANGFUSE_RELEASE ?? undefined;
+    this.release = options?.release ?? process.env.LANGFUSE_RELEASE ?? getCommonReleaseEnvs() ?? undefined;
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
