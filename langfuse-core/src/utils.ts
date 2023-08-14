@@ -37,7 +37,7 @@ export async function retriable<T>(
       if (!retryCheck(e)) {
         throw e;
       }
-      log(`Retriable error: ${e}`);
+      log(`Retriable error: ${JSON.stringify(e)}`);
     }
   }
 
