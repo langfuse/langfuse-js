@@ -32,9 +32,9 @@ jobs:
     timeout-minutes: 3
     runs-on: ubuntu-latest
     env:
-      LF_HOST: ${{ secrets.LF_HOST }}
-      LF_SECRET_KEY: ${{ secrets.LF_SECRET_KEY }}
-      LF_PUBLIC_KEY: ${{ secrets.LF_PUBLIC_KEY }}
+      LF_HOST: "http://localhost:3000"
+      LF_SECRET_KEY: "sk-lf-1234567890"
+      LF_PUBLIC_KEY: "pk-lf-1234567890"
     steps:
       - uses: actions/checkout@v3
 
