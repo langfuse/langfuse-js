@@ -42,7 +42,7 @@ jobs:
         run: |
           git clone https://github.com/langfuse/langfuse.git ./langfuse-server
 
-      - name: Cache langfuse server packages
+      - name: Cache langfuse server dependencies
         uses: actions/cache@v3
         with:
           path: ./langfuse-server/node_modules
