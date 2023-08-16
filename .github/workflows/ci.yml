@@ -42,6 +42,14 @@ jobs:
         run: |
           git clone https://github.com/langfuse/langfuse.git ./langfuse-server
 
+      - name: Cache langfuse server packages
+        uses: actions/cache@v3
+        with:
+          path: ./langfuse-server/node_modules
+          key: |
+            langfuse-server-${{ hashFiles('./langfuse-server/package-lock.json') }}
+            langfuse-server-
+
       - uses: actions/setup-node@v3
         with:
           node-version: 18
