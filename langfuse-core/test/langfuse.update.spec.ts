@@ -31,6 +31,7 @@ describe("Langfuse Core", () => {
       });
       span.update({
         version: "1.0.0",
+        name: "test-span-2",
       });
 
       await langfuse.shutdownAsync();
@@ -44,6 +45,7 @@ describe("Langfuse Core", () => {
         traceId: trace.id,
         spanId: span.id,
         version: "1.0.0",
+        name: "test-span-2",
       });
     });
 
