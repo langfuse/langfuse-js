@@ -209,6 +209,7 @@ export interface components {
       traceId?: string | null;
       /** Format: date-time */
       endTime?: string | null;
+      name?: string | null;
       metadata?: Record<string, unknown> | null;
       input?: Record<string, unknown> | null;
       output?: Record<string, unknown> | null;
