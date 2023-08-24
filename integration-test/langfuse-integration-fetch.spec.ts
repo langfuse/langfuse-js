@@ -109,9 +109,11 @@ describe("Langfuse Node.js", () => {
       });
       const span = trace.span({
         name: "test-span-1",
+        metadata: {'key': 'value'}
       });
       span.update({
         version: "1.0.0",
+        name: "test-span-2",
       });
       span.end();
       await langfuse.flushAsync();
@@ -121,11 +123,12 @@ describe("Langfuse Node.js", () => {
       expect(res.data).toMatchObject({
         id: span.id,
         traceId: trace.id,
-        name: "test-span-1",
+        name: "test-span-2",
         type: "SPAN",
         version: "1.0.0",
         startTime: expect.any(String),
         endTime: expect.any(String),
+        metadata: {'key': 'value'}
       });
     });
 
