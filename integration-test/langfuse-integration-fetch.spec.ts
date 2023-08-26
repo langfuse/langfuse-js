@@ -109,7 +109,7 @@ describe("Langfuse Node.js", () => {
       });
       const span = trace.span({
         name: "test-span-1",
-        metadata: {'key': 'value'}
+        metadata: { key: "value" },
       });
       span.update({
         version: "1.0.0",
@@ -128,7 +128,7 @@ describe("Langfuse Node.js", () => {
         version: "1.0.0",
         startTime: expect.any(String),
         endTime: expect.any(String),
-        metadata: {'key': 'value'}
+        metadata: { key: "value" },
       });
     });
 
