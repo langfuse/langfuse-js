@@ -143,6 +143,7 @@ export interface components {
       id: string;
       traceId: string;
       name: string;
+      /** Format: double */
       value: number;
       observationId?: string | null;
       /** Format: date-time */
@@ -194,6 +195,7 @@ export interface components {
       traceId: string;
       traceIdType?: components["schemas"]["TraceIdTypeEnum"];
       name: string;
+      /** Format: double */
       value: number;
       observationId?: string | null;
       comment?: string | null;
