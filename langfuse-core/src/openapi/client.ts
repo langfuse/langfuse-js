@@ -20,6 +20,7 @@ export interface components {
       traceId: string;
       traceIdType?: components["schemas"]["TraceIdType"];
       name: string;
+      /** Format: double */
       value: number;
       observationId?: string;
       comment?: string;
@@ -29,6 +30,7 @@ export interface components {
       id: string;
       traceId: string;
       name: string;
+      /** Format: double */
       value: number;
       observationId?: string;
       /** Format: date-time */
