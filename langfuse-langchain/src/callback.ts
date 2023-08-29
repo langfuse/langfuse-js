@@ -1,14 +1,15 @@
 import { BaseCallbackHandler } from "langchain/callbacks";
-import { Serialized } from "langchain/load/serializable";
-import { AgentAction, AgentFinish, BaseMessage, ChainValues, LLMResult } from "langchain/schema";
-import { Langfuse } from "./langfuse";
-import { LangfuseOptions } from "./types";
-// import { Document } from "langchain/src/document";
+import type { Serialized } from "langchain/load/serializable";
+import type { AgentAction, AgentFinish, BaseMessage, ChainValues, LLMResult } from "langchain/schema";
+
+import Langfuse from "langfuse";
+import { type LangfuseOptions } from "langfuse/src/types";
+import { type Document } from "langchain/document";
 
 export class CallbackHandler extends BaseCallbackHandler {
   name = "CallbackHandler";
   langfuse: Langfuse;
-  traceId: string = "";
+  traceId?: string;
 
   constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
     super();
@@ -19,12 +20,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     console.log("New token:", token, "with ID:", runId);
   }
 
-  async handleRetrieverError(
-    err: any,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void> {
+  async handleRetrieverError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Retriever error:", err, runId);
       this.langfuse.span({
@@ -35,7 +31,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         statusMessage: err.toString(),
         endTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
@@ -47,41 +42,29 @@ export class CallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined,
-    runType?: string | undefined
+    metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      if (!parentRunId) {
-        console.log("Chain start with Id:", runId);
+      console.log("Chain start with Id:", runId);
+
+      if (!this.traceId) {
         this.langfuse.trace({
           id: runId,
           name: chain.id.at(-1)?.toString(),
           metadata: this.joinTagsAndMetaData(tags, metadata),
         });
         this.traceId = runId;
-        this.langfuse.span({
-          id: runId,
-          traceId: this.traceId,
-          parentObservationId: parentRunId,
-          name: chain.id.at(-1)?.toString(),
-          metadata: this.joinTagsAndMetaData(tags, metadata),
-          input: inputs,
-          startTime: new Date(),
-        });
-      } else {
-        console.log("Chain start with Id:", runId);
-        this.langfuse.span({
-          id: runId,
-          traceId: this.traceId,
-          parentObservationId: parentRunId,
-          name: chain.id.at(-1)?.toString(),
-          metadata: this.joinTagsAndMetaData(tags, metadata),
-          input: inputs,
-          startTime: new Date(),
-        });
       }
-
-      await this.langfuse.flushAsync();
+      console.log("Chain start with Id:", runId);
+      this.langfuse.span({
+        id: runId,
+        traceId: this.traceId,
+        parentObservationId: parentRunId,
+        name: chain.id.at(-1)?.toString(),
+        metadata: this.joinTagsAndMetaData(tags, metadata),
+        input: inputs,
+        startTime: new Date(),
+      });
     } catch (e) {
       console.log("Error:", e);
     }
@@ -117,12 +100,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  async handleChainError(
-    err: any,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void> {
+  async handleChainError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Chain error:", err, runId);
       this.langfuse.span({
@@ -133,7 +111,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         statusMessage: err.toString(),
         endTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
@@ -177,8 +154,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         model: modelName,
         modelParameters: modelParameters,
       });
-
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
@@ -191,7 +166,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined
   ): Promise<void> {
     try {
-      // console.log("Chain end:", outputs, runId, parentRunId, tags);
+      console.log("Chain end:", outputs, runId, parentRunId, tags);
       this.langfuse.span({
         id: runId,
         parentObservationId: parentRunId,
@@ -199,7 +174,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         output: outputs,
         endTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
@@ -231,7 +205,18 @@ export class CallbackHandler extends BaseCallbackHandler {
           modelParameters[key] = value;
         }
       }
-      const modelName = (extraParams?.invocation_params as any)?.model;
+
+      let extractedModelName;
+      if ((extraParams?.invocation_params as any)?._type == "anthropic-llm") {
+        extractedModelName = "anthropic"; // unfortunately no model info by anthropic provided.
+      } else if ((extraParams?.invocation_params as any)?._type == "huggingface_hub") {
+        extractedModelName = (extraParams?.invocation_params as any)?.repo_id;
+      } else if ((extraParams?.invocation_params as any)?._type == "azure-openai-chat") {
+        extractedModelName = (extraParams?.invocation_params as any)?.model;
+      } else {
+        extractedModelName = (extraParams?.invocation_params as any)?.model_name;
+      }
+
       this.langfuse.generation({
         id: runId,
         traceId: this.traceId,
@@ -239,12 +224,10 @@ export class CallbackHandler extends BaseCallbackHandler {
         startTime: new Date(),
         metadata: this.joinTagsAndMetaData(tags, metadata),
         parentObservationId: parentRunId,
-        prompt: { prompt: prompts[0] },
-        model: modelName,
+        prompt: { prompt: prompts },
+        model: extractedModelName,
         modelParameters: modelParameters,
       });
-
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
@@ -270,7 +253,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
@@ -295,36 +277,31 @@ export class CallbackHandler extends BaseCallbackHandler {
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
   }
 
-//   async handleRetrieverEnd(documents: Document<Record<string, any>>[], runId: string, parentRunId?: string | undefined, tags?: string[] | undefined):  Promise<void> {
-//       try{
-//           console.log("Retriever end:",runId);
-//           this.langfuse.span({
-//               id: runId,
-//               parentObservationId: parentRunId,
-//               traceId: this.traceId,
-//               output: {"documents": documents},
-//               endTime: new Date(),
-//           });
-//           await this.langfuse.flushAsync();
-//       }
-//       catch(e){
-//           console.log("Error:", e);
-//       }
-
-//   }
-
-  async handleToolEnd(
-    output: string,
+  async handleRetrieverEnd(
+    documents: Document<Record<string, any>>[],
     runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
+    parentRunId?: string | undefined
   ): Promise<void> {
+    try {
+      console.log("Retriever end:", runId);
+      this.langfuse.span({
+        id: runId,
+        parentObservationId: parentRunId,
+        traceId: this.traceId,
+        output: { documents: documents },
+        endTime: new Date(),
+      });
+    } catch (e) {
+      console.log("Error:", e);
+    }
+  }
+
+  async handleToolEnd(output: string, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Tool end:", runId);
       this.langfuse.span({
@@ -334,18 +311,12 @@ export class CallbackHandler extends BaseCallbackHandler {
         output: { output: output },
         endTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
   }
 
-  async handleToolError(
-    err: any,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void> {
+  async handleToolError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Tool error:", err, runId);
       this.langfuse.span({
@@ -356,18 +327,12 @@ export class CallbackHandler extends BaseCallbackHandler {
         statusMessage: err.toString(),
         endTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
   }
 
-  async handleLLMEnd(
-    output: LLMResult,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void> {
+  async handleLLMEnd(output: LLMResult, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("LLM end:", runId, parentRunId);
       console.log("LLM output:", output.generations);
@@ -375,8 +340,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1]
           .text;
       const llmUsage = output.llmOutput?.["tokenUsage"];
-      console.log("LLM usage:", llmUsage);
-      console.log("LLM last response:", lastResponse);
+
       this.langfuse.generation({
         id: runId,
         traceId: this.traceId,
@@ -385,18 +349,12 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         usage: llmUsage,
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }
   }
 
-  async handleLLMError(
-    err: any,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void> {
+  async handleLLMError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("LLM error:", err, runId);
       this.langfuse.span({
@@ -407,7 +365,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         statusMessage: err.toString(),
         endTime: new Date(),
       });
-      await this.langfuse.flushAsync();
     } catch (e) {
       console.log("Error:", e);
     }

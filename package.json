@@ -26,7 +26,6 @@
     "test:node": "jest langfuse-node/*",
     "test:fetch": "jest langfuse/*",
     "test:integration": "dotenv -- jest integration-test/*",
-    "test:callback": "dotenv -- jest langfuse-langchain/test/langfuse-integration.callback.spec.ts",
     "compile": "rollup -c --bundleConfigAsCjs"
   },
   "devDependencies": {

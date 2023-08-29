@@ -12,7 +12,8 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "test": "jest -c jest.config.js",
-    "prepublishOnly": "cd .. && yarn build"
+    "prepublishOnly": "cd .. && yarn build",
+    "test:callback": "dotenv -- jest ./test/langfuse-integration.callback.spec.ts -t 'should trace agents'"
   },
   "files": [
     "lib",
@@ -20,6 +21,7 @@
   ],
   "gitHead": "ce7e382690a36be2fa925b928e580e8261c0b763",
   "dependencies": {
-    "langchain": "^0.0.133"
+    "langchain": "^0.0.133",
+    "langfuse": "1.0.10"
   }
 }

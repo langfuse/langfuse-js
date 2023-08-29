@@ -9,7 +9,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "target": "es6",
+    "target": "es5",
     "sourceMap": true,
     "noEmit": false,
     "incremental": true,

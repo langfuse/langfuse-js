@@ -1,16 +1,8 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import Langfuse from "../langfuse";
 
-// import { wait } from '../langfuse-core/test/test-utils/test-utils'
 import axios from "axios";
-
-const LF_HOST = process.env.LF_HOST ?? "http://localhost:3000";
-const LF_PUBLIC_KEY = process.env.LF_PUBLIC_KEY ?? "pk-lf-1234567890";
-const LF_SECRET_KEY = process.env.LF_SECRET_KEY ?? "sk-lf-1234567890";
-
-const getHeaders = {
-  Authorization: "Basic " + Buffer.from(`${LF_PUBLIC_KEY}:${LF_SECRET_KEY}`).toString("base64"),
-};
+import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getHeaders } from "./integration-utils";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
