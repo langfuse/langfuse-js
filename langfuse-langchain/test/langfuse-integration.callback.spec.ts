@@ -1,7 +1,7 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import { OpenAI } from "langchain/llms/openai";
 import { PromptTemplate } from "langchain/prompts";
-import { ConversationChain, LLMChain, SimpleSequentialChain } from "langchain/chains";
+import { ConversationChain, LLMChain } from "langchain/chains";
 import { CallbackHandler } from "../src/callback";
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "../../integration-test/integration-utils";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
@@ -81,7 +81,7 @@ describe("simple chains", () => {
     const model = new OpenAI({ temperature: 0 });
     // A tool is a function that performs a specific duty
     // SerpAPI for example accesses google search results in real-time
-    const tools = [new SerpAPI(), new Calculator()];
+    const tools = [new SerpAPI(SERPAPI_API_KEY), new Calculator()];
 
     const executor = await initializeAgentExecutorWithOptions(tools, model);
     console.log("Loaded agent.");
