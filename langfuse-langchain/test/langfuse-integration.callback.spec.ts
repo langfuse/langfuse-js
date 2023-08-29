@@ -11,6 +11,7 @@ import { Calculator } from "langchain/tools/calculator";
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
 describe("simple chains", () => {
+  jest.setTimeout(10_000);
   it("llm chain", async () => {
     const handler = new CallbackHandler({
       publicKey: LF_PUBLIC_KEY,
@@ -95,11 +96,6 @@ describe("simple chains", () => {
     console.log(`Got output ${result.output}`);
 
     await handler.langfuse.flushAsync();
-    /**
-     *   Got output, there are 54 countries in Africa
-     *   The number of countries raised to the power of 3
-     *    is 157464
-     */
   });
 
   // it("should pass", async () => {
