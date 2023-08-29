@@ -25,7 +25,7 @@
     "test:core": "jest langfuse-core/*",
     "test:node": "jest langfuse-node/*",
     "test:fetch": "jest langfuse/*",
-    "test:integration": "dotenv -- jest integration-test/* langfuse-langchain/*",
+    "test:integration": "dotenv -- jest integration-test/* ",
     "compile": "rollup -c --bundleConfigAsCjs"
   },
   "devDependencies": {
