@@ -55,7 +55,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         });
         this.traceId = runId;
       }
-      console.log("Chain start with Id:", runId);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
@@ -78,14 +77,14 @@ export class CallbackHandler extends BaseCallbackHandler {
         parentObservationId: parentRunId,
         traceId: this.traceId,
         endTime: new Date(),
-        output: action,
+        input: action,
       });
     } catch (e) {
       console.log("Error:", e);
     }
   }
 
-  async handleAgentFinish(finish: AgentFinish, runId?: string, parentRunId?: string): Promise<void> {
+  async handleAgentEnd?(action: AgentFinish, runId: string, parentRunId?: string): Promise<void> {
     try {
       console.log("Agent finish:", runId);
       this.langfuse.span({
@@ -93,7 +92,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         parentObservationId: parentRunId,
         traceId: this.traceId,
         endTime: new Date(),
-        output: finish,
+        output: action,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -116,6 +115,58 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  async handleGenerationStart(
+    llm: Serialized,
+    messages: BaseMessage[][] | string[],
+    runId: string,
+    parentRunId?: string | undefined,
+    extraParams?: Record<string, unknown> | undefined,
+    tags?: string[] | undefined,
+    metadata?: Record<string, unknown> | undefined
+  ): Promise<void> {
+    console.log("LLM start:", runId);
+    const modelParameters: Record<string, any> = {};
+    const invocationParams = extraParams?.["invocation_params"];
+
+    for (const [key, value] of Object.entries({
+      temperature: (invocationParams as any)?.temperature,
+      max_tokens: (invocationParams as any)?.max_tokens,
+      top_p: (invocationParams as any)?.top_p,
+      frequency_penalty: (invocationParams as any)?.frequency_penalty,
+      presence_penalty: (invocationParams as any)?.presence_penalty,
+      request_timeout: (invocationParams as any)?.request_timeout,
+    })) {
+      if (value !== undefined && value !== null) {
+        modelParameters[key] = value;
+      }
+    }
+
+    interface InvocationParams {
+      _type?: string;
+      model?: string;
+      model_name?: string;
+      repo_id?: string;
+    }
+
+    let extractedModelName: string | undefined;
+    if (extraParams) {
+      const params = extraParams.invocation_params as InvocationParams;
+      extractedModelName = params.model;
+    }
+
+    this.langfuse.generation({
+      id: runId,
+      traceId: this.traceId,
+      name: llm.id.at(-1)?.toString(),
+      startTime: new Date(),
+      metadata: this.joinTagsAndMetaData(tags, metadata),
+      parentObservationId: parentRunId,
+      prompt: messages as any,
+      model: extractedModelName,
+      modelParameters: modelParameters,
+    });
+  }
+
   async handleChatModelStart(
     llm: Serialized,
     messages: BaseMessage[][],
@@ -127,46 +178,15 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("ChatModel start:", runId);
-      const modelParameters: Record<string, any> = {};
-      const invocationParams = extraParams?.["invocation_params"];
-
-      for (const [key, value] of Object.entries({
-        temperature: (invocationParams as any)?.temperature,
-        max_tokens: (invocationParams as any)?.max_tokens,
-        top_p: (invocationParams as any)?.top_p,
-        frequency_penalty: (invocationParams as any)?.frequency_penalty,
-        presence_penalty: (invocationParams as any)?.presence_penalty,
-        request_timeout: (invocationParams as any)?.request_timeout,
-      })) {
-        if (value !== undefined && value !== null) {
-          modelParameters[key] = value;
-        }
-      }
-      const modelName = (extraParams?.invocation_params as any)?.model;
-      this.langfuse.generation({
-        id: runId,
-        traceId: this.traceId,
-        name: llm.id.at(-1)?.toString(),
-        startTime: new Date(),
-        metadata: this.joinTagsAndMetaData(tags, metadata),
-        parentObservationId: parentRunId,
-        prompt: { prompt: messages[0][0] },
-        model: modelName,
-        modelParameters: modelParameters,
-      });
+      this.handleGenerationStart(llm, messages, runId, parentRunId, extraParams, tags, metadata);
     } catch (e) {
       console.log("Error:", e);
     }
   }
 
-  async handleChainEnd(
-    outputs: ChainValues,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void> {
+  async handleChainEnd(outputs: ChainValues, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("Chain end:", outputs, runId, parentRunId, tags);
+      console.log("Chain end:", runId, parentRunId);
       this.langfuse.span({
         id: runId,
         parentObservationId: parentRunId,
@@ -190,44 +210,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("LLM start:", runId);
-      const modelParameters: Record<string, any> = {};
-      const invocationParams = extraParams?.["invocation_params"];
-
-      for (const [key, value] of Object.entries({
-        temperature: (invocationParams as any)?.temperature,
-        max_tokens: (invocationParams as any)?.max_tokens,
-        top_p: (invocationParams as any)?.top_p,
-        frequency_penalty: (invocationParams as any)?.frequency_penalty,
-        presence_penalty: (invocationParams as any)?.presence_penalty,
-        request_timeout: (invocationParams as any)?.request_timeout,
-      })) {
-        if (value !== undefined && value !== null) {
-          modelParameters[key] = value;
-        }
-      }
-
-      let extractedModelName;
-      if ((extraParams?.invocation_params as any)?._type == "anthropic-llm") {
-        extractedModelName = "anthropic"; // unfortunately no model info by anthropic provided.
-      } else if ((extraParams?.invocation_params as any)?._type == "huggingface_hub") {
-        extractedModelName = (extraParams?.invocation_params as any)?.repo_id;
-      } else if ((extraParams?.invocation_params as any)?._type == "azure-openai-chat") {
-        extractedModelName = (extraParams?.invocation_params as any)?.model;
-      } else {
-        extractedModelName = (extraParams?.invocation_params as any)?.model_name;
-      }
-
-      this.langfuse.generation({
-        id: runId,
-        traceId: this.traceId,
-        name: llm.id.at(-1)?.toString(),
-        startTime: new Date(),
-        metadata: this.joinTagsAndMetaData(tags, metadata),
-        parentObservationId: parentRunId,
-        prompt: { prompt: prompts },
-        model: extractedModelName,
-        modelParameters: modelParameters,
-      });
+      this.handleGenerationStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata);
     } catch (e) {
       console.log("Error:", e);
     }
@@ -249,7 +232,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         parentObservationId: parentRunId,
         traceId: this.traceId,
         name: tool.id.at(-1)?.toString(),
-        input: { input: input },
+        input: input as any,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
       });
@@ -273,7 +256,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         parentObservationId: parentRunId,
         traceId: this.traceId,
         name: retriever.id.at(-1)?.toString(),
-        input: { query: query },
+        input: query as any,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
       });
@@ -293,7 +276,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         id: runId,
         parentObservationId: parentRunId,
         traceId: this.traceId,
-        output: { documents: documents },
+        output: documents as any,
         endTime: new Date(),
       });
     } catch (e) {
@@ -308,7 +291,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         id: runId,
         parentObservationId: parentRunId,
         traceId: this.traceId,
-        output: { output: output },
+        output: output as any,
         endTime: new Date(),
       });
     } catch (e) {
