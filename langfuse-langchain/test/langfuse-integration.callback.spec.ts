@@ -15,6 +15,27 @@ const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 describe("simple chains", () => {
   jest.setTimeout(30_000);
 
+  it("should execute simple llm call", async () => {
+    const handler = new CallbackHandler({
+      publicKey: LF_PUBLIC_KEY,
+      secretKey: LF_SECRET_KEY,
+      baseUrl: LF_HOST,
+    });
+    const llm = new OpenAI({});
+    const res = await llm.call("Tell me a joke", { callbacks: [handler] });
+    await handler.flushAsync();
+    expect(res).toBeDefined();
+
+    expect(handler.traceId).toBeDefined();
+    const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+    expect(trace).toBeDefined();
+    expect(trace?.observations.length).toBe(1);
+    const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generation?.length).toBe(1);
+    expect(generation?.[0].name).toBe("OpenAI");
+  });
+
   it.each([["OpenAI"], ["ChatOpenAI"], ["ChatAnthropic"]])(
     "should execute llm chain with '%s' ",
     async (llm: string) => {
@@ -23,7 +44,6 @@ describe("simple chains", () => {
         secretKey: LF_SECRET_KEY,
         baseUrl: LF_HOST,
       });
-
       const model = (): OpenAI | ChatOpenAI | ChatAnthropic => {
         if (llm === "OpenAI") {
           return new OpenAI({ temperature: 0 });
@@ -58,7 +78,7 @@ describe("simple chains", () => {
       // run the chain by passing the input
       await chain.call({ country: "France" }, { callbacks: [handler] });
 
-      await handler.langfuse.flushAsync();
+      await handler.flushAsync();
 
       expect(handler.traceId).toBeDefined();
       const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
@@ -92,7 +112,7 @@ describe("simple chains", () => {
     const res2 = await chain.call({ input: "What's my name?" }, { callbacks: [handler] });
     console.log({ res2 });
 
-    await handler.langfuse.flushAsync();
+    await handler.flushAsync();
 
     expect(handler.traceId).toBeDefined();
     const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
@@ -127,7 +147,7 @@ describe("simple chains", () => {
 
     console.log(`Got output ${result.output}`);
 
-    await handler.langfuse.flushAsync();
+    await handler.flushAsync();
   });
 
   it("should pass", async () => {
@@ -165,7 +185,7 @@ describe("simple chains", () => {
     });
     const review = await overallChain.run("Tragedy at sunset on the beach", { callbacks: [handler] });
     console.log(review);
-    await handler.langfuse.flushAsync();
+    await handler.flushAsync();
     expect(true).toBe(true);
   });
 });
