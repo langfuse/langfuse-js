@@ -58,7 +58,7 @@ describe("simple chains", () => {
       // run the chain by passing the input
       await chain.call({ country: "France" }, { callbacks: [handler] });
 
-      await handler.langfuse.flushAsync();
+      await handler.flushAsync();
 
       expect(handler.traceId).toBeDefined();
       const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
@@ -92,7 +92,7 @@ describe("simple chains", () => {
     const res2 = await chain.call({ input: "What's my name?" }, { callbacks: [handler] });
     console.log({ res2 });
 
-    await handler.langfuse.flushAsync();
+    await handler.flushAsync();
 
     expect(handler.traceId).toBeDefined();
     const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
@@ -127,7 +127,7 @@ describe("simple chains", () => {
 
     console.log(`Got output ${result.output}`);
 
-    await handler.langfuse.flushAsync();
+    await handler.flushAsync();
   });
 
   it("should pass", async () => {
@@ -165,7 +165,7 @@ describe("simple chains", () => {
     });
     const review = await overallChain.run("Tragedy at sunset on the beach", { callbacks: [handler] });
     console.log(review);
-    await handler.langfuse.flushAsync();
+    await handler.flushAsync();
     expect(true).toBe(true);
   });
 });
