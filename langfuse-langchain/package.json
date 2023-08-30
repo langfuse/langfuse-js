@@ -13,7 +13,7 @@
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
-    "test:integration": "dotenv -- jest ./test/langfuse-integration.callback.spec.ts"
+    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.callback.spec.ts"
   },
   "files": [
     "lib",
@@ -23,5 +23,8 @@
   "dependencies": {
     "langchain": "^0.0.133",
     "langfuse": "^1.0.12"
+  },
+  "devDependencies": {
+    "cheerio": "^1.0.0-rc.12"
   }
 }

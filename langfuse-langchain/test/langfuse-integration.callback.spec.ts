@@ -1,7 +1,7 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import { OpenAI } from "langchain/llms/openai";
 import { PromptTemplate } from "langchain/prompts";
-import { ConversationChain, LLMChain, SimpleSequentialChain } from "langchain/chains";
+import { ConversationChain, LLMChain } from "langchain/chains";
 import { CallbackHandler } from "../src/callback";
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "../../integration-test/integration-utils";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
@@ -9,11 +9,17 @@ import { SerpAPI } from "langchain/tools";
 import { Calculator } from "langchain/tools/calculator";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOpenAI } from "langchain/chat_models/openai";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { RetrievalQAChain } from "langchain/chains";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { TextLoader } from "langchain/document_loaders/fs/text";
 
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
 describe("simple chains", () => {
   jest.setTimeout(30_000);
+  jest.useRealTimers();
 
   it("should execute simple llm call", async () => {
     const handler = new CallbackHandler({
@@ -150,42 +156,36 @@ describe("simple chains", () => {
     await handler.flushAsync();
   });
 
-  it("should pass", async () => {
-    const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+  it("should execute QA retrieval", async () => {
+    const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+    // load docs
+    const loader = new TextLoader("../static/state_of_the_union.txt");
+    const docs = await loader.load();
+
+    // split docs
+    const textSplitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 500,
+      chunkOverlap: 0,
     });
-    const llm = new OpenAI({ temperature: 0 });
-    const template = `You are a playwright. Given the title of play, it is your job to write a synopsis for that title.
-  Title: {title}
-  Playwright: This is a synopsis for the above play:`;
-    const promptTemplate = new PromptTemplate({
-      template,
-      inputVariables: ["title"],
-    });
-    const synopsisChain = new LLMChain({ llm, prompt: promptTemplate });
-    // This is an LLMChain to write a review of a play given a synopsis.
-    const reviewLLM = new OpenAI({ temperature: 0 });
-    const reviewTemplate = `You are a play critic from the New York Times. Given the synopsis of play, it is your job to write a review for that play.
-  Play Synopsis:
-  {synopsis}
-  Review from a New York Times play critic of the above play:`;
-    const reviewPromptTemplate = new PromptTemplate({
-      template: reviewTemplate,
-      inputVariables: ["synopsis"],
-    });
-    const reviewChain = new LLMChain({
-      llm: reviewLLM,
-      prompt: reviewPromptTemplate,
-    });
-    const overallChain = new SimpleSequentialChain({
-      chains: [synopsisChain, reviewChain],
-      verbose: true,
-    });
-    const review = await overallChain.run("Tragedy at sunset on the beach", { callbacks: [handler] });
-    console.log(review);
-    await handler.flushAsync();
-    expect(true).toBe(true);
+
+    const splitDocs = await textSplitter.splitDocuments(docs);
+
+    // // calc embeddings
+    const embeddings = new OpenAIEmbeddings();
+
+    const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
+
+    // // retrieval chain
+    const model = new ChatOpenAI({ modelName: "gpt-3.5-turbo" });
+    const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever());
+
+    const response = await chain.call(
+      {
+        query: "What is the state of the United States?",
+      },
+      { callbacks: [callback] }
+    );
+    console.log(response);
+    await callback.flushAsync();
   });
 });
