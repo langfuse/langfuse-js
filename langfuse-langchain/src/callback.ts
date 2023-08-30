@@ -20,6 +20,10 @@ export class CallbackHandler extends BaseCallbackHandler {
     return this.langfuse.flushAsync();
   }
 
+  async shutdownAsync(): Promise<any> {
+    return this.langfuse.shutdownAsync();
+  }
+
   async handleNewToken(token: string, runId: string): Promise<void> {
     console.log("New token:", token, "with ID:", runId);
   }
