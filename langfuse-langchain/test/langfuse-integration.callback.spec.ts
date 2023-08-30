@@ -15,6 +15,27 @@ const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 describe("simple chains", () => {
   jest.setTimeout(30_000);
 
+  it("should execute simple llm call", async () => {
+    const handler = new CallbackHandler({
+      publicKey: LF_PUBLIC_KEY,
+      secretKey: LF_SECRET_KEY,
+      baseUrl: LF_HOST,
+    });
+    const llm = new OpenAI({});
+    const res = await llm.call("Tell me a joke", { callbacks: [handler] });
+    await handler.flushAsync();
+    expect(res).toBeDefined();
+
+    expect(handler.traceId).toBeDefined();
+    const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+    expect(trace).toBeDefined();
+    expect(trace?.observations.length).toBe(1);
+    const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generation?.length).toBe(1);
+    expect(generation?.[0].name).toBe("OpenAI");
+  });
+
   it.each([["OpenAI"], ["ChatOpenAI"], ["ChatAnthropic"]])(
     "should execute llm chain with '%s' ",
     async (llm: string) => {
@@ -23,7 +44,6 @@ describe("simple chains", () => {
         secretKey: LF_SECRET_KEY,
         baseUrl: LF_HOST,
       });
-
       const model = (): OpenAI | ChatOpenAI | ChatAnthropic => {
         if (llm === "OpenAI") {
           return new OpenAI({ temperature: 0 });

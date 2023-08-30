@@ -50,15 +50,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("Chain start with Id:", runId);
-
-      if (!this.traceId) {
-        this.langfuse.trace({
-          id: runId,
-          name: chain.id.at(-1)?.toString(),
-          metadata: this.joinTagsAndMetaData(tags, metadata),
-        });
-        this.traceId = runId;
-      }
+      this.generateTraceAndParent(chain, runId, tags, metadata);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
@@ -119,6 +111,22 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  generateTraceAndParent(
+    serialized: Serialized,
+    runId: string,
+    tags?: string[] | undefined,
+    metadata?: Record<string, unknown> | undefined
+  ): void {
+    if (!this.traceId) {
+      this.langfuse.trace({
+        id: runId,
+        name: serialized.id.at(-1)?.toString(),
+        metadata: this.joinTagsAndMetaData(tags, metadata),
+      });
+      this.traceId = runId;
+    }
+  }
+
   async handleGenerationStart(
     llm: Serialized,
     messages: BaseMessage[][] | string[],
@@ -128,7 +136,9 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
-    console.log("LLM start:", runId);
+    console.log("Generation start:", this.traceId);
+    this.generateTraceAndParent(llm, runId, tags, metadata);
+
     const modelParameters: Record<string, any> = {};
     const invocationParams = extraParams?.["invocation_params"];
 
@@ -322,7 +332,6 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleLLMEnd(output: LLMResult, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("LLM end:", runId, parentRunId);
-      console.log("LLM output:", output.generations);
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1]
           .text;
