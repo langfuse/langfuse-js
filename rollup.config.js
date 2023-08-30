@@ -1,22 +1,22 @@
-import babel from '@rollup/plugin-babel'
-import commonjs from '@rollup/plugin-commonjs'
-import resolve from '@rollup/plugin-node-resolve'
-import json from '@rollup/plugin-json'
-import typescript from 'rollup-plugin-typescript2'
-import dts from 'rollup-plugin-dts'
+import babel from "@rollup/plugin-babel";
+import commonjs from "@rollup/plugin-commonjs";
+import resolve from "@rollup/plugin-node-resolve";
+import json from "@rollup/plugin-json";
+import typescript from "rollup-plugin-typescript2";
+import dts from "rollup-plugin-dts";
 
-import pkg from './package.json'
+import pkg from "./package.json";
 
-const extensions = ['.js', '.jsx', '.ts', '.tsx']
+const extensions = [".js", ".jsx", ".ts", ".tsx"];
 
-let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}))
+let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}));
 
-const configs = ['langfuse', 'langfuse-node'].reduce((acc, x) => {
-  const localPkg = require(`./${x}/package.json`)
+const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc, x) => {
+  const localPkg = require(`./${x}/package.json`);
   let external = [...globalExternal]
     .concat(Object.keys(localPkg.dependencies || {}))
     .concat(Object.keys(localPkg.peerDependencies || {}))
-    .concat(Object.keys(localPkg.devDependencies || {}))
+    .concat(Object.keys(localPkg.devDependencies || {}));
 
   return [
     ...acc,
@@ -26,7 +26,7 @@ const configs = ['langfuse', 'langfuse-node'].reduce((acc, x) => {
         {
           file: `./${x}/` + localPkg.main,
           sourcemap: true,
-          exports: 'named',
+          exports: "named",
           format: `cjs`,
         },
         {
@@ -50,22 +50,22 @@ const configs = ['langfuse', 'langfuse-node'].reduce((acc, x) => {
         }),
         babel({
           extensions,
-          babelHelpers: 'bundled',
+          babelHelpers: "bundled",
           include: [`${x}/src/**/*`],
           presets: [
-            ['@babel/preset-env', { targets: { node: 'current' } }],
-            '@babel/preset-typescript',
-            '@babel/preset-react',
+            ["@babel/preset-env", { targets: { node: "current" } }],
+            "@babel/preset-typescript",
+            "@babel/preset-react",
           ],
         }),
       ],
     },
     {
       input: `./${x}/lib/${x}/index.d.ts`,
-      output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
+      output: [{ file: `./${x}/lib/index.d.ts`, format: "es" }],
       plugins: [dts.default()],
     },
-  ]
-}, [])
+  ];
+}, []);
 
-export default configs
+export default configs;
