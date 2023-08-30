@@ -13,7 +13,7 @@
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
-    "test:callback": "dotenv -- jest ./test/langfuse-integration.callback.spec.ts -t 'should trace agents'"
+    "test:integration": "dotenv -- jest ./test/langfuse-integration.callback.spec.ts"
   },
   "files": [
     "lib",
