@@ -189,6 +189,15 @@ describe("simple chains", () => {
     );
     console.log(response);
     await callback.flushAsync();
+
+    expect(callback.traceId).toBeDefined();
+    const trace = callback.traceId ? await getTraces(callback.traceId) : undefined;
+
+    expect(trace).toBeDefined();
+    expect(trace?.observations.length).toBe(2);
+    const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generations).toBeDefined();
+    expect(generations?.length).toBe(1);
   });
 
   it("function calls", async () => {
