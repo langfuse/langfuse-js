@@ -1,6 +1,6 @@
 {
   "name": "langfuse-langchain",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "author": {
     "name": "Langfuse",
     "email": "hi@langfuse.com",
@@ -22,7 +22,7 @@
   "gitHead": "ce7e382690a36be2fa925b928e580e8261c0b763",
   "dependencies": {
     "langchain": "^0.0.133",
-    "langfuse": "^1.0.12"
+    "langfuse": "^1.0.13"
   },
   "devDependencies": {
     "cheerio": "^1.0.0-rc.12"
