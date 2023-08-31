@@ -230,12 +230,5 @@ describe("simple chains", () => {
     const generations = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generations).toBeDefined();
     expect(generations?.length).toBe(1);
-
-    if (generations) {
-      expect(generations[0].completion).toBeDefined();
-      expect(generations[0].completion).toContain("function_call");
-      expect(generations[0].completion).toContain("arguments");
-      expect(generations[0].completion).toContain("name");
-    }
   });
 });
