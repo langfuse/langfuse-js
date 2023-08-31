@@ -14,6 +14,8 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { RetrievalQAChain } from "langchain/chains";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { TextLoader } from "langchain/document_loaders/fs/text";
+import { z } from "zod";
+import { createExtractionChainFromZod } from "langchain/chains";
 
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
@@ -186,6 +188,30 @@ describe("simple chains", () => {
       { callbacks: [callback] }
     );
     console.log(response);
+    await callback.flushAsync();
+  });
+
+  it("should execute QA retrieval with custom model", async () => {
+    const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+
+    const zodSchema = z.object({
+      "person-name": z.string().optional(),
+      "person-age": z.number().optional(),
+      "person-hair_color": z.string().optional(),
+      "dog-name": z.string().optional(),
+      "dog-breed": z.string().optional(),
+    });
+    const chatModel = new ChatOpenAI({
+      temperature: 0,
+    });
+    const chain = createExtractionChainFromZod(zodSchema, chatModel);
+    console.log(
+      await chain.run(
+        `Alex is 5 feet tall. Claudia is 4 feet taller Alex and jumps higher than him. Claudia is a brunette and Alex is blonde.
+    Alex's dog Frosty is a labrador and likes to play hide and seek.`,
+        { callbacks: [callback] }
+      )
+    );
     await callback.flushAsync();
   });
 });
