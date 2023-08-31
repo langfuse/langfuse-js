@@ -191,7 +191,7 @@ describe("simple chains", () => {
     await callback.flushAsync();
   });
 
-  it("should execute QA retrieval with custom model", async () => {
+  it("function calls", async () => {
     const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
 
     const zodSchema = z.object({
@@ -213,5 +213,20 @@ describe("simple chains", () => {
       )
     );
     await callback.flushAsync();
+    expect(callback.traceId).toBeDefined();
+    const trace = callback.traceId ? await getTraces(callback.traceId) : undefined;
+
+    expect(trace).toBeDefined();
+    expect(trace?.observations.length).toBe(2);
+    const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generations).toBeDefined();
+    expect(generations?.length).toBe(1);
+
+    if (generations) {
+      expect(generations[0].completion).toBeDefined();
+      expect(generations[0].completion).toContain("function_call");
+      expect(generations[0].completion).toContain("arguments");
+      expect(generations[0].completion).toContain("name");
+    }
   });
 });

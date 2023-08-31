@@ -358,7 +358,7 @@ export class CallbackHandler extends BaseCallbackHandler {
           "message" in lastResponse &&
           lastResponse["message"] instanceof AIMessage &&
           lastResponse["message"].additional_kwargs
-            ? lastResponse["message"].additional_kwargs.toString()
+            ? JSON.stringify(lastResponse["message"].additional_kwargs)
             : lastResponse.text,
         endTime: new Date(),
         usage: llmUsage,
