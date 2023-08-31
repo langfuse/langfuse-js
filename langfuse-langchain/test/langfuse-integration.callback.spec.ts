@@ -1,7 +1,7 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import { OpenAI } from "langchain/llms/openai";
 import { PromptTemplate } from "langchain/prompts";
-import { ConversationChain, LLMChain } from "langchain/chains";
+import { ConversationChain, LLMChain, createExtractionChainFromZod } from "langchain/chains";
 import { CallbackHandler } from "../src/callback";
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "../../integration-test/integration-utils";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
@@ -9,13 +9,6 @@ import { SerpAPI } from "langchain/tools";
 import { Calculator } from "langchain/tools/calculator";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOpenAI } from "langchain/chat_models/openai";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { RetrievalQAChain } from "langchain/chains";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { TextLoader } from "langchain/document_loaders/fs/text";
-import { z } from "zod";
-import { createExtractionChainFromZod } from "langchain/chains";
 
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
