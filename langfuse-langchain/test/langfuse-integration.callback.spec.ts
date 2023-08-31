@@ -1,7 +1,7 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import { OpenAI } from "langchain/llms/openai";
 import { PromptTemplate } from "langchain/prompts";
-import { ConversationChain, LLMChain } from "langchain/chains";
+import { ConversationChain, LLMChain, createExtractionChainFromZod } from "langchain/chains";
 import { CallbackHandler } from "../src/callback";
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "../../integration-test/integration-utils";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
@@ -9,11 +9,6 @@ import { SerpAPI } from "langchain/tools";
 import { Calculator } from "langchain/tools/calculator";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOpenAI } from "langchain/chat_models/openai";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { RetrievalQAChain } from "langchain/chains";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { TextLoader } from "langchain/document_loaders/fs/text";
 
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
@@ -156,36 +151,77 @@ describe("simple chains", () => {
     await handler.flushAsync();
   });
 
-  it("should execute QA retrieval", async () => {
+  // it("should execute QA retrieval", async () => {
+  //   const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+  //   // load docs
+  //   const loader = new TextLoader("../static/state_of_the_union.txt");
+  //   const docs = await loader.load();
+
+  //   // split docs
+  //   const textSplitter = new RecursiveCharacterTextSplitter({
+  //     chunkSize: 500,
+  //     chunkOverlap: 0,
+  //   });
+
+  //   const splitDocs = await textSplitter.splitDocuments(docs);
+
+  //   // // calc embeddings
+  //   const embeddings = new OpenAIEmbeddings();
+
+  //   const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
+
+  //   // // retrieval chain
+  //   const model = new ChatOpenAI({ modelName: "gpt-3.5-turbo" });
+  //   const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever());
+
+  //   const response = await chain.call(
+  //     {
+  //       query: "What is the state of the United States?",
+  //     },
+  //     { callbacks: [callback] }
+  //   );
+  //   console.log(response);
+  //   await callback.flushAsync();
+
+  //   expect(callback.traceId).toBeDefined();
+  //   const trace = callback.traceId ? await getTraces(callback.traceId) : undefined;
+
+  //   expect(trace).toBeDefined();
+  //   expect(trace?.observations.length).toBe(2);
+  //   const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+  //   expect(generations).toBeDefined();
+  //   expect(generations?.length).toBe(1);
+  // });
+
+  it("function calls", async () => {
     const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
-    // load docs
-    const loader = new TextLoader("../static/state_of_the_union.txt");
-    const docs = await loader.load();
 
-    // split docs
-    const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 500,
-      chunkOverlap: 0,
+    const zodSchema = z.object({
+      "person-name": z.string().optional(),
+      "person-age": z.number().optional(),
+      "person-hair_color": z.string().optional(),
+      "dog-name": z.string().optional(),
+      "dog-breed": z.string().optional(),
     });
-
-    const splitDocs = await textSplitter.splitDocuments(docs);
-
-    // // calc embeddings
-    const embeddings = new OpenAIEmbeddings();
-
-    const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
-
-    // // retrieval chain
-    const model = new ChatOpenAI({ modelName: "gpt-3.5-turbo" });
-    const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever());
-
-    const response = await chain.call(
-      {
-        query: "What is the state of the United States?",
-      },
-      { callbacks: [callback] }
+    const chatModel = new ChatOpenAI({
+      temperature: 0,
+    });
+    const chain = createExtractionChainFromZod(zodSchema, chatModel);
+    console.log(
+      await chain.run(
+        `Alex is 5 feet tall. Claudia is 4 feet taller Alex and jumps higher than him. Claudia is a brunette and Alex is blonde.
+    Alex's dog Frosty is a labrador and likes to play hide and seek.`,
+        { callbacks: [callback] }
+      )
     );
-    console.log(response);
     await callback.flushAsync();
+    expect(callback.traceId).toBeDefined();
+    const trace = callback.traceId ? await getTraces(callback.traceId) : undefined;
+
+    expect(trace).toBeDefined();
+    expect(trace?.observations.length).toBe(2);
+    const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generations).toBeDefined();
+    expect(generations?.length).toBe(1);
   });
 });

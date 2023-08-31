@@ -1,6 +1,14 @@
 import { BaseCallbackHandler } from "langchain/callbacks";
 import type { Serialized } from "langchain/load/serializable";
-import type { AgentAction, AgentFinish, BaseMessage, ChainValues, LLMResult } from "langchain/schema";
+import {
+  AIMessage,
+  AgentAction,
+  AgentFinish,
+  BaseMessage,
+  ChainValues,
+  FunctionMessage,
+  LLMResult,
+} from "langchain/schema";
 
 import Langfuse from "langfuse";
 import { type LangfuseOptions } from "langfuse/src/types";
@@ -337,15 +345,21 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("LLM end:", runId, parentRunId);
       const lastResponse =
-        output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1]
-          .text;
+        output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
+
       const llmUsage = output.llmOutput?.["tokenUsage"];
 
       this.langfuse.generation({
         id: runId,
         traceId: this.traceId,
         parentObservationId: parentRunId,
-        completion: lastResponse,
+        completion:
+          !lastResponse.text &&
+          "message" in lastResponse &&
+          lastResponse["message"] instanceof AIMessage &&
+          lastResponse["message"].additional_kwargs
+            ? JSON.stringify(lastResponse["message"].additional_kwargs)
+            : lastResponse.text,
         endTime: new Date(),
         usage: llmUsage,
       });
