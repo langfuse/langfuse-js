@@ -9,6 +9,7 @@ import { SerpAPI } from "langchain/tools";
 import { Calculator } from "langchain/tools/calculator";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOpenAI } from "langchain/chat_models/openai";
+import { z } from "zod";
 
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
