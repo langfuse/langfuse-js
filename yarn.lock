@@ -5550,9 +5550,6 @@ langchain@^0.0.133:
     zod "^3.21.4"
     zod-to-json-schema "^3.20.4"
 
-"langfuse@file:./langfuse":
-  version "1.0.13"
-
 langsmith@~0.0.26:
   version "0.0.26"
   resolved "https://registry.yarnpkg.com/langsmith/-/langsmith-0.0.26.tgz#a63f911a3113860de5488392a46468d1b482e3ef"

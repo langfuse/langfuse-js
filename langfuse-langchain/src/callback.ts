@@ -9,7 +9,8 @@ import {
   type LLMResult,
 } from "langchain/schema";
 
-import Langfuse from "langfuse";
+import { Langfuse } from "../../langfuse/index";
+
 import { type LangfuseOptions } from "langfuse/src/types";
 import { type Document } from "langchain/document";
 
@@ -147,7 +148,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
-    console.log("Generation start:", this.traceId);
+    console.log("Generation start:", runId);
     this.generateTraceAndParent(llm, runId, tags, metadata);
 
     const modelParameters: Record<string, any> = {};
