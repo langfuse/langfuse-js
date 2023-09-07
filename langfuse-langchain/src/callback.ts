@@ -2,12 +2,11 @@ import { BaseCallbackHandler } from "langchain/callbacks";
 import type { Serialized } from "langchain/load/serializable";
 import {
   AIMessage,
-  AgentAction,
-  AgentFinish,
-  BaseMessage,
-  ChainValues,
-  FunctionMessage,
-  LLMResult,
+  type AgentAction,
+  type AgentFinish,
+  type BaseMessage,
+  type ChainValues,
+  type LLMResult,
 } from "langchain/schema";
 
 import Langfuse from "langfuse";
