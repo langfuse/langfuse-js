@@ -13,15 +13,35 @@ import { Langfuse } from "../../langfuse/index";
 
 import { type LangfuseOptions } from "langfuse/src/types";
 import { type Document } from "langchain/document";
+import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core/src";
+
+type RootParams = {
+  root: LangfuseTraceClient | LangfuseSpanClient;
+};
+
+type KeyParams = {
+  publicKey: string;
+  secretKey: string;
+} & LangfuseOptions;
+
+type ConstructorParams = RootParams | KeyParams;
 
 export class CallbackHandler extends BaseCallbackHandler {
   name = "CallbackHandler";
   langfuse: Langfuse;
   traceId?: string;
+  observationId?: string;
+  rootObservationId?: string;
 
-  constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
+  constructor(params: ConstructorParams) {
     super();
-    this.langfuse = new Langfuse({ ...params, persistence: "memory" });
+    if ("root" in params) {
+      this.langfuse = params.root.client as Langfuse;
+      this.rootObservationId = params.root.observationId ?? undefined;
+      this.traceId = params.root.traceId;
+    } else {
+      this.langfuse = new Langfuse({ ...params, persistence: "memory" });
+    }
   }
 
   async flushAsync(): Promise<any> {
@@ -62,11 +82,11 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("Chain start with Id:", runId);
-      this.generateTraceAndParent(chain, runId, tags, metadata);
+      this.generateTrace(chain, runId, tags, metadata);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
-        parentObservationId: parentRunId,
+        parentObservationId: parentRunId ?? this.rootObservationId,
         name: chain.id.at(-1)?.toString(),
         metadata: this.joinTagsAndMetaData(tags, metadata),
         input: inputs,
@@ -123,7 +143,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  generateTraceAndParent(
+  generateTrace(
     serialized: Serialized,
     runId: string,
     tags?: string[] | undefined,
@@ -149,7 +169,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     console.log("Generation start:", runId);
-    this.generateTraceAndParent(llm, runId, tags, metadata);
+    this.generateTrace(llm, runId, tags, metadata);
 
     const modelParameters: Record<string, any> = {};
     const invocationParams = extraParams?.["invocation_params"];
@@ -186,7 +206,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       name: llm.id.at(-1)?.toString(),
       startTime: new Date(),
       metadata: this.joinTagsAndMetaData(tags, metadata),
-      parentObservationId: parentRunId,
+      parentObservationId: parentRunId ?? this.rootObservationId,
       prompt: messages as any,
       model: extractedModelName,
       modelParameters: modelParameters,

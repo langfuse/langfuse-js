@@ -10,6 +10,7 @@ import { Calculator } from "langchain/tools/calculator";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { z } from "zod";
+import { Langfuse } from "langfuse/src/langfuse";
 
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
@@ -224,5 +225,55 @@ describe("simple chains", () => {
     const generations = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generations).toBeDefined();
     expect(generations?.length).toBe(1);
+  });
+
+  it("create trace for callback", async () => {
+    const langfuse = new Langfuse({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+
+    const trace = langfuse.trace({ name: "test-123" });
+
+    const handler = new CallbackHandler({ root: trace });
+
+    const llm = new OpenAI({});
+    const res = await llm.call("Tell me a joke", { callbacks: [handler] });
+    await handler.flushAsync();
+    expect(res).toBeDefined();
+
+    expect(handler.traceId).toBeDefined();
+    const returnedTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+    expect(returnedTrace).toBeDefined();
+    expect(returnedTrace?.name).toBe("test-123");
+    expect(returnedTrace?.observations.length).toBe(1);
+    const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generation?.length).toBe(1);
+    expect(generation?.[0].name).toBe("OpenAI");
+  });
+
+  it("create span for callback", async () => {
+    const langfuse = new Langfuse({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+
+    const trace = langfuse.trace({ name: "test-trace" });
+    const span = trace.span({ name: "test-span" });
+
+    const handler = new CallbackHandler({ root: span });
+
+    const llm = new OpenAI({});
+    const res = await llm.call("Tell me a joke", { callbacks: [handler] });
+    await handler.flushAsync();
+    expect(res).toBeDefined();
+
+    expect(handler.traceId).toBeDefined();
+    const returnedTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+    expect(returnedTrace).toBeDefined();
+    expect(returnedTrace?.name).toBe("test-trace");
+    expect(returnedTrace?.observations.length).toBe(2);
+    const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generation?.length).toBe(1);
+    expect(generation?.[0].name).toBe("OpenAI");
+    const returnedSpan = returnedTrace?.observations.filter((o) => o.type === "SPAN");
+    expect(returnedSpan?.length).toBe(1);
+    expect(returnedSpan?.[0].name).toBe("test-span");
   });
 });
