@@ -21,7 +21,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
     super();
-    this.langfuse = new Langfuse(params);
+    this.langfuse = new Langfuse({ ...params, persistence: "memory" });
   }
 
   async flushAsync(): Promise<any> {
