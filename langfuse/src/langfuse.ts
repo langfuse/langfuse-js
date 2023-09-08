@@ -17,8 +17,8 @@ export class Langfuse extends LangfuseCore {
   constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
     super(params);
     const { publicKey, secretKey, ...options } = params;
-
-    if (typeof window !== "undefined") {
+    console.log("deno in window", "Deno" in window);
+    if (typeof window !== "undefined" && "Deno" in window === false) {
       this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
       this._storage = getStorage(options?.persistence || "localStorage", window);
     } else {
@@ -75,7 +75,7 @@ export class LangfuseWeb extends LangfuseWebStateless {
     super(params);
 
     const { publicKey, ...options } = params;
-    if (typeof window !== "undefined" && "Deno" in window === false) {
+    if (typeof window !== "undefined") {
       this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
       this._storage = getStorage(options?.persistence || "localStorage", window);
     } else {

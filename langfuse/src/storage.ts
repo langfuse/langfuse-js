@@ -145,12 +145,14 @@ const createMemoryStorage = (): LangfuseStorage => {
 
 export const getStorage = (type: LangfuseOptions["persistence"], window: Window | undefined): LangfuseStorage => {
   if (typeof window !== undefined && window) {
-    if (!localStorage) {
+    if (!localStorage && window.localStorage) {
+      console.log("creating local storage");
       const _localStore = createStorageLike(window.localStorage);
       localStore = checkStoreIsSupported(_localStore) ? _localStore : undefined;
     }
 
-    if (!sessionStore) {
+    if (!sessionStore && window.sessionStorage) {
+      console.log("creating session storage");
       const _sessionStore = createStorageLike(window.sessionStorage);
       sessionStore = checkStoreIsSupported(_sessionStore) ? _sessionStore : undefined;
     }
