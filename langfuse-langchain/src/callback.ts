@@ -2,15 +2,15 @@ import { BaseCallbackHandler } from "langchain/callbacks";
 import type { Serialized } from "langchain/load/serializable";
 import {
   AIMessage,
-  AgentAction,
-  AgentFinish,
-  BaseMessage,
-  ChainValues,
-  FunctionMessage,
-  LLMResult,
+  type AgentAction,
+  type AgentFinish,
+  type BaseMessage,
+  type ChainValues,
+  type LLMResult,
 } from "langchain/schema";
 
-import Langfuse from "langfuse";
+import { Langfuse } from "../../langfuse/index";
+
 import { type LangfuseOptions } from "langfuse/src/types";
 import { type Document } from "langchain/document";
 
@@ -21,7 +21,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
     super();
-    this.langfuse = new Langfuse(params);
+    this.langfuse = new Langfuse({ ...params, persistence: "memory" });
   }
 
   async flushAsync(): Promise<any> {
@@ -148,7 +148,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
-    console.log("Generation start:", this.traceId);
+    console.log("Generation start:", runId);
     this.generateTraceAndParent(llm, runId, tags, metadata);
 
     const modelParameters: Record<string, any> = {};
