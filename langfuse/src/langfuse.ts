@@ -75,7 +75,7 @@ export class LangfuseWeb extends LangfuseWebStateless {
     super(params);
 
     const { publicKey, ...options } = params;
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && "Deno" in window === false) {
       this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
       this._storage = getStorage(options?.persistence || "localStorage", window);
     } else {
