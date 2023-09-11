@@ -68,9 +68,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleRetrieverError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Retriever error:", err, runId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateSpan({
+        spanId: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),
@@ -124,9 +123,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleAgentEnd?(action: AgentFinish, runId: string, parentRunId?: string): Promise<void> {
     try {
       console.log("Agent finish:", runId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateSpan({
+        spanId: runId,
         traceId: this.traceId,
         endTime: new Date(),
         output: action,
@@ -139,9 +137,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleChainError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Chain error:", err, runId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateSpan({
+        spanId: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),
@@ -244,9 +241,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleChainEnd(outputs: ChainValues, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Chain end:", runId, parentRunId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateSpan({
+        spanId: runId,
         traceId: this.traceId,
         output: outputs,
         endTime: new Date(),
@@ -329,9 +325,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("Retriever end:", runId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateSpan({
+        spanId: runId,
         traceId: this.traceId,
         output: documents as any,
         endTime: new Date(),
@@ -344,9 +339,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleToolEnd(output: string, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Tool end:", runId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateSpan({
+        spanId: runId,
         traceId: this.traceId,
         output: output as any,
         endTime: new Date(),
@@ -359,9 +353,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleToolError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("Tool error:", err, runId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateSpan({
+        spanId: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),
@@ -380,10 +373,9 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const llmUsage = output.llmOutput?.["tokenUsage"];
 
-      this.langfuse.generation({
-        id: runId,
+      this.langfuse._updateGeneration({
+        generationId: runId,
         traceId: this.traceId,
-        parentObservationId: parentRunId,
         completion:
           !lastResponse.text &&
           "message" in lastResponse &&
@@ -402,9 +394,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleLLMError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       console.log("LLM error:", err, runId);
-      this.langfuse.span({
-        id: runId,
-        parentObservationId: parentRunId,
+      this.langfuse._updateGeneration({
+        generationId: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),
