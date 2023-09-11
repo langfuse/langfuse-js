@@ -73,7 +73,7 @@ abstract class LangfuseCoreStateless {
     this.publicKey = publicKey;
     this.secretKey = secretKey;
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
-    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20;
+    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 1;
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? process.env.LANGFUSE_RELEASE ?? getCommonReleaseEnvs() ?? undefined;
 
