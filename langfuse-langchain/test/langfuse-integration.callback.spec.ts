@@ -98,6 +98,13 @@ describe("simple chains", () => {
         expect(generation[0].completionTokens).toBeDefined();
         expect(generation[0].totalTokens).toBeDefined();
       }
+
+      const spans = trace?.observations.filter((o) => o.type === "SPAN");
+      expect(spans?.length).toBe(1);
+      if (spans) {
+        expect(handler.getLangchainRunId()).toBe(spans[0].id);
+      }
+      expect(handler.getTraceId()).toBe(handler.traceId);
     }
   );
 
@@ -234,7 +241,7 @@ describe("simple chains", () => {
 
     const handler = new CallbackHandler({ root: trace });
 
-    const llm = new OpenAI({});
+    const llm = new OpenAI({ streaming: true });
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
     expect(res).toBeDefined();
@@ -275,5 +282,7 @@ describe("simple chains", () => {
     const returnedSpan = returnedTrace?.observations.filter((o) => o.type === "SPAN");
     expect(returnedSpan?.length).toBe(1);
     expect(returnedSpan?.[0].name).toBe("test-span");
+    expect(handler.getLangchainRunId()).toBe(generation?.[0].id);
+    expect(handler.getTraceId()).toBe(returnedTrace?.id);
   });
 });
