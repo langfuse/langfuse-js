@@ -279,10 +279,26 @@ describe("simple chains", () => {
     const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
     expect(generation?.[0].name).toBe("OpenAI");
+    expect(handler.getLangchainRunId()).toBe(generation?.[0].id);
     const returnedSpan = returnedTrace?.observations.filter((o) => o.type === "SPAN");
     expect(returnedSpan?.length).toBe(1);
     expect(returnedSpan?.[0].name).toBe("test-span");
-    expect(handler.getLangchainRunId()).toBe(generation?.[0].id);
+
     expect(handler.getTraceId()).toBe(returnedTrace?.id);
+
+    await llm.call("Tell me a better", { callbacks: [handler] });
+    await handler.flushAsync();
+
+    const newTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+    expect(newTrace).toBeDefined();
+    expect(handler.getTraceId()).toBe(returnedTrace?.id);
+    expect(newTrace?.id).toBe(returnedTrace?.id);
+
+    console.log(JSON.stringify(newTrace?.observations));
+
+    const returnedNewGeneration = newTrace?.observations.filter((o) => o.type === "GENERATION");
+    expect(returnedNewGeneration?.length).toBe(2);
+    expect(handler.getLangchainRunId()).toBe(returnedNewGeneration?.[1].id);
   });
 });
