@@ -32,6 +32,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   traceId?: string;
   observationId?: string;
   rootObservationId?: string;
+  topLevelObservationId?: string;
 
   constructor(params: ConstructorParams) {
     super();
@@ -54,6 +55,14 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   async handleNewToken(token: string, runId: string): Promise<void> {
     console.log("New token:", token, "with ID:", runId);
+  }
+
+  getTraceId(): string | undefined {
+    return this.traceId;
+  }
+
+  getLangchainRunId(): string | undefined {
+    return this.topLevelObservationId;
   }
 
   async handleRetrieverError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
@@ -82,7 +91,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("Chain start with Id:", runId);
-      this.generateTrace(chain, runId, tags, metadata);
+      this.generateTrace(chain, runId, parentRunId, tags, metadata);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
@@ -146,6 +155,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   generateTrace(
     serialized: Serialized,
     runId: string,
+    parentRunId: string | undefined,
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined
   ): void {
@@ -157,6 +167,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.traceId = runId;
     }
+    this.topLevelObservationId = parentRunId ? this.topLevelObservationId : runId;
   }
 
   async handleGenerationStart(
@@ -169,7 +180,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     console.log("Generation start:", runId);
-    this.generateTrace(llm, runId, tags, metadata);
+    this.generateTrace(llm, runId, parentRunId, tags, metadata);
 
     const modelParameters: Record<string, any> = {};
     const invocationParams = extraParams?.["invocation_params"];
