@@ -24,7 +24,7 @@ describe("simple chains", () => {
       secretKey: LF_SECRET_KEY,
       baseUrl: LF_HOST,
     });
-    const llm = new OpenAI({});
+    const llm = new OpenAI({ streaming: true });
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
     expect(res).toBeDefined();
@@ -37,6 +37,9 @@ describe("simple chains", () => {
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
     expect(generation?.[0].name).toBe("OpenAI");
+    expect(generation?.[0].promptTokens).toBeDefined();
+    expect(generation?.[0].completionTokens).toBeDefined();
+    expect(generation?.[0].totalTokens).toBeDefined();
   });
 
   it.each([["OpenAI"], ["ChatOpenAI"], ["ChatAnthropic"]])(
