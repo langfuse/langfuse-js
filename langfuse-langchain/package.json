@@ -1,6 +1,6 @@
 {
   "name": "langfuse-langchain",
-  "version": "1.0.20",
+  "version": "1.0.21-alpha.0",
   "author": {
     "name": "Langfuse",
     "email": "hi@langfuse.com",
