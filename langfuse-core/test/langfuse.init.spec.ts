@@ -49,7 +49,7 @@ describe("Langfuse Core", () => {
         secretKey: "sk-lf-111",
         publicKey: "pk-lf-111",
         baseUrl: "https://cloud.langfuse.com",
-        flushAt: 20,
+        flushAt: 1,
         flushInterval: 10000,
       });
     });
