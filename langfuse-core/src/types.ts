@@ -30,10 +30,10 @@ export type LangfuseFetchOptions = {
   signal?: AbortSignal;
 };
 
-export type LangfuseFetchResponse = {
+export type LangfuseFetchResponse<T = any> = {
   status: number;
   text: () => Promise<string>;
-  json: () => Promise<any>;
+  json: () => Promise<T>;
 };
 
 export type LangfuseQueueItem = {
@@ -76,6 +76,20 @@ export type UpdateLangfuseGenerationBody = FixTypes<
   paths["/api/public/generations"]["patch"]["requestBody"]["content"]["application/json"]
 >;
 
+export type GetLangfuseDatasetParams = FixTypes<
+  paths["/api/public/datasets/{datasetName}"]["get"]["parameters"]["path"]
+>;
+export type GetLangfuseDatasetResponse = FixTypes<
+  paths["/api/public/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+
+export type CreateLangfuseDatasetRunItemBody = FixTypes<
+  paths["/api/public/dataset-run-item"]["post"]["requestBody"]["content"]["application/json"]
+>;
+export type CreateLangfuseDatasetRunItemResponse = FixTypes<
+  paths["/api/public/dataset-run-item"]["post"]["responses"]["200"]["content"]["application/json"]
+>;
+
 export type LangfuseObject =
   | "createTrace"
   | "createEvent"
@@ -100,7 +114,7 @@ export type JsonType = string | number | boolean | null | { [key: string]: JsonT
 type OptionalTypes<T> = T extends null | undefined ? T : never;
 type FixTypes<T> = Omit<
   {
-    [P in keyof T]: P extends "startTime" | "endTime" | "timestamp" | "completionStartTime"
+    [P in keyof T]: P extends "startTime" | "endTime" | "timestamp" | "completionStartTime" | "createdAt" | "updatedAt"
       ? // Dates instead of strings
         Date | OptionalTypes<T[P]>
       : T[P];

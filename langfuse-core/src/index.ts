@@ -13,6 +13,10 @@ import {
   type CreateLangfuseScoreBody,
   type UpdateLangfuseSpanBody,
   type UpdateLangfuseGenerationBody,
+  type GetLangfuseDatasetParams,
+  type GetLangfuseDatasetResponse,
+  type CreateLangfuseDatasetRunItemBody,
+  type CreateLangfuseDatasetRunItemResponse,
 } from "./types";
 import { assert, generateUUID, removeTrailingSlash, retriable, type RetriableOptions, safeSetTimeout } from "./utils";
 export * as utils from "./utils";
@@ -189,6 +193,23 @@ abstract class LangfuseCoreStateless {
     return body.generationId;
   }
 
+  // sync
+  protected getDataset(
+    name: GetLangfuseDatasetParams["datasetName"]
+  ): Promise<LangfuseFetchResponse<GetLangfuseDatasetResponse>> {
+    return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this.getFetchOptions({ method: "GET" }));
+  }
+
+  // sync
+  protected createDatasetRunItem(
+    body: CreateLangfuseDatasetRunItemBody
+  ): Promise<LangfuseFetchResponse<CreateLangfuseDatasetRunItemResponse>> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/dataset-run-item`,
+      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+    );
+  }
+
   protected _parsePayload(response: any): any {
     try {
       return JSON.parse(response);
@@ -229,6 +250,26 @@ abstract class LangfuseCoreStateless {
     return Promise.all(this.flush());
   }
 
+  private getFetchOptions(p: {
+    method: LangfuseFetchOptions["method"];
+    body?: LangfuseFetchOptions["body"];
+  }): LangfuseFetchOptions {
+    const fetchOptions: LangfuseFetchOptions = {
+      method: p.method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Langfuse-Sdk-Name": "langfuse-js",
+        "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
+        "X-Langfuse-Sdk-Variant": this.getLibraryId(),
+        "X-Langfuse-Public-Key": this.publicKey,
+        ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
+      },
+      body: p.body,
+    };
+
+    return fetchOptions;
+  }
+
   // Flushes the queue
   // @returns {Promise[]} - list of promises for each item in the queue that is flushed
   flush(): Promise<LangfuseFetchResponse>[] {
@@ -260,18 +301,10 @@ abstract class LangfuseCoreStateless {
       const payload = JSON.stringify(item.body); // implicit conversion also of dates to strings
       const url = `${this.baseUrl}${item.apiRoute}`;
 
-      const fetchOptions: LangfuseFetchOptions = {
+      const fetchOptions = this.getFetchOptions({
         method: item.method,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
-          "X-Langfuse-Sdk-Variant": this.getLibraryId(),
-          "X-Langfuse-Public-Key": this.publicKey,
-          ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
-        },
         body: payload,
-      };
+      });
 
       const requestPromise = this.fetchWithRetry(url, fetchOptions);
       this.pendingPromises[item.id] = requestPromise;
