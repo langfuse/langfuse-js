@@ -250,26 +250,6 @@ abstract class LangfuseCoreStateless {
     return Promise.all(this.flush());
   }
 
-  private getFetchOptions(p: {
-    method: LangfuseFetchOptions["method"];
-    body?: LangfuseFetchOptions["body"];
-  }): LangfuseFetchOptions {
-    const fetchOptions: LangfuseFetchOptions = {
-      method: p.method,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Langfuse-Sdk-Name": "langfuse-js",
-        "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
-        "X-Langfuse-Sdk-Variant": this.getLibraryId(),
-        "X-Langfuse-Public-Key": this.publicKey,
-        ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
-      },
-      body: p.body,
-    };
-
-    return fetchOptions;
-  }
-
   // Flushes the queue
   // @returns {Promise[]} - list of promises for each item in the queue that is flushed
   flush(): Promise<LangfuseFetchResponse>[] {
@@ -317,6 +297,26 @@ abstract class LangfuseCoreStateless {
     });
 
     return promises;
+  }
+
+  private getFetchOptions(p: {
+    method: LangfuseFetchOptions["method"];
+    body?: LangfuseFetchOptions["body"];
+  }): LangfuseFetchOptions {
+    const fetchOptions: LangfuseFetchOptions = {
+      method: p.method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Langfuse-Sdk-Name": "langfuse-js",
+        "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
+        "X-Langfuse-Sdk-Variant": this.getLibraryId(),
+        "X-Langfuse-Public-Key": this.publicKey,
+        ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
+      },
+      body: p.body,
+    };
+
+    return fetchOptions;
   }
 
   private constructAuthorizationHeader(
