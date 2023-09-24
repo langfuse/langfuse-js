@@ -194,14 +194,14 @@ abstract class LangfuseCoreStateless {
   }
 
   // sync
-  protected getDataset(
+  protected _getDataset(
     name: GetLangfuseDatasetParams["datasetName"]
   ): Promise<LangfuseFetchResponse<GetLangfuseDatasetResponse>> {
     return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this.getFetchOptions({ method: "GET" }));
   }
 
   // sync
-  protected createDatasetRunItem(
+  protected _createDatasetRunItem(
     body: CreateLangfuseDatasetRunItemBody
   ): Promise<LangfuseFetchResponse<CreateLangfuseDatasetRunItemResponse>> {
     return this.fetch(
@@ -452,6 +452,42 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   score(body: CreateLangfuseScoreBody): this {
     this.scoreStateless(body);
     return this;
+  }
+
+  async getDataset(name: string): Promise<{
+    id: string;
+    name: string;
+    projectId: string;
+    items: Array<{
+      id: string;
+      input: any;
+      expectedOutput?: any;
+      sourceObservationId?: string | null;
+      link: (obj: LangfuseObservationClient, runName: string) => Promise<{ id: string }>;
+    }>;
+  }> {
+    const res = await this._getDataset(name);
+    const dataset = await res.json();
+
+    const { items, ...rest } = dataset;
+
+    const returnDataset = {
+      ...rest,
+      items: items.map((item) => ({
+        ...item,
+        link: async (obj: LangfuseObservationClient, runName: string) => {
+          const res = await this._createDatasetRunItem({
+            runName,
+            datasetItemId: item.id,
+            observationId: obj.id,
+          });
+          const data = res.json();
+          return data;
+        },
+      })),
+    };
+
+    return returnDataset;
   }
 
   _updateSpan(body: UpdateLangfuseSpanBody): this {
