@@ -88,7 +88,7 @@ describe("Langfuse Node.js", () => {
           input: item.input,
           completion: "Hello world generated",
         });
-        const link = await item.link(generation, "test-run-" + projectNameRandom);
+        await item.link(generation, "test-run-" + projectNameRandom);
         generation.score({
           name: "test-score",
           value: 0.5,
