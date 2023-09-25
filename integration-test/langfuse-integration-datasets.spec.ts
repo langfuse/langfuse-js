@@ -94,8 +94,6 @@ describe("Langfuse Node.js", () => {
           value: 0.5,
         });
       }
-
-      langfuse.shutdownAsync();
     });
   });
 });

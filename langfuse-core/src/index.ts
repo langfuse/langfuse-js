@@ -197,22 +197,20 @@ abstract class LangfuseCoreStateless {
     return body.generationId;
   }
 
-  protected syncGetDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
+  protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
     return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this.getFetchOptions({ method: "GET" })).then(
       (res) => res.json()
     );
   }
 
-  protected syncCreateDatasetRunItem(
-    body: CreateLangfuseDatasetRunItemBody
-  ): Promise<CreateLangfuseDatasetRunItemResponse> {
+  async createDatasetRunItem(body: CreateLangfuseDatasetRunItemBody): Promise<CreateLangfuseDatasetRunItemResponse> {
     return this.fetch(
-      `${this.baseUrl}/api/public/dataset-run-item`,
+      `${this.baseUrl}/api/public/dataset-run-items`,
       this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
-  createDataset(name: string): Promise<CreateLangfuseDatasetResponse> {
+  async createDataset(name: string): Promise<CreateLangfuseDatasetResponse> {
     const body: CreateLangfuseDatasetBody = { name };
     return this.fetch(
       `${this.baseUrl}/api/public/datasets`,
@@ -220,7 +218,7 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
-  createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
+  async createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-items`,
       this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
@@ -267,7 +265,7 @@ abstract class LangfuseCoreStateless {
     return Promise.all(this.flush());
   }
 
-  // Flushes the queue
+  // Flushes all events that are not yet sent to the server
   // @returns {Promise[]} - list of promises for each item in the queue that is flushed
   flush(): Promise<LangfuseFetchResponse>[] {
     if (this._flushTimer) {
@@ -483,17 +481,15 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       link: (obj: LangfuseObservationClient, runName: string) => Promise<{ id: string }>;
     }>;
   }> {
-    const dataset = await this.syncGetDataset(name);
-
-    const { items, ...rest } = dataset;
+    const { items, ...dataset } = await this._getDataset(name);
 
     const returnDataset = {
-      ...rest,
+      ...dataset,
       items: items.map((item) => ({
         ...item,
         link: async (obj: LangfuseObservationClient, runName: string) => {
           await this.awaitAllQueuedAndPendingRequests();
-          const data = await this.syncCreateDatasetRunItem({
+          const data = await this.createDatasetRunItem({
             runName,
             datasetItemId: item.id,
             observationId: obj.id,
