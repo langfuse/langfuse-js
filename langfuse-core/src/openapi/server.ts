@@ -23,6 +23,10 @@ export interface paths {
     /** @description Create a dataset */
     post: operations["datasets_create"];
   };
+  "/api/public/datasets/{datasetName}/runs/{runName}": {
+    /** @description Get a dataset run and its items */
+    get: operations["datasets_getRuns"];
+  };
   "/api/public/events": {
     /** @description Add an event to the database */
     post: operations["event_create"];
@@ -179,6 +183,7 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
       items: components["schemas"]["DatasetItem"][];
+      runs: string[];
     };
     /** DatasetItem */
     DatasetItem: {
@@ -203,6 +208,17 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+    };
+    /** DatasetRun */
+    DatasetRun: {
+      id: string;
+      name: string;
+      datasetId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      datasetRunItems: components["schemas"]["DatasetRunItem"][];
     };
     /**
      * ObservationLevel
@@ -467,6 +483,47 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Dataset"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Get a dataset run and its items */
+  datasets_getRuns: {
+    parameters: {
+      path: {
+        datasetName: string;
+        runName: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["DatasetRun"];
         };
       };
       400: {
