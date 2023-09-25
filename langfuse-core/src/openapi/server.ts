@@ -231,7 +231,7 @@ export interface components {
     CreateDatasetItemRequest: {
       datasetName: string;
       input: unknown;
-      observationId?: Record<string, unknown> | null;
+      expectedOutput?: Record<string, unknown> | null;
     };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
