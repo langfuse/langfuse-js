@@ -26,6 +26,7 @@
     "test:node": "jest langfuse-node/*",
     "test:fetch": "jest langfuse/*",
     "test:integration": "dotenv -- jest integration-test/*",
+    "test:datasets": "jest integration-test/langfuse-integration-datasets*",
     "compile": "rollup -c --bundleConfigAsCjs"
   },
   "devDependencies": {

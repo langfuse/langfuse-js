@@ -7,11 +7,33 @@
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
 export interface paths {
+  "/api/public/dataset-items": {
+    /** @description Create a dataset item */
+    post: operations["datasetItems_create"];
+  };
+  "/api/public/dataset-run-items": {
+    /** @description Create a dataset run item */
+    post: operations["datasetRunItems_create"];
+  };
+  "/api/public/datasets/{datasetName}": {
+    /** @description Get a dataset and its items */
+    get: operations["datasets_get"];
+  };
+  "/api/public/datasets": {
+    /** @description Create a dataset */
+    post: operations["datasets_create"];
+  };
+  "/api/public/datasets/{datasetName}/runs/{runName}": {
+    /** @description Get a dataset run and its items */
+    get: operations["datasets_getRuns"];
+  };
   "/api/public/events": {
     /** @description Add an event to the database */
     post: operations["event_create"];
   };
   "/api/public/generations": {
+    /** @description Get a list of generations */
+    get: operations["generations_get"];
     post: operations["generations_log"];
     patch: operations["generations_update"];
   };
@@ -150,6 +172,54 @@ export interface components {
       timestamp: string;
       comment?: string | null;
     };
+    /** Dataset */
+    Dataset: {
+      id: string;
+      name: string;
+      status: components["schemas"]["DatasetStatus"];
+      projectId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      items: components["schemas"]["DatasetItem"][];
+      runs: string[];
+    };
+    /** DatasetItem */
+    DatasetItem: {
+      id: string;
+      status: components["schemas"]["DatasetStatus"];
+      input: unknown;
+      expectedOutput?: Record<string, unknown> | null;
+      sourceObservationId?: string | null;
+      datasetId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /** DatasetRunItem */
+    DatasetRunItem: {
+      id: string;
+      datasetRunId: string;
+      datasetItemId: string;
+      observationId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /** DatasetRun */
+    DatasetRun: {
+      id: string;
+      name: string;
+      datasetId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      datasetRunItems: components["schemas"]["DatasetRunItem"][];
+    };
     /**
      * ObservationLevel
      * @enum {string}
@@ -167,6 +237,27 @@ export interface components {
       promptTokens?: number | null;
       completionTokens?: number | null;
       totalTokens?: number | null;
+    };
+    /**
+     * DatasetStatus
+     * @enum {string}
+     */
+    DatasetStatus: "ACTIVE" | "ARCHIVED";
+    /** CreateDatasetItemRequest */
+    CreateDatasetItemRequest: {
+      datasetName: string;
+      input: unknown;
+      expectedOutput?: Record<string, unknown> | null;
+    };
+    /** CreateDatasetRunItemRequest */
+    CreateDatasetRunItemRequest: {
+      runName: string;
+      datasetItemId: string;
+      observationId: string;
+    };
+    /** CreateDatasetRequest */
+    CreateDatasetRequest: {
+      name: string;
     };
     /** UpdateGenerationRequest */
     UpdateGenerationRequest: {
@@ -188,6 +279,11 @@ export interface components {
       usage?: components["schemas"]["LLMUsage"];
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
+    };
+    /** Generations */
+    Generations: {
+      data: components["schemas"]["Observation"][];
+      meta: components["schemas"]["utilsMetaResponse"];
     };
     /** CreateScoreRequest */
     CreateScoreRequest: {
@@ -256,6 +352,207 @@ export interface components {
 export type external = Record<string, never>;
 
 export interface operations {
+  /** @description Create a dataset item */
+  datasetItems_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDatasetItemRequest"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["DatasetItem"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Create a dataset run item */
+  datasetRunItems_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDatasetRunItemRequest"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["DatasetRunItem"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Get a dataset and its items */
+  datasets_get: {
+    parameters: {
+      path: {
+        datasetName: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Dataset"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Create a dataset */
+  datasets_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDatasetRequest"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Dataset"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Get a dataset run and its items */
+  datasets_getRuns: {
+    parameters: {
+      path: {
+        datasetName: string;
+        runName: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["DatasetRun"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
   /** @description Add an event to the database */
   event_create: {
     requestBody: {
@@ -267,6 +564,49 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Observation"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Get a list of generations */
+  generations_get: {
+    parameters: {
+      query?: {
+        page?: number | null;
+        limit?: number | null;
+        name?: string | null;
+        userId?: string | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Generations"];
         };
       };
       400: {
