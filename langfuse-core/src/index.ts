@@ -476,6 +476,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       items: items.map((item) => ({
         ...item,
         link: async (obj: LangfuseObservationClient, runName: string) => {
+          await this.awaitAllQueuedAndPendingRequests();
           const res = await this._createDatasetRunItem({
             runName,
             datasetItemId: item.id,
