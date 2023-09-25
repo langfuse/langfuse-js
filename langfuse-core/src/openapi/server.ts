@@ -7,13 +7,21 @@
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
 export interface paths {
-  "/api/public/dataset-run-item": {
+  "/api/public/dataset-items": {
+    /** @description Create a dataset item */
+    post: operations["datasetItems_create"];
+  };
+  "/api/public/dataset-run-items": {
     /** @description Create a dataset run item */
     post: operations["datasetRunItems_create"];
   };
   "/api/public/datasets/{datasetName}": {
     /** @description Get a dataset and its items */
     get: operations["datasets_get"];
+  };
+  "/api/public/datasets": {
+    /** @description Create a dataset */
+    post: operations["datasets_create"];
   };
   "/api/public/events": {
     /** @description Add an event to the database */
@@ -219,11 +227,21 @@ export interface components {
      * @enum {string}
      */
     DatasetStatus: "ACTIVE" | "ARCHIVED";
+    /** CreateDatasetItemRequest */
+    CreateDatasetItemRequest: {
+      datasetName: string;
+      input: unknown;
+      observationId?: Record<string, unknown> | null;
+    };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
       runName: string;
       datasetItemId: string;
       observationId: string;
+    };
+    /** CreateDatasetRequest */
+    CreateDatasetRequest: {
+      name: string;
     };
     /** UpdateGenerationRequest */
     UpdateGenerationRequest: {
@@ -318,6 +336,46 @@ export interface components {
 export type external = Record<string, never>;
 
 export interface operations {
+  /** @description Create a dataset item */
+  datasetItems_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDatasetItemRequest"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["DatasetItem"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
   /** @description Create a dataset run item */
   datasetRunItems_create: {
     requestBody: {
@@ -363,6 +421,46 @@ export interface operations {
     parameters: {
       path: {
         datasetName: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Dataset"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Create a dataset */
+  datasets_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDatasetRequest"];
       };
     };
     responses: {
