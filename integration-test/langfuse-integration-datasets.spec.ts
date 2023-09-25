@@ -85,6 +85,7 @@ describe("Langfuse Node.js", () => {
       const dataset = await langfuse.getDataset(projectNameRandom);
       for (const item of dataset.items) {
         const generation = langfuse.generation({
+          id: "test-generation-id-" + projectNameRandom,
           input: item.input,
           completion: "Hello world generated",
         });
@@ -94,6 +95,22 @@ describe("Langfuse Node.js", () => {
           value: 0.5,
         });
       }
+
+      const getRuns = await langfuse.getDatasetRun({
+        datasetName: projectNameRandom,
+        runName: "test-run-" + projectNameRandom,
+      });
+
+      expect(getRuns).toMatchObject({
+        name: "test-run-" + projectNameRandom,
+        datasetId: dataset.id,
+        // array needs to be length 2
+        datasetRunItems: expect.arrayContaining([
+          expect.objectContaining({
+            observationId: "test-generation-id-" + projectNameRandom,
+          }),
+        ]),
+      });
     });
   });
 });

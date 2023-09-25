@@ -21,6 +21,8 @@ import {
   type CreateLangfuseDatasetResponse,
   type CreateLangfuseDatasetItemBody,
   type CreateLangfuseDatasetItemResponse,
+  type GetLangfuseDatasetRunResponse,
+  type GetLangfuseDatasetRunParams,
 } from "./types";
 import { assert, generateUUID, removeTrailingSlash, retriable, type RetriableOptions, safeSetTimeout } from "./utils";
 export * as utils from "./utils";
@@ -201,6 +203,13 @@ abstract class LangfuseCoreStateless {
     return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this.getFetchOptions({ method: "GET" })).then(
       (res) => res.json()
     );
+  }
+
+  async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/datasets/${params.datasetName}/runs/${params.runName}`,
+      this.getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
   }
 
   async createDatasetRunItem(body: CreateLangfuseDatasetRunItemBody): Promise<CreateLangfuseDatasetRunItemResponse> {

@@ -117,6 +117,12 @@ export type CreateLangfuseDatasetItemBody =
 export type CreateLangfuseDatasetItemResponse = FixTypes<
   paths["/api/public/dataset-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfuseDatasetRunParams = FixTypes<
+  paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["parameters"]["path"]
+>;
+export type GetLangfuseDatasetRunResponse = FixTypes<
+  paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
