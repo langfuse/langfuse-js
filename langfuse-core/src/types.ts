@@ -52,6 +52,7 @@ export type LangfuseMetadataProperties = {
   [key: string]: any;
 };
 
+// ASYNC
 export type CreateLangfuseTraceBody = FixTypes<
   paths["/api/public/traces"]["post"]["requestBody"]["content"]["application/json"]
 >;
@@ -64,11 +65,9 @@ export type CreateLangfuseSpanBody = FixTypes<
 export type CreateLangfuseGenerationBody = FixTypes<
   paths["/api/public/generations"]["post"]["requestBody"]["content"]["application/json"]
 >;
-
 export type CreateLangfuseScoreBody = FixTypes<
   paths["/api/public/scores"]["post"]["requestBody"]["content"]["application/json"]
 >;
-
 export type UpdateLangfuseSpanBody = FixTypes<
   paths["/api/public/spans"]["patch"]["requestBody"]["content"]["application/json"]
 >;
@@ -76,21 +75,6 @@ export type UpdateLangfuseGenerationBody = FixTypes<
   paths["/api/public/generations"]["patch"]["requestBody"]["content"]["application/json"]
 >;
 
-export type GetLangfuseDatasetParams = FixTypes<
-  paths["/api/public/datasets/{datasetName}"]["get"]["parameters"]["path"]
->;
-export type GetLangfuseDatasetResponse = FixTypes<
-  paths["/api/public/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
->;
-
-export type CreateLangfuseDatasetRunItemBody = FixTypes<
-  paths["/api/public/dataset-run-items"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type CreateLangfuseDatasetRunItemResponse = FixTypes<
-  paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]
->;
-
-// for async Jobs
 export type LangfuseObject =
   | "createTrace"
   | "createEvent"
@@ -109,6 +93,30 @@ export const LangfusePostApiRoutes: Record<LangfuseObject, [LangfuseQueueItem["m
   updateGeneration: ["PATCH", "/api/public/generations"],
   createScore: ["POST", "/api/public/scores"],
 };
+
+// SYNC
+export type GetLangfuseDatasetParams = FixTypes<
+  paths["/api/public/datasets/{datasetName}"]["get"]["parameters"]["path"]
+>;
+export type GetLangfuseDatasetResponse = FixTypes<
+  paths["/api/public/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type CreateLangfuseDatasetRunItemBody = FixTypes<
+  paths["/api/public/dataset-run-items"]["post"]["requestBody"]["content"]["application/json"]
+>;
+export type CreateLangfuseDatasetRunItemResponse = FixTypes<
+  paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]
+>;
+export type CreateLangfuseDatasetBody =
+  paths["/api/public/datasets"]["post"]["requestBody"]["content"]["application/json"];
+export type CreateLangfuseDatasetResponse = FixTypes<
+  paths["/api/public/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
+>;
+export type CreateLangfuseDatasetItemBody =
+  paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"];
+export type CreateLangfuseDatasetItemResponse = FixTypes<
+  paths["/api/public/dataset-items"]["post"]["responses"]["200"]["content"]["application/json"]
+>;
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 

@@ -17,6 +17,10 @@ import {
   type GetLangfuseDatasetResponse,
   type CreateLangfuseDatasetRunItemBody,
   type CreateLangfuseDatasetRunItemResponse,
+  type CreateLangfuseDatasetBody,
+  type CreateLangfuseDatasetResponse,
+  type CreateLangfuseDatasetItemBody,
+  type CreateLangfuseDatasetItemResponse,
 } from "./types";
 import { assert, generateUUID, removeTrailingSlash, retriable, type RetriableOptions, safeSetTimeout } from "./utils";
 export * as utils from "./utils";
@@ -193,21 +197,34 @@ abstract class LangfuseCoreStateless {
     return body.generationId;
   }
 
-  // sync
-  protected _getDataset(
-    name: GetLangfuseDatasetParams["datasetName"]
-  ): Promise<LangfuseFetchResponse<GetLangfuseDatasetResponse>> {
-    return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this.getFetchOptions({ method: "GET" }));
+  protected syncGetDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
+    return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this.getFetchOptions({ method: "GET" })).then(
+      (res) => res.json()
+    );
   }
 
-  // sync
-  protected _createDatasetRunItem(
+  protected syncCreateDatasetRunItem(
     body: CreateLangfuseDatasetRunItemBody
-  ): Promise<LangfuseFetchResponse<CreateLangfuseDatasetRunItemResponse>> {
+  ): Promise<CreateLangfuseDatasetRunItemResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-run-item`,
       this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
-    );
+    ).then((res) => res.json());
+  }
+
+  createDataset(name: string): Promise<CreateLangfuseDatasetResponse> {
+    const body: CreateLangfuseDatasetBody = { name };
+    return this.fetch(
+      `${this.baseUrl}/api/public/datasets`,
+      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+    ).then((res) => res.json());
+  }
+
+  createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/dataset-items`,
+      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+    ).then((res) => res.json());
   }
 
   protected _parsePayload(response: any): any {
@@ -466,8 +483,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       link: (obj: LangfuseObservationClient, runName: string) => Promise<{ id: string }>;
     }>;
   }> {
-    const res = await this._getDataset(name);
-    const dataset = await res.json();
+    const dataset = await this.syncGetDataset(name);
 
     const { items, ...rest } = dataset;
 
@@ -477,12 +493,11 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         ...item,
         link: async (obj: LangfuseObservationClient, runName: string) => {
           await this.awaitAllQueuedAndPendingRequests();
-          const res = await this._createDatasetRunItem({
+          const data = await this.syncCreateDatasetRunItem({
             runName,
             datasetItemId: item.id,
             observationId: obj.id,
           });
-          const data = res.json();
           return data;
         },
       })),
