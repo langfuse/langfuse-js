@@ -27,7 +27,7 @@ describe("Langfuse Node.js", () => {
   describe("dataset and items", () => {
     it("create and get dataset", async () => {
       const projectNameRandom = Math.random().toString(36).substring(7);
-      const dataset = await await langfuse.createDataset(projectNameRandom);
+      const dataset = await langfuse.createDataset(projectNameRandom);
       const getDataset = await langfuse.getDataset(projectNameRandom);
       expect(getDataset).toEqual(dataset);
     });
