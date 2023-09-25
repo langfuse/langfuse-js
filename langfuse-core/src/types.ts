@@ -84,12 +84,13 @@ export type GetLangfuseDatasetResponse = FixTypes<
 >;
 
 export type CreateLangfuseDatasetRunItemBody = FixTypes<
-  paths["/api/public/dataset-run-item"]["post"]["requestBody"]["content"]["application/json"]
+  paths["/api/public/dataset-run-items"]["post"]["requestBody"]["content"]["application/json"]
 >;
 export type CreateLangfuseDatasetRunItemResponse = FixTypes<
-  paths["/api/public/dataset-run-item"]["post"]["responses"]["200"]["content"]["application/json"]
+  paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
 
+// for async Jobs
 export type LangfuseObject =
   | "createTrace"
   | "createEvent"
