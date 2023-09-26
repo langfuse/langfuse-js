@@ -10,10 +10,11 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Packages
 
-| Package                          | NPM                                                                                                                         | Environments          |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| [langfuse](./langfuse)           | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)           | Node >= 18, Web, Edge |
-| [langfuse-node](./langfuse-node) | [![npm package](https://img.shields.io/npm/v/langfuse-node?style=flat-square)](https://www.npmjs.com/package/langfuse-node) | Node < 18             |
+| Package                                    | NPM                                                                                                                                   | Environments          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| [langfuse](./langfuse)                     | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)                     | Node >= 18, Web, Edge |
+| [langfuse-node](./langfuse-node)           | [![npm package](https://img.shields.io/npm/v/langfuse-node?style=flat-square)](https://www.npmjs.com/package/langfuse-node)           | Node < 18             |
+| [langfuse-langchain](./langfuse-langchain) | [![npm package](https://img.shields.io/npm/v/langfuse-langchain?style=flat-square)](https://www.npmjs.com/package/langfuse-langchain) | Node >= 20, Web, Edge |
 
 ## Documentation
 
@@ -26,6 +27,7 @@ This repository is broken into different packages
 - **/langfuse-core** > All common code goes here.
 - **/langfuse-node** > Node.js specific code
 - **/langfuse** > Web/Edge/modern Node.js specific code, using fetch and browser APIs
+- **/langfuse-langchain** > Langchain integration via callback handler
 
 ### Installing dependencies
 
