@@ -118,7 +118,7 @@ describe("simple chains", () => {
       baseUrl: LF_HOST,
     });
     const model = new OpenAI({});
-    const chain = new ConversationChain({ llm: model });
+    const chain = new ConversationChain({ llm: model, callbacks: [handler] });
     const res1 = await chain.call({ input: "Hi! I'm Jim." }, { callbacks: [handler] });
     console.log({ res1 });
 
@@ -259,6 +259,24 @@ describe("simple chains", () => {
     expect(generation?.length).toBe(1);
     expect(generation?.[0].name).toBe("OpenAI");
   });
+
+  // it("check for LLMChain and chain run", async () => {
+  //   const handler = new CallbackHandler({
+  //     publicKey: LF_PUBLIC_KEY,
+  //     secretKey: LF_SECRET_KEY,
+  //     baseUrl: LF_HOST,
+  //   });
+  //   const llm = new OpenAI({});
+  //   const template = "What is the capital city of {country}?";
+  //   const prompt = new PromptTemplate({ template, inputVariables: ["country"] });
+  //   const chain = new LLMChain({
+  //     prompt,
+  //     llm,
+  //     callbacks: [handler],
+  //   });
+
+  //   chain.run({ country: "France" }, { callbacks: [handler] });
+  // });
 
   it("create span for callback", async () => {
     const langfuse = new Langfuse({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
