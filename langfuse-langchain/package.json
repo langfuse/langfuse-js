@@ -1,6 +1,6 @@
 {
   "name": "langfuse-langchain",
-  "version": "1.0.23-alpha.8",
+  "version": "1.0.23-alpha.9",
   "author": {
     "name": "Langfuse",
     "email": "hi@langfuse.com",
@@ -25,5 +25,6 @@
   },
   "devDependencies": {
     "cheerio": "^1.0.0-rc.12"
-  }
+  },
+  "type": "module"
 }
