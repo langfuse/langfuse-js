@@ -1,6 +1,6 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 
-import CallbackHandler, { Langfuse } from "../langfuse-langchain";
+import { CallbackHandler, Langfuse } from "../langfuse-langchain";
 import { OpenAI } from "langchain/llms/openai";
 
 const LF_HOST = process.env.LF_HOST ?? "http://localhost:3000";
