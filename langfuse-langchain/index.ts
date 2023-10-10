@@ -1,2 +1,4 @@
-export { CallbackHandler } from "./src/callback";
-export { Langfuse } from "../langfuse";
+import { CallbackHandler } from "./src/callback";
+
+export default CallbackHandler;
+export { Langfuse } from "../langfuse/index";
