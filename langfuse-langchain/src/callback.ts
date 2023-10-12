@@ -24,7 +24,9 @@ type KeyParams = {
   secretKey: string;
 } & LangfuseOptions;
 
-type ConstructorParams = RootParams | KeyParams;
+type ConstructorParams = (RootParams | KeyParams) & {
+  userId?: string;
+};
 
 export class CallbackHandler extends BaseCallbackHandler {
   name = "CallbackHandler";
@@ -33,6 +35,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   observationId?: string;
   rootObservationId?: string;
   topLevelObservationId?: string;
+  userId?: string;
 
   constructor(params: ConstructorParams) {
     super();
@@ -43,6 +46,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     } else {
       this.langfuse = new Langfuse({ ...params, persistence: "memory" });
     }
+    this.userId = params.userId;
   }
 
   async flushAsync(): Promise<any> {
@@ -161,6 +165,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         id: runId,
         name: serialized.id.at(-1)?.toString(),
         metadata: this.joinTagsAndMetaData(tags, metadata),
+        userId: this.userId,
       });
       this.traceId = runId;
     }
