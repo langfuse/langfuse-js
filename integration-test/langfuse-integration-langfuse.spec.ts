@@ -30,7 +30,7 @@ describe("Langfuse Langchain", () => {
         openAIApiKey: "sk-...",
         streaming: true,
       });
-      // const a = new MyCallbackHandler();
+
       const res = await llm.call("Tell me a joke", undefined, [callbackHandler]);
       console.log(res);
     });
