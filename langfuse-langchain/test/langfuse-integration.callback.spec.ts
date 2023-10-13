@@ -163,48 +163,6 @@ describe("simple chains", () => {
     await handler.flushAsync();
   });
 
-  // it("should execute QA retrieval", async () => {
-  //   const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
-  //   // load docs
-  //   const loader = new TextLoader("../static/state_of_the_union.txt");
-  //   const docs = await loader.load();
-
-  //   // split docs
-  //   const textSplitter = new RecursiveCharacterTextSplitter({
-  //     chunkSize: 500,
-  //     chunkOverlap: 0,
-  //   });
-
-  //   const splitDocs = await textSplitter.splitDocuments(docs);
-
-  //   // // calc embeddings
-  //   const embeddings = new OpenAIEmbeddings();
-
-  //   const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
-
-  //   // // retrieval chain
-  //   const model = new ChatOpenAI({ modelName: "gpt-3.5-turbo" });
-  //   const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever());
-
-  //   const response = await chain.call(
-  //     {
-  //       query: "What is the state of the United States?",
-  //     },
-  //     { callbacks: [callback] }
-  //   );
-  //   console.log(response);
-  //   await callback.flushAsync();
-
-  //   expect(callback.traceId).toBeDefined();
-  //   const trace = callback.traceId ? await getTraces(callback.traceId) : undefined;
-
-  //   expect(trace).toBeDefined();
-  //   expect(trace?.observations.length).toBe(2);
-  //   const generations = trace?.observations.filter((o) => o.type === "GENERATION");
-  //   expect(generations).toBeDefined();
-  //   expect(generations?.length).toBe(1);
-  // });
-
   it("function calls", async () => {
     const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
 
@@ -259,24 +217,6 @@ describe("simple chains", () => {
     expect(generation?.length).toBe(1);
     expect(generation?.[0].name).toBe("OpenAI");
   });
-
-  // it("check for LLMChain and chain run", async () => {
-  //   const handler = new CallbackHandler({
-  //     publicKey: LF_PUBLIC_KEY,
-  //     secretKey: LF_SECRET_KEY,
-  //     baseUrl: LF_HOST,
-  //   });
-  //   const llm = new OpenAI({});
-  //   const template = "What is the capital city of {country}?";
-  //   const prompt = new PromptTemplate({ template, inputVariables: ["country"] });
-  //   const chain = new LLMChain({
-  //     prompt,
-  //     llm,
-  //     callbacks: [handler],
-  //   });
-
-  //   chain.run({ country: "France" }, { callbacks: [handler] });
-  // });
 
   it("create span for callback", async () => {
     const langfuse = new Langfuse({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });

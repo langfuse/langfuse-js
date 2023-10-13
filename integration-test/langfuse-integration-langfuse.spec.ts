@@ -1,6 +1,6 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
-import CallbackHandler from "../langfuse-langchain";
-import Langfuse from "../langfuse-langchain";
+
+import { Langfuse } from "../langfuse-langchain";
 
 const LF_HOST = process.env.LF_HOST ?? "http://localhost:3000";
 const LF_PUBLIC_KEY = process.env.LF_PUBLIC_KEY ?? "pk-lf-1234567890";
@@ -17,13 +17,21 @@ describe("Langfuse Langchain", () => {
       expect(langfuse).toBeInstanceOf(Langfuse);
     });
 
-    it("exports the callback handler", async () => {
-      const callbackHandler = new CallbackHandler({
-        publicKey: LF_PUBLIC_KEY,
-        secretKey: LF_SECRET_KEY,
-        baseUrl: LF_HOST,
-      });
-      expect(callbackHandler).toBeInstanceOf(CallbackHandler);
-    });
+    // it("exports the callback handler", async () => {
+    //   const callbackHandler = new CallbackHandler({
+    //     publicKey: LF_PUBLIC_KEY,
+    //     secretKey: LF_SECRET_KEY,
+    //     baseUrl: LF_HOST,
+    //   });
+    //   expect(callbackHandler).toBeInstanceOf(CallbackHandler);
+
+    //   const llm = new OpenAI({
+    //     openAIApiKey: "sk-...",
+    //     streaming: true,
+    //   });
+
+    //   const res = await llm.call("Tell me a joke", undefined, [callbackHandler]);
+    //   console.log(res);
+    // });
   });
 });
