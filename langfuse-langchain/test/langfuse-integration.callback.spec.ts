@@ -18,28 +18,29 @@ describe("simple chains", () => {
   jest.setTimeout(30_000);
   jest.useRealTimers();
 
-  it("should execute simple llm call", async () => {
-    const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      it("should execute simple llm call", async () => {
+            const handler = new CallbackHandler({
+        publicKey: LF_PUBLIC_KEY,
+        secretKey: LF_SECRET_KEY,
+        baseUrl: LF_HOST,
+      });
+      const llm = new OpenAI({ streaming: true });
+            const res = await llm.call("Tell me a joke", { callbacks: [handler] });
+            await handler.flushAsync();
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+      expect(trace).toBeDefined();
+      expect(trace?.observations.length).toBe(1);
+      const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generation?.length).toBe(1);
+      expect(generation?.[0].name).toBe("OpenAI");
+      expect(generation?.[0].promptTokens).toBeDefined();
+      expect(generation?.[0].completionTokens).toBeDefined();
+      expect(generation?.[0].totalTokens).toBeDefined();
     });
-    const llm = new OpenAI({ streaming: true });
-    const res = await llm.call("Tell me a joke", { callbacks: [handler] });
-    await handler.flushAsync();
-    expect(res).toBeDefined();
-
-    expect(handler.traceId).toBeDefined();
-    const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
-
-    expect(trace).toBeDefined();
-    expect(trace?.observations.length).toBe(1);
-    const generation = trace?.observations.filter((o) => o.type === "GENERATION");
-    expect(generation?.length).toBe(1);
-    expect(generation?.[0].name).toBe("OpenAI");
-    expect(generation?.[0].promptTokens).toBeDefined();
-    expect(generation?.[0].completionTokens).toBeDefined();
-    expect(generation?.[0].totalTokens).toBeDefined();
   });
 
   it.each([["OpenAI"], ["ChatOpenAI"], ["ChatAnthropic"]])(

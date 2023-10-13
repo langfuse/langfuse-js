@@ -1,5 +1,8 @@
 export { Langfuse } from "../langfuse/src/langfuse";
 
-export { CallbackHandler } from "./src/callback";
+import { CallbackHandler } from "./src/callback";
 
-// export * from "./src/callback";
+export default CallbackHandler;
+
+export { CallbackHandler };
+export * from "./src/callback";
