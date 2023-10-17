@@ -125,7 +125,7 @@ describe("simple chains", () => {
     const res2 = await chain.call({ input: "What's my name?" }, { callbacks: [handler] });
     console.log({ res2 });
 
-    await handler.flushAsync();
+    await handler.shutdownAsync();
 
     expect(handler.traceId).toBeDefined();
     const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
