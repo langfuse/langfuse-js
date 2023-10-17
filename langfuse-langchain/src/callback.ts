@@ -220,7 +220,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       startTime: new Date(),
       metadata: this.joinTagsAndMetaData(tags, metadata),
       parentObservationId: parentRunId ?? this.rootObservationId,
-      prompt: messages as any,
+      prompt: messages,
       model: extractedModelName,
       modelParameters: modelParameters,
     });
@@ -290,7 +290,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         parentObservationId: parentRunId,
         traceId: this.traceId,
         name: tool.id.at(-1)?.toString(),
-        input: input as any,
+        input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
       });
@@ -314,7 +314,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         parentObservationId: parentRunId,
         traceId: this.traceId,
         name: retriever.id.at(-1)?.toString(),
-        input: query as any,
+        input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
       });
@@ -333,7 +333,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse._updateSpan({
         spanId: runId,
         traceId: this.traceId,
-        output: documents as any,
+        output: documents,
         endTime: new Date(),
       });
     } catch (e) {
@@ -347,7 +347,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse._updateSpan({
         spanId: runId,
         traceId: this.traceId,
-        output: output as any,
+        output: output,
         endTime: new Date(),
       });
     } catch (e) {
@@ -386,7 +386,7 @@ export class CallbackHandler extends BaseCallbackHandler {
           "message" in lastResponse &&
           lastResponse["message"] instanceof AIMessage &&
           lastResponse["message"].additional_kwargs
-            ? JSON.stringify(lastResponse["message"].additional_kwargs)
+            ? lastResponse["message"].additional_kwargs
             : lastResponse.text,
         endTime: new Date(),
         usage: llmUsage,
