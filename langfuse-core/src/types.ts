@@ -113,8 +113,9 @@ export type CreateLangfuseDatasetBody =
 export type CreateLangfuseDatasetResponse = FixTypes<
   paths["/api/public/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
-export type CreateLangfuseDatasetItemBody =
-  paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"];
+export type CreateLangfuseDatasetItemBody = FixTypes<
+  paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"]
+>;
 export type CreateLangfuseDatasetItemResponse = FixTypes<
   paths["/api/public/dataset-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
