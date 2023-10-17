@@ -27,6 +27,7 @@
     "test:fetch": "jest langfuse/*",
     "test:integration": "dotenv -- jest integration-test/*",
     "test:datasets": "jest integration-test/langfuse-integration-datasets*",
+    "test:langchain": "yarn workspace langfuse-langchain run test:integration",
     "compile": "rollup -c --bundleConfigAsCjs"
   },
   "devDependencies": {

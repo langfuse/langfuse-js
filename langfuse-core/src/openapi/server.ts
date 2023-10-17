@@ -32,14 +32,16 @@ export interface paths {
     post: operations["event_create"];
   };
   "/api/public/generations": {
-    /** @description Get a list of generations */
-    get: operations["generations_get"];
     post: operations["generations_log"];
     patch: operations["generations_update"];
   };
   "/api/public/observations/{observationId}": {
     /** @description Get a specific observation */
     get: operations["observations_get"];
+  };
+  "/api/public/observations": {
+    /** @description Get a list of observations */
+    get: operations["observations_getMany"];
   };
   "/api/public/scores": {
     /** @description Get scores */
@@ -99,7 +101,7 @@ export interface components {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
       prompt?: Record<string, unknown> | null;
-      completion?: string | null;
+      completion?: Record<string, unknown> | null;
       usage?: components["schemas"]["LLMUsage"];
     } & components["schemas"]["CreateSpanRequest"];
     /** Trace */
@@ -149,10 +151,10 @@ export interface components {
       modelParameters?: {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
-      prompt?: Record<string, unknown> | null;
+      input?: Record<string, unknown> | null;
       version?: string | null;
       metadata?: Record<string, unknown> | null;
-      completion?: string | null;
+      output?: Record<string, unknown> | null;
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
@@ -275,13 +277,13 @@ export interface components {
       prompt?: Record<string, unknown> | null;
       version?: string | null;
       metadata?: Record<string, unknown> | null;
-      completion?: string | null;
+      completion?: Record<string, unknown> | null;
       usage?: components["schemas"]["LLMUsage"];
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
     };
-    /** Generations */
-    Generations: {
+    /** Observations */
+    Observations: {
       data: components["schemas"]["Observation"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
@@ -593,49 +595,6 @@ export interface operations {
       };
     };
   };
-  /** @description Get a list of generations */
-  generations_get: {
-    parameters: {
-      query?: {
-        page?: number | null;
-        limit?: number | null;
-        name?: string | null;
-        userId?: string | null;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Generations"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": string;
-        };
-      };
-      401: {
-        content: {
-          "application/json": string;
-        };
-      };
-      403: {
-        content: {
-          "application/json": string;
-        };
-      };
-      404: {
-        content: {
-          "application/json": string;
-        };
-      };
-      405: {
-        content: {
-          "application/json": string;
-        };
-      };
-    };
-  };
   generations_log: {
     requestBody: {
       content: {
@@ -726,6 +685,50 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Observation"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": string;
+        };
+      };
+      401: {
+        content: {
+          "application/json": string;
+        };
+      };
+      403: {
+        content: {
+          "application/json": string;
+        };
+      };
+      404: {
+        content: {
+          "application/json": string;
+        };
+      };
+      405: {
+        content: {
+          "application/json": string;
+        };
+      };
+    };
+  };
+  /** @description Get a list of observations */
+  observations_getMany: {
+    parameters: {
+      query?: {
+        page?: number | null;
+        limit?: number | null;
+        name?: string | null;
+        userId?: string | null;
+        type?: string | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Observations"];
         };
       };
       400: {

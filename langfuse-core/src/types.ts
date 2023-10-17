@@ -62,8 +62,9 @@ export type CreateLangfuseEventBody = FixTypes<
 export type CreateLangfuseSpanBody = FixTypes<
   paths["/api/public/spans"]["post"]["requestBody"]["content"]["application/json"]
 >;
-export type CreateLangfuseGenerationBody = FixTypes<
-  paths["/api/public/generations"]["post"]["requestBody"]["content"]["application/json"]
+export type CreateLangfuseGenerationBody = Omit<
+  FixTypes<paths["/api/public/generations"]["post"]["requestBody"]["content"]["application/json"]>,
+  "input" | "output"
 >;
 export type CreateLangfuseScoreBody = FixTypes<
   paths["/api/public/scores"]["post"]["requestBody"]["content"]["application/json"]
@@ -112,8 +113,9 @@ export type CreateLangfuseDatasetBody =
 export type CreateLangfuseDatasetResponse = FixTypes<
   paths["/api/public/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
-export type CreateLangfuseDatasetItemBody =
-  paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"];
+export type CreateLangfuseDatasetItemBody = FixTypes<
+  paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"]
+>;
 export type CreateLangfuseDatasetItemResponse = FixTypes<
   paths["/api/public/dataset-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
@@ -132,6 +134,9 @@ type FixTypes<T> = Omit<
     [P in keyof T]: P extends "startTime" | "endTime" | "timestamp" | "completionStartTime" | "createdAt" | "updatedAt"
       ? // Dates instead of strings
         Date | OptionalTypes<T[P]>
+      : P extends "metadata" | "input" | "output" | "prompt" | "completion" | "expectedOutput"
+      ? // JSON instead of strings
+        any | OptionalTypes<T[P]>
       : T[P];
   },
   "externalId" | "traceIdType"

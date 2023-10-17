@@ -60,7 +60,7 @@ describe("Langfuse Node.js", () => {
       const item3 = await langfuse.createDatasetItem({
         datasetName: projectNameRandom,
         input: "prompt",
-        expectedOutput: "completion" as any,
+        expectedOutput: "completion",
       });
       const getDataset = await langfuse.getDataset(projectNameRandom);
       expect(getDataset).toMatchObject({
@@ -86,7 +86,7 @@ describe("Langfuse Node.js", () => {
       for (const item of dataset.items) {
         const generation = langfuse.generation({
           id: "test-generation-id-" + projectNameRandom,
-          input: item.input,
+          prompt: item.input,
           completion: "Hello world generated",
         });
         await item.link(generation, "test-run-" + projectNameRandom);
