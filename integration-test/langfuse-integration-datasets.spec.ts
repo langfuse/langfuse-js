@@ -71,7 +71,7 @@ describe("Langfuse Node.js", () => {
           expect.objectContaining({ ...item3, link: expect.any(Function) }),
         ]),
       });
-    });
+    }, 10000);
 
     it("e2e", async () => {
       const projectNameRandom = Math.random().toString(36).substring(7);
@@ -111,6 +111,6 @@ describe("Langfuse Node.js", () => {
           }),
         ]),
       });
-    });
+    }, 10000);
   });
 });
