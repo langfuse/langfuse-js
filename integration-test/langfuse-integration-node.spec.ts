@@ -129,9 +129,18 @@ describe("Langfuse Node.js", () => {
       });
     });
 
-    it("create generation", async () => {
+    it("create different generation types 1", async () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
-      const generation = trace.generation({ name: "generation-name-new" });
+      const generation = trace.generation({
+        name: "generation-name-new",
+        prompt: {
+          text: "prompt",
+        },
+        completion: {
+          foo: "bar",
+        },
+      });
+
       await langfuse.flushAsync();
       // check from get api if trace is created
       const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
@@ -139,6 +148,66 @@ describe("Langfuse Node.js", () => {
         id: generation.id,
         name: "generation-name-new",
         type: "GENERATION",
+        input: {
+          text: "prompt",
+        },
+        output: {
+          foo: "bar",
+        },
+      });
+    });
+
+    it("create different generation types 2", async () => {
+      const trace = langfuse.trace({ name: "trace-name-generation-new" });
+      const generation = trace.generation({
+        name: "generation-name-new",
+        prompt: [
+          {
+            text: "prompt",
+          },
+        ],
+        completion: [
+          {
+            foo: "bar",
+          },
+        ],
+      });
+      await langfuse.flushAsync();
+      // check from get api if trace is created
+      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+      expect(res.data).toMatchObject({
+        id: generation.id,
+        name: "generation-name-new",
+        type: "GENERATION",
+        input: [
+          {
+            text: "prompt",
+          },
+        ],
+        output: [
+          {
+            foo: "bar",
+          },
+        ],
+      });
+    });
+
+    it("create different generation types 3", async () => {
+      const trace = langfuse.trace({ name: "trace-name-generation-new" });
+      const generation = trace.generation({
+        name: "generation-name-new",
+        prompt: "prompt",
+        completion: "completion",
+      });
+      await langfuse.flushAsync();
+      // check from get api if trace is created
+      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+      expect(res.data).toMatchObject({
+        id: generation.id,
+        name: "generation-name-new",
+        type: "GENERATION",
+        input: "prompt",
+        output: "completion",
       });
     });
 
@@ -171,6 +240,7 @@ describe("Langfuse Node.js", () => {
         completionTokens: 15,
         endTime: expect.any(String),
         completionStartTime: new Date("2020-01-01T00:00:00.000Z").toISOString(),
+        output: "Hello world",
       });
     });
 
