@@ -9,6 +9,14 @@ import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
 
+// Required when users pass these as typed arguments
+export {
+  type LangfuseTraceClient,
+  type LangfuseSpanClient,
+  type LangfuseEventClient,
+  type LangfuseGenerationClient,
+} from "../../langfuse-core/src";
+
 export class Langfuse extends LangfuseCore {
   private _storage: LangfuseStorage;
   private _storageCache: any;
