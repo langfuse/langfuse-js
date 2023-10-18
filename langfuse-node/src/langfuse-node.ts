@@ -11,6 +11,14 @@ import { LangfuseMemoryStorage } from "../../langfuse-core/src/storage-memory";
 import { type LangfuseOptions } from "./types";
 import { fetch } from "./fetch";
 
+// Required when users pass these as typed arguments
+export {
+  type LangfuseTraceClient,
+  type LangfuseSpanClient,
+  type LangfuseEventClient,
+  type LangfuseGenerationClient,
+} from "../../langfuse-core/src";
+
 // The actual exported Nodejs API.
 export default class Langfuse extends LangfuseCore {
   private _memoryStorage = new LangfuseMemoryStorage();
