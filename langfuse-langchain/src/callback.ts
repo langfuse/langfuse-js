@@ -57,6 +57,10 @@ export class CallbackHandler extends BaseCallbackHandler {
     return this.langfuse.shutdownAsync();
   }
 
+  debug(enabled: boolean = true): void {
+    this.langfuse.debug(enabled);
+  }
+
   async handleNewToken(token: string, runId: string): Promise<void> {
     console.log("New token:", token, "with ID:", runId);
   }
