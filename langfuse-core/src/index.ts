@@ -577,6 +577,10 @@ export abstract class LangfuseObjectClient {
     });
     return this;
   }
+
+  getTraceUrl(): string {
+    return `${this.client.baseUrl}/trace/${this.traceId}`;
+  }
 }
 
 export class LangfuseTraceClient extends LangfuseObjectClient {

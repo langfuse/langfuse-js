@@ -69,6 +69,10 @@ export class CallbackHandler extends BaseCallbackHandler {
     return this.traceId;
   }
 
+  getTraceUrl(): string | undefined {
+    return this.traceId ? `${this.langfuse.baseUrl}/trace/${this.traceId}` : undefined;
+  }
+
   getLangchainRunId(): string | undefined {
     return this.topLevelObservationId;
   }
