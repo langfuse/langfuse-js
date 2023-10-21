@@ -25,7 +25,8 @@ type KeyParams = {
 } & LangfuseOptions;
 
 type ConstructorParams = (RootParams | KeyParams) & {
-  userId?: string;
+  userId?: string; // added to all traces
+  version?: string; // added to all traces and observations
 };
 
 export class CallbackHandler extends BaseCallbackHandler {
@@ -36,6 +37,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   rootObservationId?: string;
   topLevelObservationId?: string;
   userId?: string;
+  version?: string;
 
   constructor(params: ConstructorParams) {
     super();
@@ -47,6 +49,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse = new Langfuse({ ...params, persistence: "memory" });
     }
     this.userId = params.userId;
+    this.version = params.version;
   }
 
   async flushAsync(): Promise<any> {
@@ -86,6 +89,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         level: "ERROR",
         statusMessage: err.toString(),
         endTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -111,6 +115,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         metadata: this.joinTagsAndMetaData(tags, metadata),
         input: inputs,
         startTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -126,6 +131,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         traceId: this.traceId,
         endTime: new Date(),
         input: action,
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -140,6 +146,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         traceId: this.traceId,
         endTime: new Date(),
         output: action,
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -155,6 +162,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         level: "ERROR",
         statusMessage: err.toString(),
         endTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -174,6 +182,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         name: serialized.id.at(-1)?.toString(),
         metadata: this.joinTagsAndMetaData(tags, metadata),
         userId: this.userId,
+        version: this.version,
       });
       this.traceId = runId;
     }
@@ -231,6 +240,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       prompt: messages,
       model: extractedModelName,
       modelParameters: modelParameters,
+      version: this.version,
     });
   }
 
@@ -259,6 +269,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         traceId: this.traceId,
         output: outputs,
         endTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -301,6 +312,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -325,6 +337,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         startTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -343,6 +356,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         traceId: this.traceId,
         output: documents,
         endTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -357,6 +371,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         traceId: this.traceId,
         output: output,
         endTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -372,6 +387,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         level: "ERROR",
         statusMessage: err.toString(),
         endTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -398,6 +414,7 @@ export class CallbackHandler extends BaseCallbackHandler {
             : lastResponse.text,
         endTime: new Date(),
         usage: llmUsage,
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
@@ -413,6 +430,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         level: "ERROR",
         statusMessage: err.toString(),
         endTime: new Date(),
+        version: this.version,
       });
     } catch (e) {
       console.log("Error:", e);
