@@ -5,18 +5,10 @@ import json from "@rollup/plugin-json";
 import typescript from "rollup-plugin-typescript2";
 import dts from "rollup-plugin-dts";
 
-import pkg from "./package.json";
-
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
-
-let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}));
 
 const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc, x) => {
   const localPkg = require(`./${x}/package.json`);
-  let external = [...globalExternal]
-    .concat(Object.keys(localPkg.dependencies || {}))
-    .concat(Object.keys(localPkg.peerDependencies || {}))
-    .concat(Object.keys(localPkg.devDependencies || {}));
 
   return [
     ...acc,
@@ -35,7 +27,7 @@ const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc,
           format: `es`,
         },
       ],
-      external,
+      external: [/node_modules/],
       plugins: [
         // Allows node_modules resolution
         resolve({ extensions }),
