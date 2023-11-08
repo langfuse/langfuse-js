@@ -8,6 +8,9 @@ import {
 import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Required when users pass these as typed arguments
 export {
@@ -22,9 +25,37 @@ export class Langfuse extends LangfuseCore {
   private _storageCache: any;
   private _storageKey: string;
 
-  constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
-    super(params);
+  constructor(params?: { publicKey: string; secretKey: string } & LangfuseOptions) {
+
+    if (!params) {
+      if (process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY) {
+        params = { publicKey: process.env.LANGFUSE_PUBLIC_KEY, secretKey: process.env.LANGFUSE_SECRET_KEY }
+      }
+      else {
+        throw new Error("You must pass your Langfuse project's api public key and secret key either within the constructor or as environment variables ");
+      }
+    }
+
+
     const { publicKey, secretKey, ...options } = params;
+
+    if (!params.publicKey && process.env.LANGFUSE_PUBLIC_KEY) {
+      params.publicKey = process.env.LANGFUSE_PUBLIC_KEY
+    }
+
+    if (!params.secretKey && process.env.LANGFUSE_SECRET_KEY) {
+      params.secretKey = process.env.LANGFUSE_SECRET_KEY
+    }
+
+    if (!options.baseUrl) {
+      options.baseUrl = process.env.LANGFUSE_HOST
+    }
+
+    // chech if base url is not present in constructor then it take value from env variable
+
+
+    super(params);
+
     if (typeof window !== "undefined" && "Deno" in window === false) {
       this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
       this._storage = getStorage(options?.persistence || "localStorage", window);
@@ -79,9 +110,33 @@ export class LangfuseWeb extends LangfuseWebStateless {
   private _storageKey: string;
 
   constructor(params: { publicKey: string } & LangfuseOptions) {
-    super(params);
+
+    if (!params) {
+      if (process.env.LANGFUSE_PUBLIC_KEY) {
+        params = { publicKey: process.env.LANGFUSE_PUBLIC_KEY }
+      }
+      else if (process.env.NEXT_PUBLIC_LANGFUSE_PUBLIC_KEY) {
+        params = { publicKey: process.env.NEXT_PUBLIC_LANGFUSE_PUBLIC_KEY }
+      }
+      else {
+        throw new Error("You must pass your Langfuse project's api public key either within the constructor or as environment variables ");
+      }
+    }
+
+    if (!params.publicKey && process.env.LANGFUSE_PUBLIC_KEY) {
+      params.publicKey = process.env.LANGFUSE_PUBLIC_KEY
+    }
+    else if (!params.publicKey && process.env.NEXT_PUBLIC_LANGFUSE_PUBLIC_KEY) {
+      params.publicKey = process.env.NEXT_PUBLIC_LANGFUSE_PUBLIC_KEY;
+    }
 
     const { publicKey, ...options } = params;
+    if (!options.baseUrl) {
+      options.baseUrl = process.env.LANGFUSE_HOST
+    }
+
+    super(params);
+
     if (typeof window !== "undefined") {
       this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
       this._storage = getStorage(options?.persistence || "localStorage", window);
