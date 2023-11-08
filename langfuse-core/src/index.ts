@@ -450,8 +450,8 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     super(params);
   }
 
-  trace(body: CreateLangfuseTraceBody): LangfuseTraceClient {
-    const id = this.traceStateless(body);
+  trace(body?: CreateLangfuseTraceBody): LangfuseTraceClient {
+    const id = this.traceStateless(body ?? {});
     return new LangfuseTraceClient(this, id);
   }
 
