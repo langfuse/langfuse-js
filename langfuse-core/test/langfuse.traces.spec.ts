@@ -39,6 +39,18 @@ describe("Langfuse Core", () => {
       });
     });
 
+    it("should create an empty trace", async () => {
+      jest.setSystemTime(new Date("2022-01-01"));
+
+      langfuse.trace();
+
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        id: expect.any(String),
+      });
+    });
+
     it("should allow overridding the id", async () => {
       langfuse.trace({
         id: "123456789",
