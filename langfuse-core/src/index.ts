@@ -452,7 +452,21 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
   trace(body?: CreateLangfuseTraceBody): LangfuseTraceClient {
     const id = this.traceStateless(body ?? {});
-    return new LangfuseTraceClient(this, id);
+    const t = new LangfuseTraceClient(this, id);
+    if (process.env.DEFER && body) {
+      try {
+        if (globalThis.__deferRuntime) {
+          __deferRuntime.langfuseTraces([
+            {
+              id: id,
+              name: body.name || "",
+              url: t.getTraceUrl(),
+            },
+          ]);
+        }
+      } catch {}
+    }
+    return t;
   }
 
   span(body: CreateLangfuseSpanBody): LangfuseSpanClient {
