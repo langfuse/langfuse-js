@@ -23,8 +23,17 @@ import {
   type CreateLangfuseDatasetItemResponse,
   type GetLangfuseDatasetRunResponse,
   type GetLangfuseDatasetRunParams,
+  type DeferRuntime,
 } from "./types";
-import { assert, generateUUID, removeTrailingSlash, retriable, type RetriableOptions, safeSetTimeout } from "./utils";
+import {
+  assert,
+  generateUUID,
+  removeTrailingSlash,
+  retriable,
+  type RetriableOptions,
+  safeSetTimeout,
+  getEnv,
+} from "./utils";
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
@@ -85,7 +94,7 @@ abstract class LangfuseCoreStateless {
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 1;
     this.flushInterval = options?.flushInterval ?? 10000;
-    this.release = options?.release ?? process.env.LANGFUSE_RELEASE ?? getCommonReleaseEnvs() ?? undefined;
+    this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
@@ -452,7 +461,22 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
   trace(body?: CreateLangfuseTraceBody): LangfuseTraceClient {
     const id = this.traceStateless(body ?? {});
-    return new LangfuseTraceClient(this, id);
+    const t = new LangfuseTraceClient(this, id);
+    if (getEnv("DEFER") && body) {
+      try {
+        const deferRuntime = getEnv<DeferRuntime>("__deferRuntime");
+        if (deferRuntime) {
+          deferRuntime.langfuseTraces([
+            {
+              id: id,
+              name: body.name || "",
+              url: t.getTraceUrl(),
+            },
+          ]);
+        }
+      } catch {}
+    }
+    return t;
   }
 
   span(body: CreateLangfuseSpanBody): LangfuseSpanClient {

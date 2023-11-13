@@ -81,3 +81,13 @@ export function safeSetTimeout(fn: () => void, timeout: number): any {
   t?.unref && t?.unref();
   return t;
 }
+
+export function getEnv<T = string>(key: string): T | undefined {
+  if (typeof process !== "undefined") {
+    return process.env[key] as T;
+  }
+  if (typeof globalThis !== "undefined") {
+    return (globalThis as any)[key];
+  }
+  return;
+}
