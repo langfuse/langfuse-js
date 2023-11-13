@@ -141,3 +141,13 @@ type FixTypes<T> = Omit<
   },
   "externalId" | "traceIdType"
 >;
+
+export type DeferRuntime = {
+  langfuseTraces: (
+    traces: {
+      id: string;
+      name: string;
+      url: string;
+    }[]
+  ) => void;
+};
