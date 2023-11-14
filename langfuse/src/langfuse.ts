@@ -10,8 +10,9 @@ import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
 import dotenv from 'dotenv';
 
-dotenv.config();
-
+if (typeof process.env !== 'undefined') {
+    dotenv.config();
+} 
 // Required when users pass these as typed arguments
 export {
   type LangfuseTraceClient,
