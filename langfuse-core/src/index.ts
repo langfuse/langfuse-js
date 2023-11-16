@@ -424,10 +424,6 @@ abstract class LangfuseCoreStateless {
     }
   }
 
-  shutdown(): void {
-    void this.shutdownAsync();
-  }
-
   protected async awaitAllQueuedAndPendingRequests(): Promise<void> {
     clearTimeout(this._flushTimer);
     await this.flushAsync();
