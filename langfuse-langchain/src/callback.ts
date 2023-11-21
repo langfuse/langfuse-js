@@ -8,12 +8,10 @@ import {
   type ChainValues,
   type LLMResult,
 } from "langchain/schema";
-
-import { Langfuse } from "../../langfuse/index";
-
-import { type LangfuseOptions } from "../../langfuse/src/types";
 import { type Document } from "langchain/document";
-import type { LangfuseTraceClient, LangfuseSpanClient } from "../../langfuse-core";
+
+import { Langfuse, type LangfuseOptions } from "langfuse";
+import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core";
 
 type RootParams = {
   root: LangfuseTraceClient | LangfuseSpanClient;

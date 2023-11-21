@@ -4,7 +4,7 @@ import {
   type LangfuseFetchOptions,
   type LangfuseFetchResponse,
   type LangfusePersistedProperty,
-} from "../../langfuse-core";
+} from "langfuse-core";
 import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";

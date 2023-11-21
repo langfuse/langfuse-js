@@ -1,4 +1,4 @@
-export { Langfuse } from "../langfuse/src/langfuse";
+export { Langfuse } from "langfuse";
 
 import { CallbackHandler } from "./src/callback";
 

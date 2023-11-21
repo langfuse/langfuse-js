@@ -2,7 +2,7 @@
 import Langfuse from "../src/langfuse-node";
 jest.mock("../src/fetch");
 import { fetch } from "../src/fetch";
-import { wait } from "../../langfuse-core/test/test-utils/test-utils";
+import { wait } from "langfuse-core/test/test-utils/test-utils";
 
 jest.mock("../package.json", () => ({ version: "1.2.3" }));
 
