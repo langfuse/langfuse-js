@@ -1,0 +1,15 @@
+{
+    "name": "langfuse-integration-test-modules",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/main.js",
+    "scripts": {
+        "run:cjs": "node src/commonjs.cjs",
+        "run:mjs": "node src/esm.mjs"
+    },
+    "dependencies": {
+        "dotenv": "^16.3.1",
+        "langchain": "^0.0.163",
+        "langfuse-langchain": "^1.0.31"
+    }
+}

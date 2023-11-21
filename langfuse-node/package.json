@@ -14,8 +14,13 @@
     "url": "https://langfuse.com"
   },
   "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
+  "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
+  "exports": {
+    "require": "./lib/index.cjs.js",
+    "import": "./lib/index.mjs",
+    "types": "./dist/index.d.ts"
+  },
   "dependencies": {
     "axios": "^1.4.0"
   },

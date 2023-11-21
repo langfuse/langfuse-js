@@ -5,7 +5,8 @@
     "langfuse-core",
     "langfuse-node",
     "langfuse",
-    "langfuse-langchain"
+    "langfuse-langchain",
+    "integration-test/modules"
   ],
   "author": {
     "name": "Langfuse",
