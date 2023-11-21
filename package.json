@@ -59,6 +59,7 @@
     "openapi-typescript": "^6.4.5",
     "prettier": "^3.0.1",
     "rollup": "^3.28.0",
+    "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-dts": "^5.3.1",
     "rollup-plugin-dts-bundle": "^1.0.0",
     "rollup-plugin-typescript2": "^0.35.0",

@@ -4,6 +4,7 @@ import resolve from "@rollup/plugin-node-resolve";
 import json from "@rollup/plugin-json";
 import typescript from "rollup-plugin-typescript2";
 import dts from "rollup-plugin-dts";
+import del from "rollup-plugin-delete";
 
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
 
@@ -55,7 +56,7 @@ const configs = ["langfuse-core", "langfuse", "langfuse-node", "langfuse-langcha
     {
       input: `./${x}/lib/${x}/index.d.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: "es" }],
-      plugins: [dts.default()],
+      plugins: [dts.default(), del({ hook: "buildEnd", targets: `./${x}/lib/${x}/` })],
     },
   ];
 }, []);
