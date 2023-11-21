@@ -19,7 +19,7 @@
   "exports": {
     "require": "./lib/index.cjs.js",
     "import": "./lib/index.mjs",
-    "types": "./dist/index.d.ts"
+    "types": "./lib/index.d.ts"
   },
   "dependencies": {
     "axios": "^1.4.0"

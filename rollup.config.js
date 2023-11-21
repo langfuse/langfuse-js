@@ -7,8 +7,9 @@ import dts from "rollup-plugin-dts";
 import del from "rollup-plugin-delete";
 
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
+const packages = ["langfuse-core", "langfuse", "langfuse-node", "langfuse-langchain"];
 
-const configs = ["langfuse-core", "langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc, x) => {
+const configs = packages.reduce((acc, x) => {
   const localPkg = require(`./${x}/package.json`);
 
   return [
@@ -28,7 +29,7 @@ const configs = ["langfuse-core", "langfuse", "langfuse-node", "langfuse-langcha
           format: `es`,
         },
       ],
-      external: [/node_modules/],
+      external: [/node_modules/, ...packages],
       plugins: [
         // Allows node_modules resolution
         resolve({ extensions }),

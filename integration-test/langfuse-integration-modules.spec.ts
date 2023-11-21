@@ -3,7 +3,7 @@ import { join } from "path";
 
 describe("Integration Test", () => {
   it.each([["commonjs.cjs"], ["esm.mjs"]])("should correctly execute %s file in modules directory", (file) => {
-    const result = spawnSync("node", [join("src", file)], {
+    const result = spawnSync("node", [join("node", file)], {
       cwd: join(__dirname, "modules"),
       encoding: "utf-8",
     });

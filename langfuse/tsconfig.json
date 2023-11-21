@@ -1,6 +1,11 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "lib": ["DOM", "ES2015", "ES2022.Error"]
+    "target": "ES6",
+    "lib": [
+      "DOM",
+      "ES2015",
+      "ES2022.Error"
+    ]
   }
 }
