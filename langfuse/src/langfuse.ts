@@ -15,7 +15,7 @@ export {
   type LangfuseSpanClient,
   type LangfuseEventClient,
   type LangfuseGenerationClient,
-} from "../../langfuse-core";
+} from "langfuse-core";
 
 export class Langfuse extends LangfuseCore {
   private _storage: LangfuseStorage;
