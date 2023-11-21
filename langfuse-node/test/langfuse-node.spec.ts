@@ -2,7 +2,10 @@
 import Langfuse from "../src/langfuse-node";
 jest.mock("../src/fetch");
 import { fetch } from "../src/fetch";
-import { wait } from "langfuse-core/test/test-utils/test-utils";
+
+const wait = async (t: number): Promise<void> => {
+  await new Promise((r) => setTimeout(r, t));
+};
 
 jest.mock("../package.json", () => ({ version: "1.2.3" }));
 

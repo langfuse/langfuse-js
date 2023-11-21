@@ -1,4 +1,4 @@
-import { LangfusePersistedProperty, type LangfuseQueueItem } from "../";
+import { LangfusePersistedProperty, type LangfuseQueueItem } from "../index";
 import {
   createTestClient,
   type LangfuseCoreTestClient,
