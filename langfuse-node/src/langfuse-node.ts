@@ -6,7 +6,7 @@ import {
   type LangfuseFetchOptions,
   type LangfuseFetchResponse,
   type LangfusePersistedProperty,
-} from "../../langfuse-core/src";
+} from "../../langfuse-core";
 import { LangfuseMemoryStorage } from "../../langfuse-core/src/storage-memory";
 import { type LangfuseOptions } from "./types";
 import { fetch } from "./fetch";
@@ -17,7 +17,7 @@ export {
   type LangfuseSpanClient,
   type LangfuseEventClient,
   type LangfuseGenerationClient,
-} from "../../langfuse-core/src";
+} from "../../langfuse-core";
 
 // The actual exported Nodejs API.
 export default class Langfuse extends LangfuseCore {

@@ -1,9 +1,4 @@
-import {
-  LangfuseCore,
-  type LangfuseCoreOptions,
-  type LangfuseFetchOptions,
-  type LangfuseFetchResponse,
-} from "../../src";
+import { LangfuseCore, type LangfuseCoreOptions, type LangfuseFetchOptions, type LangfuseFetchResponse } from "../..";
 
 const version = "2.0.0-alpha";
 

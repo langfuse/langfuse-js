@@ -7,7 +7,7 @@ import dts from "rollup-plugin-dts";
 
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
 
-const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc, x) => {
+const configs = ["langfuse", "langfuse-node", "langfuse-langchain", "langfuse-core"].reduce((acc, x) => {
   const localPkg = require(`./${x}/package.json`);
 
   return [

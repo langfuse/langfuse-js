@@ -24,7 +24,7 @@ import {
   type GetLangfuseDatasetRunResponse,
   type GetLangfuseDatasetRunParams,
   type DeferRuntime,
-} from "./types";
+} from "./src/types";
 import {
   assert,
   generateUUID,
@@ -33,10 +33,10 @@ import {
   type RetriableOptions,
   safeSetTimeout,
   getEnv,
-} from "./utils";
-export * as utils from "./utils";
-import { SimpleEventEmitter } from "./eventemitter";
-import { getCommonReleaseEnvs } from "./release-env";
+} from "./src/utils";
+export * as utils from "./src/utils";
+import { SimpleEventEmitter } from "./src/eventemitter";
+import { getCommonReleaseEnvs } from "./src/release-env";
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -683,5 +683,5 @@ export class LangfuseEventClient extends LangfuseObservationClient {
   }
 }
 
-export * from "./types";
-export * from "./openapi/server";
+export * from "./src/types";
+export * from "./src/openapi/server";

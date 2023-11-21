@@ -1,5 +1,21 @@
 {
   "name": "langfuse-core",
-  "main": "src/index.ts",
-  "private": true
+  "version": "0.0.1",
+  "author": {
+    "name": "Langfuse",
+    "email": "hi@langfuse.com",
+    "url": "https://langfuse.com"
+  },
+  "license": "MIT",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "jest -c jest.config.js",
+    "prepublishOnly": "cd .. && yarn build"
+  },
+  "files": [
+    "lib",
+    "Readme.md"
+  ]
 }
