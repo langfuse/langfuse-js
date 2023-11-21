@@ -425,6 +425,9 @@ abstract class LangfuseCoreStateless {
   }
 
   shutdown(): void {
+    console.warn(
+      "shutdown() is deprecated. It does not wait for all events to be processed. Please use shutdownAsync() instead."
+    );
     void this.shutdownAsync();
   }
 
