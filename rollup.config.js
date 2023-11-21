@@ -56,7 +56,10 @@ const configs = packages.reduce((acc, x) => {
     },
     {
       input: `./${x}/lib/${x}/index.d.ts`,
-      output: [{ file: `./${x}/lib/index.d.ts`, format: "es" }],
+      output: [
+        { file: `./${x}/lib/index.d.ts`, format: "cjs" },
+        { file: `./${x}/lib/index.d.mts`, format: "es" },
+      ],
       plugins: [dts.default(), del({ hook: "buildEnd", targets: `./${x}/lib/${x}/` })],
     },
   ];

@@ -1,15 +1,26 @@
 import { spawnSync } from "child_process";
 import { join } from "path";
 
-describe("Integration Test", () => {
-  it.each([["commonjs.cjs"], ["esm.mjs"]])("should correctly execute %s file in modules directory", (file) => {
-    const result = spawnSync("node", [join("node", file)], {
+describe("Test Different Module Conventions", () => {
+  it.each([["test:cjs"], ["test:mjs"], ["test:ts-nodenext"], ["test:ts-cjs"]])(
+    "should correctly execute %s",
+    (testCommand) => {
+      const result = spawnSync("npm", ["run", testCommand], {
+        cwd: join(__dirname, "modules"),
+        encoding: "utf-8",
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("Did construct objects and called them.");
+    }
+  );
+
+  it.each([["test:tsc-nodenext"], ["test:tsc-cjs"]])("should typecheck %s", (testCommand) => {
+    const result = spawnSync("npm", ["run", testCommand], {
       cwd: join(__dirname, "modules"),
       encoding: "utf-8",
     });
-    console.log(result);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Did construct objects and called them");
   });
 });

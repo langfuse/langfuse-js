@@ -4,11 +4,20 @@
     "description": "",
     "main": "dist/main.js",
     "scripts": {
-        "run:cjs": "node node/commonjs.cjs",
-        "run:mjs": "node node/esm.mjs"
+        "test:cjs": "node node/commonjs.cjs",
+        "test:mjs": "node node/esm.mjs",
+        "test:ts-nodenext": "tsx --tsconfig ts-nodenext/tsconfig.json ts-nodenext/nodenext.mts",
+        "test:tsc-nodenext": "tsc --noEmit -p ts-nodenext/tsconfig.json",
+        "test:ts-cjs": "tsx --tsconfig ts-cjs/tsconfig.json ts-cjs/commonjs.ts",
+        "test:tsc-cjs": "tsc --noEmit -p ts-cjs/tsconfig.json"
     },
     "dependencies": {
         "dotenv": "^16.3.1",
-        "langchain": "^0.0.163"
+        "langchain": "^0.0.163",
+        "langfuse-langchain": "^1.0.31"
+    },
+    "devDependencies": {
+        "tsx": "^4.2.0",
+        "typescript": "^5.1.6"
     }
 }
