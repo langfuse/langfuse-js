@@ -13,7 +13,7 @@ import { Langfuse } from "../../langfuse/index";
 
 import { type LangfuseOptions } from "../../langfuse/src/types";
 import { type Document } from "langchain/document";
-import type { LangfuseTraceClient, LangfuseSpanClient } from "../../langfuse-core/src";
+import type { LangfuseTraceClient, LangfuseSpanClient } from "../../langfuse-core";
 
 type RootParams = {
   root: LangfuseTraceClient | LangfuseSpanClient;

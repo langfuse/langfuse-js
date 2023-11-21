@@ -1,4 +1,4 @@
-import { type LangfuseCoreOptions } from "../../langfuse-core/src";
+import { type LangfuseCoreOptions } from "../../langfuse-core";
 
 export type LangfuseOptions = {
   // autocapture?: boolean

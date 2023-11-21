@@ -11,7 +11,7 @@ const extensions = [".js", ".jsx", ".ts", ".tsx"];
 
 let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}));
 
-const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc, x) => {
+const configs = ["langfuse", "langfuse-node", "langfuse-langchain", "langfuse-core"].reduce((acc, x) => {
   const localPkg = require(`./${x}/package.json`);
   let external = [...globalExternal]
     .concat(Object.keys(localPkg.dependencies || {}))
