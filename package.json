@@ -75,5 +75,8 @@
   },
   "lint-staged": {
     "*.{ts,js,css,scss}": "prettier --write"
+  },
+  "dependencies": {
+    "yalc": "^1.0.0-pre.53"
   }
 }
