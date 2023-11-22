@@ -1,16 +1,21 @@
 import { Langfuse, CallbackHandler } from "langfuse-langchain";
 import LangfuseDefaultCallbackHandler from "langfuse-langchain";
 
+import { Langfuse as LangfuseNode } from "langfuse-node";
+import LangfuseNodeDefault from "langfuse-node";
+
 import * as dotenv from "dotenv";
 
 export async function run(): Promise<void> {
   dotenv.config();
 
-  const langfuse = new Langfuse({
+  const secrets = {
     baseUrl: String(process.env["LANGFUSE_URL"]),
     publicKey: String(process.env["LANGFUSE_PK"]),
     secretKey: String(process.env["LANGFUSE_SK"]),
-  });
+  };
+
+  const langfuse = new Langfuse(secrets);
 
   const trace = langfuse.trace({ userId: "user-id" });
 
@@ -21,6 +26,10 @@ export async function run(): Promise<void> {
   await langfuseHandler2.flushAsync();
 
   console.log("Did construct objects and called them.");
+
+  const langfuseNode = new LangfuseNode(secrets);
+  const langfuseNodeDefault = new LangfuseNodeDefault(secrets);
+  console.log(langfuseNode, langfuseNodeDefault);
 }
 
 run();

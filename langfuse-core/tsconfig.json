@@ -2,6 +2,6 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "target": "es2020"
+    "target": "es6"
   }
 }

@@ -1,4 +1,4 @@
-import Langfuse from "langfuse-node";
+import { Langfuse } from "langfuse-node";
 // @ts-ignore
 import wtf from "wtfnode";
 

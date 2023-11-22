@@ -3,5 +3,12 @@
     "compilerOptions": {
         "target": "ES6",
         "module": "CommonJS",
-    }
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "allowJs": true
+    },
+    "exclude": [
+        "node_modules"
+    ]
 }

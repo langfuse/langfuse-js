@@ -9,16 +9,27 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "target": "es5",
+    "target": "es6",
     "sourceMap": true,
     "noEmit": false,
     "incremental": true,
     "strict": true,
     "baseUrl": "./", // this must be specified if "paths" is specified.
     "rootDir": "./",
-    "lib": ["ES2015", "ES2022.Error"],
-    "types": ["node", "jest"],
+    "lib": [
+      "ES2015",
+      "ES2022.Error"
+    ],
+    "types": [
+      "node",
+      "jest"
+    ],
     "jsx": "react"
   },
-  "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
+  "exclude": [
+    "**/dist/**",
+    "node_modules",
+    "dist",
+    "**/*.spec.*"
+  ]
 }
