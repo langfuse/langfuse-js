@@ -9,7 +9,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "target": "es6",
+    "target": "ES2021",
     "sourceMap": true,
     "noEmit": false,
     "incremental": true,
@@ -17,8 +17,8 @@
     "baseUrl": "./", // this must be specified if "paths" is specified.
     "rootDir": "./",
     "lib": [
-      "ES2015",
-      "ES2022.Error"
+      "ES2021",
+      "ES2022.Error",
     ],
     "types": [
       "node",
