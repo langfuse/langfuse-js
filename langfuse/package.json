@@ -1,6 +1,9 @@
 {
   "name": "langfuse",
   "version": "1.0.31",
+  "engines": {
+    "node": ">=18"
+  },
   "author": {
     "name": "Langfuse",
     "email": "hi@langfuse.com",

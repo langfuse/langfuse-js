@@ -1,6 +1,9 @@
 {
   "name": "langfuse-js",
   "description": "Modular monorepo for all Langfuse JS/TS SDKs",
+  "engines": {
+    "node": ">=18"
+  },
   "workspaces": [
     "langfuse-core",
     "langfuse-node",
@@ -28,6 +31,8 @@
     "test:fetch": "jest langfuse/*",
     "test:integration": "dotenv -- jest integration-test/*",
     "test:datasets": "jest integration-test/langfuse-integration-datasets*",
+    "test:modules": "jest integration-test/langfuse-integration-modules*",
+    "test:examples": "jest integration-test/langfuse-integration-examples*",
     "test:langchain": "yarn workspace langfuse-langchain run test:integration",
     "compile": "rollup -c --bundleConfigAsCjs"
   },
@@ -45,7 +50,7 @@
     "@typescript-eslint/eslint-plugin": "^6.3.0",
     "@typescript-eslint/parser": "^6.3.0",
     "axios": "^1.4.0",
-    "babel-jest": "^29.6.2",
+    "babel-jest": "^29.7.0",
     "dotenv-cli": "^7.2.1",
     "eslint": "^8.47.0",
     "eslint-config-prettier": "^9.0.0",
