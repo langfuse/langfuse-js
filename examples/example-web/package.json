@@ -18,6 +18,9 @@
     "typescript": "^4.4.2",
     "web-vitals": "^2.1.0"
   },
+  "devDependencies": {
+    "yalc": "^1.0.0-pre.53"
+  },
   "scripts": {
     "preinstall": "yarn build:dependencies",
     "prestart": "yarn build:dependencies",
