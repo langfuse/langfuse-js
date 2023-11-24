@@ -9,3 +9,4 @@ lib/
 .yalc
 yalc.lock
 .env
+langfuse-server
