@@ -7,9 +7,9 @@ describe("Test Node Example", () => {
     const result = spawnSync("npm", ["run", "start"], {
       cwd,
       encoding: "utf-8",
+      stdio: "inherit",
     });
 
-    expect(result.stdout).toContain("shut down successfully");
     expect(result.status).toBe(0);
   });
 });
@@ -20,6 +20,7 @@ describe("Test Web Example", () => {
     const resultDependencies = spawnSync("npm", ["run", "build:dependencies"], {
       cwd,
       encoding: "utf-8",
+      stdio: "inherit",
     });
 
     expect(resultDependencies.status).toBe(0);
@@ -27,6 +28,7 @@ describe("Test Web Example", () => {
     const result = spawnSync("npm", ["run", "build"], {
       cwd,
       encoding: "utf-8",
+      stdio: "inherit",
     });
 
     expect(result.status).toBe(0);
@@ -39,6 +41,7 @@ describe("Test Web Next.js Example", () => {
     const resultDependencies = spawnSync("npm", ["run", "build:dependencies"], {
       cwd,
       encoding: "utf-8",
+      stdio: "inherit",
     });
 
     expect(resultDependencies.status).toBe(0);
@@ -46,6 +49,7 @@ describe("Test Web Next.js Example", () => {
     const result = spawnSync("npm", ["run", "build"], {
       cwd,
       encoding: "utf-8",
+      stdio: "inherit",
     });
 
     expect(result.status).toBe(0);
