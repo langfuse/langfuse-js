@@ -56,11 +56,17 @@ const configs = packages.reduce((acc, x) => {
     },
     {
       input: `./${x}/lib/${x}/index.d.ts`,
+      // we need to provide a mts version of the dts file for the typechecker to work in module contexts
+      // without the .d.ts is interpreted as commonjs and the typechecker will complain about missing default exports
       output: [
         { file: `./${x}/lib/index.d.ts`, format: "cjs" },
         { file: `./${x}/lib/index.d.mts`, format: "es" },
       ],
-      plugins: [dts.default(), del({ hook: "buildEnd", targets: `./${x}/lib/${x}/` })],
+      plugins: [
+        dts.default(),
+        // as we rollup the dts files, we can remove the original files/directory afterwards
+        del({ hook: "buildEnd", targets: `./${x}/lib/${x}/` }),
+      ],
     },
   ];
 }, []);

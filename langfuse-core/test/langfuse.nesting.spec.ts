@@ -4,7 +4,7 @@ import {
   type LangfuseCoreTestClient,
   type LangfuseCoreTestClientMocks,
 } from "./test-utils/LangfuseCoreTestClient";
-import { type LangfuseObjectClient } from "../index";
+import { type LangfuseObjectClient } from "../src";
 
 describe("Langfuse Core", () => {
   let langfuse: LangfuseCoreTestClient;

@@ -3,7 +3,7 @@ import {
   type LangfuseCoreOptions,
   type LangfuseFetchOptions,
   type LangfuseFetchResponse,
-} from "../../index";
+} from "../../src";
 
 const version = "2.0.0-alpha";
 
