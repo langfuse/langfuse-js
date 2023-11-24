@@ -25,14 +25,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Exclude langfuse-langchain for Node 18
-        if: matrix.node-version == '18'
-        run: |
-          jq 'del(.workspaces[] | select(. == "langfuse-langchain"))' package.json > package_temp.json && mv package_temp.json package.json
-
       - run: yarn install
       - run: yarn test
+
   integration-test:
     timeout-minutes: 3
     runs-on: ubuntu-latest
