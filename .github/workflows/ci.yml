@@ -29,7 +29,7 @@ jobs:
       - run: yarn test
 
   integration-test:
-    timeout-minutes: 3
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       LF_HOST: "http://localhost:3000"
