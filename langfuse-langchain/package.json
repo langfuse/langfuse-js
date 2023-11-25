@@ -1,6 +1,6 @@
 {
   "name": "langfuse-langchain",
-  "version": "1.0.31",
+  "version": "2.0.0-alpha.0",
   "engines": {
     "node": ">=18"
   },
