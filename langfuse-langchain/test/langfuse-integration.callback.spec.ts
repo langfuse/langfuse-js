@@ -2,15 +2,17 @@
 import { OpenAI } from "langchain/llms/openai";
 import { PromptTemplate } from "langchain/prompts";
 import { ConversationChain, LLMChain, createExtractionChainFromZod } from "langchain/chains";
-import { CallbackHandler } from "../src/callback";
-import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "../../integration-test/integration-utils";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { SerpAPI } from "langchain/tools";
 import { Calculator } from "langchain/tools/calculator";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { z } from "zod";
-import { Langfuse } from "langfuse/src/langfuse";
+
+import { Langfuse } from "langfuse";
+
+import { CallbackHandler } from "../src/callback";
+import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "../../integration-test/integration-utils";
 
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 

@@ -1,6 +1,9 @@
 {
   "name": "langfuse",
   "version": "1.0.31",
+  "engines": {
+    "node": ">=18"
+  },
   "author": {
     "name": "Langfuse",
     "email": "hi@langfuse.com",
@@ -8,8 +11,18 @@
   },
   "license": "MIT",
   "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
+  "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
+  "exports": {
+    "require": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.cjs.js"
+    },
+    "import": {
+      "types": "./lib/index.d.mts",
+      "default": "./lib/index.mjs"
+    }
+  },
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build"

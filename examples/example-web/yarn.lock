@@ -5760,8 +5760,11 @@ klona@^2.0.4, klona@^2.0.5:
   resolved "https://registry.yarnpkg.com/klona/-/klona-2.0.5.tgz#d166574d90076395d9963aa7a928fabb8d76afbc"
   integrity sha512-pJiBpiXMbt7dkzXe8Ghj/u4FfXOOa98fPW+bihOJ4SjnoijweJrNThJfd3ifXpXhREjpoF2mZVH1GfS9LV3kHQ==
 
-"langfuse-web@file:.yalc/langfuse-web":
-  version "0.1.0-beta.0"
+"langfuse-core@file:.yalc/langfuse-core":
+  version "0.0.1"
+
+"langfuse@file:.yalc/langfuse":
+  version "1.0.31"
 
 language-subtag-registry@~0.3.2:
   version "0.3.22"
@@ -7038,9 +7041,6 @@ postcss@^8.3.5, postcss@^8.4.14, postcss@^8.4.4, postcss@^8.4.7:
     nanoid "^3.3.4"
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
-
-"posthog-web@file:.yalc/langfuse-web":
-  version "0.1.0-beta.0"
 
 prelude-ls@^1.2.1:
   version "1.2.1"

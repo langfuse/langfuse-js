@@ -8,7 +8,7 @@ module.exports = {
       "ts-jest",
       {
         tsconfig: {
-          lib: ["ES2016", "ES2022.Error", "DOM"], // We need to include DOM for tests
+          lib: ["ES2021", "ES2022.Error", "DOM"], // We need to include DOM for tests
         },
       },
     ],

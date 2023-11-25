@@ -37,6 +37,7 @@ import {
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
+export { LangfuseMemoryStorage } from "./storage-memory";
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";

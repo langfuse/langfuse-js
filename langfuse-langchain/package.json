@@ -1,6 +1,9 @@
 {
   "name": "langfuse-langchain",
   "version": "1.0.31",
+  "engines": {
+    "node": ">=18"
+  },
   "author": {
     "name": "Langfuse",
     "email": "hi@langfuse.com",
@@ -8,8 +11,18 @@
   },
   "license": "MIT",
   "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
+  "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
+  "exports": {
+    "require": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.cjs.js"
+    },
+    "import": {
+      "types": "./lib/index.d.mts",
+      "default": "./lib/index.mjs"
+    }
+  },
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
@@ -20,7 +33,7 @@
     "Readme.md"
   ],
   "gitHead": "1b8f422c3d4b0de925cabd2e5901a8c388738887",
-  "dependencies": {
+  "peerDependencies": {
     "langchain": "^0.0.157"
   },
   "devDependencies": {
