@@ -33,6 +33,10 @@
     "Readme.md"
   ],
   "gitHead": "1b8f422c3d4b0de925cabd2e5901a8c388738887",
+  "dependencies": {
+    "langfuse-core": "^2.0.0-alpha.0",
+    "langfuse": "^2.0.0-alpha.0"
+  },
   "peerDependencies": {
     "langchain": ">=0.0.157"
   },
