@@ -1,6 +1,7 @@
 {
   "name": "langfuse-integration-test-modules",
   "version": "2.0.0-alpha.0",
+  "private": true,
   "description": "",
   "main": "dist/main.js",
   "scripts": {
