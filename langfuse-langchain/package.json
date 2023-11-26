@@ -34,7 +34,7 @@
   ],
   "gitHead": "1b8f422c3d4b0de925cabd2e5901a8c388738887",
   "peerDependencies": {
-    "langchain": "^0.0.157"
+    "langchain": ">=0.0.157"
   },
   "devDependencies": {
     "cheerio": "^1.0.0-rc.12"
