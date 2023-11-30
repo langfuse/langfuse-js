@@ -5,7 +5,7 @@ info:
 paths:
   /api/public/dataset-items:
     post:
-      description: Create a dataset item
+      description: Create a dataset item, upserts on id
       operationId: datasetItems_create
       tags:
         - DatasetItems
@@ -21,32 +21,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: &ref_0
         - BasicAuth: []
       requestBody:
@@ -55,6 +50,51 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateDatasetItemRequest"
+  /api/public/dataset-items/{id}:
+    get:
+      description: Get a specific dataset item
+      operationId: datasetItems_get
+      tags:
+        - DatasetItems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetItem"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
   /api/public/dataset-run-items:
     post:
       description: Create a dataset run item
@@ -73,32 +113,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -129,32 +164,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
   /api/public/datasets:
     post:
@@ -174,32 +204,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -235,32 +260,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
   /api/public/events:
     post:
@@ -280,32 +300,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -330,32 +345,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -379,32 +389,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -412,6 +417,96 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateGenerationRequest"
+  /api/public/health:
+    get:
+      description: Check health of API and database
+      operationId: health_health
+      tags:
+        - Health
+      parameters: []
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "503":
+          description: ""
+  /api/public/ingestion:
+    post:
+      description: Ingest multiple events to Langfuse
+      operationId: ingestion_batch
+      tags:
+        - Ingestion
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Score"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batch:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/IngestionEvent"
+              required:
+                - batch
   /api/public/observations/{observationId}:
     get:
       description: Get a specific observation
@@ -438,32 +533,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
   /api/public/observations:
     get:
@@ -502,6 +592,18 @@ paths:
           schema:
             type: string
             nullable: true
+        - name: traceId
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: parentObservationId
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
       responses:
         "200":
           description: ""
@@ -513,36 +615,70 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
+              schema: {}
+      security: *ref_0
+  /api/public/projects:
+    get:
+      operationId: projects_get
+      tags:
+        - Projects
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/Projects"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
       security: *ref_0
   /api/public/scores:
     post:
-      description: Add a score to the database
+      description: Add a score to the database, upserts on id
       operationId: score_create
       tags:
         - Score
@@ -558,32 +694,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -632,32 +763,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
   /api/public/spans:
     post:
@@ -677,32 +803,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -727,32 +848,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -778,32 +894,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
       requestBody:
         required: true
@@ -852,32 +963,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
   /api/public/traces/{traceId}:
     get:
@@ -903,32 +1009,27 @@ paths:
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "401":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "403":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "404":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
         "405":
           description: ""
           content:
             application/json:
-              schema:
-                type: string
+              schema: {}
       security: *ref_0
 components:
   schemas:
@@ -941,9 +1042,6 @@ components:
           nullable: true
         traceId:
           type: string
-          nullable: true
-        traceIdType:
-          $ref: "#/components/schemas/TraceIdTypeEnum"
           nullable: true
         name:
           type: string
@@ -1015,9 +1113,6 @@ components:
         timestamp:
           type: string
           format: date-time
-        externalId:
-          type: string
-          nullable: true
         name:
           type: string
           nullable: true
@@ -1296,12 +1391,6 @@ components:
           nullable: true
         - type: boolean
           nullable: true
-    TraceIdTypeEnum:
-      title: TraceIdTypeEnum
-      type: string
-      enum:
-        - LANGFUSE
-        - EXTERNAL
     LLMUsage:
       title: LLMUsage
       type: object
@@ -1329,6 +1418,9 @@ components:
           type: string
         input: {}
         expectedOutput:
+          nullable: true
+        id:
+          type: string
           nullable: true
       required:
         - datasetName
@@ -1367,6 +1459,10 @@ components:
         name:
           type: string
           nullable: true
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
         endTime:
           type: string
           format: date-time
@@ -1403,6 +1499,109 @@ components:
           nullable: true
       required:
         - generationId
+    IngestionEvent:
+      title: IngestionEvent
+      oneOf:
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - trace-create
+            - $ref: "#/components/schemas/TraceEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - score-create
+            - $ref: "#/components/schemas/ScoreEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - observation-create
+            - $ref: "#/components/schemas/ObservationCreateEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - observation-update
+            - $ref: "#/components/schemas/ObservationUpdateEvent"
+          required:
+            - type
+    TraceEvent:
+      title: TraceEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/Trace"
+      required:
+        - id
+        - timestamp
+        - body
+    ObservationCreateEvent:
+      title: ObservationCreateEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/Observation"
+      required:
+        - id
+        - timestamp
+        - body
+    ObservationUpdateEvent:
+      title: ObservationUpdateEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/Observation"
+      required:
+        - id
+        - timestamp
+        - body
+    ScoreEvent:
+      title: ScoreEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/Score"
+      required:
+        - id
+        - timestamp
+        - body
     Observations:
       title: Observations
       type: object
@@ -1416,6 +1615,27 @@ components:
       required:
         - data
         - meta
+    Projects:
+      title: Projects
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+      required:
+        - data
+    Project:
+      title: Project
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
     CreateScoreRequest:
       title: CreateScoreRequest
       type: object
@@ -1425,9 +1645,6 @@ components:
           nullable: true
         traceId:
           type: string
-        traceIdType:
-          $ref: "#/components/schemas/TraceIdTypeEnum"
-          nullable: true
         name:
           type: string
         value:
@@ -1464,6 +1681,10 @@ components:
           type: string
         traceId:
           type: string
+          nullable: true
+        startTime:
+          type: string
+          format: date-time
           nullable: true
         endTime:
           type: string

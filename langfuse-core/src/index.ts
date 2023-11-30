@@ -237,11 +237,22 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
+  /**
+   * Creates a dataset item. Upserts the item if it already exists.
+   * @param body The body of the dataset item to be created.
+   * @returns A promise that resolves to the response of the create operation.
+   */
   async createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-items`,
       this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
+  }
+
+  async getDatasetItem(id: string): Promise<CreateLangfuseDatasetItemResponse> {
+    return this.fetch(`${this.baseUrl}/api/public/dataset-items/${id}`, this.getFetchOptions({ method: "GET" })).then(
+      (res) => res.json()
+    );
   }
 
   protected _parsePayload(response: any): any {
