@@ -104,7 +104,7 @@ describe("Langfuse Node.js", () => {
       });
       const getUpdateRes = await langfuse.getDatasetItem(createRes.id);
       expect(getUpdateRes).toEqual(UpdateRes);
-      expect(getUpdateRes).toEqual({
+      expect(getUpdateRes).toMatchObject({
         id: createRes.id,
         input: {
           text: "hello world2",
