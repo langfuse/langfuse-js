@@ -106,7 +106,6 @@ describe("Langfuse Node.js", () => {
       expect(getUpdateRes).toEqual(UpdateRes);
       expect(getUpdateRes).toEqual({
         id: createRes.id,
-        datasetName: projectNameRandom,
         input: {
           text: "hello world2",
         },
