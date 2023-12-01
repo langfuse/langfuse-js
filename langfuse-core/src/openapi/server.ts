@@ -134,6 +134,9 @@ export interface components {
       /** Format: date-time */
       timestamp: string;
       name?: string | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      sessionId?: string | null;
       release?: string | null;
       version?: string | null;
       userId?: string | null;
@@ -410,6 +413,9 @@ export interface components {
       name?: string | null;
       userId?: string | null;
       externalId?: string | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      sessionId?: string | null;
       release?: string | null;
       version?: string | null;
       metadata?: Record<string, unknown> | null;
