@@ -138,6 +138,8 @@ export interface components {
       version?: string | null;
       userId?: string | null;
       metadata?: Record<string, unknown> | null;
+      /** @description Public traces are accessible via url without login */
+      public?: boolean | null;
     };
     /** TraceWithDetails */
     TraceWithDetails: WithRequired<
@@ -413,6 +415,8 @@ export interface components {
       release?: string | null;
       version?: string | null;
       metadata?: Record<string, unknown> | null;
+      /** @description Make trace publicly accessible via url */
+      public?: boolean | null;
     };
     /** Traces */
     Traces: {
