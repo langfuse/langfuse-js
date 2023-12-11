@@ -28,6 +28,8 @@ describe("Langfuse Core", () => {
         name: "test-trace",
       });
 
+      await langfuse.flush();
+
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
       expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/traces$/);

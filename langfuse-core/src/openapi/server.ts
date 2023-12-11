@@ -40,14 +40,6 @@ export interface paths {
     /** @description Get a dataset run and its items */
     get: operations["datasets_getRuns"];
   };
-  "/api/public/events": {
-    /** @description Add an event to the database */
-    post: operations["event_create"];
-  };
-  "/api/public/generations": {
-    post: operations["generations_log"];
-    patch: operations["generations_update"];
-  };
   "/api/public/health": {
     /** @description Check health of API and database */
     get: operations["health_health"];
@@ -73,21 +65,13 @@ export interface paths {
     /** @description Add a score to the database, upserts on id */
     post: operations["score_create"];
   };
-  "/api/public/spans": {
-    /** @description Add a span to the database */
-    post: operations["span_create"];
-    /** @description Update a span to the database */
-    patch: operations["span_update"];
+  "/api/public/traces/{traceId}": {
+    /** @description Get a specific trace */
+    get: operations["trace_get"];
   };
   "/api/public/traces": {
     /** @description Get list of traces */
     get: operations["trace_list"];
-    /** @description Add a trace to the database */
-    post: operations["trace_create"];
-  };
-  "/api/public/traces/{traceId}": {
-    /** @description Get a specific trace */
-    get: operations["trace_get"];
   };
 }
 
@@ -95,38 +79,6 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
-    /** CreateEventRequest */
-    CreateEventRequest: {
-      id?: string | null;
-      traceId?: string | null;
-      name?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components["schemas"]["ObservationLevel"];
-      statusMessage?: string | null;
-      parentObservationId?: string | null;
-      version?: string | null;
-    };
-    /** CreateSpanRequest */
-    CreateSpanRequest: {
-      /** Format: date-time */
-      endTime?: string | null;
-    } & components["schemas"]["CreateEventRequest"];
-    /** CreateGenerationRequest */
-    CreateGenerationRequest: {
-      /** Format: date-time */
-      completionStartTime?: string | null;
-      model?: string | null;
-      modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
-      } | null;
-      prompt?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
-      usage?: components["schemas"]["LLMUsage"];
-    } & components["schemas"]["CreateSpanRequest"];
     /** Trace */
     Trace: {
       /** @description The unique identifier of a trace */
@@ -179,12 +131,17 @@ export interface components {
       version?: string | null;
       metadata?: Record<string, unknown> | null;
       output?: Record<string, unknown> | null;
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
+      usage?: components["schemas"]["Usage"];
       level: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+    };
+    /** Usage */
+    Usage: {
+      input?: number | null;
+      output?: number | null;
+      total?: number | null;
+      unit: components["schemas"]["ModelUsageType"];
     };
     /** Score */
     Score: {
@@ -247,18 +204,17 @@ export interface components {
       datasetRunItems: components["schemas"]["DatasetRunItem"][];
     };
     /**
+     * ModelUsageType
+     * @enum {string}
+     */
+    ModelUsageType: "CHARACTERS" | "TOKENS";
+    /**
      * ObservationLevel
      * @enum {string}
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
     MapValue: (string | null) | (number | null) | (boolean | null);
-    /** LLMUsage */
-    LLMUsage: {
-      promptTokens?: number | null;
-      completionTokens?: number | null;
-      totalTokens?: number | null;
-    };
     /**
      * DatasetStatus
      * @enum {string}
@@ -280,29 +236,6 @@ export interface components {
     /** CreateDatasetRequest */
     CreateDatasetRequest: {
       name: string;
-    };
-    /** UpdateGenerationRequest */
-    UpdateGenerationRequest: {
-      generationId: string;
-      traceId?: string | null;
-      name?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      /** Format: date-time */
-      endTime?: string | null;
-      /** Format: date-time */
-      completionStartTime?: string | null;
-      model?: string | null;
-      modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
-      } | null;
-      prompt?: Record<string, unknown> | null;
-      version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
-      usage?: components["schemas"]["LLMUsage"];
-      level?: components["schemas"]["ObservationLevel"];
-      statusMessage?: string | null;
     };
     /** IngestionEvent */
     IngestionEvent: OneOf<
@@ -361,6 +294,23 @@ export interface components {
       timestamp: string;
       body: components["schemas"]["Score"];
     };
+    /** IngestionSuccess */
+    IngestionSuccess: {
+      id: string;
+      status: number;
+    };
+    /** IngestionError */
+    IngestionError: {
+      id: string;
+      status: number;
+      message?: string | null;
+      error?: Record<string, unknown> | null;
+    };
+    /** IngestionResponse */
+    IngestionResponse: {
+      successes: components["schemas"]["IngestionSuccess"][];
+      errors: components["schemas"]["IngestionError"][];
+    };
     /** Observations */
     Observations: {
       data: components["schemas"]["Observation"][];
@@ -389,34 +339,6 @@ export interface components {
     Scores: {
       data: components["schemas"]["Score"][];
       meta: components["schemas"]["utilsMetaResponse"];
-    };
-    /** UpdateSpanRequest */
-    UpdateSpanRequest: {
-      spanId: string;
-      traceId?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      /** Format: date-time */
-      endTime?: string | null;
-      name?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components["schemas"]["ObservationLevel"];
-      version?: string | null;
-      statusMessage?: string | null;
-    };
-    /** CreateTraceRequest */
-    CreateTraceRequest: {
-      id?: string | null;
-      name?: string | null;
-      userId?: string | null;
-      externalId?: string | null;
-      release?: string | null;
-      version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      /** @description Make trace publicly accessible via url */
-      public?: boolean | null;
     };
     /** Traces */
     Traces: {
@@ -686,124 +608,6 @@ export interface operations {
       };
     };
   };
-  /** @description Add an event to the database */
-  event_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateEventRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  generations_log: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateGenerationRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  generations_update: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateGenerationRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
   /** @description Check health of API and database */
   health_health: {
     responses: {
@@ -852,7 +656,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Score"];
+          "application/json": components["schemas"]["IngestionResponse"];
         };
       };
       400: {
@@ -1086,57 +890,18 @@ export interface operations {
       };
     };
   };
-  /** @description Add a span to the database */
-  span_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateSpanRequest"];
+  /** @description Get a specific trace */
+  trace_get: {
+    parameters: {
+      path: {
+        /** @description The unique langfuse identifier of a trace */
+        traceId: string;
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  /** @description Update a span to the database */
-  span_update: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateSpanRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
+          "application/json": components["schemas"]["TraceWithFullDetails"];
         };
       };
       400: {
@@ -1180,87 +945,6 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Traces"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  /** @description Add a trace to the database */
-  trace_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateTraceRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Trace"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  /** @description Get a specific trace */
-  trace_get: {
-    parameters: {
-      path: {
-        /** @description The unique langfuse identifier of a trace */
-        traceId: string;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["TraceWithFullDetails"];
         };
       };
       400: {

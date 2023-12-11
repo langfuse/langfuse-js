@@ -5,7 +5,7 @@
 
 export interface paths {
   "/api/public/scores": {
-    /** @description Add a score to the database */
+    /** @description Add a score to the database, upserts on id */
     post: operations["score_create"];
   };
 }
@@ -18,7 +18,6 @@ export interface components {
     CreateScoreRequest: {
       id?: string;
       traceId: string;
-      traceIdType?: components["schemas"]["TraceIdType"];
       name: string;
       /** Format: double */
       value: number;
@@ -37,11 +36,6 @@ export interface components {
       timestamp: string;
       comment?: string;
     };
-    /**
-     * TraceIdType
-     * @enum {string}
-     */
-    TraceIdType: "LANGFUSE" | "EXTERNAL";
   };
   responses: never;
   parameters: never;
@@ -53,7 +47,7 @@ export interface components {
 export type external = Record<string, never>;
 
 export interface operations {
-  /** @description Add a score to the database */
+  /** @description Add a score to the database, upserts on id */
   score_create: {
     requestBody: {
       content: {

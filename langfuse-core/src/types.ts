@@ -36,13 +36,15 @@ export type LangfuseFetchResponse<T = any> = {
   json: () => Promise<T>;
 };
 
-export type LangfuseQueueItem = {
-  apiRoute: keyof paths;
-  method: "POST" | "PATCH";
-  id: string;
-  body: any;
+export type LangfuseQueueItem = SingleIngestionEvent & {
   callback?: (err: any) => void;
 };
+
+export type SingleIngestionEvent =
+  paths["/api/public/ingestion"]["post"]["requestBody"]["content"]["application/json"]["batch"][number];
+
+export type IngestionReturnType =
+  paths["/api/public/ingestion"]["post"]["responses"][200]["content"]["application/json"];
 
 export type LangfuseEventProperties = {
   [key: string]: any;
@@ -76,14 +78,7 @@ export type UpdateLangfuseGenerationBody = FixTypes<
   paths["/api/public/generations"]["patch"]["requestBody"]["content"]["application/json"]
 >;
 
-export type LangfuseObject =
-  | "createTrace"
-  | "createEvent"
-  | "createSpan"
-  | "createGeneration"
-  | "createScore"
-  | "updateSpan"
-  | "updateGeneration";
+export type LangfuseObject = SingleIngestionEvent["type"];
 
 export const LangfusePostApiRoutes: Record<LangfuseObject, [LangfuseQueueItem["method"], keyof paths]> = {
   createTrace: ["POST", "/api/public/traces"],
