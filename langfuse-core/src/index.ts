@@ -151,7 +151,7 @@ abstract class LangfuseCoreStateless {
 
     const parsedBody: CreateLangfuseEventBody = {
       id,
-      startTime: bodyStartTime ?? currentISOTime(),
+      startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
     this.enqueue("observation-create", parsedBody);
@@ -165,7 +165,7 @@ abstract class LangfuseCoreStateless {
 
     const parsedBody: CreateLangfuseSpanBody = {
       id,
-      startTime: bodyStartTime ?? currentISOTime(),
+      startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
     this.enqueue("observation-create", parsedBody);
@@ -179,7 +179,7 @@ abstract class LangfuseCoreStateless {
 
     const parsedBody: CreateLangfuseGenerationBody = {
       id,
-      startTime: bodyStartTime ?? currentISOTime(),
+      startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
     this.enqueue("observation-create", parsedBody);
@@ -200,7 +200,7 @@ abstract class LangfuseCoreStateless {
   }
 
   protected updateSpanStateless(body: UpdateLangfuseSpanBody): string {
-    this.enqueue("observation-create", body);
+    this.enqueue("observation-update", body);
     return body.spanId;
   }
 
@@ -292,7 +292,7 @@ abstract class LangfuseCoreStateless {
     }
   }
 
-  flushAsync(): Promise<any> {
+  flushAsync(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.flush((err, data) => {
         return err ? reject(err) : resolve(data);
@@ -667,7 +667,7 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
       ...body,
       spanId: this.id,
       traceId: this.traceId,
-      endTime: currentISOTime(),
+      endTime: new Date(),
     });
     return this;
   }
@@ -692,7 +692,7 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
       ...body,
       generationId: this.id,
       traceId: this.traceId,
-      endTime: currentISOTime(),
+      endTime: new Date(),
     });
     return this;
   }

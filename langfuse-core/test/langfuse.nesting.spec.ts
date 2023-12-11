@@ -16,7 +16,7 @@ describe("Langfuse Core", () => {
     [langfuse, mocks] = createTestClient({
       publicKey: "pk-lf-111",
       secretKey: "sk-lf-111",
-      flushAt: 1000,
+      flushAt: 1,
     });
   });
 
@@ -45,32 +45,80 @@ describe("Langfuse Core", () => {
 
       const checks = [
         {
-          url: "https://cloud.langfuse.com/api/public/traces",
-          object: { name: "test-trace" },
-        },
-        {
-          url: "https://cloud.langfuse.com/api/public/spans",
-          object: { name: "test-span-1", traceId: trace.id },
-        },
-        {
-          url: "https://cloud.langfuse.com/api/public/spans",
-          object: { name: "test-span-2", traceId: trace.id },
-        },
-        {
-          url: "https://cloud.langfuse.com/api/public/events",
+          url: "https://cloud.langfuse.com/api/public/ingestion",
           object: {
-            name: "test-event-1",
-            traceId: trace.id,
-            parentObservationId: span2.id,
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "observation-update",
+                body: { name: "test-trace" },
+              },
+            ],
           },
         },
         {
-          url: "https://cloud.langfuse.com/api/public/scores",
+          url: "https://cloud.langfuse.com/api/public/ingestion",
           object: {
-            name: "test-score-1",
-            traceId: trace.id,
-            observationId: event.id,
-            value: 0.5,
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "observation-update",
+                body: { name: "test-span-1", traceId: trace.id },
+              },
+            ],
+          },
+        },
+        {
+          url: "https://cloud.langfuse.com/api/public/ingestion",
+          object: {
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "observation-update",
+                body: { name: "test-span-2", traceId: trace.id },
+              },
+            ],
+          },
+        },
+        {
+          url: "https://cloud.langfuse.com/api/public/ingestion",
+          object: {
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "observation-update",
+                body: {
+                  name: "test-event-1",
+                  traceId: trace.id,
+                  parentObservationId: span2.id,
+                },
+              },
+            ],
+          },
+        },
+        {
+          url: "https://cloud.langfuse.com/api/public/ingestion",
+          object: {
+            url: "https://cloud.langfuse.com/api/public/ingestion",
+            object: {
+              batch: [
+                {
+                  id: expect.any(String),
+                  timestamp: expect.any(String),
+                  type: "observation-update",
+                  body: {
+                    name: "test-score-1",
+                    traceId: trace.id,
+                    observationId: event.id,
+                    value: 0.5,
+                  },
+                },
+              ],
+            },
           },
         },
       ];

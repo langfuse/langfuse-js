@@ -22,7 +22,7 @@ describe("Langfuse Core", () => {
 
     it("doesn't fail when queue is empty", async () => {
       jest.useRealTimers();
-      await expect(langfuse.flushAsync()).resolves.toEqual([]);
+      await expect(langfuse.flushAsync()).resolves.not.toThrow();
     });
 
     it("flush messsages once called", async () => {
@@ -82,7 +82,7 @@ describe("Langfuse Core", () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(0);
 
       jest.advanceTimersByTime(300);
-      expect(mocks.fetch).toHaveBeenCalledTimes(3);
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
     });
   });
 });

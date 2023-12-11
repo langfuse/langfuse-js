@@ -15,7 +15,7 @@ describe("Langfuse Core", () => {
     [langfuse, mocks] = createTestClient({
       publicKey: "pk-lf-111",
       secretKey: "sk-lf-111",
-      flushAt: 1000,
+      flushAt: 1,
     });
   });
 
@@ -37,14 +37,23 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/spans");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toMatchObject({
-        traceId: trace.id,
-        spanId: span.id,
-        output: { text: "test-output" },
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "observation-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              spanId: span.id,
+              output: { text: "test-output" },
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
       });
     });
 
@@ -63,13 +72,22 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/spans");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toEqual({
-        traceId: trace.id,
-        spanId: span.id,
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "observation-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              spanId: span.id,
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
       });
     });
   });
@@ -92,14 +110,23 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/generations");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toMatchObject({
-        traceId: trace.id,
-        generationId: generation.id,
-        version: "1.0.0",
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "observation-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              generationId: generation.id,
+              version: "1.0.0",
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
       });
     });
 
@@ -118,13 +145,22 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/generations");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toMatchObject({
-        traceId: trace.id,
-        generationId: generation.id,
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "observation-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              generationId: generation.id,
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
       });
     });
   });

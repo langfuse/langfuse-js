@@ -35,9 +35,18 @@ describe("Langfuse Core", () => {
       });
       expect(mocks.fetch).toHaveBeenCalledTimes(2);
       expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
-        name: "test-observation-1",
-        startTime: new Date("2023-01-02").toISOString(),
-        endTime: new Date("2023-01-03").toISOString(),
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "observation-create",
+            body: {
+              name: "test-observation-1",
+              startTime: new Date("2023-01-02").toISOString(),
+              endTime: new Date("2023-01-03").toISOString(),
+            },
+          },
+        ],
       });
 
       // implicit start
@@ -46,8 +55,17 @@ describe("Langfuse Core", () => {
       });
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       expect(parseBody(mocks.fetch.mock.calls[2])).toMatchObject({
-        name: "test-observation-2",
-        startTime: new Date().toISOString(),
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "observation-create",
+            body: {
+              name: "test-observation-2",
+              startTime: new Date().toISOString(),
+            },
+          },
+        ],
       });
 
       // implicit start
@@ -56,8 +74,17 @@ describe("Langfuse Core", () => {
       });
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(parseBody(mocks.fetch.mock.calls[3])).toMatchObject({
-        name: "test-observation-3",
-        startTime: new Date().toISOString(),
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "observation-create",
+            body: {
+              name: "test-observation-3",
+              startTime: new Date().toISOString(),
+            },
+          },
+        ],
       });
     });
 
@@ -69,7 +96,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toEqual({
-        id: "123456789",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              id: "123456789",
+            },
+          },
+        ],
       });
     });
 
@@ -91,15 +127,24 @@ describe("Langfuse Core", () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const body = parseBody(mocks.fetch.mock.calls[0]);
       expect(body).toMatchObject({
-        name: "test-trace",
-        id: "123456789",
-        metadata: {
-          test: "test",
-          mira: {
-            hello: "world",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              name: "test-trace",
+              id: "123456789",
+              metadata: {
+                test: "test",
+                mira: {
+                  hello: "world",
+                },
+              },
+              version: "1.0.0",
+            },
           },
-        },
-        version: "1.0.0",
+        ],
       });
     });
   });

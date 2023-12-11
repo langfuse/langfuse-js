@@ -17,7 +17,7 @@ describe("Langfuse Core", () => {
     [langfuse, mocks] = createTestClient({
       publicKey: "pk-lf-111",
       secretKey: "sk-lf-111",
-      flushAt: 10,
+      flushAt: 1,
     });
   });
 
@@ -26,8 +26,8 @@ describe("Langfuse Core", () => {
       const mock = jest.fn();
       const mockOther = jest.fn();
       const mockOther2 = jest.fn();
-      langfuse.on("createTrace", mock);
-      langfuse.on("createTrace", mockOther);
+      langfuse.on("trace-create", mock);
+      langfuse.on("trace-create", mockOther);
       langfuse.on("somethingElse", mockOther2);
 
       langfuse.trace({ name: "test-trace" });
@@ -39,7 +39,7 @@ describe("Langfuse Core", () => {
 
     it("should unsubscribe when called", () => {
       const mock = jest.fn();
-      const unsubscribe = langfuse.on("createTrace", mock);
+      const unsubscribe = langfuse.on("trace-create", mock);
 
       langfuse.trace({ name: "test-trace1" });
       expect(mock).toHaveBeenCalledTimes(1);

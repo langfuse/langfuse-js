@@ -59,7 +59,6 @@ export type CreateLangfuseTraceBody = {
   id?: string | null;
   name?: string | null;
   userId?: string | null;
-  externalId?: string | null;
   release?: string | null;
   version?: string | null;
   metadata?: Record<string, unknown> | null;
@@ -71,7 +70,7 @@ export type CreateLangfuseEventBody = {
   traceId?: string | null;
   name?: string | null;
   /** Format: date-time */
-  startTime?: string | null;
+  startTime?: Date | null;
   metadata?: Record<string, unknown> | null;
   input?: Record<string, unknown> | null;
   output?: Record<string, unknown> | null;
@@ -82,11 +81,11 @@ export type CreateLangfuseEventBody = {
 };
 export type CreateLangfuseSpanBody = {
   /** Format: date-time */
-  endTime?: string | null;
+  endTime?: Date | null;
 } & CreateLangfuseEventBody;
 export type CreateLangfuseGenerationBody = {
   /** Format: date-time */
-  completionStartTime?: string | null;
+  completionStartTime?: Date | null;
   model?: string | null;
   modelParameters?: {
     [key: string]: components["schemas"]["MapValue"] | undefined;
@@ -96,23 +95,21 @@ export type CreateLangfuseGenerationBody = {
   usage?: components["schemas"]["Usage"];
 } & CreateLangfuseSpanBody;
 export type CreateLangfuseScoreBody = {
-  id: string;
+  id?: string | null;
   traceId: string;
   name: string;
   /** Format: double */
   value: number;
   observationId?: string | null;
-  /** Format: date-time */
-  timestamp?: string;
   comment?: string | null;
 };
 export type UpdateLangfuseSpanBody = {
   spanId: string;
   traceId?: string | null;
   /** Format: date-time */
-  startTime?: string | null;
+  startTime?: Date | null;
   /** Format: date-time */
-  endTime?: string | null;
+  endTime?: Date | null;
   name?: string | null;
   metadata?: Record<string, unknown> | null;
   input?: Record<string, unknown> | null;
@@ -126,11 +123,11 @@ export type UpdateLangfuseGenerationBody = {
   traceId?: string | null;
   name?: string | null;
   /** Format: date-time */
-  startTime?: string | null;
+  startTime?: Date | null;
   /** Format: date-time */
-  endTime?: string | null;
+  endTime?: Date | null;
   /** Format: date-time */
-  completionStartTime?: string | null;
+  completionStartTime?: Date | null;
   model?: string | null;
   modelParameters?: {
     [key: string]: components["schemas"]["MapValue"] | undefined;
