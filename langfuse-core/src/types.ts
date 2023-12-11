@@ -1,4 +1,4 @@
-import { type paths } from "./openapi/server";
+import { type components, type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {
   // Langfuse API baseUrl (https://cloud.langfuse.com by default)
@@ -55,40 +55,96 @@ export type LangfuseMetadataProperties = {
 };
 
 // ASYNC
-export type CreateLangfuseTraceBody = FixTypes<
-  paths["/api/public/traces"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type CreateLangfuseEventBody = FixTypes<
-  paths["/api/public/events"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type CreateLangfuseSpanBody = FixTypes<
-  paths["/api/public/spans"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type CreateLangfuseGenerationBody = Omit<
-  FixTypes<paths["/api/public/generations"]["post"]["requestBody"]["content"]["application/json"]>,
-  "input" | "output"
->;
-export type CreateLangfuseScoreBody = FixTypes<
-  paths["/api/public/scores"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type UpdateLangfuseSpanBody = FixTypes<
-  paths["/api/public/spans"]["patch"]["requestBody"]["content"]["application/json"]
->;
-export type UpdateLangfuseGenerationBody = FixTypes<
-  paths["/api/public/generations"]["patch"]["requestBody"]["content"]["application/json"]
->;
+export type CreateLangfuseTraceBody = {
+  id?: string | null;
+  name?: string | null;
+  userId?: string | null;
+  externalId?: string | null;
+  release?: string | null;
+  version?: string | null;
+  metadata?: Record<string, unknown> | null;
+  /** @description Make trace publicly accessible via url */
+  public?: boolean | null;
+};
+export type CreateLangfuseEventBody = {
+  id?: string | null;
+  traceId?: string | null;
+  name?: string | null;
+  /** Format: date-time */
+  startTime?: string | null;
+  metadata?: Record<string, unknown> | null;
+  input?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+  level?: components["schemas"]["ObservationLevel"];
+  statusMessage?: string | null;
+  parentObservationId?: string | null;
+  version?: string | null;
+};
+export type CreateLangfuseSpanBody = {
+  /** Format: date-time */
+  endTime?: string | null;
+} & CreateLangfuseEventBody;
+export type CreateLangfuseGenerationBody = {
+  /** Format: date-time */
+  completionStartTime?: string | null;
+  model?: string | null;
+  modelParameters?: {
+    [key: string]: components["schemas"]["MapValue"] | undefined;
+  } | null;
+  prompt?: Record<string, unknown> | null;
+  completion?: Record<string, unknown> | null;
+  usage?: components["schemas"]["Usage"];
+} & CreateLangfuseSpanBody;
+export type CreateLangfuseScoreBody = {
+  id: string;
+  traceId: string;
+  name: string;
+  /** Format: double */
+  value: number;
+  observationId?: string | null;
+  /** Format: date-time */
+  timestamp: string;
+  comment?: string | null;
+};
+export type UpdateLangfuseSpanBody = {
+  spanId: string;
+  traceId?: string | null;
+  /** Format: date-time */
+  startTime?: string | null;
+  /** Format: date-time */
+  endTime?: string | null;
+  name?: string | null;
+  metadata?: Record<string, unknown> | null;
+  input?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+  level?: components["schemas"]["ObservationLevel"];
+  version?: string | null;
+  statusMessage?: string | null;
+};
+export type UpdateLangfuseGenerationBody = {
+  generationId: string;
+  traceId?: string | null;
+  name?: string | null;
+  /** Format: date-time */
+  startTime?: string | null;
+  /** Format: date-time */
+  endTime?: string | null;
+  /** Format: date-time */
+  completionStartTime?: string | null;
+  model?: string | null;
+  modelParameters?: {
+    [key: string]: components["schemas"]["MapValue"] | undefined;
+  } | null;
+  prompt?: Record<string, unknown> | null;
+  version?: string | null;
+  metadata?: Record<string, unknown> | null;
+  completion?: Record<string, unknown> | null;
+  usage?: components["schemas"]["Usage"];
+  level?: components["schemas"]["ObservationLevel"];
+  statusMessage?: string | null;
+};
 
 export type LangfuseObject = SingleIngestionEvent["type"];
-
-export const LangfusePostApiRoutes: Record<LangfuseObject, [LangfuseQueueItem["method"], keyof paths]> = {
-  createTrace: ["POST", "/api/public/traces"],
-  createEvent: ["POST", "/api/public/events"],
-  createSpan: ["POST", "/api/public/spans"],
-  updateSpan: ["PATCH", "/api/public/spans"],
-  createGeneration: ["POST", "/api/public/generations"],
-  updateGeneration: ["PATCH", "/api/public/generations"],
-  createScore: ["POST", "/api/public/scores"],
-};
 
 // SYNC
 export type GetLangfuseDatasetParams = FixTypes<
