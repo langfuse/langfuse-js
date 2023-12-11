@@ -103,7 +103,7 @@ export type CreateLangfuseScoreBody = {
   value: number;
   observationId?: string | null;
   /** Format: date-time */
-  timestamp: string;
+  timestamp?: string;
   comment?: string | null;
 };
 export type UpdateLangfuseSpanBody = {
