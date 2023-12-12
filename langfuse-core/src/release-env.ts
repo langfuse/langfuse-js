@@ -1,3 +1,5 @@
+import { getEnv } from "./utils";
+
 const common_release_envs = [
   // Vercel
   "VERCEL_GIT_COMMIT_SHA",
@@ -19,9 +21,10 @@ const common_release_envs = [
 ] as const;
 
 export function getCommonReleaseEnvs(): string | undefined {
-  for (const env of common_release_envs) {
-    if (process.env[env]) {
-      return process.env[env];
+  for (const key of common_release_envs) {
+    const value = getEnv(key);
+    if (value) {
+      return value;
     }
   }
   return undefined;

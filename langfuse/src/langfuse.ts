@@ -4,7 +4,7 @@ import {
   type LangfuseFetchOptions,
   type LangfuseFetchResponse,
   type LangfusePersistedProperty,
-} from "../../langfuse-core/src";
+} from "langfuse-core";
 import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
@@ -15,7 +15,7 @@ export {
   type LangfuseSpanClient,
   type LangfuseEventClient,
   type LangfuseGenerationClient,
-} from "../../langfuse-core/src";
+} from "langfuse-core";
 
 export class Langfuse extends LangfuseCore {
   private _storage: LangfuseStorage;

@@ -39,6 +39,7 @@ import {
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
+export { LangfuseMemoryStorage } from "./storage-memory";
 import {
   convertGenerationUpdate,
   convertSpanUpdate,
@@ -458,6 +459,9 @@ abstract class LangfuseCoreStateless {
   }
 
   shutdown(): void {
+    console.warn(
+      "shutdown() is deprecated. It does not wait for all events to be processed. Please use shutdownAsync() instead."
+    );
     void this.shutdownAsync();
   }
 

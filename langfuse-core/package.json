@@ -1,5 +1,34 @@
 {
   "name": "langfuse-core",
-  "main": "src/index.ts",
-  "private": true
+  "version": "2.0.0-alpha.2",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "Langfuse",
+    "email": "hi@langfuse.com",
+    "url": "https://langfuse.com"
+  },
+  "license": "MIT",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.mjs",
+  "types": "lib/index.d.ts",
+  "exports": {
+    "require": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.cjs.js"
+    },
+    "import": {
+      "types": "./lib/index.d.mts",
+      "default": "./lib/index.mjs"
+    }
+  },
+  "scripts": {
+    "test": "jest -c jest.config.js",
+    "prepublishOnly": "cd .. && yarn build"
+  },
+  "files": [
+    "lib",
+    "Readme.md"
+  ]
 }

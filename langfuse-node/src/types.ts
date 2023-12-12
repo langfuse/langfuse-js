@@ -1,8 +1,4 @@
-import {
-  type LangfuseCoreOptions,
-  type LangfuseFetchOptions,
-  type LangfuseFetchResponse,
-} from "../../langfuse-core/src";
+import { type LangfuseCoreOptions, type LangfuseFetchOptions, type LangfuseFetchResponse } from "langfuse-core";
 
 export type LangfuseOptions = LangfuseCoreOptions & {
   persistence?: "memory";

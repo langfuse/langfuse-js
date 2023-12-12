@@ -3,8 +3,7 @@
  */
 
 // import { LangfuseWeb } from '../'
-
-import { generateUUID } from "../../langfuse-core/src/utils";
+import { utils } from "langfuse-core";
 import { LangfuseWeb } from "../index";
 
 describe("langfuseWeb", () => {
@@ -44,7 +43,7 @@ describe("langfuseWeb", () => {
       });
       expect(langfuse.baseUrl).toEqual("https://cloud.langfuse.com");
 
-      const id = generateUUID();
+      const id = utils.generateUUID();
       const score = langfuse.score({
         id,
         name: "test",
@@ -97,7 +96,7 @@ describe("langfuseWeb", () => {
       });
       expect(langfuse.baseUrl).toEqual("https://cloud-fail.langfuse.com");
 
-      const id = generateUUID();
+      const id = utils.generateUUID();
       const score = langfuse.score({
         id,
         name: "test",

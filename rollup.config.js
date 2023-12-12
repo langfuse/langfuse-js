@@ -4,19 +4,13 @@ import resolve from "@rollup/plugin-node-resolve";
 import json from "@rollup/plugin-json";
 import typescript from "rollup-plugin-typescript2";
 import dts from "rollup-plugin-dts";
-
-import pkg from "./package.json";
+import del from "rollup-plugin-delete";
 
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
+const packages = ["langfuse-core", "langfuse", "langfuse-node", "langfuse-langchain"];
 
-let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}));
-
-const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc, x) => {
+const configs = packages.reduce((acc, x) => {
   const localPkg = require(`./${x}/package.json`);
-  let external = [...globalExternal]
-    .concat(Object.keys(localPkg.dependencies || {}))
-    .concat(Object.keys(localPkg.peerDependencies || {}))
-    .concat(Object.keys(localPkg.devDependencies || {}));
 
   return [
     ...acc,
@@ -35,7 +29,7 @@ const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc,
           format: `es`,
         },
       ],
-      external,
+      external: [/node_modules/, ...packages],
       plugins: [
         // Allows node_modules resolution
         resolve({ extensions }),
@@ -62,8 +56,17 @@ const configs = ["langfuse", "langfuse-node", "langfuse-langchain"].reduce((acc,
     },
     {
       input: `./${x}/lib/${x}/index.d.ts`,
-      output: [{ file: `./${x}/lib/index.d.ts`, format: "es" }],
-      plugins: [dts.default()],
+      // we need to provide a mts version of the dts file for the typechecker to work in module contexts
+      // without the .d.ts is interpreted as commonjs and the typechecker will complain about missing default exports
+      output: [
+        { file: `./${x}/lib/index.d.ts`, format: "cjs" },
+        { file: `./${x}/lib/index.d.mts`, format: "es" },
+      ],
+      plugins: [
+        dts.default(),
+        // as we rollup the dts files, we can remove the original files/directory afterwards
+        del({ hook: "buildEnd", targets: `./${x}/lib/${x}/` }),
+      ],
     },
   ];
 }, []);
