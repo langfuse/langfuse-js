@@ -73,6 +73,10 @@ export interface paths {
     /** @description Add a score to the database, upserts on id */
     post: operations["score_create"];
   };
+  "/api/public/sessions/{sessionId}": {
+    /** @description Get a session */
+    get: operations["sessions_get"];
+  };
   "/api/public/spans": {
     /** @description Add a span to the database */
     post: operations["span_create"];
@@ -161,6 +165,20 @@ export interface components {
         scores: components["schemas"]["Score"][];
       } & components["schemas"]["Trace"],
       "observations" | "scores"
+    >;
+    /** Session */
+    Session: {
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      projectId: string;
+    };
+    /** SessionWithTraces */
+    SessionWithTraces: WithRequired<
+      {
+        traces: components["schemas"]["Trace"][];
+      } & components["schemas"]["Session"],
+      "traces"
     >;
     /** Observation */
     Observation: {
@@ -1063,6 +1081,47 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Score"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a session */
+  sessions_get: {
+    parameters: {
+      path: {
+        /** @description The unique id of a session */
+        sessionId: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["SessionWithTraces"];
         };
       };
       400: {
