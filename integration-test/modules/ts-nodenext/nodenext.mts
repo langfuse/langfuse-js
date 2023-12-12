@@ -13,9 +13,9 @@ export async function run(): Promise<void> {
   dotenv.config();
 
   const langfuse = new Langfuse({
-    baseUrl: String(process.env["LANGFUSE_URL"]),
-    publicKey: String(process.env["LANGFUSE_PK"]),
-    secretKey: String(process.env["LANGFUSE_SK"]),
+    baseUrl: String(process.env["LF_HOST"]),
+    publicKey: String(process.env["LF_PUBLIC_KEY"]),
+    secretKey: String(process.env["LF_SECRET_KEY"]),
   });
 
   const trace = langfuse.trace({ userId: "user-id" });
