@@ -83,6 +83,9 @@ export type CreateLangfuseSpanBody = {
   /** Format: date-time */
   endTime?: Date | null;
 } & CreateLangfuseEventBody;
+export type Usage =
+  | components["schemas"]["Usage"]
+  | { promptTokens?: number; completionTokens?: number; totalTokens?: number };
 export type CreateLangfuseGenerationBody = {
   /** Format: date-time */
   completionStartTime?: Date | null;
@@ -92,7 +95,7 @@ export type CreateLangfuseGenerationBody = {
   } | null;
   prompt?: any | null;
   completion?: any | null;
-  usage?: components["schemas"]["Usage"];
+  usage?: Usage;
 } & CreateLangfuseSpanBody;
 export type CreateLangfuseScoreBody = {
   id?: string | null;
@@ -136,7 +139,7 @@ export type UpdateLangfuseGenerationBody = {
   version?: string | null;
   metadata?: any | null;
   completion?: any | null;
-  usage?: components["schemas"]["Usage"];
+  usage?: Usage;
   level?: components["schemas"]["ObservationLevel"];
   statusMessage?: string | null;
 };

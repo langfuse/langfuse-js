@@ -48,7 +48,7 @@ describe("Langfuse Core", () => {
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
-              spanId: span.id,
+              id: span.id,
               output: { text: "test-output" },
               endTime: "2022-01-01T00:00:00.000Z",
             },
@@ -83,8 +83,10 @@ describe("Langfuse Core", () => {
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
-              spanId: span.id,
+              id: span.id,
+              level: "DEFAULT",
               endTime: "2022-01-01T00:00:00.000Z",
+              type: "SPAN",
             },
           },
         ],
@@ -121,7 +123,7 @@ describe("Langfuse Core", () => {
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
-              generationId: generation.id,
+              id: generation.id,
               version: "1.0.0",
               endTime: "2022-01-01T00:00:00.000Z",
             },
@@ -156,7 +158,7 @@ describe("Langfuse Core", () => {
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
-              generationId: generation.id,
+              id: generation.id,
               endTime: "2022-01-01T00:00:00.000Z",
             },
           },

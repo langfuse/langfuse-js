@@ -270,6 +270,31 @@ export interface components {
         >,
       ]
     >;
+    /** ObservationEvent */
+    ObservationEvent: {
+      id: string;
+      traceId?: string | null;
+      type: string;
+      name?: string | null;
+      /** Format: date-time */
+      startTime?: string | null;
+      /** Format: date-time */
+      endTime?: string | null;
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components["schemas"]["MapValue"] | undefined;
+      } | null;
+      input?: Record<string, unknown> | null;
+      version?: string | null;
+      metadata?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      usage?: components["schemas"]["Usage"];
+      level: components["schemas"]["ObservationLevel"];
+      statusMessage?: string | null;
+      parentObservationId?: string | null;
+    };
     /** TraceEvent */
     TraceEvent: {
       id: string;
@@ -280,13 +305,13 @@ export interface components {
     ObservationCreateEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Observation"];
+      body: components["schemas"]["ObservationEvent"];
     };
     /** ObservationUpdateEvent */
     ObservationUpdateEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Observation"];
+      body: components["schemas"]["ObservationEvent"];
     };
     /** ScoreEvent */
     ScoreEvent: {

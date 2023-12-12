@@ -51,7 +51,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-update",
+                type: "trace-create",
                 body: { name: "test-trace" },
               },
             ],
@@ -64,7 +64,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-update",
+                type: "observation-create",
                 body: { name: "test-span-1", traceId: trace.id },
               },
             ],
@@ -77,7 +77,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-update",
+                type: "observation-create",
                 body: { name: "test-span-2", traceId: trace.id },
               },
             ],
@@ -90,7 +90,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-update",
+                type: "observation-create",
                 body: {
                   name: "test-event-1",
                   traceId: trace.id,
@@ -103,22 +103,19 @@ describe("Langfuse Core", () => {
         {
           url: "https://cloud.langfuse.com/api/public/ingestion",
           object: {
-            url: "https://cloud.langfuse.com/api/public/ingestion",
-            object: {
-              batch: [
-                {
-                  id: expect.any(String),
-                  timestamp: expect.any(String),
-                  type: "observation-update",
-                  body: {
-                    name: "test-score-1",
-                    traceId: trace.id,
-                    observationId: event.id,
-                    value: 0.5,
-                  },
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "score-create",
+                body: {
+                  name: "test-score-1",
+                  traceId: trace.id,
+                  observationId: event.id,
+                  value: 0.5,
                 },
-              ],
-            },
+              },
+            ],
           },
         },
       ];
@@ -150,10 +147,19 @@ describe("Langfuse Core", () => {
           });
           await langfuse.flushAsync();
           expect(parseBody(mocks.fetch.mock.calls.pop())).toMatchObject({
-            traceId: trace.id,
-            parentObservationId: client.id,
-            id: nextClient.id,
-            name: `test-span-${i}`,
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "observation-create",
+                body: {
+                  traceId: trace.id,
+                  parentObservationId: client.id,
+                  id: nextClient.id,
+                  name: `test-span-${i}`,
+                },
+              },
+            ],
           });
         } else if (rand < 0.66) {
           nextClient = client.event({
@@ -161,10 +167,19 @@ describe("Langfuse Core", () => {
           });
           await langfuse.flushAsync();
           expect(parseBody(mocks.fetch.mock.calls.pop())).toMatchObject({
-            traceId: trace.id,
-            parentObservationId: client.id,
-            id: nextClient.id,
-            name: `test-event-${i}`,
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "observation-create",
+                body: {
+                  traceId: trace.id,
+                  parentObservationId: client.id,
+                  id: nextClient.id,
+                  name: `test-event-${i}`,
+                },
+              },
+            ],
           });
         } else {
           nextClient = client.generation({
@@ -172,10 +187,19 @@ describe("Langfuse Core", () => {
           });
           await langfuse.flushAsync();
           expect(parseBody(mocks.fetch.mock.calls.pop())).toMatchObject({
-            traceId: trace.id,
-            parentObservationId: client.id,
-            id: nextClient.id,
-            name: `test-generation-${i}`,
+            batch: [
+              {
+                id: expect.any(String),
+                timestamp: expect.any(String),
+                type: "observation-create",
+                body: {
+                  traceId: trace.id,
+                  parentObservationId: client.id,
+                  id: nextClient.id,
+                  name: `test-generation-${i}`,
+                },
+              },
+            ],
           });
         }
         client = nextClient;

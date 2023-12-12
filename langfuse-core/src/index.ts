@@ -24,6 +24,7 @@ import {
   type GetLangfuseDatasetRunParams,
   type DeferRuntime,
   type IngestionReturnType,
+  type SingleIngestionEvent,
 } from "./types";
 import {
   assert,
@@ -38,6 +39,15 @@ import {
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
+import {
+  convertGenerationUpdate,
+  convertSpanUpdate,
+  convertSpanCreation,
+  convertEvent,
+  convertGenerationCreation,
+} from "./converters";
+
+export type IngestionBody = SingleIngestionEvent["body"];
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -154,7 +164,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("observation-create", parsedBody);
+    this.enqueue("observation-create", convertEvent(parsedBody));
     return id;
   }
 
@@ -168,7 +178,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("observation-create", parsedBody);
+    this.enqueue("observation-create", convertSpanCreation(parsedBody));
     return id;
   }
 
@@ -182,7 +192,8 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("observation-create", parsedBody);
+
+    this.enqueue("observation-create", convertGenerationCreation(parsedBody));
     return id;
   }
 
@@ -200,12 +211,12 @@ abstract class LangfuseCoreStateless {
   }
 
   protected updateSpanStateless(body: UpdateLangfuseSpanBody): string {
-    this.enqueue("observation-update", body);
+    this.enqueue("observation-update", convertSpanUpdate(body));
     return body.spanId;
   }
 
   protected updateGenerationStateless(body: UpdateLangfuseGenerationBody): string {
-    this.enqueue("observation-update", body);
+    this.enqueue("observation-update", convertGenerationUpdate(body));
     return body.generationId;
   }
 
@@ -283,7 +294,6 @@ abstract class LangfuseCoreStateless {
 
     // Flush queued events if we meet the flushAt length
     if (queue.length >= this.flushAt) {
-      console.log("Flushing queue", queue.length, this.flushAt);
       this.flush();
     }
 
@@ -410,12 +420,14 @@ abstract class LangfuseCoreStateless {
           // fetch will only throw on network errors or on timeouts
           throw new LangfuseFetchNetworkError(e);
         }
+        const returnBody = await res.json();
         if (res.status < 200 || res.status >= 400) {
+          console.log("Langfuse returned error", res.status, returnBody);
           throw new LangfuseFetchHttpError(res);
         }
 
-        const returnBody = await res.json();
         if (res.status === 207 && returnBody.errors.length > 0) {
+          console.log("Langfuse returned error", res.status, returnBody);
           throw new LangfuseFetchHttpError(res);
         }
 

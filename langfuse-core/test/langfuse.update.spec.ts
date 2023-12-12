@@ -49,7 +49,7 @@ describe("Langfuse Core", () => {
             type: "observation-update",
             body: {
               traceId: trace.id,
-              spanId: span.id,
+              id: span.id,
               version: "1.0.0",
               name: "test-span-2",
             },
@@ -86,7 +86,7 @@ describe("Langfuse Core", () => {
             type: "observation-update",
             body: {
               traceId: trace.id,
-              generationId: generation.id,
+              id: generation.id,
               version: "1.0.0",
             },
           },
