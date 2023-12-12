@@ -1134,6 +1134,10 @@ components:
           nullable: true
         metadata:
           nullable: true
+        public:
+          type: boolean
+          nullable: true
+          description: Public traces are accessible via url without login
       required:
         - id
         - timestamp
@@ -1748,6 +1752,10 @@ components:
           nullable: true
         metadata:
           nullable: true
+        public:
+          type: boolean
+          nullable: true
+          description: Make trace publicly accessible via url
     Traces:
       title: Traces
       type: object
