@@ -61,7 +61,7 @@ export type CreateLangfuseTraceBody = {
   userId?: string | null;
   release?: string | null;
   version?: string | null;
-  metadata?: Record<string, unknown> | null;
+  metadata?: any; // Record<string, unknown> | null;
   /** @description Make trace publicly accessible via url */
   public?: boolean | null;
 };
@@ -71,9 +71,9 @@ export type CreateLangfuseEventBody = {
   name?: string | null;
   /** Format: date-time */
   startTime?: Date | null;
-  metadata?: Record<string, unknown> | null;
-  input?: Record<string, unknown> | null;
-  output?: Record<string, unknown> | null;
+  metadata?: any | null;
+  input?: any | null;
+  output?: any | null;
   level?: components["schemas"]["ObservationLevel"];
   statusMessage?: string | null;
   parentObservationId?: string | null;
@@ -90,8 +90,8 @@ export type CreateLangfuseGenerationBody = {
   modelParameters?: {
     [key: string]: components["schemas"]["MapValue"] | undefined;
   } | null;
-  prompt?: Record<string, unknown> | null;
-  completion?: Record<string, unknown> | null;
+  prompt?: any | null;
+  completion?: any | null;
   usage?: components["schemas"]["Usage"];
 } & CreateLangfuseSpanBody;
 export type CreateLangfuseScoreBody = {
@@ -111,9 +111,9 @@ export type UpdateLangfuseSpanBody = {
   /** Format: date-time */
   endTime?: Date | null;
   name?: string | null;
-  metadata?: Record<string, unknown> | null;
-  input?: Record<string, unknown> | null;
-  output?: Record<string, unknown> | null;
+  metadata?: any | null;
+  input?: any | null;
+  output?: any | null;
   level?: components["schemas"]["ObservationLevel"];
   version?: string | null;
   statusMessage?: string | null;
@@ -132,10 +132,10 @@ export type UpdateLangfuseGenerationBody = {
   modelParameters?: {
     [key: string]: components["schemas"]["MapValue"] | undefined;
   } | null;
-  prompt?: Record<string, unknown> | null;
+  prompt?: null;
   version?: string | null;
-  metadata?: Record<string, unknown> | null;
-  completion?: Record<string, unknown> | null;
+  metadata?: any | null;
+  completion?: any | null;
   usage?: components["schemas"]["Usage"];
   level?: components["schemas"]["ObservationLevel"];
   statusMessage?: string | null;
