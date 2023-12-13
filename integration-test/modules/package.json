@@ -18,7 +18,7 @@
     "langfuse-langchain": "^2.0.0-alpha.0"
   },
   "devDependencies": {
-    "tsx": "^4.2.0",
+    "tsx": "^4.6.2",
     "typescript": "^5.1.6"
   }
 }
