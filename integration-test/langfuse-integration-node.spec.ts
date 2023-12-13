@@ -211,6 +211,58 @@ describe("Langfuse Node.js", () => {
       });
     });
 
+    it("create many objects", async () => {
+      const trace = langfuse.trace({ name: "trace-name-generation-new" });
+      const generation = trace.generation({
+        name: "generation-name-new",
+        prompt: "prompt",
+        completion: "completion",
+      });
+      generation.update({
+        version: "1.0.0",
+      });
+      const span = generation.span({
+        name: "span-name",
+        input: "span-input",
+        output: "span-output",
+      });
+      span.end({ metadata: { foo: "bar" } });
+      generation.end({ metadata: { foo: "bar" } });
+
+      await langfuse.flushAsync();
+      // check from get api if trace is created
+      const returnedGeneration = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, {
+        headers: getHeaders,
+      });
+      expect(returnedGeneration.data).toMatchObject({
+        id: generation.id,
+        name: "generation-name-new",
+        type: "GENERATION",
+        input: "prompt",
+        output: "completion",
+        version: "1.0.0",
+        endTime: expect.any(String),
+        metadata: {
+          foo: "bar",
+        },
+      });
+
+      const returnedSpan = await axios.get(`${LF_HOST}/api/public/observations/${span.id}`, {
+        headers: getHeaders,
+      });
+      expect(returnedSpan.data).toMatchObject({
+        id: span.id,
+        name: "span-name",
+        type: "SPAN",
+        input: "span-input",
+        output: "span-output",
+        endTime: expect.any(String),
+        metadata: {
+          foo: "bar",
+        },
+      });
+    });
+
     it("update a generation", async () => {
       const trace = langfuse.trace({
         name: "test-trace",

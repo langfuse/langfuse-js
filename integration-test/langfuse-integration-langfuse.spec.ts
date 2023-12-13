@@ -16,22 +16,5 @@ describe("Langfuse Langchain", () => {
       });
       expect(langfuse).toBeInstanceOf(Langfuse);
     });
-
-    // it("exports the callback handler", async () => {
-    //   const callbackHandler = new CallbackHandler({
-    //     publicKey: LF_PUBLIC_KEY,
-    //     secretKey: LF_SECRET_KEY,
-    //     baseUrl: LF_HOST,
-    //   });
-    //   expect(callbackHandler).toBeInstanceOf(CallbackHandler);
-
-    //   const llm = new OpenAI({
-    //     openAIApiKey: "sk-...",
-    //     streaming: true,
-    //   });
-
-    //   const res = await llm.call("Tell me a joke", undefined, [callbackHandler]);
-    //   console.log(res);
-    // });
   });
 });
