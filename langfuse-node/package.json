@@ -1,6 +1,6 @@
 {
   "name": "langfuse-node",
-  "version": "2.0.0-alpha.2",
+  "version": "1.3.0",
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
@@ -38,5 +38,5 @@
     "lib",
     "Readme.md"
   ],
-  "gitHead": "1b8f422c3d4b0de925cabd2e5901a8c388738887"
+  "gitHead": "87b853a8df0e6b7358ce0371629972691e3e9e70"
 }

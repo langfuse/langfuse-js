@@ -67,6 +67,8 @@ Run `npx lerna publish --force-publish --no-private`
 - Publishes to NPM, publishes also when there are no changes to keep the version numbers in sync
 - Confirm with npmjs OTP
 
+Alpha: `npx lerna publish prerelease --force-publish --no-private --dist-tag alpha --preid alpha`
+
 ## License
 
 [MIT](LICENSE)

@@ -26,6 +26,13 @@ describe("Langfuse Core", () => {
 
       langfuse.trace({
         name: "test-trace",
+        sessionId: "123456789",
+        input: {
+          hello: "world",
+        },
+        output: {
+          hello: "world",
+        },
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
@@ -36,6 +43,13 @@ describe("Langfuse Core", () => {
 
       expect(body).toMatchObject({
         name: "test-trace",
+        sessionId: "123456789",
+        input: {
+          hello: "world",
+        },
+        output: {
+          hello: "world",
+        },
       });
     });
 
