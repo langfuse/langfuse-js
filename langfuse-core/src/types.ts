@@ -43,6 +43,7 @@ export type LangfuseQueueItem = SingleIngestionEvent & {
 export type SingleIngestionEvent =
   paths["/api/public/ingestion"]["post"]["requestBody"]["content"]["application/json"]["batch"][number];
 
+// return type of ingestion endpoint defined on 200 status error in fern as 207 is not possible
 export type IngestionReturnType =
   paths["/api/public/ingestion"]["post"]["responses"][200]["content"]["application/json"];
 
