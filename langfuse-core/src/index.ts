@@ -422,11 +422,11 @@ abstract class LangfuseCoreStateless {
           // fetch will only throw on network errors or on timeouts
           throw new LangfuseFetchNetworkError(e);
         }
-        const returnBody = await res.json();
+
         if (res.status < 200 || res.status >= 400) {
           throw new LangfuseFetchHttpError(res);
         }
-
+        const returnBody = await res.json();
         if (res.status === 207 && returnBody.errors.length > 0) {
           throw new LangfuseFetchHttpError(res);
         }
