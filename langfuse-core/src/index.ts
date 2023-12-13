@@ -348,6 +348,7 @@ abstract class LangfuseCoreStateless {
       method: "POST",
       body: payload,
     });
+    console.log("Sending payload", payload);
     const requestPromise = this.fetchWithRetry(url, fetchOptions);
     this.pendingPromises[promiseUUID] = requestPromise;
 
