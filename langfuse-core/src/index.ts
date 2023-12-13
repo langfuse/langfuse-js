@@ -348,7 +348,7 @@ abstract class LangfuseCoreStateless {
       method: "POST",
       body: payload,
     });
-    console.log("Sending payload", payload);
+    console.debug("Sending payload", payload);
     const requestPromise = this.fetchWithRetry(url, fetchOptions);
     this.pendingPromises[promiseUUID] = requestPromise;
 
@@ -424,12 +424,10 @@ abstract class LangfuseCoreStateless {
         }
         const returnBody = await res.json();
         if (res.status < 200 || res.status >= 400) {
-          console.log("Langfuse returned error", res.status, returnBody);
           throw new LangfuseFetchHttpError(res);
         }
 
         if (res.status === 207 && returnBody.errors.length > 0) {
-          console.log("Langfuse returned error", res.status, returnBody);
           throw new LangfuseFetchHttpError(res);
         }
 
