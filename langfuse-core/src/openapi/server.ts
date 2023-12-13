@@ -65,9 +65,11 @@ export interface paths {
     /** @description Add a score to the database, upserts on id */
     post: operations["score_create"];
   };
-  "/api/public/traces/{traceId}": {
-    /** @description Get a specific trace */
-    get: operations["trace_get"];
+  "/api/public/spans": {
+    /** @description Add a span to the database */
+    post: operations["span_create"];
+    /** @description Update a span to the database */
+    patch: operations["span_update"];
   };
   "/api/public/traces": {
     /** @description Get list of traces */
@@ -86,6 +88,9 @@ export interface components {
       /** Format: date-time */
       timestamp: string;
       name?: string | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      sessionId?: string | null;
       release?: string | null;
       version?: string | null;
       userId?: string | null;
@@ -110,6 +115,20 @@ export interface components {
         scores: components["schemas"]["Score"][];
       } & components["schemas"]["Trace"],
       "observations" | "scores"
+    >;
+    /** Session */
+    Session: {
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      projectId: string;
+    };
+    /** SessionWithTraces */
+    SessionWithTraces: WithRequired<
+      {
+        traces: components["schemas"]["Trace"][];
+      } & components["schemas"]["Session"],
+      "traces"
     >;
     /** Observation */
     Observation: {
@@ -364,6 +383,34 @@ export interface components {
     Scores: {
       data: components["schemas"]["Score"][];
       meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** UpdateSpanRequest */
+    UpdateSpanRequest: {
+      spanId: string;
+      traceId?: string | null;
+      /** Format: date-time */
+      startTime?: string | null;
+      /** Format: date-time */
+      endTime?: string | null;
+      name?: string | null;
+      metadata?: Record<string, unknown> | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      level?: components["schemas"]["ObservationLevel"];
+      version?: string | null;
+      statusMessage?: string | null;
+    };
+    /** CreateTraceRequest */
+    CreateTraceRequest: {
+      id?: string | null;
+      name?: string | null;
+      userId?: string | null;
+      externalId?: string | null;
+      release?: string | null;
+      version?: string | null;
+      metadata?: Record<string, unknown> | null;
+      /** @description Make trace publicly accessible via url */
+      public?: boolean | null;
     };
     /** Traces */
     Traces: {
@@ -915,12 +962,11 @@ export interface operations {
       };
     };
   };
-  /** @description Get a specific trace */
-  trace_get: {
-    parameters: {
-      path: {
-        /** @description The unique langfuse identifier of a trace */
-        traceId: string;
+  /** @description Add a span to the database */
+  span_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSpanRequest"];
       };
     };
     responses: {

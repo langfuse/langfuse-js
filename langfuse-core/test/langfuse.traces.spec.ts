@@ -26,9 +26,14 @@ describe("Langfuse Core", () => {
 
       langfuse.trace({
         name: "test-trace",
+        sessionId: "123456789",
+        input: {
+          hello: "world",
+        },
+        output: {
+          hello: "world",
+        },
       });
-
-      await langfuse.flush();
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
@@ -46,6 +51,13 @@ describe("Langfuse Core", () => {
             body: {
               id: expect.any(String),
               name: "test-trace",
+              sessionId: "123456789",
+              input: {
+                hello: "world",
+              },
+              output: {
+                hello: "world",
+              },
             },
           },
         ],
