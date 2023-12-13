@@ -20,6 +20,86 @@ describe("Langfuse Core", () => {
   });
 
   describe("observations", () => {
+    [
+      {
+        usage: {
+          input: 1,
+          output: 2,
+          total: 3,
+          unit: "CHARACTERS",
+        },
+        expectedOutput: {
+          input: 1,
+          output: 2,
+          total: 3,
+          unit: "CHARACTERS",
+        },
+      },
+      {
+        usage: {
+          output: 2,
+          unit: "CHARACTERS",
+        },
+        expectedOutput: {
+          output: 2,
+          unit: "CHARACTERS",
+        },
+      },
+      {
+        usage: {
+          promptTokens: 1,
+          completionTokens: 2,
+          totalTokens: 3,
+        },
+        expectedOutput: {
+          input: 1,
+          output: 2,
+          total: 3,
+          unit: "TOKENS",
+        },
+      },
+      {
+        usage: {
+          promptTokens: 1,
+        },
+        expectedOutput: {
+          input: 1,
+          unit: "TOKENS",
+        },
+      },
+    ].forEach((usageConfig) => {
+      it(`should create observations with different usage types correctly ${JSON.stringify(usageConfig)}`, async () => {
+        jest.setSystemTime(new Date("2022-01-01"));
+
+        const trace = langfuse.trace({
+          name: "test-trace",
+        });
+
+        // explicit start/end
+        trace.generation({
+          name: "test-observation-1",
+          startTime: new Date("2023-01-02"),
+          endTime: new Date("2023-01-03"),
+          usage: usageConfig.usage,
+        });
+        expect(mocks.fetch).toHaveBeenCalledTimes(2);
+        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+          batch: [
+            {
+              id: expect.any(String),
+              timestamp: expect.any(String),
+              type: "observation-create",
+              body: {
+                name: "test-observation-1",
+                startTime: new Date("2023-01-02").toISOString(),
+                endTime: new Date("2023-01-03").toISOString(),
+                usage: usageConfig.expectedOutput,
+              },
+            },
+          ],
+        });
+      });
+    });
     it("should create each observation and handle dates correctly", async () => {
       jest.setSystemTime(new Date("2022-01-01"));
 

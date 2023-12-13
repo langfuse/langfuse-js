@@ -132,7 +132,7 @@ export function convertToNewUsageFormat(usage?: Usage): components["schemas"]["U
       unit: "TOKENS" as const, // Ensure 'unit' is always set to 'TOKENS' in this case
     };
   } // If usage has 'input', ensure 'unit' is set (to either its existing value or default to 'TOKENS')
-  else if ("input" in usage) {
+  else if ("input" in usage || "output" in usage || "total" in usage) {
     return {
       ...usage,
       unit: usage.unit || ("TOKENS" as const),
