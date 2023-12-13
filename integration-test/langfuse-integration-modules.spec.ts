@@ -10,8 +10,8 @@ describe("Test Different Module Conventions", () => {
         encoding: "utf-8",
       });
 
-      expect(result.status).toBe(0);
       expect(result.stdout).toContain("Did construct objects and called them.");
+      expect(result.status).toBe(0);
     }
   );
 
