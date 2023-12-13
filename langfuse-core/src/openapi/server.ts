@@ -65,11 +65,13 @@ export interface paths {
     /** @description Add a score to the database, upserts on id */
     post: operations["score_create"];
   };
-  "/api/public/spans": {
-    /** @description Add a span to the database */
-    post: operations["span_create"];
-    /** @description Update a span to the database */
-    patch: operations["span_update"];
+  "/api/public/sessions/{sessionId}": {
+    /** @description Get a session */
+    get: operations["sessions_get"];
+  };
+  "/api/public/traces/{traceId}": {
+    /** @description Get a specific trace */
+    get: operations["trace_get"];
   };
   "/api/public/traces": {
     /** @description Get list of traces */
@@ -310,15 +312,29 @@ export interface components {
       metadata?: Record<string, unknown> | null;
       output?: Record<string, unknown> | null;
       usage?: components["schemas"]["Usage"];
-      level: components["schemas"]["ObservationLevel"];
+      level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+    };
+    /** CreateTraceRequest */
+    CreateTraceRequest: {
+      id?: string | null;
+      name?: string | null;
+      userId?: string | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      sessionId?: string | null;
+      release?: string | null;
+      version?: string | null;
+      metadata?: Record<string, unknown> | null;
+      /** @description Make trace publicly accessible via url */
+      public?: boolean | null;
     };
     /** TraceEvent */
     TraceEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Trace"];
+      body: components["schemas"]["CreateTraceRequest"];
     };
     /** ObservationCreateEvent */
     ObservationCreateEvent: {
@@ -383,34 +399,6 @@ export interface components {
     Scores: {
       data: components["schemas"]["Score"][];
       meta: components["schemas"]["utilsMetaResponse"];
-    };
-    /** UpdateSpanRequest */
-    UpdateSpanRequest: {
-      spanId: string;
-      traceId?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      /** Format: date-time */
-      endTime?: string | null;
-      name?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components["schemas"]["ObservationLevel"];
-      version?: string | null;
-      statusMessage?: string | null;
-    };
-    /** CreateTraceRequest */
-    CreateTraceRequest: {
-      id?: string | null;
-      name?: string | null;
-      userId?: string | null;
-      externalId?: string | null;
-      release?: string | null;
-      version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      /** @description Make trace publicly accessible via url */
-      public?: boolean | null;
     };
     /** Traces */
     Traces: {
@@ -962,11 +950,53 @@ export interface operations {
       };
     };
   };
-  /** @description Add a span to the database */
-  span_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateSpanRequest"];
+  /** @description Get a session */
+  sessions_get: {
+    parameters: {
+      path: {
+        /** @description The unique id of a session */
+        sessionId: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["SessionWithTraces"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a specific trace */
+  trace_get: {
+    parameters: {
+      path: {
+        /** @description The unique langfuse identifier of a trace */
+        traceId: string;
       };
     };
     responses: {

@@ -61,6 +61,9 @@ export type CreateLangfuseTraceBody = {
   userId?: string | null;
   release?: string | null;
   version?: string | null;
+  sessionId?: string | null;
+  input?: any | null;
+  output?: any | null;
   metadata?: any; // Record<string, unknown> | null;
   /** @description Make trace publicly accessible via url */
   public?: boolean | null;
