@@ -86,7 +86,7 @@ describe("Langfuse Core", () => {
             {
               id: expect.any(String),
               timestamp: expect.any(String),
-              type: "observation-create",
+              type: "generation-create",
               body: {
                 name: "test-observation-1",
                 startTime: new Date("2023-01-02").toISOString(),
@@ -117,7 +117,7 @@ describe("Langfuse Core", () => {
           {
             id: expect.any(String),
             timestamp: expect.any(String),
-            type: "observation-create",
+            type: "generation-create",
             body: {
               name: "test-observation-1",
               startTime: new Date("2023-01-02").toISOString(),
@@ -137,7 +137,7 @@ describe("Langfuse Core", () => {
           {
             id: expect.any(String),
             timestamp: expect.any(String),
-            type: "observation-create",
+            type: "span-create",
             body: {
               name: "test-observation-2",
               startTime: new Date().toISOString(),
@@ -156,7 +156,7 @@ describe("Langfuse Core", () => {
           {
             id: expect.any(String),
             timestamp: expect.any(String),
-            type: "observation-create",
+            type: "event-create",
             body: {
               name: "test-observation-3",
               startTime: new Date().toISOString(),

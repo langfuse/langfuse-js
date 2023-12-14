@@ -64,7 +64,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-create",
+                type: "span-create",
                 body: { name: "test-span-1", traceId: trace.id },
               },
             ],
@@ -77,7 +77,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-create",
+                type: "span-create",
                 body: { name: "test-span-2", traceId: trace.id },
               },
             ],
@@ -90,7 +90,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-create",
+                type: "event-create",
                 body: {
                   name: "test-event-1",
                   traceId: trace.id,
@@ -151,7 +151,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-create",
+                type: "span-create",
                 body: {
                   traceId: trace.id,
                   parentObservationId: client.id,
@@ -171,7 +171,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-create",
+                type: "event-create",
                 body: {
                   traceId: trace.id,
                   parentObservationId: client.id,
@@ -191,7 +191,7 @@ describe("Langfuse Core", () => {
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
-                type: "observation-create",
+                type: "generation-create",
                 body: {
                   traceId: trace.id,
                   parentObservationId: client.id,

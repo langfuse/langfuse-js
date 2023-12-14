@@ -365,8 +365,6 @@ export interface components {
       modelParameters?: {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
-      prompt?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
       usage?: components["schemas"]["IngestionUsage"];
     } & components["schemas"]["CreateSpanBody"];
     /** UpdateGenerationBody */
@@ -377,8 +375,6 @@ export interface components {
       modelParameters?: {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
-      prompt?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
       usage?: components["schemas"]["IngestionUsage"];
     } & components["schemas"]["UpdateSpanBody"];
     /** ObservationBody */

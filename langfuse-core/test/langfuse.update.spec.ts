@@ -46,7 +46,7 @@ describe("Langfuse Core", () => {
           {
             id: expect.any(String),
             timestamp: expect.any(String),
-            type: "observation-update",
+            type: "span-update",
             body: {
               traceId: trace.id,
               id: span.id,
@@ -83,7 +83,7 @@ describe("Langfuse Core", () => {
           {
             id: expect.any(String),
             timestamp: expect.any(String),
-            type: "observation-update",
+            type: "generation-update",
             body: {
               traceId: trace.id,
               id: generation.id,

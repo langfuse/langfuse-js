@@ -237,7 +237,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       startTime: new Date(),
       metadata: this.joinTagsAndMetaData(tags, metadata),
       parentObservationId: parentRunId ?? this.rootObservationId,
-      prompt: messages,
+      input: messages,
       model: extractedModelName,
       modelParameters: modelParameters,
       version: this.version,

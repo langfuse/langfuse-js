@@ -158,7 +158,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("observation-create", parsedBody);
+    this.enqueue("event-create", parsedBody);
     return id;
   }
 
@@ -172,7 +172,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("observation-create", parsedBody);
+    this.enqueue("span-create", parsedBody);
     return id;
   }
 
@@ -187,7 +187,7 @@ abstract class LangfuseCoreStateless {
       ...rest,
     };
 
-    this.enqueue("observation-create", parsedBody);
+    this.enqueue("generation-create", parsedBody);
     return id;
   }
 
@@ -205,12 +205,12 @@ abstract class LangfuseCoreStateless {
   }
 
   protected updateSpanStateless(body: UpdateLangfuseSpanBody): string {
-    this.enqueue("observation-update", body);
+    this.enqueue("span-update", body);
     return body.id;
   }
 
   protected updateGenerationStateless(body: UpdateLangfuseGenerationBody): string {
-    this.enqueue("observation-update", body);
+    this.enqueue("generation-update", body);
     return body.id;
   }
 

@@ -44,7 +44,7 @@ describe("Langfuse Core", () => {
         batch: [
           {
             id: expect.any(String),
-            type: "observation-update",
+            type: "span-update",
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
@@ -79,7 +79,7 @@ describe("Langfuse Core", () => {
         batch: [
           {
             id: expect.any(String),
-            type: "observation-update",
+            type: "span-update",
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
@@ -117,7 +117,7 @@ describe("Langfuse Core", () => {
         batch: [
           {
             id: expect.any(String),
-            type: "observation-update",
+            type: "generation-update",
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
@@ -152,7 +152,7 @@ describe("Langfuse Core", () => {
         batch: [
           {
             id: expect.any(String),
-            type: "observation-update",
+            type: "generation-update",
             timestamp: expect.any(String),
             body: {
               traceId: trace.id,
