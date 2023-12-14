@@ -269,49 +269,49 @@ export interface components {
           {
             /** @enum {string} */
             type?: "event-create";
-          } & components["schemas"]["EventCreateEvent"],
+          } & components["schemas"]["CreateEventEvent"],
           "type"
         >
       | WithRequired<
           {
             /** @enum {string} */
             type?: "generation-create";
-          } & components["schemas"]["GenerationCreateEvent"],
+          } & components["schemas"]["CreateGenerationEvent"],
           "type"
         >
       | WithRequired<
           {
             /** @enum {string} */
             type?: "generation-update";
-          } & components["schemas"]["GenerationUpdateEvent"],
+          } & components["schemas"]["UpdateGenerationEvent"],
           "type"
         >
       | WithRequired<
           {
             /** @enum {string} */
             type?: "span-create";
-          } & components["schemas"]["SpanCreateEvent"],
+          } & components["schemas"]["CreateSpanEvent"],
           "type"
         >
       | WithRequired<
           {
             /** @enum {string} */
             type?: "span-update";
-          } & components["schemas"]["SpanUpdateEvent"],
+          } & components["schemas"]["UpdateSpanEvent"],
           "type"
         >
       | WithRequired<
           {
             /** @enum {string} */
             type?: "observation-create";
-          } & components["schemas"]["ObservationCreateEvent"],
+          } & components["schemas"]["CreateObservationEvent"],
           "type"
         >
       | WithRequired<
           {
             /** @enum {string} */
             type?: "observation-update";
-          } & components["schemas"]["ObservationUpdateEvent"],
+          } & components["schemas"]["UpdateObservationEvent"],
           "type"
         >;
     /** IngestionUsage */
@@ -432,14 +432,14 @@ export interface components {
       timestamp: string;
       body: components["schemas"]["TraceBody"];
     };
-    /** ObservationCreateEvent */
-    ObservationCreateEvent: {
+    /** CreateObservationEvent */
+    CreateObservationEvent: {
       id: string;
       timestamp: string;
       body: components["schemas"]["ObservationBody"];
     };
-    /** ObservationUpdateEvent */
-    ObservationUpdateEvent: {
+    /** UpdateObservationEvent */
+    UpdateObservationEvent: {
       id: string;
       timestamp: string;
       body: components["schemas"]["ObservationBody"];
@@ -450,32 +450,32 @@ export interface components {
       timestamp: string;
       body: components["schemas"]["ScoreBody"];
     };
-    /** GenerationCreateEvent */
-    GenerationCreateEvent: {
+    /** CreateGenerationEvent */
+    CreateGenerationEvent: {
       id: string;
       timestamp: string;
       body: components["schemas"]["CreateGenerationBody"];
     };
-    /** GenerationUpdateEvent */
-    GenerationUpdateEvent: {
+    /** UpdateGenerationEvent */
+    UpdateGenerationEvent: {
       id: string;
       timestamp: string;
       body: components["schemas"]["UpdateGenerationBody"];
     };
-    /** SpanCreateEvent */
-    SpanCreateEvent: {
+    /** CreateSpanEvent */
+    CreateSpanEvent: {
       id: string;
       timestamp: string;
       body: components["schemas"]["CreateSpanBody"];
     };
-    /** SpanUpdateEvent */
-    SpanUpdateEvent: {
+    /** UpdateSpanEvent */
+    UpdateSpanEvent: {
       id: string;
       timestamp: string;
       body: components["schemas"]["UpdateSpanBody"];
     };
-    /** EventCreateEvent */
-    EventCreateEvent: {
+    /** CreateEventEvent */
+    CreateEventEvent: {
       id: string;
       timestamp: string;
       body: components["schemas"]["CreateEventBody"];
