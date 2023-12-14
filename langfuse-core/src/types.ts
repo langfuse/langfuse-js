@@ -56,97 +56,18 @@ export type LangfuseMetadataProperties = {
 };
 
 // ASYNC
-export type CreateLangfuseTraceBody = {
-  id?: string | null;
-  name?: string | null;
-  userId?: string | null;
-  release?: string | null;
-  version?: string | null;
-  sessionId?: string | null;
-  input?: any | null;
-  output?: any | null;
-  metadata?: any; // Record<string, unknown> | null;
-  /** @description Make trace publicly accessible via url */
-  public?: boolean | null;
-};
-export type CreateLangfuseEventBody = {
-  id?: string | null;
-  traceId?: string | null;
-  name?: string | null;
-  /** Format: date-time */
-  startTime?: Date | null;
-  metadata?: any | null;
-  input?: any | null;
-  output?: any | null;
-  level?: components["schemas"]["ObservationLevel"];
-  statusMessage?: string | null;
-  parentObservationId?: string | null;
-  version?: string | null;
-};
-export type CreateLangfuseSpanBody = {
-  /** Format: date-time */
-  endTime?: Date | null;
-} & CreateLangfuseEventBody;
-export type Usage =
-  | components["schemas"]["Usage"]
-  | { promptTokens?: number; completionTokens?: number; totalTokens?: number };
-export type CreateLangfuseGenerationBody = {
-  /** Format: date-time */
-  completionStartTime?: Date | null;
-  model?: string | null;
-  modelParameters?: {
-    [key: string]: components["schemas"]["MapValue"] | undefined;
-  } | null;
-  prompt?: any | null;
-  completion?: any | null;
-  usage?: Usage;
-} & CreateLangfuseSpanBody;
-export type CreateLangfuseScoreBody = {
-  id?: string | null;
-  traceId: string;
-  name: string;
-  /** Format: double */
-  value: number;
-  observationId?: string | null;
-  comment?: string | null;
-};
-export type UpdateLangfuseSpanBody = {
-  spanId: string;
-  traceId?: string | null;
-  /** Format: date-time */
-  startTime?: Date | null;
-  /** Format: date-time */
-  endTime?: Date | null;
-  name?: string | null;
-  metadata?: any | null;
-  input?: any | null;
-  output?: any | null;
-  level?: components["schemas"]["ObservationLevel"];
-  version?: string | null;
-  statusMessage?: string | null;
-};
-export type UpdateLangfuseGenerationBody = {
-  generationId: string;
-  traceId?: string | null;
-  name?: string | null;
-  /** Format: date-time */
-  startTime?: Date | null;
-  /** Format: date-time */
-  endTime?: Date | null;
-  /** Format: date-time */
-  completionStartTime?: Date | null;
-  model?: string | null;
-  modelParameters?: {
-    [key: string]: components["schemas"]["MapValue"] | undefined;
-  } | null;
-  prompt?: null;
-  version?: string | null;
-  metadata?: any | null;
-  completion?: any | null;
-  usage?: Usage;
-  level?: components["schemas"]["ObservationLevel"];
-  statusMessage?: string | null;
-};
+export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"]>;
+
+export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEventBody"]>;
+
+export type CreateLangfuseSpanBody = FixTypes<components["schemas"]["CreateSpanBody"]>;
+export type UpdateLangfuseSpanBody = FixTypes<components["schemas"]["UpdateSpanBody"]>;
+
+export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
+export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
+export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
+
+export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
 
 export type LangfuseObject = SingleIngestionEvent["type"];
 

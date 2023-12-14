@@ -40,13 +40,6 @@ export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
 export { LangfuseMemoryStorage } from "./storage-memory";
-import {
-  convertGenerationUpdate,
-  convertSpanUpdate,
-  convertSpanCreation,
-  convertEvent,
-  convertGenerationCreation,
-} from "./converters";
 
 export type IngestionBody = SingleIngestionEvent["body"];
 
@@ -165,7 +158,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("observation-create", convertEvent(parsedBody));
+    this.enqueue("observation-create", parsedBody);
     return id;
   }
 
@@ -179,7 +172,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("observation-create", convertSpanCreation(parsedBody));
+    this.enqueue("observation-create", parsedBody);
     return id;
   }
 
@@ -194,7 +187,7 @@ abstract class LangfuseCoreStateless {
       ...rest,
     };
 
-    this.enqueue("observation-create", convertGenerationCreation(parsedBody));
+    this.enqueue("observation-create", parsedBody);
     return id;
   }
 
@@ -212,13 +205,13 @@ abstract class LangfuseCoreStateless {
   }
 
   protected updateSpanStateless(body: UpdateLangfuseSpanBody): string {
-    this.enqueue("observation-update", convertSpanUpdate(body));
-    return body.spanId;
+    this.enqueue("observation-update", body);
+    return body.id;
   }
 
   protected updateGenerationStateless(body: UpdateLangfuseGenerationBody): string {
-    this.enqueue("observation-update", convertGenerationUpdate(body));
-    return body.generationId;
+    this.enqueue("observation-update", body);
+    return body.id;
   }
 
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
@@ -668,19 +661,19 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseSpanBody, "spanId" | "traceId">): this {
+  update(body: Omit<UpdateLangfuseSpanBody, "id" | "traceId">): this {
     this.client._updateSpan({
       ...body,
-      spanId: this.id,
+      id: this.id,
       traceId: this.traceId,
     });
     return this;
   }
 
-  end(body?: Omit<UpdateLangfuseSpanBody, "spanId" | "endTime" | "traceId">): this {
+  end(body?: Omit<UpdateLangfuseSpanBody, "id" | "endTime" | "traceId">): this {
     this.client._updateSpan({
       ...body,
-      spanId: this.id,
+      id: this.id,
       traceId: this.traceId,
       endTime: new Date(),
     });
@@ -693,19 +686,19 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId">): this {
+  update(body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId">): this {
     this.client._updateGeneration({
       ...body,
-      generationId: this.id,
+      id: this.id,
       traceId: this.traceId,
     });
     return this;
   }
 
-  end(body?: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId" | "endTime">): this {
+  end(body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime">): this {
     this.client._updateGeneration({
       ...body,
-      generationId: this.id,
+      id: this.id,
       traceId: this.traceId,
       endTime: new Date(),
     });

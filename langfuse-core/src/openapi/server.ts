@@ -6,15 +6,6 @@
 /** WithRequired type helpers */
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
-/** OneOf type helpers */
-type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-type OneOf<T extends any[]> = T extends [infer Only]
-  ? Only
-  : T extends [infer A, infer B, ...infer Rest]
-  ? OneOf<[XOR<A, B>, ...Rest]>
-  : never;
-
 export interface paths {
   "/api/public/dataset-items": {
     /** @description Create a dataset item, upserts on id */
@@ -162,7 +153,7 @@ export interface components {
       input?: number | null;
       output?: number | null;
       total?: number | null;
-      unit: components["schemas"]["ModelUsageType"];
+      unit?: components["schemas"]["ModelUsageUnit"];
     };
     /** Score */
     Score: {
@@ -225,10 +216,10 @@ export interface components {
       datasetRunItems: components["schemas"]["DatasetRunItem"][];
     };
     /**
-     * ModelUsageType
+     * ModelUsageUnit
      * @enum {string}
      */
-    ModelUsageType: "CHARACTERS" | "TOKENS";
+    ModelUsageUnit: "CHARACTERS" | "TOKENS";
     /**
      * ObservationLevel
      * @enum {string}
@@ -259,41 +250,144 @@ export interface components {
       name: string;
     };
     /** IngestionEvent */
-    IngestionEvent: OneOf<
-      [
-        WithRequired<
+    IngestionEvent:
+      | WithRequired<
           {
             /** @enum {string} */
             type?: "trace-create";
           } & components["schemas"]["TraceEvent"],
           "type"
-        >,
-        WithRequired<
+        >
+      | WithRequired<
           {
             /** @enum {string} */
             type?: "score-create";
           } & components["schemas"]["ScoreEvent"],
           "type"
-        >,
-        WithRequired<
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "event-create";
+          } & components["schemas"]["EventCreateEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "generation-create";
+          } & components["schemas"]["GenerationCreateEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "generation-update";
+          } & components["schemas"]["GenerationUpdateEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "span-create";
+          } & components["schemas"]["SpanCreateEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "span-update";
+          } & components["schemas"]["SpanUpdateEvent"],
+          "type"
+        >
+      | WithRequired<
           {
             /** @enum {string} */
             type?: "observation-create";
           } & components["schemas"]["ObservationCreateEvent"],
           "type"
-        >,
-        WithRequired<
+        >
+      | WithRequired<
           {
             /** @enum {string} */
             type?: "observation-update";
           } & components["schemas"]["ObservationUpdateEvent"],
           "type"
-        >,
-      ]
+        >;
+    /** IngestionUsage */
+    IngestionUsage: components["schemas"]["Usage"] | components["schemas"]["OpenAIUsage"];
+    /** OpenAIUsage */
+    OpenAIUsage: {
+      promptTokens?: number | null;
+      completionTokens?: number | null;
+      totalTokens?: number | null;
+    };
+    /** OpetionalObservationBody */
+    OpetionalObservationBody: {
+      name?: string | null;
+      /** Format: date-time */
+      startTime?: string | null;
+      metadata?: Record<string, unknown> | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      level?: components["schemas"]["ObservationLevel"];
+      statusMessage?: string | null;
+      parentObservationId?: string | null;
+      version?: string | null;
+    };
+    /** CreateEventBody */
+    CreateEventBody: WithRequired<
+      {
+        id?: string | null;
+        traceId: string;
+      } & components["schemas"]["OpetionalObservationBody"],
+      "traceId"
     >;
-    /** ObservationEvent */
-    ObservationEvent: {
-      id: string;
+    /** UpdateEventBody */
+    UpdateEventBody: WithRequired<
+      {
+        id: string;
+        traceId?: string | null;
+      } & components["schemas"]["OpetionalObservationBody"],
+      "id"
+    >;
+    /** CreateSpanBody */
+    CreateSpanBody: {
+      /** Format: date-time */
+      endTime?: string | null;
+    } & components["schemas"]["CreateEventBody"];
+    /** UpdateSpanBody */
+    UpdateSpanBody: {
+      /** Format: date-time */
+      endTime?: string | null;
+    } & components["schemas"]["UpdateEventBody"];
+    /** CreateGenerationBody */
+    CreateGenerationBody: {
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components["schemas"]["MapValue"] | undefined;
+      } | null;
+      prompt?: Record<string, unknown> | null;
+      completion?: Record<string, unknown> | null;
+      usage?: components["schemas"]["IngestionUsage"];
+    } & components["schemas"]["CreateSpanBody"];
+    /** UpdateGenerationBody */
+    UpdateGenerationBody: {
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components["schemas"]["MapValue"] | undefined;
+      } | null;
+      prompt?: Record<string, unknown> | null;
+      completion?: Record<string, unknown> | null;
+      usage?: components["schemas"]["IngestionUsage"];
+    } & components["schemas"]["UpdateSpanBody"];
+    /** ObservationBody */
+    ObservationBody: {
+      id?: string | null;
       traceId?: string | null;
       type: string;
       name?: string | null;
@@ -316,8 +410,8 @@ export interface components {
       statusMessage?: string | null;
       parentObservationId?: string | null;
     };
-    /** CreateTraceRequest */
-    CreateTraceRequest: {
+    /** TraceBody */
+    TraceBody: {
       id?: string | null;
       name?: string | null;
       userId?: string | null;
@@ -330,29 +424,69 @@ export interface components {
       /** @description Make trace publicly accessible via url */
       public?: boolean | null;
     };
+    /** ScoreBody */
+    ScoreBody: {
+      id?: string | null;
+      traceId: string;
+      name: string;
+      /** Format: double */
+      value: number;
+      observationId?: string | null;
+      comment?: string | null;
+    };
     /** TraceEvent */
     TraceEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["CreateTraceRequest"];
+      body: components["schemas"]["TraceBody"];
     };
     /** ObservationCreateEvent */
     ObservationCreateEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["ObservationEvent"];
+      body: components["schemas"]["ObservationBody"];
     };
     /** ObservationUpdateEvent */
     ObservationUpdateEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["ObservationEvent"];
+      body: components["schemas"]["ObservationBody"];
     };
     /** ScoreEvent */
     ScoreEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Score"];
+      body: components["schemas"]["ScoreBody"];
+    };
+    /** GenerationCreateEvent */
+    GenerationCreateEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["CreateGenerationBody"];
+    };
+    /** GenerationUpdateEvent */
+    GenerationUpdateEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["UpdateGenerationBody"];
+    };
+    /** SpanCreateEvent */
+    SpanCreateEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["CreateSpanBody"];
+    };
+    /** SpanUpdateEvent */
+    SpanUpdateEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["UpdateSpanBody"];
+    };
+    /** EventCreateEvent */
+    EventCreateEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["CreateEventBody"];
     };
     /** IngestionSuccess */
     IngestionSuccess: {

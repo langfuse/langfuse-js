@@ -84,9 +84,7 @@ describe("Langfuse Core", () => {
             body: {
               traceId: trace.id,
               id: span.id,
-              level: "DEFAULT",
               endTime: "2022-01-01T00:00:00.000Z",
-              type: "SPAN",
             },
           },
         ],

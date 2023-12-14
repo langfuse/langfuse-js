@@ -981,9 +981,8 @@ components:
           type: integer
           nullable: true
         unit:
-          $ref: "#/components/schemas/ModelUsageType"
-      required:
-        - unit
+          $ref: "#/components/schemas/ModelUsageUnit"
+          nullable: true
     Score:
       title: Score
       type: object
@@ -1128,8 +1127,8 @@ components:
         - createdAt
         - updatedAt
         - datasetRunItems
-    ModelUsageType:
-      title: ModelUsageType
+    ModelUsageUnit:
+      title: ModelUsageUnit
       type: string
       enum:
         - CHARACTERS
@@ -1226,6 +1225,61 @@ components:
                 type:
                   type: string
                   enum:
+                    - event-create
+            - $ref: "#/components/schemas/EventCreateEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - generation-create
+            - $ref: "#/components/schemas/GenerationCreateEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - generation-update
+            - $ref: "#/components/schemas/GenerationUpdateEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - span-create
+            - $ref: "#/components/schemas/SpanCreateEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - span-update
+            - $ref: "#/components/schemas/SpanUpdateEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
                     - observation-create
             - $ref: "#/components/schemas/ObservationCreateEvent"
           required:
@@ -1241,12 +1295,156 @@ components:
             - $ref: "#/components/schemas/ObservationUpdateEvent"
           required:
             - type
-    ObservationEvent:
-      title: ObservationEvent
+    IngestionUsage:
+      title: IngestionUsage
+      oneOf:
+        - $ref: "#/components/schemas/Usage"
+        - $ref: "#/components/schemas/OpenAIUsage"
+    OpenAIUsage:
+      title: OpenAIUsage
+      type: object
+      properties:
+        promptTokens:
+          type: integer
+          nullable: true
+        completionTokens:
+          type: integer
+          nullable: true
+        totalTokens:
+          type: integer
+          nullable: true
+    OpetionalObservationBody:
+      title: OpetionalObservationBody
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          nullable: true
+        input:
+          nullable: true
+        output:
+          nullable: true
+        level:
+          $ref: "#/components/schemas/ObservationLevel"
+          nullable: true
+        statusMessage:
+          type: string
+          nullable: true
+        parentObservationId:
+          type: string
+          nullable: true
+        version:
+          type: string
+          nullable: true
+    CreateEventBody:
+      title: CreateEventBody
       type: object
       properties:
         id:
           type: string
+          nullable: true
+        traceId:
+          type: string
+      required:
+        - traceId
+      allOf:
+        - $ref: "#/components/schemas/OpetionalObservationBody"
+    UpdateEventBody:
+      title: UpdateEventBody
+      type: object
+      properties:
+        id:
+          type: string
+        traceId:
+          type: string
+          nullable: true
+      required:
+        - id
+      allOf:
+        - $ref: "#/components/schemas/OpetionalObservationBody"
+    CreateSpanBody:
+      title: CreateSpanBody
+      type: object
+      properties:
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+      allOf:
+        - $ref: "#/components/schemas/CreateEventBody"
+    UpdateSpanBody:
+      title: UpdateSpanBody
+      type: object
+      properties:
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+      allOf:
+        - $ref: "#/components/schemas/UpdateEventBody"
+    CreateGenerationBody:
+      title: CreateGenerationBody
+      type: object
+      properties:
+        completionStartTime:
+          type: string
+          format: date-time
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        modelParameters:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MapValue"
+          nullable: true
+        prompt:
+          nullable: true
+        completion:
+          nullable: true
+        usage:
+          $ref: "#/components/schemas/IngestionUsage"
+          nullable: true
+      allOf:
+        - $ref: "#/components/schemas/CreateSpanBody"
+    UpdateGenerationBody:
+      title: UpdateGenerationBody
+      type: object
+      properties:
+        completionStartTime:
+          type: string
+          format: date-time
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        modelParameters:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MapValue"
+          nullable: true
+        prompt:
+          nullable: true
+        completion:
+          nullable: true
+        usage:
+          $ref: "#/components/schemas/IngestionUsage"
+          nullable: true
+      allOf:
+        - $ref: "#/components/schemas/UpdateSpanBody"
+    ObservationBody:
+      title: ObservationBody
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
         traceId:
           type: string
           nullable: true
@@ -1297,10 +1495,9 @@ components:
           type: string
           nullable: true
       required:
-        - id
         - type
-    CreateTraceRequest:
-      title: CreateTraceRequest
+    TraceBody:
+      title: TraceBody
       type: object
       properties:
         id:
@@ -1331,6 +1528,30 @@ components:
           type: boolean
           nullable: true
           description: Make trace publicly accessible via url
+    ScoreBody:
+      title: ScoreBody
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        traceId:
+          type: string
+        name:
+          type: string
+        value:
+          type: number
+          format: double
+        observationId:
+          type: string
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+      required:
+        - traceId
+        - name
+        - value
     TraceEvent:
       title: TraceEvent
       type: object
@@ -1340,7 +1561,7 @@ components:
         timestamp:
           type: string
         body:
-          $ref: "#/components/schemas/CreateTraceRequest"
+          $ref: "#/components/schemas/TraceBody"
       required:
         - id
         - timestamp
@@ -1354,7 +1575,7 @@ components:
         timestamp:
           type: string
         body:
-          $ref: "#/components/schemas/ObservationEvent"
+          $ref: "#/components/schemas/ObservationBody"
       required:
         - id
         - timestamp
@@ -1368,7 +1589,7 @@ components:
         timestamp:
           type: string
         body:
-          $ref: "#/components/schemas/ObservationEvent"
+          $ref: "#/components/schemas/ObservationBody"
       required:
         - id
         - timestamp
@@ -1382,7 +1603,77 @@ components:
         timestamp:
           type: string
         body:
-          $ref: "#/components/schemas/Score"
+          $ref: "#/components/schemas/ScoreBody"
+      required:
+        - id
+        - timestamp
+        - body
+    GenerationCreateEvent:
+      title: GenerationCreateEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/CreateGenerationBody"
+      required:
+        - id
+        - timestamp
+        - body
+    GenerationUpdateEvent:
+      title: GenerationUpdateEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/UpdateGenerationBody"
+      required:
+        - id
+        - timestamp
+        - body
+    SpanCreateEvent:
+      title: SpanCreateEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/CreateSpanBody"
+      required:
+        - id
+        - timestamp
+        - body
+    SpanUpdateEvent:
+      title: SpanUpdateEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/UpdateSpanBody"
+      required:
+        - id
+        - timestamp
+        - body
+    EventCreateEvent:
+      title: EventCreateEvent
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        body:
+          $ref: "#/components/schemas/CreateEventBody"
       required:
         - id
         - timestamp

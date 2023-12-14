@@ -52,10 +52,9 @@ describe("Langfuse Core", () => {
           totalTokens: 3,
         },
         expectedOutput: {
-          input: 1,
-          output: 2,
-          total: 3,
-          unit: "TOKENS",
+          promptTokens: 1,
+          completionTokens: 2,
+          totalTokens: 3,
         },
       },
       {
@@ -63,8 +62,7 @@ describe("Langfuse Core", () => {
           promptTokens: 1,
         },
         expectedOutput: {
-          input: 1,
-          unit: "TOKENS",
+          promptTokens: 1,
         },
       },
     ].forEach((usageConfig) => {
