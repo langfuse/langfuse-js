@@ -324,6 +324,7 @@ export interface components {
     };
     /** OpetionalObservationBody */
     OpetionalObservationBody: {
+      traceId?: string | null;
       name?: string | null;
       /** Format: date-time */
       startTime?: string | null;
@@ -336,18 +337,13 @@ export interface components {
       version?: string | null;
     };
     /** CreateEventBody */
-    CreateEventBody: WithRequired<
-      {
-        id?: string | null;
-        traceId: string;
-      } & components["schemas"]["OpetionalObservationBody"],
-      "traceId"
-    >;
+    CreateEventBody: {
+      id?: string | null;
+    } & components["schemas"]["OpetionalObservationBody"];
     /** UpdateEventBody */
     UpdateEventBody: WithRequired<
       {
         id: string;
-        traceId?: string | null;
       } & components["schemas"]["OpetionalObservationBody"],
       "id"
     >;

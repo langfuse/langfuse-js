@@ -106,10 +106,6 @@ export class CallbackHandler extends BaseCallbackHandler {
       console.log("Chain start with Id:", runId);
       this.generateTrace(chain, runId, parentRunId, tags, metadata);
 
-      if (!this.traceId) {
-        throw new Error("Trace ID in langfuse not set when creating chain span");
-      }
-
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
@@ -128,10 +124,6 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
     try {
       console.log("Agent action:", runId);
-
-      if (!this.traceId) {
-        throw new Error("Trace ID in langfuse not set when creating agent span");
-      }
 
       this.langfuse.span({
         id: runId,
@@ -238,10 +230,6 @@ export class CallbackHandler extends BaseCallbackHandler {
       extractedModelName = params.model;
     }
 
-    if (!this.traceId) {
-      throw new Error("Trace ID in langfuse not set when creating generation span");
-    }
-
     this.langfuse.generation({
       id: runId,
       traceId: this.traceId,
@@ -316,10 +304,6 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Tool start:", runId);
 
-      if (!this.traceId) {
-        throw new Error("Trace ID in langfuse not set when creating tool span");
-      }
-
       this.langfuse.span({
         id: runId,
         parentObservationId: parentRunId,
@@ -345,10 +329,6 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("Retriever start:", runId);
-
-      if (!this.traceId) {
-        throw new Error("Trace ID in langfuse not set when creating retriever span");
-      }
 
       this.langfuse.span({
         id: runId,

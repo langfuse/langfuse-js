@@ -1317,6 +1317,9 @@ components:
       title: OpetionalObservationBody
       type: object
       properties:
+        traceId:
+          type: string
+          nullable: true
         name:
           type: string
           nullable: true
@@ -1349,10 +1352,6 @@ components:
         id:
           type: string
           nullable: true
-        traceId:
-          type: string
-      required:
-        - traceId
       allOf:
         - $ref: "#/components/schemas/OpetionalObservationBody"
     UpdateEventBody:
@@ -1361,9 +1360,6 @@ components:
       properties:
         id:
           type: string
-        traceId:
-          type: string
-          nullable: true
       required:
         - id
       allOf:
