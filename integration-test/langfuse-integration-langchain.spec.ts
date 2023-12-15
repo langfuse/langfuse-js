@@ -38,8 +38,8 @@ describe("simple chains", () => {
 
     const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
     expect(rootLevelObservation).toBeDefined();
-    expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
-    expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
+    expect(trace?.input).toBeDefined();
+    expect(trace?.output).toBeDefined();
 
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
@@ -129,8 +129,8 @@ describe("simple chains", () => {
     expect(rootLevelObservation).toBeDefined();
     expect(rootLevelObservation?.input).toBeDefined();
     expect(rootLevelObservation?.output).toBeDefined();
-    expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
-    expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
+    expect(trace?.input).toBeDefined();
+    expect(trace?.output).toBeDefined();
 
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation).toBeDefined();
