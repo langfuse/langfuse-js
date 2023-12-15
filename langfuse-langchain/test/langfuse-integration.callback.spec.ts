@@ -3,14 +3,18 @@ import { OpenAI } from "langchain/llms/openai";
 import { PromptTemplate } from "langchain/prompts";
 import { ConversationChain, LLMChain, createExtractionChainFromZod } from "langchain/chains";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
+import { SerpAPI } from "langchain/tools";
 import { Calculator } from "langchain/tools/calculator";
 import { ChatAnthropic } from "langchain/chat_models/anthropic";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { z } from "zod";
 
-import { Langfuse, CallbackHandler } from "../langfuse-langchain";
+import { Langfuse } from "langfuse";
 
-import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "./integration-utils";
+import { CallbackHandler } from "../src/callback";
+import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "../../integration-test/integration-utils";
+
+const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
 
 describe("simple chains", () => {
   jest.setTimeout(30_000);
@@ -21,26 +25,17 @@ describe("simple chains", () => {
       publicKey: LF_PUBLIC_KEY,
       secretKey: LF_SECRET_KEY,
       baseUrl: LF_HOST,
-      sessionId: "test-session",
     });
     const llm = new OpenAI({ streaming: true });
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
-
     expect(res).toBeDefined();
 
     expect(handler.traceId).toBeDefined();
     const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
 
     expect(trace).toBeDefined();
-    expect(trace?.sessionId).toBe("test-session");
     expect(trace?.observations.length).toBe(1);
-
-    const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
-    expect(rootLevelObservation).toBeDefined();
-    expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
-    expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
-
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
     expect(generation?.[0].name).toBe("OpenAI");
@@ -49,118 +44,88 @@ describe("simple chains", () => {
     expect(generation?.[0].totalTokens).toBeDefined();
   });
 
-  it("should execute simple llm call twice on two different traces", async () => {
-    const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
-      sessionId: "test-session",
-    });
-    const llm = new OpenAI({ streaming: true });
-    await llm.call("Tell me a joke", { callbacks: [handler] });
-    const traceIdOne = handler.getTraceId();
-    await llm.call("Tell me a joke", { callbacks: [handler] });
-    const traceIdTwo = handler.getTraceId();
+  it.each([["OpenAI"], ["ChatOpenAI"], ["ChatAnthropic"]])(
+    "should execute llm chain with '%s' ",
+    async (llm: string) => {
+      const handler = new CallbackHandler({
+        publicKey: LF_PUBLIC_KEY,
+        secretKey: LF_SECRET_KEY,
+        baseUrl: LF_HOST,
+      });
+      const model = (): OpenAI | ChatOpenAI | ChatAnthropic => {
+        if (llm === "OpenAI") {
+          return new OpenAI({ temperature: 0 });
+        }
+        if (llm === "ChatOpenAI") {
+          return new ChatOpenAI({ temperature: 0 });
+        }
+        if (llm === "ChatAnthropic") {
+          return new ChatAnthropic({ temperature: 0 });
+        }
 
-    await handler.flushAsync();
+        throw new Error("Invalid LLM");
+      };
 
-    expect(handler.traceId).toBeDefined();
-    expect(traceIdOne).toBeDefined();
-    expect(traceIdTwo).toBeDefined();
-    const traceOne = traceIdOne ? await getTraces(traceIdOne) : undefined;
-    const traceTwo = traceIdTwo ? await getTraces(traceIdTwo) : undefined;
+      const extractedModel = (): string => {
+        if (llm === "OpenAI") {
+          return "OpenAI";
+        }
+        if (llm === "ChatAnthropic") {
+          return "ChatAnthropic";
+        }
+        if (llm === "ChatOpenAI") {
+          return "ChatOpenAI";
+        }
+        throw new Error("Invalid LLM");
+      };
 
-    expect(traceOne).toBeDefined();
-    expect(traceTwo).toBeDefined();
+      const template = "What is the capital city of {country}?";
+      const prompt = new PromptTemplate({ template, inputVariables: ["country"] });
+      // create a chain that takes the user input, format it and then sends to LLM
+      const chain = new LLMChain({ llm: model(), prompt });
+      // run the chain by passing the input
+      await chain.call({ country: "France" }, { callbacks: [handler] });
 
-    expect(traceOne?.id).toBe(traceIdOne);
-    expect(traceTwo?.id).toBe(traceIdTwo);
-  });
+      await handler.flushAsync();
 
-  it.each([["OpenAI"], ["ChatOpenAI"]])("should execute llm chain with '%s' ", async (llm: string) => {
-    const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
-    });
-    const model = (): OpenAI | ChatOpenAI | ChatAnthropic => {
-      if (llm === "OpenAI") {
-        return new OpenAI({ temperature: 0 });
+      expect(handler.traceId).toBeDefined();
+      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+      expect(trace).toBeDefined();
+      expect(trace?.observations.length).toBe(2);
+      const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generation).toBeDefined();
+      expect(generation?.length).toBe(1);
+
+      if (generation) {
+        expect(generation[0].name).toBe(extractedModel());
+        expect(generation[0].promptTokens).toBeDefined();
+        expect(generation[0].completionTokens).toBeDefined();
+        expect(generation[0].totalTokens).toBeDefined();
       }
-      if (llm === "ChatOpenAI") {
-        return new ChatOpenAI({ temperature: 0 });
+
+      const spans = trace?.observations.filter((o) => o.type === "SPAN");
+      expect(spans?.length).toBe(1);
+      if (spans) {
+        expect(handler.getLangchainRunId()).toBe(spans[0].id);
       }
-      if (llm === "ChatAnthropic") {
-        return new ChatAnthropic({ temperature: 0 });
-      }
-
-      throw new Error("Invalid LLM");
-    };
-
-    const extractedModel = (): string => {
-      if (llm === "OpenAI") {
-        return "OpenAI";
-      }
-      if (llm === "ChatAnthropic") {
-        return "ChatAnthropic";
-      }
-      if (llm === "ChatOpenAI") {
-        return "ChatOpenAI";
-      }
-      throw new Error("Invalid LLM");
-    };
-
-    const template = "What is the capital city of {country}?";
-    const prompt = new PromptTemplate({ template, inputVariables: ["country"] });
-    // create a chain that takes the user input, format it and then sends to LLM
-    const chain = new LLMChain({ llm: model(), prompt });
-    // run the chain by passing the input
-    await chain.call({ country: "France" }, { callbacks: [handler] });
-
-    await handler.flushAsync();
-
-    expect(handler.traceId).toBeDefined();
-    const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
-
-    expect(trace).toBeDefined();
-    expect(trace?.observations.length).toBe(2);
-
-    const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
-    expect(rootLevelObservation).toBeDefined();
-    expect(rootLevelObservation?.input).toBeDefined();
-    expect(rootLevelObservation?.output).toBeDefined();
-    expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
-    expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
-
-    const generation = trace?.observations.filter((o) => o.type === "GENERATION");
-    expect(generation).toBeDefined();
-    expect(generation?.length).toBe(1);
-
-    if (generation) {
-      expect(generation[0].name).toBe(extractedModel());
-      expect(generation[0].promptTokens).toBeDefined();
-      expect(generation[0].completionTokens).toBeDefined();
-      expect(generation[0].totalTokens).toBeDefined();
+      expect(handler.getTraceId()).toBe(handler.traceId);
     }
-
-    const spans = trace?.observations.filter((o) => o.type === "SPAN");
-    expect(spans?.length).toBe(1);
-    if (spans) {
-      expect(handler.getLangchainRunId()).toBe(spans[0].id);
-    }
-    expect(handler.getTraceId()).toBe(handler.traceId);
-  });
+  );
 
   it("conversation chain should pass", async () => {
     const handler = new CallbackHandler({
       publicKey: LF_PUBLIC_KEY,
       secretKey: LF_SECRET_KEY,
       baseUrl: LF_HOST,
-      sessionId: "test-session",
     });
     const model = new OpenAI({});
     const chain = new ConversationChain({ llm: model, callbacks: [handler] });
-    await chain.call({ input: "Hi! I'm Jim." }, { callbacks: [handler] });
+    const res1 = await chain.call({ input: "Hi! I'm Jim." }, { callbacks: [handler] });
+    console.log({ res1 });
+
+    const res2 = await chain.call({ input: "What's my name?" }, { callbacks: [handler] });
+    console.log({ res2 });
 
     await handler.shutdownAsync();
 
@@ -168,11 +133,10 @@ describe("simple chains", () => {
     const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
 
     expect(trace).toBeDefined();
-    expect(trace?.sessionId).toBe("test-session");
-    expect(trace?.observations.length).toBe(2);
+    expect(trace?.observations.length).toBe(4);
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation).toBeDefined();
-    expect(generation?.length).toBe(1);
+    expect(generation?.length).toBe(2);
   });
 
   it("should trace agents", async () => {
@@ -185,7 +149,7 @@ describe("simple chains", () => {
     const model = new OpenAI({ temperature: 0 });
     // A tool is a function that performs a specific duty
     // SerpAPI for example accesses google search results in real-time
-    const tools = [new Calculator()];
+    const tools = [new SerpAPI(SERPAPI_API_KEY), new Calculator()];
 
     const executor = await initializeAgentExecutorWithOptions(tools, model);
     console.log("Loaded agent.");
@@ -267,7 +231,6 @@ describe("simple chains", () => {
     const llm = new OpenAI({});
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
-
     expect(res).toBeDefined();
 
     expect(handler.traceId).toBeDefined();
