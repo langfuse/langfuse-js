@@ -314,6 +314,11 @@ export interface components {
           } & components["schemas"]["UpdateObservationEvent"],
           "type"
         >;
+    /**
+     * ObservationType
+     * @enum {string}
+     */
+    ObservationType: "SPAN" | "GENERATION" | "EVENT";
     /** IngestionUsage */
     IngestionUsage: components["schemas"]["Usage"] | components["schemas"]["OpenAIUsage"];
     /** OpenAIUsage */
@@ -322,8 +327,8 @@ export interface components {
       completionTokens?: number | null;
       totalTokens?: number | null;
     };
-    /** OpetionalObservationBody */
-    OpetionalObservationBody: {
+    /** OptionalObservationBody */
+    OptionalObservationBody: {
       traceId?: string | null;
       name?: string | null;
       /** Format: date-time */
@@ -339,12 +344,12 @@ export interface components {
     /** CreateEventBody */
     CreateEventBody: {
       id?: string | null;
-    } & components["schemas"]["OpetionalObservationBody"];
+    } & components["schemas"]["OptionalObservationBody"];
     /** UpdateEventBody */
     UpdateEventBody: WithRequired<
       {
         id: string;
-      } & components["schemas"]["OpetionalObservationBody"],
+      } & components["schemas"]["OptionalObservationBody"],
       "id"
     >;
     /** CreateSpanBody */
@@ -381,7 +386,7 @@ export interface components {
     ObservationBody: {
       id?: string | null;
       traceId?: string | null;
-      type: string;
+      type: components["schemas"]["ObservationType"];
       name?: string | null;
       /** Format: date-time */
       startTime?: string | null;

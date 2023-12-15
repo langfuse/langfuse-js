@@ -39,9 +39,9 @@ describe("simple chains", () => {
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
     expect(generation?.[0].name).toBe("OpenAI");
-    expect(generation?.[0].promptTokens).toBeDefined();
-    expect(generation?.[0].completionTokens).toBeDefined();
-    expect(generation?.[0].totalTokens).toBeDefined();
+    expect(generation?.[0].usage?.input).toBeDefined();
+    expect(generation?.[0].usage?.output).toBeDefined();
+    expect(generation?.[0].usage?.total).toBeDefined();
   });
 
   it.each([["OpenAI"], ["ChatOpenAI"], ["ChatAnthropic"]])(
@@ -99,9 +99,9 @@ describe("simple chains", () => {
 
       if (generation) {
         expect(generation[0].name).toBe(extractedModel());
-        expect(generation[0].promptTokens).toBeDefined();
-        expect(generation[0].completionTokens).toBeDefined();
-        expect(generation[0].totalTokens).toBeDefined();
+        expect(generation[0].usage?.input).toBeDefined();
+        expect(generation[0].usage?.output).toBeDefined();
+        expect(generation[0].usage?.total).toBeDefined();
       }
 
       const spans = trace?.observations.filter((o) => o.type === "SPAN");
