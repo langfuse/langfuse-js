@@ -49,7 +49,7 @@ describe("simple chains", () => {
     expect(generation?.[0].totalTokens).toBeDefined();
   });
 
-  it("should execute simple llm call twoce on two different traces", async () => {
+  it("should execute simple llm call twice on two different traces", async () => {
     const handler = new CallbackHandler({
       publicKey: LF_PUBLIC_KEY,
       secretKey: LF_SECRET_KEY,
