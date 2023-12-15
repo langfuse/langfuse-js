@@ -56,7 +56,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   async flushAsync(): Promise<any> {
-    return this.langfuse.flushAsync();
+    return await this.langfuse.flushAsync();
   }
 
   async shutdownAsync(): Promise<any> {
@@ -185,7 +185,6 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): void {
     if (this.traceId && !parentRunId && !this.rootProvided) {
       this.traceId = undefined;
-      this.topLevelObservationId = undefined;
     }
 
     if (!this.traceId) {
@@ -200,7 +199,9 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.traceId = runId;
     }
+
     this.topLevelObservationId = parentRunId ? this.topLevelObservationId : runId;
+    console.log("SET NEW topLevelObservationId", this.topLevelObservationId);
   }
 
   async handleGenerationStart(
