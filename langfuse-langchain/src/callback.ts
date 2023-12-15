@@ -25,6 +25,7 @@ type KeyParams = {
 type ConstructorParams = (RootParams | KeyParams) & {
   userId?: string; // added to all traces
   version?: string; // added to all traces and observations
+  sessionId?: string; // added to all traces
 };
 
 export class CallbackHandler extends BaseCallbackHandler {
@@ -36,6 +37,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   topLevelObservationId?: string;
   userId?: string;
   version?: string;
+  sessionId?: string;
+  rootProvided: boolean = false;
 
   constructor(params: ConstructorParams) {
     super();
@@ -43,8 +46,10 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse = params.root.client as Langfuse;
       this.rootObservationId = params.root.observationId ?? undefined;
       this.traceId = params.root.traceId;
+      this.rootProvided = true;
     } else {
       this.langfuse = new Langfuse({ ...params, persistence: "memory" });
+      this.sessionId = params.sessionId;
     }
     this.userId = params.userId;
     this.version = params.version;
@@ -89,6 +94,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
       console.log("Error:", e);
     }
@@ -104,7 +110,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("Chain start with Id:", runId);
-      this.generateTrace(chain, runId, parentRunId, tags, metadata);
+      this.generateTrace(chain, runId, parentRunId, tags, metadata, inputs);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
@@ -146,6 +152,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         output: action,
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, action);
     } catch (e) {
       console.log("Error:", e);
     }
@@ -162,6 +169,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
       console.log("Error:", e);
     }
@@ -172,8 +180,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId: string | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    input?: string | BaseMessage[][] | ChainValues
   ): void {
+    if (this.traceId && !parentRunId && !this.rootProvided) {
+      this.traceId = undefined;
+      this.topLevelObservationId = undefined;
+    }
+
     if (!this.traceId) {
       this.langfuse.trace({
         id: runId,
@@ -181,6 +195,8 @@ export class CallbackHandler extends BaseCallbackHandler {
         metadata: this.joinTagsAndMetaData(tags, metadata),
         userId: this.userId,
         version: this.version,
+        sessionId: this.sessionId,
+        input: input,
       });
       this.traceId = runId;
     }
@@ -197,7 +213,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     console.log("Generation start:", runId);
-    this.generateTrace(llm, runId, parentRunId, tags, metadata);
+    this.generateTrace(llm, runId, parentRunId, tags, metadata, messages);
 
     const modelParameters: Record<string, any> = {};
     const invocationParams = extraParams?.["invocation_params"];
@@ -269,6 +285,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, outputs);
     } catch (e) {
       console.log("Error:", e);
     }
@@ -356,6 +373,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, documents);
     } catch (e) {
       console.log("Error:", e);
     }
@@ -371,6 +389,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, output);
     } catch (e) {
       console.log("Error:", e);
     }
@@ -387,6 +406,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
       console.log("Error:", e);
     }
@@ -414,6 +434,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         usage: llmUsage,
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, output);
     } catch (e) {
       console.log("Error:", e);
     }
@@ -430,8 +451,15 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
+      this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
       console.log("Error:", e);
+    }
+  }
+
+  updateTrace(runId: string, parentRunId: string | undefined, output: any): void {
+    if (!parentRunId && this.traceId && this.traceId === runId) {
+      this.langfuse.trace({ id: this.traceId, output: output });
     }
   }
 
