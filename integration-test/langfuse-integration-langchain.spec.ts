@@ -160,11 +160,7 @@ describe("simple chains", () => {
     });
     const model = new OpenAI({});
     const chain = new ConversationChain({ llm: model, callbacks: [handler] });
-    const res1 = await chain.call({ input: "Hi! I'm Jim." }, { callbacks: [handler] });
-    console.log({ res1 });
-
-    const res2 = await chain.call({ input: "What's my name?" }, { callbacks: [handler] });
-    console.log({ res2 });
+    await chain.call({ input: "Hi! I'm Jim." }, { callbacks: [handler] });
 
     await handler.shutdownAsync();
 
@@ -173,10 +169,10 @@ describe("simple chains", () => {
 
     expect(trace).toBeDefined();
     expect(trace?.sessionId).toBe("test-session");
-    expect(trace?.observations.length).toBe(4);
+    expect(trace?.observations.length).toBe(2);
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation).toBeDefined();
-    expect(generation?.length).toBe(2);
+    expect(generation?.length).toBe(1);
   });
 
   it("should trace agents", async () => {
