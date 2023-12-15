@@ -26,6 +26,7 @@ describe("simple chains", () => {
     const llm = new OpenAI({ streaming: true });
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
+
     expect(res).toBeDefined();
 
     expect(handler.traceId).toBeDefined();
@@ -46,6 +47,34 @@ describe("simple chains", () => {
     expect(generation?.[0].promptTokens).toBeDefined();
     expect(generation?.[0].completionTokens).toBeDefined();
     expect(generation?.[0].totalTokens).toBeDefined();
+  });
+
+  it("should execute simple llm call twoce on two different traces", async () => {
+    const handler = new CallbackHandler({
+      publicKey: LF_PUBLIC_KEY,
+      secretKey: LF_SECRET_KEY,
+      baseUrl: LF_HOST,
+      sessionId: "test-session",
+    });
+    const llm = new OpenAI({ streaming: true });
+    await llm.call("Tell me a joke", { callbacks: [handler] });
+    const traceIdOne = handler.getTraceId();
+    await llm.call("Tell me a joke", { callbacks: [handler] });
+    const traceIdTwo = handler.getTraceId();
+
+    await handler.flushAsync();
+
+    expect(handler.traceId).toBeDefined();
+    expect(traceIdOne).toBeDefined();
+    expect(traceIdTwo).toBeDefined();
+    const traceOne = traceIdOne ? await getTraces(traceIdOne) : undefined;
+    const traceTwo = traceIdTwo ? await getTraces(traceIdTwo) : undefined;
+
+    expect(traceOne).toBeDefined();
+    expect(traceTwo).toBeDefined();
+
+    expect(traceOne?.id).toBe(traceIdOne);
+    expect(traceTwo?.id).toBe(traceIdTwo);
   });
 
   it.each([["OpenAI"], ["ChatOpenAI"]])("should execute llm chain with '%s' ", async (llm: string) => {
@@ -98,6 +127,8 @@ describe("simple chains", () => {
 
     const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
     expect(rootLevelObservation).toBeDefined();
+    expect(rootLevelObservation?.input).toBeDefined();
+    expect(rootLevelObservation?.output).toBeDefined();
     expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
     expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
 
@@ -240,6 +271,7 @@ describe("simple chains", () => {
     const llm = new OpenAI({});
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
+
     expect(res).toBeDefined();
 
     expect(handler.traceId).toBeDefined();

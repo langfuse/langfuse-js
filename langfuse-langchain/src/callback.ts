@@ -38,6 +38,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   userId?: string;
   version?: string;
   sessionId?: string;
+  rootProvided: boolean = false;
 
   constructor(params: ConstructorParams) {
     super();
@@ -45,6 +46,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse = params.root.client as Langfuse;
       this.rootObservationId = params.root.observationId ?? undefined;
       this.traceId = params.root.traceId;
+      this.rootProvided = true;
     } else {
       this.langfuse = new Langfuse({ ...params, persistence: "memory" });
       this.sessionId = params.sessionId;
@@ -181,6 +183,11 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined,
     input?: string | BaseMessage[][] | ChainValues
   ): void {
+    if (this.traceId && !parentRunId && !this.rootProvided) {
+      this.traceId = undefined;
+      this.topLevelObservationId = undefined;
+    }
+
     if (!this.traceId) {
       this.langfuse.trace({
         id: runId,
