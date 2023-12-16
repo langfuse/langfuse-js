@@ -274,10 +274,8 @@ abstract class LangfuseCoreStateless {
   protected enqueue(type: LangfuseObject, body: any): void {
     const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
 
-    const id = generateUUID();
-
     queue.push({
-      id,
+      id: generateUUID(),
       type,
       timestamp: currentISOTime(),
       body,

@@ -113,7 +113,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         name: chain.id.at(-1)?.toString(),
         metadata: this.joinTagsAndMetaData(tags, metadata),
         input: inputs,
-        startTime: new Date(),
         version: this.version,
       });
     } catch (e) {
@@ -234,7 +233,6 @@ export class CallbackHandler extends BaseCallbackHandler {
       id: runId,
       traceId: this.traceId,
       name: llm.id.at(-1)?.toString(),
-      startTime: new Date(),
       metadata: this.joinTagsAndMetaData(tags, metadata),
       parentObservationId: parentRunId ?? this.rootObservationId,
       input: messages,
@@ -311,7 +309,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         name: tool.id.at(-1)?.toString(),
         input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
-        startTime: new Date(),
         version: this.version,
       });
     } catch (e) {
@@ -337,7 +334,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         name: retriever.id.at(-1)?.toString(),
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
-        startTime: new Date(),
         version: this.version,
       });
     } catch (e) {
@@ -406,7 +402,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse._updateGeneration({
         id: runId,
         traceId: this.traceId,
-        completion:
+        output:
           !lastResponse.text &&
           "message" in lastResponse &&
           lastResponse["message"] instanceof AIMessage &&
