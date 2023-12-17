@@ -87,7 +87,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Retriever error:", err, runId);
       this.langfuse._updateSpan({
-        spanId: runId,
+        id: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),
@@ -118,7 +118,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         name: chain.id.at(-1)?.toString(),
         metadata: this.joinTagsAndMetaData(tags, metadata),
         input: inputs,
-        startTime: new Date(),
         version: this.version,
       });
     } catch (e) {
@@ -129,6 +128,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
     try {
       console.log("Agent action:", runId);
+
       this.langfuse.span({
         id: runId,
         parentObservationId: parentRunId,
@@ -146,7 +146,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Agent finish:", runId);
       this.langfuse._updateSpan({
-        spanId: runId,
+        id: runId,
         traceId: this.traceId,
         endTime: new Date(),
         output: action,
@@ -162,7 +162,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Chain error:", err, runId);
       this.langfuse._updateSpan({
-        spanId: runId,
+        id: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),
@@ -248,10 +248,9 @@ export class CallbackHandler extends BaseCallbackHandler {
       id: runId,
       traceId: this.traceId,
       name: llm.id.at(-1)?.toString(),
-      startTime: new Date(),
       metadata: this.joinTagsAndMetaData(tags, metadata),
       parentObservationId: parentRunId ?? this.rootObservationId,
-      prompt: messages,
+      input: messages,
       model: extractedModelName,
       modelParameters: modelParameters,
       version: this.version,
@@ -279,7 +278,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Chain end:", runId, parentRunId);
       this.langfuse._updateSpan({
-        spanId: runId,
+        id: runId,
         traceId: this.traceId,
         output: outputs,
         endTime: new Date(),
@@ -326,7 +325,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         name: tool.id.at(-1)?.toString(),
         input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
-        startTime: new Date(),
         version: this.version,
       });
     } catch (e) {
@@ -344,6 +342,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     try {
       console.log("Retriever start:", runId);
+
       this.langfuse.span({
         id: runId,
         parentObservationId: parentRunId,
@@ -351,7 +350,6 @@ export class CallbackHandler extends BaseCallbackHandler {
         name: retriever.id.at(-1)?.toString(),
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
-        startTime: new Date(),
         version: this.version,
       });
     } catch (e) {
@@ -367,7 +365,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Retriever end:", runId);
       this.langfuse._updateSpan({
-        spanId: runId,
+        id: runId,
         traceId: this.traceId,
         output: documents,
         endTime: new Date(),
@@ -383,7 +381,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Tool end:", runId);
       this.langfuse._updateSpan({
-        spanId: runId,
+        id: runId,
         traceId: this.traceId,
         output: output,
         endTime: new Date(),
@@ -399,7 +397,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("Tool error:", err, runId);
       this.langfuse._updateSpan({
-        spanId: runId,
+        id: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),
@@ -421,9 +419,9 @@ export class CallbackHandler extends BaseCallbackHandler {
       const llmUsage = output.llmOutput?.["tokenUsage"];
 
       this.langfuse._updateGeneration({
-        generationId: runId,
+        id: runId,
         traceId: this.traceId,
-        completion:
+        output:
           !lastResponse.text &&
           "message" in lastResponse &&
           lastResponse["message"] instanceof AIMessage &&
@@ -444,7 +442,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       console.log("LLM error:", err, runId);
       this.langfuse._updateGeneration({
-        generationId: runId,
+        id: runId,
         traceId: this.traceId,
         level: "ERROR",
         statusMessage: err.toString(),

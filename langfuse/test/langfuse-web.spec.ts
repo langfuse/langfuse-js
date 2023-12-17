@@ -60,16 +60,18 @@ describe("langfuseWeb", () => {
       expect(fetch).toHaveBeenCalledTimes(1);
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://cloud.langfuse.com/api/public/scores",
+        "https://cloud.langfuse.com/api/public/ingestion",
         expect.objectContaining({
-          body: JSON.stringify({
-            id,
-            name: "test",
-            traceId: "test-trace-1",
-            value: 200,
-            comment: "test comment",
-            observationId: "test-observation-id",
-          }),
+          body: expect.stringContaining(
+            JSON.stringify({
+              id,
+              name: "test",
+              traceId: "test-trace-1",
+              value: 200,
+              comment: "test comment",
+              observationId: "test-observation-id",
+            })
+          ),
           method: "POST",
           headers: expect.objectContaining({
             "Content-Type": "application/json",

@@ -6,7 +6,6 @@ import {
   LangfusePersistedProperty,
   type CreateLangfuseTraceBody,
   type LangfuseObject,
-  LangfusePostApiRoutes,
   type CreateLangfuseEventBody,
   type CreateLangfuseSpanBody,
   type CreateLangfuseGenerationBody,
@@ -24,6 +23,8 @@ import {
   type GetLangfuseDatasetRunResponse,
   type GetLangfuseDatasetRunParams,
   type DeferRuntime,
+  type IngestionReturnType,
+  type SingleIngestionEvent,
 } from "./types";
 import {
   assert,
@@ -33,11 +34,14 @@ import {
   type RetriableOptions,
   safeSetTimeout,
   getEnv,
+  currentISOTime,
 } from "./utils";
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
 export { LangfuseMemoryStorage } from "./storage-memory";
+
+export type IngestionBody = SingleIngestionEvent["body"];
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -93,7 +97,7 @@ abstract class LangfuseCoreStateless {
     this.publicKey = publicKey;
     this.secretKey = secretKey;
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
-    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 1;
+    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20;
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
 
@@ -140,7 +144,7 @@ abstract class LangfuseCoreStateless {
       release,
       ...rest,
     };
-    this.enqueue("createTrace", parsedBody);
+    this.enqueue("trace-create", parsedBody);
     return id;
   }
 
@@ -154,7 +158,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("createEvent", parsedBody);
+    this.enqueue("event-create", parsedBody);
     return id;
   }
 
@@ -168,7 +172,7 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("createSpan", parsedBody);
+    this.enqueue("span-create", parsedBody);
     return id;
   }
 
@@ -182,7 +186,8 @@ abstract class LangfuseCoreStateless {
       startTime: bodyStartTime ?? new Date(),
       ...rest,
     };
-    this.enqueue("createGeneration", parsedBody);
+
+    this.enqueue("generation-create", parsedBody);
     return id;
   }
 
@@ -195,18 +200,18 @@ abstract class LangfuseCoreStateless {
       id,
       ...rest,
     };
-    this.enqueue("createScore", parsedBody);
+    this.enqueue("score-create", parsedBody);
     return id;
   }
 
   protected updateSpanStateless(body: UpdateLangfuseSpanBody): string {
-    this.enqueue("updateSpan", body);
-    return body.spanId;
+    this.enqueue("span-update", body);
+    return body.id;
   }
 
   protected updateGenerationStateless(body: UpdateLangfuseGenerationBody): string {
-    this.enqueue("updateGeneration", body);
-    return body.generationId;
+    this.enqueue("generation-update", body);
+    return body.id;
   }
 
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
@@ -269,12 +274,10 @@ abstract class LangfuseCoreStateless {
   protected enqueue(type: LangfuseObject, body: any): void {
     const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
 
-    const id = generateUUID();
-
     queue.push({
-      id,
-      method: LangfusePostApiRoutes[type][0],
-      apiRoute: LangfusePostApiRoutes[type][1],
+      id: generateUUID(),
+      type,
+      timestamp: currentISOTime(),
       body,
     });
     this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
@@ -291,13 +294,17 @@ abstract class LangfuseCoreStateless {
     }
   }
 
-  flushAsync(): Promise<any> {
-    return Promise.all(this.flush());
+  flushAsync(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.flush((err, data) => {
+        return err ? reject(err) : resolve(data);
+      });
+    });
   }
 
   // Flushes all events that are not yet sent to the server
   // @returns {Promise[]} - list of promises for each item in the queue that is flushed
-  flush(): Promise<LangfuseFetchResponse>[] {
+  flush(callback?: (err?: any, data?: any) => void): void {
     if (this._flushTimer) {
       clearTimeout(this._flushTimer);
       this._flushTimer = null;
@@ -306,42 +313,41 @@ abstract class LangfuseCoreStateless {
     const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
 
     if (!queue.length) {
-      return [];
+      return callback?.();
     }
 
-    // Flush all items in queue, could also use flushAt with splice to flush only a certain number of items (e.g. when batching)
-    const items = queue;
-    this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, []);
+    const items = queue.splice(0, this.flushAt);
+    this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
-    // TODO: add /batch endpoint to ingest multiple events at once
-    const promises = items.map((item) => {
-      const done = (err?: any): void => {
-        if (err) {
-          this._events.emit("error", err);
-        }
-        // remove promise from pendingPromises
-        delete this.pendingPromises[item.id];
-        this._events.emit("flush", item);
-      };
-      const payload = JSON.stringify(item.body); // implicit conversion also of dates to strings
-      const url = `${this.baseUrl}${item.apiRoute}`;
+    const promiseUUID = generateUUID();
 
-      const fetchOptions = this.getFetchOptions({
-        method: item.method,
-        body: payload,
-      });
+    const done = (err?: any): void => {
+      if (err) {
+        this._events.emit("error", err);
+      }
+      callback?.(err, items);
+      // remove promise from pendingPromises
+      delete this.pendingPromises[promiseUUID];
+      this._events.emit("flush", items);
+    };
 
-      const requestPromise = this.fetchWithRetry(url, fetchOptions);
-      this.pendingPromises[item.id] = requestPromise;
-      requestPromise
-        .then(() => done())
-        .catch((err) => {
-          done(err);
-        });
-      return requestPromise;
+    const payload = JSON.stringify({ batch: items }); // implicit conversion also of dates to strings
+
+    const url = `${this.baseUrl}/api/public/ingestion`;
+
+    const fetchOptions = this.getFetchOptions({
+      method: "POST",
+      body: payload,
     });
+    console.debug("Sending payload", payload);
+    const requestPromise = this.fetchWithRetry(url, fetchOptions);
+    this.pendingPromises[promiseUUID] = requestPromise;
 
-    return promises;
+    requestPromise
+      .then(() => done())
+      .catch((err) => {
+        done(err);
+      });
   }
 
   private getFetchOptions(p: {
@@ -397,7 +403,7 @@ abstract class LangfuseCoreStateless {
 
     return await retriable(
       async () => {
-        let res: LangfuseFetchResponse | null = null;
+        let res: LangfuseFetchResponse<IngestionReturnType> | null = null;
         try {
           res = await this.fetch(url, {
             signal: (AbortSignal as any).timeout(this.requestTimeout),
@@ -407,9 +413,15 @@ abstract class LangfuseCoreStateless {
           // fetch will only throw on network errors or on timeouts
           throw new LangfuseFetchNetworkError(e);
         }
+
         if (res.status < 200 || res.status >= 400) {
           throw new LangfuseFetchHttpError(res);
         }
+        const returnBody = await res.json();
+        if (res.status === 207 && returnBody.errors.length > 0) {
+          throw new LangfuseFetchHttpError(res);
+        }
+
         return res;
       },
       { ...this._retryOptions, ...retryOptions },
@@ -647,19 +659,19 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseSpanBody, "spanId" | "traceId">): this {
+  update(body: Omit<UpdateLangfuseSpanBody, "id" | "traceId">): this {
     this.client._updateSpan({
       ...body,
-      spanId: this.id,
+      id: this.id,
       traceId: this.traceId,
     });
     return this;
   }
 
-  end(body?: Omit<UpdateLangfuseSpanBody, "spanId" | "endTime" | "traceId">): this {
+  end(body?: Omit<UpdateLangfuseSpanBody, "id" | "endTime" | "traceId">): this {
     this.client._updateSpan({
       ...body,
-      spanId: this.id,
+      id: this.id,
       traceId: this.traceId,
       endTime: new Date(),
     });
@@ -672,19 +684,19 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId">): this {
+  update(body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId">): this {
     this.client._updateGeneration({
       ...body,
-      generationId: this.id,
+      id: this.id,
       traceId: this.traceId,
     });
     return this;
   }
 
-  end(body?: Omit<UpdateLangfuseGenerationBody, "generationId" | "traceId" | "endTime">): this {
+  end(body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime">): this {
     this.client._updateGeneration({
       ...body,
-      generationId: this.id,
+      id: this.id,
       traceId: this.traceId,
       endTime: new Date(),
     });

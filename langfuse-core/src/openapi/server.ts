@@ -6,15 +6,6 @@
 /** WithRequired type helpers */
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
-/** OneOf type helpers */
-type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-type OneOf<T extends any[]> = T extends [infer Only]
-  ? Only
-  : T extends [infer A, infer B, ...infer Rest]
-  ? OneOf<[XOR<A, B>, ...Rest]>
-  : never;
-
 export interface paths {
   "/api/public/dataset-items": {
     /** @description Create a dataset item, upserts on id */
@@ -39,14 +30,6 @@ export interface paths {
   "/api/public/datasets/{datasetName}/runs/{runName}": {
     /** @description Get a dataset run and its items */
     get: operations["datasets_getRuns"];
-  };
-  "/api/public/events": {
-    /** @description Add an event to the database */
-    post: operations["event_create"];
-  };
-  "/api/public/generations": {
-    post: operations["generations_log"];
-    patch: operations["generations_update"];
   };
   "/api/public/health": {
     /** @description Check health of API and database */
@@ -77,21 +60,13 @@ export interface paths {
     /** @description Get a session */
     get: operations["sessions_get"];
   };
-  "/api/public/spans": {
-    /** @description Add a span to the database */
-    post: operations["span_create"];
-    /** @description Update a span to the database */
-    patch: operations["span_update"];
+  "/api/public/traces/{traceId}": {
+    /** @description Get a specific trace */
+    get: operations["trace_get"];
   };
   "/api/public/traces": {
     /** @description Get list of traces */
     get: operations["trace_list"];
-    /** @description Add a trace to the database */
-    post: operations["trace_create"];
-  };
-  "/api/public/traces/{traceId}": {
-    /** @description Get a specific trace */
-    get: operations["trace_get"];
   };
 }
 
@@ -99,38 +74,6 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
-    /** CreateEventRequest */
-    CreateEventRequest: {
-      id?: string | null;
-      traceId?: string | null;
-      name?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components["schemas"]["ObservationLevel"];
-      statusMessage?: string | null;
-      parentObservationId?: string | null;
-      version?: string | null;
-    };
-    /** CreateSpanRequest */
-    CreateSpanRequest: {
-      /** Format: date-time */
-      endTime?: string | null;
-    } & components["schemas"]["CreateEventRequest"];
-    /** CreateGenerationRequest */
-    CreateGenerationRequest: {
-      /** Format: date-time */
-      completionStartTime?: string | null;
-      model?: string | null;
-      modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
-      } | null;
-      prompt?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
-      usage?: components["schemas"]["LLMUsage"];
-    } & components["schemas"]["CreateSpanRequest"];
     /** Trace */
     Trace: {
       /** @description The unique identifier of a trace */
@@ -200,12 +143,17 @@ export interface components {
       version?: string | null;
       metadata?: Record<string, unknown> | null;
       output?: Record<string, unknown> | null;
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
+      usage?: components["schemas"]["Usage"];
       level: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+    };
+    /** Usage */
+    Usage: {
+      input?: number | null;
+      output?: number | null;
+      total?: number | null;
+      unit?: components["schemas"]["ModelUsageUnit"];
     };
     /** Score */
     Score: {
@@ -268,18 +216,17 @@ export interface components {
       datasetRunItems: components["schemas"]["DatasetRunItem"][];
     };
     /**
+     * ModelUsageUnit
+     * @enum {string}
+     */
+    ModelUsageUnit: "CHARACTERS" | "TOKENS";
+    /**
      * ObservationLevel
      * @enum {string}
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
     MapValue: (string | null) | (number | null) | (boolean | null);
-    /** LLMUsage */
-    LLMUsage: {
-      promptTokens?: number | null;
-      completionTokens?: number | null;
-      totalTokens?: number | null;
-    };
     /**
      * DatasetStatus
      * @enum {string}
@@ -302,10 +249,144 @@ export interface components {
     CreateDatasetRequest: {
       name: string;
     };
-    /** UpdateGenerationRequest */
-    UpdateGenerationRequest: {
-      generationId: string;
+    /** IngestionEvent */
+    IngestionEvent:
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "trace-create";
+          } & components["schemas"]["TraceEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "score-create";
+          } & components["schemas"]["ScoreEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "event-create";
+          } & components["schemas"]["CreateEventEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "generation-create";
+          } & components["schemas"]["CreateGenerationEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "generation-update";
+          } & components["schemas"]["UpdateGenerationEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "span-create";
+          } & components["schemas"]["CreateSpanEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "span-update";
+          } & components["schemas"]["UpdateSpanEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "observation-create";
+          } & components["schemas"]["CreateObservationEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "observation-update";
+          } & components["schemas"]["UpdateObservationEvent"],
+          "type"
+        >;
+    /**
+     * ObservationType
+     * @enum {string}
+     */
+    ObservationType: "SPAN" | "GENERATION" | "EVENT";
+    /** IngestionUsage */
+    IngestionUsage: components["schemas"]["Usage"] | components["schemas"]["OpenAIUsage"];
+    /** OpenAIUsage */
+    OpenAIUsage: {
+      promptTokens?: number | null;
+      completionTokens?: number | null;
+      totalTokens?: number | null;
+    };
+    /** OptionalObservationBody */
+    OptionalObservationBody: {
       traceId?: string | null;
+      name?: string | null;
+      /** Format: date-time */
+      startTime?: string | null;
+      metadata?: Record<string, unknown> | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      level?: components["schemas"]["ObservationLevel"];
+      statusMessage?: string | null;
+      parentObservationId?: string | null;
+      version?: string | null;
+    };
+    /** CreateEventBody */
+    CreateEventBody: {
+      id?: string | null;
+    } & components["schemas"]["OptionalObservationBody"];
+    /** UpdateEventBody */
+    UpdateEventBody: WithRequired<
+      {
+        id: string;
+      } & components["schemas"]["OptionalObservationBody"],
+      "id"
+    >;
+    /** CreateSpanBody */
+    CreateSpanBody: {
+      /** Format: date-time */
+      endTime?: string | null;
+    } & components["schemas"]["CreateEventBody"];
+    /** UpdateSpanBody */
+    UpdateSpanBody: {
+      /** Format: date-time */
+      endTime?: string | null;
+    } & components["schemas"]["UpdateEventBody"];
+    /** CreateGenerationBody */
+    CreateGenerationBody: {
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components["schemas"]["MapValue"] | undefined;
+      } | null;
+      usage?: components["schemas"]["IngestionUsage"];
+    } & components["schemas"]["CreateSpanBody"];
+    /** UpdateGenerationBody */
+    UpdateGenerationBody: {
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components["schemas"]["MapValue"] | undefined;
+      } | null;
+      usage?: components["schemas"]["IngestionUsage"];
+    } & components["schemas"]["UpdateSpanBody"];
+    /** ObservationBody */
+    ObservationBody: {
+      id?: string | null;
+      traceId?: string | null;
+      type: components["schemas"]["ObservationType"];
       name?: string | null;
       /** Format: date-time */
       startTime?: string | null;
@@ -317,70 +398,109 @@ export interface components {
       modelParameters?: {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
-      prompt?: Record<string, unknown> | null;
+      input?: Record<string, unknown> | null;
       version?: string | null;
       metadata?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
-      usage?: components["schemas"]["LLMUsage"];
+      output?: Record<string, unknown> | null;
+      usage?: components["schemas"]["Usage"];
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
+      parentObservationId?: string | null;
     };
-    /** IngestionEvent */
-    IngestionEvent: OneOf<
-      [
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "trace-create";
-          } & components["schemas"]["TraceEvent"],
-          "type"
-        >,
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "score-create";
-          } & components["schemas"]["ScoreEvent"],
-          "type"
-        >,
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "observation-create";
-          } & components["schemas"]["ObservationCreateEvent"],
-          "type"
-        >,
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "observation-update";
-          } & components["schemas"]["ObservationUpdateEvent"],
-          "type"
-        >,
-      ]
-    >;
+    /** TraceBody */
+    TraceBody: {
+      id?: string | null;
+      name?: string | null;
+      userId?: string | null;
+      input?: Record<string, unknown> | null;
+      output?: Record<string, unknown> | null;
+      sessionId?: string | null;
+      release?: string | null;
+      version?: string | null;
+      metadata?: Record<string, unknown> | null;
+      /** @description Make trace publicly accessible via url */
+      public?: boolean | null;
+    };
+    /** ScoreBody */
+    ScoreBody: {
+      id?: string | null;
+      traceId: string;
+      name: string;
+      /** Format: double */
+      value: number;
+      observationId?: string | null;
+      comment?: string | null;
+    };
     /** TraceEvent */
     TraceEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Trace"];
+      body: components["schemas"]["TraceBody"];
     };
-    /** ObservationCreateEvent */
-    ObservationCreateEvent: {
+    /** CreateObservationEvent */
+    CreateObservationEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Observation"];
+      body: components["schemas"]["ObservationBody"];
     };
-    /** ObservationUpdateEvent */
-    ObservationUpdateEvent: {
+    /** UpdateObservationEvent */
+    UpdateObservationEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Observation"];
+      body: components["schemas"]["ObservationBody"];
     };
     /** ScoreEvent */
     ScoreEvent: {
       id: string;
       timestamp: string;
-      body: components["schemas"]["Score"];
+      body: components["schemas"]["ScoreBody"];
+    };
+    /** CreateGenerationEvent */
+    CreateGenerationEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["CreateGenerationBody"];
+    };
+    /** UpdateGenerationEvent */
+    UpdateGenerationEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["UpdateGenerationBody"];
+    };
+    /** CreateSpanEvent */
+    CreateSpanEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["CreateSpanBody"];
+    };
+    /** UpdateSpanEvent */
+    UpdateSpanEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["UpdateSpanBody"];
+    };
+    /** CreateEventEvent */
+    CreateEventEvent: {
+      id: string;
+      timestamp: string;
+      body: components["schemas"]["CreateEventBody"];
+    };
+    /** IngestionSuccess */
+    IngestionSuccess: {
+      id: string;
+      status: number;
+    };
+    /** IngestionError */
+    IngestionError: {
+      id: string;
+      status: number;
+      message?: string | null;
+      error?: Record<string, unknown> | null;
+    };
+    /** IngestionResponse */
+    IngestionResponse: {
+      successes: components["schemas"]["IngestionSuccess"][];
+      errors: components["schemas"]["IngestionError"][];
     };
     /** Observations */
     Observations: {
@@ -410,37 +530,6 @@ export interface components {
     Scores: {
       data: components["schemas"]["Score"][];
       meta: components["schemas"]["utilsMetaResponse"];
-    };
-    /** UpdateSpanRequest */
-    UpdateSpanRequest: {
-      spanId: string;
-      traceId?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      /** Format: date-time */
-      endTime?: string | null;
-      name?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components["schemas"]["ObservationLevel"];
-      version?: string | null;
-      statusMessage?: string | null;
-    };
-    /** CreateTraceRequest */
-    CreateTraceRequest: {
-      id?: string | null;
-      name?: string | null;
-      userId?: string | null;
-      externalId?: string | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      sessionId?: string | null;
-      release?: string | null;
-      version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      /** @description Make trace publicly accessible via url */
-      public?: boolean | null;
     };
     /** Traces */
     Traces: {
@@ -710,124 +799,6 @@ export interface operations {
       };
     };
   };
-  /** @description Add an event to the database */
-  event_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateEventRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  generations_log: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateGenerationRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  generations_update: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateGenerationRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
   /** @description Check health of API and database */
   health_health: {
     responses: {
@@ -876,7 +847,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Score"];
+          "application/json": components["schemas"]["IngestionResponse"];
         };
       };
       400: {
@@ -1151,57 +1122,18 @@ export interface operations {
       };
     };
   };
-  /** @description Add a span to the database */
-  span_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateSpanRequest"];
+  /** @description Get a specific trace */
+  trace_get: {
+    parameters: {
+      path: {
+        /** @description The unique langfuse identifier of a trace */
+        traceId: string;
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  /** @description Update a span to the database */
-  span_update: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateSpanRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
+          "application/json": components["schemas"]["TraceWithFullDetails"];
         };
       };
       400: {
@@ -1245,87 +1177,6 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Traces"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  /** @description Add a trace to the database */
-  trace_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateTraceRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Trace"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      401: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      403: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      404: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      405: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  /** @description Get a specific trace */
-  trace_get: {
-    parameters: {
-      path: {
-        /** @description The unique langfuse identifier of a trace */
-        traceId: string;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["TraceWithFullDetails"];
         };
       };
       400: {

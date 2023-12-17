@@ -128,8 +128,8 @@ describe("Langfuse Node.js", () => {
       for (const item of dataset.items) {
         const generation = langfuse.generation({
           id: "test-generation-id-" + projectNameRandom,
-          prompt: item.input,
-          completion: "Hello world generated",
+          input: item.input,
+          output: "Hello world generated",
         });
         await item.link(generation, "test-run-" + projectNameRandom);
         generation.score({

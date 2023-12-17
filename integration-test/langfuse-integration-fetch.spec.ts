@@ -152,10 +152,10 @@ describe("Langfuse (fetch)", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: {
+        input: {
           text: "prompt",
         },
-        completion: {
+        output: {
           foo: "bar",
         },
       });
@@ -180,12 +180,12 @@ describe("Langfuse (fetch)", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: [
+        input: [
           {
             text: "prompt",
           },
         ],
-        completion: [
+        output: [
           {
             foo: "bar",
           },
@@ -215,8 +215,8 @@ describe("Langfuse (fetch)", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: "prompt",
-        completion: "completion",
+        input: "prompt",
+        output: "completion",
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
@@ -239,7 +239,7 @@ describe("Langfuse (fetch)", () => {
         completionStartTime: new Date("2020-01-01T00:00:00.000Z"),
       });
       generation.end({
-        completion: "Hello world",
+        output: "Hello world",
         usage: {
           promptTokens: 10,
           completionTokens: 15,
