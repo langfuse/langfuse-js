@@ -36,6 +36,8 @@ export type LangfuseFetchResponse<T = any> = {
   json: () => Promise<T>;
 };
 
+export type LangfuseObject = SingleIngestionEvent["type"];
+
 export type LangfuseQueueItem = SingleIngestionEvent & {
   callback?: (err: any) => void;
 };
@@ -68,8 +70,6 @@ export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["Creat
 export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
 
 export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
-
-export type LangfuseObject = SingleIngestionEvent["type"];
 
 // SYNC
 export type GetLangfuseDatasetParams = FixTypes<

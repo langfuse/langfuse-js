@@ -279,6 +279,7 @@ abstract class LangfuseCoreStateless {
       type,
       timestamp: currentISOTime(),
       body,
+      metadata: undefined,
     });
     this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 

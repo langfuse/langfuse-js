@@ -431,60 +431,75 @@ export interface components {
       observationId?: string | null;
       comment?: string | null;
     };
+    /** BaseEvent */
+    BaseEvent: {
+      id: string;
+      timestamp: string;
+      metadata: unknown;
+    };
     /** TraceEvent */
-    TraceEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["TraceBody"];
-    };
+    TraceEvent: WithRequired<
+      {
+        body: components["schemas"]["TraceBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** CreateObservationEvent */
-    CreateObservationEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["ObservationBody"];
-    };
+    CreateObservationEvent: WithRequired<
+      {
+        body: components["schemas"]["ObservationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** UpdateObservationEvent */
-    UpdateObservationEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["ObservationBody"];
-    };
+    UpdateObservationEvent: WithRequired<
+      {
+        body: components["schemas"]["ObservationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** ScoreEvent */
-    ScoreEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["ScoreBody"];
-    };
+    ScoreEvent: WithRequired<
+      {
+        body: components["schemas"]["ScoreBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** CreateGenerationEvent */
-    CreateGenerationEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["CreateGenerationBody"];
-    };
+    CreateGenerationEvent: WithRequired<
+      {
+        body: components["schemas"]["CreateGenerationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** UpdateGenerationEvent */
-    UpdateGenerationEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["UpdateGenerationBody"];
-    };
+    UpdateGenerationEvent: WithRequired<
+      {
+        body: components["schemas"]["UpdateGenerationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** CreateSpanEvent */
-    CreateSpanEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["CreateSpanBody"];
-    };
+    CreateSpanEvent: WithRequired<
+      {
+        body: components["schemas"]["CreateSpanBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** UpdateSpanEvent */
-    UpdateSpanEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["UpdateSpanBody"];
-    };
+    UpdateSpanEvent: WithRequired<
+      {
+        body: components["schemas"]["UpdateSpanBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** CreateEventEvent */
-    CreateEventEvent: {
-      id: string;
-      timestamp: string;
-      body: components["schemas"]["CreateEventBody"];
-    };
+    CreateEventEvent: WithRequired<
+      {
+        body: components["schemas"]["CreateEventBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
     /** IngestionSuccess */
     IngestionSuccess: {
       id: string;
