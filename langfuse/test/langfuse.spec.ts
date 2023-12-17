@@ -67,5 +67,11 @@ describe("langfuseWeb", () => {
         signal: expect.anything(),
       });
     });
+
+    it("check env", () => {
+      const langfuse = new Langfuse();
+      expect(langfuse.baseUrl).toEqual(process.env.LANGFUSE_HOST);
+    });
+
   });
 });

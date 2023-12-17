@@ -3,15 +3,15 @@ import Langfuse from "langfuse-node";
 import wtf from "wtfnode";
 
 const {
-  LF_PUBLIC = "pk-lf-1234567890",
-  LF_SECRET = "sk-lf-1234567890",
-  LF_HOST = "http://localhost:3000",
+  LANGFUSE_PUBLIC_KEY = "pk-lf-1234567890",
+  LANGFUSE_SECRET_KEY = "sk-lf-1234567890",
+  LANGFUSE_HOST = "http://localhost:3000",
 } = process.env;
 
 const langfuse = new Langfuse({
-  publicKey: LF_PUBLIC,
-  secretKey: LF_SECRET,
-  baseUrl: LF_HOST,
+  publicKey: LANGFUSE_PUBLIC_KEY,
+  secretKey: LANGFUSE_SECRET_KEY,
+  baseUrl: LANGFUSE_HOST,
   // flushAt: 1,
 });
 

@@ -47,7 +47,7 @@ yarn test
 
 1. Start local langfuse server
 2. Create testing project
-3. Set environment: LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY
+3. Set environment: LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY
 
 **Run**
 
