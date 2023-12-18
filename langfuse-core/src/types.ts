@@ -113,9 +113,9 @@ type FixTypes<T> = Omit<
       ? // Dates instead of strings
         Date | OptionalTypes<T[P]>
       : P extends "metadata" | "input" | "output" | "prompt" | "completion" | "expectedOutput"
-        ? // JSON instead of strings
-          any | OptionalTypes<T[P]>
-        : T[P];
+      ? // JSON instead of strings
+        any | OptionalTypes<T[P]>
+      : T[P];
   },
   "externalId" | "traceIdType"
 >;
