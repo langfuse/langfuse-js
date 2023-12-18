@@ -184,6 +184,14 @@ describe("Langfuse Core", () => {
             },
           },
         ],
+        metadata: {
+          batch_size: 1,
+          public_key: "pk-lf-111",
+          sdk_integration: "DEFAULT",
+          sdk_name: "langfuse-js",
+          sdk_variant: "langfuse-core-tests",
+          sdk_version: "2.0.0-alpha.2",
+        },
       });
     });
 
