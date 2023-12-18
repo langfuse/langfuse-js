@@ -75,6 +75,7 @@ abstract class LangfuseCoreStateless {
   private debugMode: boolean = false;
   private pendingPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
+  private sdkIntegration: "DEFAULT" | "LANGCHAIN";
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -107,6 +108,8 @@ abstract class LangfuseCoreStateless {
       retryCheck: isLangfuseFetchError,
     };
     this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
+
+    this.sdkIntegration = options?.sdkIntegration ?? ("DEFAULT" as const);
   }
 
   protected getCommonEventProperties(): any {
@@ -332,7 +335,17 @@ abstract class LangfuseCoreStateless {
       this._events.emit("flush", items);
     };
 
-    const payload = JSON.stringify({ batch: items }); // implicit conversion also of dates to strings
+    const payload = JSON.stringify({
+      batch: items,
+      metadata: {
+        batch_size: items.length,
+        sdk_integration: this.sdkIntegration,
+        sdk_version: this.getLibraryVersion(),
+        sdk_variant: this.getLibraryId(),
+        public_key: this.publicKey,
+        sdk_name: "langfuse-js",
+      },
+    }); // implicit conversion also of dates to strings
 
     const url = `${this.baseUrl}/api/public/ingestion`;
 
@@ -340,7 +353,7 @@ abstract class LangfuseCoreStateless {
       method: "POST",
       body: payload,
     });
-    console.debug("Sending payload", payload);
+
     const requestPromise = this.fetchWithRetry(url, fetchOptions);
     this.pendingPromises[promiseUUID] = requestPromise;
 
