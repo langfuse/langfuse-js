@@ -418,21 +418,23 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const llmUsage = output.llmOutput?.["tokenUsage"];
 
+      const extractedOutput =
+        !lastResponse.text &&
+        "message" in lastResponse &&
+        lastResponse["message"] instanceof AIMessage &&
+        lastResponse["message"].additional_kwargs
+          ? lastResponse["message"].additional_kwargs
+          : lastResponse.text;
+
       this.langfuse._updateGeneration({
         id: runId,
         traceId: this.traceId,
-        output:
-          !lastResponse.text &&
-          "message" in lastResponse &&
-          lastResponse["message"] instanceof AIMessage &&
-          lastResponse["message"].additional_kwargs
-            ? lastResponse["message"].additional_kwargs
-            : lastResponse.text,
+        output: extractedOutput,
         endTime: new Date(),
         usage: llmUsage,
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, output);
+      this.updateTrace(runId, parentRunId, extractedOutput);
     } catch (e) {
       console.log("Error:", e);
     }
