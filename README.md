@@ -10,6 +10,9 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Packages
 
+> [!IMPORTANT]
+> The SDK was rewritten in v2 and released on December 18, 2023. Refer to the [v2 migration guide](https://langfuse.com/docs/sdk/typescript#upgrade1to2) for instructions on updating your code.
+
 | Package                                    | NPM                                                                                                                                   | Environments          |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | [langfuse](./langfuse)                     | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)                     | Node >= 18, Web, Edge |
