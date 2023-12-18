@@ -133,10 +133,10 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: {
+        input: {
           text: "prompt",
         },
-        completion: {
+        output: {
           foo: "bar",
         },
       });
@@ -161,12 +161,12 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: [
+        input: [
           {
             text: "prompt",
           },
         ],
-        completion: [
+        output: [
           {
             foo: "bar",
           },
@@ -196,8 +196,8 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: "prompt",
-        completion: "completion",
+        input: "prompt",
+        output: "completion",
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
@@ -211,6 +211,58 @@ describe("Langfuse Node.js", () => {
       });
     });
 
+    it("create many objects", async () => {
+      const trace = langfuse.trace({ name: "trace-name-generation-new" });
+      const generation = trace.generation({
+        name: "generation-name-new",
+        input: "prompt",
+        output: "completion",
+      });
+      generation.update({
+        version: "1.0.0",
+      });
+      const span = generation.span({
+        name: "span-name",
+        input: "span-input",
+        output: "span-output",
+      });
+      span.end({ metadata: { foo: "bar" } });
+      generation.end({ metadata: { foo: "bar" } });
+
+      await langfuse.flushAsync();
+      // check from get api if trace is created
+      const returnedGeneration = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, {
+        headers: getHeaders,
+      });
+      expect(returnedGeneration.data).toMatchObject({
+        id: generation.id,
+        name: "generation-name-new",
+        type: "GENERATION",
+        input: "prompt",
+        output: "completion",
+        version: "1.0.0",
+        endTime: expect.any(String),
+        metadata: {
+          foo: "bar",
+        },
+      });
+
+      const returnedSpan = await axios.get(`${LF_HOST}/api/public/observations/${span.id}`, {
+        headers: getHeaders,
+      });
+      expect(returnedSpan.data).toMatchObject({
+        id: span.id,
+        name: "span-name",
+        type: "SPAN",
+        input: "span-input",
+        output: "span-output",
+        endTime: expect.any(String),
+        metadata: {
+          foo: "bar",
+        },
+      });
+    });
+
     it("update a generation", async () => {
       const trace = langfuse.trace({
         name: "test-trace",
@@ -220,7 +272,7 @@ describe("Langfuse Node.js", () => {
         completionStartTime: new Date("2020-01-01T00:00:00.000Z"),
       });
       generation.end({
-        completion: "Hello world",
+        output: "Hello world",
         usage: {
           promptTokens: 10,
           completionTokens: 15,

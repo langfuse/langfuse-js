@@ -28,13 +28,13 @@ describe("Langfuse Core", () => {
       expect(langfuse.getPersistedProperty(LangfusePersistedProperty.Queue)).toHaveLength(1);
 
       const item = langfuse.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue)?.pop();
+      console.log(item);
 
       expect(item).toMatchObject({
-        apiRoute: "/api/public/traces",
-        body: {
-          name: "test-trace",
-          id: "123456789",
-        },
+        id: expect.any(String),
+        type: "trace-create",
+        timestamp: expect.any(String),
+        body: { id: "123456789", name: "test-trace" },
       });
 
       expect(mocks.fetch).not.toHaveBeenCalled();

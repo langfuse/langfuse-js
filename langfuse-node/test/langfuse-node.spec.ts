@@ -2,7 +2,10 @@
 import Langfuse from "../src/langfuse-node";
 jest.mock("../src/fetch");
 import { fetch } from "../src/fetch";
-import { wait } from "../../langfuse-core/test/test-utils/test-utils";
+
+const wait = async (t: number): Promise<void> => {
+  await new Promise((r) => setTimeout(r, t));
+};
 
 jest.mock("../package.json", () => ({ version: "1.2.3" }));
 
@@ -46,10 +49,10 @@ describe("Langfuse Node.js", () => {
       expect(mockedFetch).toHaveBeenCalledTimes(1);
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        "http://example.com/api/public/traces",
+        "http://example.com/api/public/ingestion",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ id: "test-id", name: "trace-name" }),
+          body: expect.stringContaining(JSON.stringify({ id: "test-id", name: "trace-name" })),
           headers: expect.objectContaining({
             "Content-Type": "application/json",
             Authorization: "Basic " + Buffer.from("pk:sk").toString("base64"),
@@ -109,7 +112,7 @@ describe("Langfuse Node.js", () => {
         // 10 capture calls to debug log
         // 6 flush calls to debug log
         expect(logSpy).toHaveBeenCalledTimes(16);
-        expect(10).toEqual(logSpy.mock.calls.filter((call) => call[1].includes("createTrace")).length);
+        expect(10).toEqual(logSpy.mock.calls.filter((call) => call[1].includes("trace-create")).length);
         expect(6).toEqual(logSpy.mock.calls.filter((call) => call[1].includes("flush")).length);
 
         logSpy.mockClear();

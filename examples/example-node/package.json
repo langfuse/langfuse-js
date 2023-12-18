@@ -4,16 +4,20 @@
   "main": "server.ts",
   "license": "MIT",
   "scripts": {
-    "preinstall": "yarn build:langfuse",
-    "prestart": "yarn build:langfuse",
-    "start": "ts-node server.ts",
-    "build:langfuse": "yarn build:langfuse:publish && yarn build:langfuse:link",
-    "build:langfuse:publish": "cd ../../langfuse-node && yalc publish --replace",
-    "build:langfuse:link": "yalc add langfuse-node",
-    "example": "ts-node example.ts"
+    "preinstall": "yarn build:dependencies",
+    "prestart": "yarn build:dependencies",
+    "start": "ts-node example.ts",
+    "build:dependencies": "yarn build:langfuse-core && yarn build:langfuse-node",
+    "build:langfuse-node": "yarn build:langfuse-node:publish && yarn build:langfuse-node:link",
+    "build:langfuse-node:publish": "cd ../../langfuse-node && yalc publish --replace",
+    "build:langfuse-node:link": "yalc remove langfuse-node && yalc add langfuse-node",
+    "build:langfuse-core": "yarn build:langfuse-core:publish && yarn build:langfuse-core:link",
+    "build:langfuse-core:publish": "cd ../../langfuse-core && yalc publish --replace",
+    "build:langfuse-core:link": "yalc remove langfuse-core && yalc add langfuse-core"
   },
   "dependencies": {
     "express": "^4.18.1",
+    "langfuse-core": "file:.yalc/langfuse-core",
     "langfuse-node": "file:.yalc/langfuse-node",
     "undici": "^5.8.0"
   },
@@ -23,6 +27,7 @@
     "eslint": "^8.19.0",
     "ts-node": "^10.8.2",
     "typescript": "^4.7.4",
-    "wtfnode": "^0.9.1"
+    "wtfnode": "^0.9.1",
+    "yalc": "^1.0.0-pre.53"
   }
 }

@@ -11,22 +11,30 @@
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "langfuse": "file:.yalc/langfuse",
+    "langfuse-core": "file:.yalc/langfuse-core",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.4.2",
     "web-vitals": "^2.1.0"
   },
+  "devDependencies": {
+    "yalc": "^1.0.0-pre.53"
+  },
   "scripts": {
-    "preinstall": "yarn build:langfuse",
-    "prestart": "yarn build:langfuse",
+    "preinstall": "yarn build:dependencies",
+    "prestart": "yarn build:dependencies",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "build:dependencies": "yarn build:langfuse-core && yarn build:langfuse",
     "build:langfuse": "yarn build:langfuse:publish && yarn build:langfuse:link",
     "build:langfuse:publish": "cd ../../langfuse && yalc publish --replace",
-    "build:langfuse:link": "yalc remove langfuse && yalc add langfuse"
+    "build:langfuse:link": "yalc remove langfuse && yalc add langfuse",
+    "build:langfuse-core": "yarn build:langfuse-core:publish && yarn build:langfuse-core:link",
+    "build:langfuse-core:publish": "cd ../../langfuse-core && yalc publish --replace",
+    "build:langfuse-core:link": "yalc remove langfuse-core && yalc add langfuse-core"
   },
   "eslintConfig": {
     "extends": [

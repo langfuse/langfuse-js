@@ -1,5 +1,5 @@
 import axios from "axios";
-import { type LangfuseFetchOptions, type LangfuseFetchResponse } from "langfuse-core/src";
+import { type LangfuseFetchOptions, type LangfuseFetchResponse } from "langfuse-core";
 
 // NOTE: We use axios as a reliable, well supported request library but follow the Fetch API (roughly)
 // So that alternative implementations can be used if desired
