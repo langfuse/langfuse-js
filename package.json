@@ -34,7 +34,6 @@
     "test:datasets": "jest integration-test/langfuse-integration-datasets*",
     "test:modules": "jest integration-test/langfuse-integration-modules*",
     "test:examples": "jest integration-test/langfuse-integration-examples*",
-    "test:langchain": "yarn workspace langfuse-langchain run test:integration",
     "compile": "rollup -c --bundleConfigAsCjs"
   },
   "devDependencies": {

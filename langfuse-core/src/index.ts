@@ -129,7 +129,9 @@ abstract class LangfuseCoreStateless {
     this.debugMode = enabled;
 
     if (enabled) {
-      this.removeDebugCallback = this.on("*", (event, payload) => console.log("Langfuse Debug", event, payload));
+      this.removeDebugCallback = this.on("*", (event, payload) =>
+        console.log("Langfuse Debug", event, JSON.stringify(payload))
+      );
     }
   }
 

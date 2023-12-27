@@ -41,7 +41,6 @@ describe("Langfuse Core", () => {
       expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
-      console.log(body);
       expect(body).toMatchObject({
         batch: [
           {

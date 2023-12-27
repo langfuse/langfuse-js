@@ -83,8 +83,6 @@ describe("Langfuse Core", () => {
       }
 
       mocks.fetch.mockImplementation(() => {
-        console.log("mocks.fetch called", index);
-
         if (index < 3) {
           index++;
           return Promise.resolve({
