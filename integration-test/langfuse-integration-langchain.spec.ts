@@ -49,6 +49,40 @@ describe("simple chains", () => {
     expect(generation?.[0].usage?.total).toBeDefined();
   });
 
+  it("should execute simple llm call (debug)", async () => {
+    const handler = new CallbackHandler({
+      publicKey: LF_PUBLIC_KEY,
+      secretKey: LF_SECRET_KEY,
+      baseUrl: LF_HOST,
+      sessionId: "test-session",
+    });
+    handler.debug(true);
+    const llm = new OpenAI({ streaming: true });
+    const res = await llm.call("Tell me a joke", { callbacks: [handler] });
+    await handler.flushAsync();
+
+    expect(res).toBeDefined();
+
+    expect(handler.traceId).toBeDefined();
+    const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+    expect(trace).toBeDefined();
+    expect(trace?.sessionId).toBe("test-session");
+    expect(trace?.observations.length).toBe(1);
+
+    const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
+    expect(rootLevelObservation).toBeDefined();
+    expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
+    expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
+
+    const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+    expect(generation?.length).toBe(1);
+    expect(generation?.[0].name).toBe("OpenAI");
+    expect(generation?.[0].usage?.input).toBeDefined();
+    expect(generation?.[0].usage?.output).toBeDefined();
+    expect(generation?.[0].usage?.total).toBeDefined();
+  });
+
   it("should execute simple llm call twice on two different traces", async () => {
     const handler = new CallbackHandler({
       publicKey: LF_PUBLIC_KEY,
