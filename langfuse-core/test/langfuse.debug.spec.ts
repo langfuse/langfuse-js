@@ -27,13 +27,7 @@ describe("Langfuse Core", () => {
       langfuse.debug();
       langfuse.trace({ name: "test-trace2" });
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith(
-        "Langfuse Debug",
-        "trace-create",
-        expect.objectContaining({
-          name: "test-trace2",
-        })
-      );
+      expect(spy).toHaveBeenCalledWith("Langfuse Debug", "trace-create", expect.stringContaining("test-trace2"));
 
       spy.mockReset();
       langfuse.debug(false);
