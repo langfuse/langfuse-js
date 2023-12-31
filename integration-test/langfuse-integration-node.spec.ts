@@ -323,4 +323,24 @@ describe("Langfuse Node.js", () => {
       });
     });
   });
+  describe("prompt methods", () => {
+    it("create and get a prompt", async () => {
+      await langfuse.createPrompt({
+        name: "test-prompt",
+        prompt: "This is a prompt with a {{variable}}",
+        isActive: true,
+      });
+
+      const prompt = await langfuse.getPrompt("test-prompt");
+
+      const filledPrompt = prompt.compile({ variable: "1.0.0" });
+
+      expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
+
+      const res = await axios.get(`${LF_HOST}/api/public/prompts/?name=test-prompt`, {
+        headers: getHeaders,
+      });
+      expect(res.data).toMatchObject({});
+    });
+  });
 });

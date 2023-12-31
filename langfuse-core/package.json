@@ -30,5 +30,11 @@
   "files": [
     "lib",
     "Readme.md"
-  ]
+  ],
+  "dependencies": {
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/mustache": "^4.2.5"
+  }
 }
