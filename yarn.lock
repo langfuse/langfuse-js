@@ -2193,6 +2193,11 @@
   resolved "https://registry.npmjs.org/@types/mkdirp/-/mkdirp-0.3.29.tgz"
   integrity sha512-QRLQpFsIQGO2k8pupga9abfei85GKotAtQ+F6xuQmSGomUt6C52TyMiTFpP8kUwuPKr00gNtu3itLlC6gvI/NA==
 
+"@types/mustache@^4.2.5":
+  version "4.2.5"
+  resolved "https://registry.yarnpkg.com/@types/mustache/-/mustache-4.2.5.tgz#9129f0d6857f976e00e171bbb3460e4b702f84ef"
+  integrity sha512-PLwiVvTBg59tGFL/8VpcGvqOu3L4OuveNvPi0EYbWchRdEVP++yRUXJPFl+CApKEq13017/4Nf7aQ5lTtHUNsA==
+
 "@types/node-fetch@^2.6.4":
   version "2.6.4"
   resolved "https://registry.npmjs.org/@types/node-fetch/-/node-fetch-2.6.4.tgz"
@@ -2656,10 +2661,10 @@ axios@^1.0.0, axios@^1.4.0:
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
-axios@^1.6.0:
-  version "1.6.2"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.2.tgz#de67d42c755b571d3e698df1b6504cde9b0ee9f2"
-  integrity sha512-7i24Ri4pmDRfJTR7LDBhsOTtcm+9kjX5WiY1X3wIisx6G9So3pfMkEiU7emUBe46oceVImccTEM3k6C5dbVW8A==
+axios@^1.6.3:
+  version "1.6.3"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.3.tgz#7f50f23b3aa246eff43c54834272346c396613f4"
+  integrity sha512-fWyNdeawGam70jXSVlKl+SUNVcL6j6W79CuSIPfi6HnDUmSCH6gyUys/HrqHeA/wU0Az41rRgean494d0Jb+ww==
   dependencies:
     follow-redirects "^1.15.0"
     form-data "^4.0.0"
@@ -6621,6 +6626,11 @@ multimatch@5.0.0:
     array-union "^2.1.0"
     arrify "^2.0.1"
     minimatch "^3.0.4"
+
+mustache@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/mustache/-/mustache-4.2.0.tgz#e5892324d60a12ec9c2a73359edca52972bf6f64"
+  integrity sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==
 
 mute-stream@0.0.8:
   version "0.0.8"

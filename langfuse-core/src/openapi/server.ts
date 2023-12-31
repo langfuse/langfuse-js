@@ -50,6 +50,12 @@ export interface paths {
   "/api/public/projects": {
     get: operations["projects_get"];
   };
+  "/api/public/prompts": {
+    /** @description Get a specific prompt */
+    get: operations["prompts_get"];
+    /** @description Create a specific prompt */
+    post: operations["prompts_create"];
+  };
   "/api/public/scores": {
     /** @description Get scores */
     get: operations["score_get"];
@@ -147,6 +153,7 @@ export interface components {
       level: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+      promptId?: string | null;
     };
     /** Usage */
     Usage: {
@@ -303,6 +310,13 @@ export interface components {
       | WithRequired<
           {
             /** @enum {string} */
+            type?: "sdk-log";
+          } & components["schemas"]["SDKLogEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
             type?: "observation-create";
           } & components["schemas"]["CreateObservationEvent"],
           "type"
@@ -371,6 +385,8 @@ export interface components {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
+      promptName?: string | null;
+      promptVersion?: number | null;
     } & components["schemas"]["CreateSpanBody"];
     /** UpdateGenerationBody */
     UpdateGenerationBody: {
@@ -381,6 +397,8 @@ export interface components {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
+      promptName?: string | null;
+      promptVersion?: number | null;
     } & components["schemas"]["UpdateSpanBody"];
     /** ObservationBody */
     ObservationBody: {
@@ -420,6 +438,10 @@ export interface components {
       metadata?: Record<string, unknown> | null;
       /** @description Make trace publicly accessible via url */
       public?: boolean | null;
+    };
+    /** SDKLogBody */
+    SDKLogBody: {
+      log: unknown;
     };
     /** ScoreBody */
     ScoreBody: {
@@ -462,6 +484,13 @@ export interface components {
     ScoreEvent: WithRequired<
       {
         body: components["schemas"]["ScoreBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** SDKLogEvent */
+    SDKLogEvent: WithRequired<
+      {
+        body: components["schemas"]["SDKLogBody"];
       } & components["schemas"]["BaseEvent"],
       "body"
     >;
@@ -530,6 +559,18 @@ export interface components {
     Project: {
       id: string;
       name: string;
+    };
+    /** CreatePromptRequest */
+    CreatePromptRequest: {
+      name: string;
+      isActive: boolean;
+      prompt: string;
+    };
+    /** Prompt */
+    Prompt: {
+      name: string;
+      version: number;
+      prompt: string;
     };
     /** CreateScoreRequest */
     CreateScoreRequest: {
@@ -984,6 +1025,87 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Projects"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a specific prompt */
+  prompts_get: {
+    parameters: {
+      query: {
+        name: string;
+        version?: number | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Prompt"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Create a specific prompt */
+  prompts_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreatePromptRequest"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Prompt"];
         };
       };
       400: {

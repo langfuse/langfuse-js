@@ -103,6 +103,15 @@ export type GetLangfuseDatasetRunParams = FixTypes<
 export type GetLangfuseDatasetRunResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type CreateLangfusePromptBody = FixTypes<
+  paths["/api/public/prompts"]["post"]["requestBody"]["content"]["application/json"]
+>;
+export type CreateLangfusePromptResponse = FixTypes<
+  paths["/api/public/prompts"]["post"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfusePromptResponse = FixTypes<
+  paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 

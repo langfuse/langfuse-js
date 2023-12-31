@@ -25,6 +25,9 @@ import {
   type DeferRuntime,
   type IngestionReturnType,
   type SingleIngestionEvent,
+  type CreateLangfusePromptResponse,
+  type CreateLangfusePromptBody,
+  type GetLangfusePromptResponse,
 } from "./types";
 import {
   assert,
@@ -36,6 +39,8 @@ import {
   getEnv,
   currentISOTime,
 } from "./utils";
+import mustache from "mustache";
+
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
@@ -271,6 +276,20 @@ abstract class LangfuseCoreStateless {
     } catch {
       return response;
     }
+  }
+
+  async createPromptStateless(body: CreateLangfusePromptBody): Promise<CreateLangfusePromptResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/prompts/`,
+      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+    ).then((res) => res.json());
+  }
+
+  async getPromptStateless(name: string, version?: number): Promise<GetLangfusePromptResponse> {
+    const url = `${this.baseUrl}/api/public/prompts/?name=${name}` + (version ? `&version=${version}` : "");
+    console.log(url);
+
+    return this.fetch(url, this.getFetchOptions({ method: "GET" })).then((res) => res.json());
   }
 
   /***
@@ -578,6 +597,16 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return returnDataset;
   }
 
+  async createPrompt(body: CreateLangfusePromptBody): Promise<LangfusePromptClient> {
+    const prompt = await this.createPromptStateless(body);
+    return new LangfusePromptClient(prompt);
+  }
+
+  async getPrompt(name: string, version?: number): Promise<LangfusePromptClient> {
+    const prompt = await this.getPromptStateless(name, version);
+    return new LangfusePromptClient(prompt);
+  }
+
   _updateSpan(body: UpdateLangfuseSpanBody): this {
     this.updateSpanStateless(body);
     return this;
@@ -723,6 +752,20 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
 export class LangfuseEventClient extends LangfuseObservationClient {
   constructor(client: LangfuseCore, id: string, traceId: string) {
     super(client, id, traceId);
+  }
+}
+
+export class LangfusePromptClient {
+  private promptResponse: CreateLangfusePromptResponse;
+  constructor(prompt: CreateLangfusePromptResponse) {
+    this.promptResponse = prompt;
+  }
+
+  compile(variables: unknown): string {
+    if (typeof variables !== "object") {
+      throw new Error("Variables must be an object");
+    }
+    return mustache.render(this.promptResponse.prompt, variables);
   }
 }
 
