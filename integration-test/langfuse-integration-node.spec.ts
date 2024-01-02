@@ -409,7 +409,7 @@ describe("Langfuse Node.js", () => {
       name: "test-generation",
       input: filledPrompt,
       promptName: "test-prompt",
-      promptVersion: prompt.promptResponse.version,
+      promptVersion: prompt.version,
     });
 
     await langfuse.flushAsync();

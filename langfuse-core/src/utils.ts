@@ -1,5 +1,4 @@
-import { LangfusePromptClient } from ".";
-import { CreateLangfuseGenerationBody, PromptInput, UpdateLangfuseGenerationBody } from "./types";
+import { type LangfusePromptClient } from ".";
 
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue) {
@@ -109,5 +108,5 @@ export function createPromptContext(body: {
   } else if (body.promptName || body.promptVersion) {
     console.warn("Expected to get prompt name and prompt version. One was missing.");
   }
-  return { promptName: undefined, promptVersion: undefined };
+  return {};
 }
