@@ -1,5 +1,3 @@
-import { type LangfusePromptClient } from ".";
-
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue) {
     throw new Error(message);
