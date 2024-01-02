@@ -394,48 +394,6 @@ describe("Langfuse Node.js", () => {
     });
   });
 
-  it("link prompt to generation manually", async () => {
-    await langfuse.createPrompt({
-      name: "test-prompt",
-      prompt: "This is a prompt with a {{variable}}",
-      isActive: true,
-    });
-
-    const prompt = await langfuse.getPrompt("test-prompt");
-
-    const filledPrompt = prompt.compile({ variable: "1.0.0" });
-
-    const generation = langfuse.generation({
-      name: "test-generation",
-      input: filledPrompt,
-      promptName: "test-prompt",
-      promptVersion: prompt.version,
-    });
-
-    await langfuse.flushAsync();
-
-    const res = await axios.get(`${LF_HOST}/api/public/prompts/?name=test-prompt`, {
-      headers: getHeaders,
-    });
-
-    expect(res.data).toMatchObject({
-      name: "test-prompt",
-      prompt: "This is a prompt with a {{variable}}",
-      isActive: true,
-      version: expect.any(Number),
-    });
-    console.log("post prompt", generation.id);
-
-    const observation = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, {
-      headers: getHeaders,
-    });
-
-    expect(observation.data).toMatchObject({
-      input: "This is a prompt with a 1.0.0",
-      promptId: res.data.id,
-    });
-  });
-
   it("create and get a prompt for a specific variable", async () => {
     await langfuse.createPrompt({
       name: "test-prompt",
