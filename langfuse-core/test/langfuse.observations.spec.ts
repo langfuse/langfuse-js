@@ -198,6 +198,13 @@ describe("Langfuse Core", () => {
     it("test all params", async () => {
       jest.setSystemTime(new Date("2022-01-01"));
 
+      await langfuse.createPrompt({
+        name: "test-prompt",
+        prompt: "This is a prompt with a {{variable}}",
+        isActive: true,
+      });
+      const prompt = await langfuse.getPrompt("test-prompt");
+
       langfuse.generation({
         name: "test-trace",
         id: "123456789",
@@ -219,8 +226,7 @@ describe("Langfuse Core", () => {
           total: 3,
           unit: "CHARACTERS",
         },
-        promptName: "test-prompt",
-        promptVersion: 1,
+        prompt,
         endTime: new Date("2023-01-03"),
         startTime: new Date("2023-01-02"),
         level: "DEFAULT",
