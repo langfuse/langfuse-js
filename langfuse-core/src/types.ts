@@ -1,3 +1,4 @@
+import { type LangfusePromptClient } from ".";
 import { type components, type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {
@@ -112,6 +113,10 @@ export type CreateLangfusePromptResponse = FixTypes<
 export type GetLangfusePromptResponse = FixTypes<
   paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+
+export type PromptInput = {
+  prompt?: LangfusePromptClient;
+};
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 

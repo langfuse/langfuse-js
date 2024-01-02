@@ -28,6 +28,7 @@ import {
   type CreateLangfusePromptResponse,
   type CreateLangfusePromptBody,
   type GetLangfusePromptResponse,
+  type PromptInput,
 } from "./types";
 import {
   assert,
@@ -38,6 +39,7 @@ import {
   safeSetTimeout,
   getEnv,
   currentISOTime,
+  createPromptContext,
 } from "./utils";
 import mustache from "mustache";
 
@@ -547,9 +549,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return new LangfuseSpanClient(this, id, traceId);
   }
 
-  generation(body: CreateLangfuseGenerationBody): LangfuseGenerationClient {
+  generation(body: CreateLangfuseGenerationBody & PromptInput): LangfuseGenerationClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
-    const id = this.generationStateless({ ...body, traceId });
+    const id = this.generationStateless({ ...body, traceId, ...createPromptContext(body) });
     return new LangfuseGenerationClient(this, id, traceId);
   }
 
@@ -657,11 +659,14 @@ export abstract class LangfuseObjectClient {
     });
   }
 
-  generation(body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId">): LangfuseGenerationClient {
+  generation(
+    body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId"> & PromptInput
+  ): LangfuseGenerationClient {
     return this.client.generation({
       ...body,
       traceId: this.traceId,
       parentObservationId: this.observationId,
+      ...(body ? createPromptContext(body) : undefined),
     });
   }
 
@@ -729,21 +734,23 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId">): this {
+  update(body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId"> & PromptInput): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
       traceId: this.traceId,
+      ...(body ? createPromptContext(body) : undefined),
     });
     return this;
   }
 
-  end(body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime">): this {
+  end(body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime"> & PromptInput): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
       traceId: this.traceId,
       endTime: new Date(),
+      ...(body ? createPromptContext(body) : undefined),
     });
     return this;
   }
