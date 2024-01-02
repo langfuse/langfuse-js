@@ -757,15 +757,19 @@ export class LangfuseEventClient extends LangfuseObservationClient {
 
 export class LangfusePromptClient {
   private promptResponse: CreateLangfusePromptResponse;
+  public readonly name: string;
+  public readonly version: number;
+  public readonly prompt: string;
+
   constructor(prompt: CreateLangfusePromptResponse) {
     this.promptResponse = prompt;
+    this.name = prompt.name;
+    this.version = prompt.version;
+    this.prompt = prompt.prompt;
   }
 
-  compile(variables: unknown): string {
-    if (typeof variables !== "object") {
-      throw new Error("Variables must be an object");
-    }
-    return mustache.render(this.promptResponse.prompt, variables);
+  compile(variables?: { [key: string]: string }): string {
+    return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
 }
 
