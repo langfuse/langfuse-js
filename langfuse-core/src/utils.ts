@@ -1,3 +1,6 @@
+import { LangfusePromptClient } from ".";
+import { CreateLangfuseGenerationBody, PromptInput, UpdateLangfuseGenerationBody } from "./types";
+
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue) {
     throw new Error(message);
@@ -89,4 +92,22 @@ export function getEnv<T = string>(key: string): T | undefined {
     return (globalThis as any)[key];
   }
   return;
+}
+
+export function createPromptContext(body: {
+  prompt?: LangfusePromptClient;
+  promptName?: string | null;
+  promptVersion?: number | null;
+}): {
+  promptName?: string;
+  promptVersion?: number;
+} {
+  if (body.prompt) {
+    return { promptName: body.prompt.promptResponse.name, promptVersion: body.prompt.promptResponse.version };
+  } else if (body.promptName && body.promptVersion) {
+    return { promptName: body.promptName, promptVersion: body.promptVersion };
+  } else if (body.promptName || body.promptVersion) {
+    console.warn("Expected to get prompt name and prompt version. One was missing.");
+  }
+  return { promptName: undefined, promptVersion: undefined };
 }

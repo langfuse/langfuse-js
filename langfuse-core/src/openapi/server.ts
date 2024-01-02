@@ -256,6 +256,16 @@ export interface components {
     CreateDatasetRequest: {
       name: string;
     };
+    /** HealthResponse */
+    HealthResponse: {
+      /**
+       * @description Langfuse server version
+       * @example 1.25.0
+       */
+      version: string;
+      /** @example OK */
+      status: string;
+    };
     /** IngestionEvent */
     IngestionEvent:
       | WithRequired<
@@ -858,8 +868,10 @@ export interface operations {
   /** @description Check health of API and database */
   health_health: {
     responses: {
-      204: {
-        content: never;
+      200: {
+        content: {
+          "application/json": components["schemas"]["HealthResponse"];
+        };
       };
       400: {
         content: {
