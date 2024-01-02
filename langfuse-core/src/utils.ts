@@ -92,13 +92,3 @@ export function getEnv<T = string>(key: string): T | undefined {
   }
   return;
 }
-
-export function createPromptContext(prompt?: LangfusePromptClient): {
-  promptName?: string;
-  promptVersion?: number;
-} {
-  if (prompt) {
-    return { promptName: prompt.name, promptVersion: prompt.version };
-  }
-  return {};
-}

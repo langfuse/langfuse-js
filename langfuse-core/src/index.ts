@@ -39,7 +39,6 @@ import {
   safeSetTimeout,
   getEnv,
   currentISOTime,
-  createPromptContext,
 } from "./utils";
 import mustache from "mustache";
 
