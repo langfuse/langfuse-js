@@ -93,20 +93,12 @@ export function getEnv<T = string>(key: string): T | undefined {
   return;
 }
 
-export function createPromptContext(body: {
-  prompt?: LangfusePromptClient;
-  promptName?: string | null;
-  promptVersion?: number | null;
-}): {
+export function createPromptContext(prompt?: LangfusePromptClient): {
   promptName?: string;
   promptVersion?: number;
 } {
-  if (body.prompt) {
-    return { promptName: body.prompt.name, promptVersion: body.prompt.version };
-  } else if (body.promptName && body.promptVersion) {
-    return { promptName: body.promptName, promptVersion: body.promptVersion };
-  } else if (body.promptName || body.promptVersion) {
-    console.warn("Expected to get prompt name and prompt version. One was missing.");
+  if (prompt) {
+    return { promptName: prompt.name, promptVersion: prompt.version };
   }
   return {};
 }

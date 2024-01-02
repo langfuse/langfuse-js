@@ -188,14 +188,17 @@ abstract class LangfuseCoreStateless {
     return id;
   }
 
-  protected generationStateless(body: CreateLangfuseGenerationBody): string {
-    const { id: bodyId, startTime: bodyStartTime, ...rest } = body;
+  protected generationStateless(
+    body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
+  ): string {
+    const { id: bodyId, startTime: bodyStartTime, prompt, ...rest } = body;
 
     const id = bodyId || generateUUID();
 
     const parsedBody: CreateLangfuseGenerationBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
       ...rest,
     };
 
@@ -221,8 +224,15 @@ abstract class LangfuseCoreStateless {
     return body.id;
   }
 
-  protected updateGenerationStateless(body: UpdateLangfuseGenerationBody): string {
-    this.enqueue("generation-update", body);
+  protected updateGenerationStateless(
+    body: Omit<UpdateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
+  ): string {
+    const { prompt, ...rest } = body;
+    const parsedBody: UpdateLangfuseGenerationBody = {
+      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
+      ...rest,
+    };
+    this.enqueue("generation-update", parsedBody);
     return body.id;
   }
 
@@ -549,9 +559,11 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return new LangfuseSpanClient(this, id, traceId);
   }
 
-  generation(body: CreateLangfuseGenerationBody & PromptInput): LangfuseGenerationClient {
+  generation(
+    body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
+  ): LangfuseGenerationClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
-    const id = this.generationStateless({ ...body, traceId, ...createPromptContext(body) });
+    const id = this.generationStateless({ ...body, traceId });
     return new LangfuseGenerationClient(this, id, traceId);
   }
 
@@ -660,13 +672,13 @@ export abstract class LangfuseObjectClient {
   }
 
   generation(
-    body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId"> & PromptInput
+    body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> &
+      PromptInput
   ): LangfuseGenerationClient {
     return this.client.generation({
       ...body,
       traceId: this.traceId,
       parentObservationId: this.observationId,
-      ...(body ? createPromptContext(body) : undefined),
     });
   }
 
@@ -734,23 +746,26 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId"> & PromptInput): this {
+  update(
+    body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "promptName" | "promptVersion"> & PromptInput
+  ): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
       traceId: this.traceId,
-      ...(body ? createPromptContext(body) : undefined),
     });
     return this;
   }
 
-  end(body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime"> & PromptInput): this {
+  end(
+    body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime" | "promptName" | "promptVersion"> &
+      PromptInput
+  ): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
       traceId: this.traceId,
       endTime: new Date(),
-      ...(body ? createPromptContext(body) : undefined),
     });
     return this;
   }
