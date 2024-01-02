@@ -103,7 +103,7 @@ export function createPromptContext(body: {
   promptVersion?: number;
 } {
   if (body.prompt) {
-    return { promptName: body.prompt.promptResponse.name, promptVersion: body.prompt.promptResponse.version };
+    return { promptName: body.prompt.name, promptVersion: body.prompt.version };
   } else if (body.promptName && body.promptVersion) {
     return { promptName: body.promptName, promptVersion: body.promptVersion };
   } else if (body.promptName || body.promptVersion) {
