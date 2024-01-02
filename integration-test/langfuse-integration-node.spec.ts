@@ -336,6 +336,9 @@ describe("Langfuse Node.js", () => {
       const filledPrompt = prompt.compile({ variable: "1.0.0" });
 
       expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
+      expect(prompt.name).toEqual("test-prompt");
+      expect(prompt.prompt).toEqual("This is a prompt with a {{variable}}");
+      expect(prompt.version).toEqual(1);
 
       const res = await axios.get(`${LF_HOST}/api/public/prompts/?name=test-prompt`, {
         headers: getHeaders,
