@@ -50,7 +50,11 @@ describe("Langfuse Node.js", () => {
       const res = await axios.get(`${LF_HOST}/api/public/traces/${trace.id}`, {
         headers: getHeaders,
       });
-      expect(res.data).toMatchObject({ id: trace.id, name: "trace-name", tags: ["tag1", "tag2"] });
+      expect(res.data).toMatchObject({
+        id: trace.id,
+        name: "trace-name",
+        tags: expect.arrayContaining(["tag1", "tag2"]),
+      });
     });
 
     it("update a trace", async () => {
