@@ -126,6 +126,7 @@ describe("Langfuse Core", () => {
           },
         },
         version: "1.0.0",
+        tags: ["tag1", "tag2"],
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
@@ -146,6 +147,7 @@ describe("Langfuse Core", () => {
                 },
               },
               version: "1.0.0",
+              tags: ["tag1", "tag2"],
             },
           },
         ],
