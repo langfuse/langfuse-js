@@ -5798,18 +5798,22 @@ klona@^2.0.4, klona@^2.0.5:
   resolved "https://registry.yarnpkg.com/klona/-/klona-2.0.5.tgz#d166574d90076395d9963aa7a928fabb8d76afbc"
   integrity sha512-pJiBpiXMbt7dkzXe8Ghj/u4FfXOOa98fPW+bihOJ4SjnoijweJrNThJfd3ifXpXhREjpoF2mZVH1GfS9LV3kHQ==
 
-langfuse-core@^2.0.0-alpha.2:
-  version "2.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.0.0-alpha.2.tgz#2a54a9965a959b79f9f944f5303f1c9d8bc03527"
-  integrity sha512-fXluLlLNjoknMt6Kk/RD7zDrcfNmnC0BId4ay9q5e8voOX6PdKKa2Cu5mjHvMU8bXR+mseSY5UwL280eMypbVA==
+langfuse-core@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.2.1.tgz#5b00b1af2b7d9df53a7ba833d618231cbd1b2465"
+  integrity sha512-rQcJ6pgyIY394PXJzN5C3kogCCr5D5z2Q9ADyMV4l0kE3uCbdbSphFhXceD/jnmeYKYnEowdAU+N9JsBnhinfQ==
+  dependencies:
+    mustache "^4.2.0"
 
 "langfuse-core@file:.yalc/langfuse-core":
-  version "2.0.0-alpha.2"
+  version "2.2.1"
+  dependencies:
+    mustache "^4.2.0"
 
 "langfuse@file:.yalc/langfuse":
-  version "2.0.0-alpha.2"
+  version "2.2.1"
   dependencies:
-    langfuse-core "^2.0.0-alpha.2"
+    langfuse-core "^2.2.1"
 
 language-subtag-registry@~0.3.2:
   version "0.3.22"
@@ -6124,6 +6128,11 @@ multicast-dns@^7.2.5:
   dependencies:
     dns-packet "^5.2.2"
     thunky "^1.0.2"
+
+mustache@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/mustache/-/mustache-4.2.0.tgz#e5892324d60a12ec9c2a73359edca52972bf6f64"
+  integrity sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==
 
 nanoid@^3.3.4:
   version "3.3.4"
