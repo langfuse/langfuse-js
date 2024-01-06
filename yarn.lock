@@ -6022,6 +6022,29 @@ langchainhub@~0.0.6:
   resolved "https://registry.npmjs.org/langchainhub/-/langchainhub-0.0.6.tgz"
   integrity sha512-SW6105T+YP1cTe0yMf//7kyshCgvCTyFBMTgH2H3s9rTAR4e+78DA/BBrUL/Mt4Q5eMWui7iGuAYb3pgGsdQ9w==
 
+langfuse-core@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.3.0.tgz#8c528c0adca2a6ef64e0df416a67bc1f80fcf267"
+  integrity sha512-3kFTR5hzuHotScFdiOYahYlzb2MmAyGHggS8fZXATOt4j7mNpVNPLwpg1PtDuINauplcdO9Wc8c0kVIvAjCHvg==
+  dependencies:
+    mustache "^4.2.0"
+
+langfuse-langchain@^2:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/langfuse-langchain/-/langfuse-langchain-2.3.0.tgz#928c49faa81c5ab3c91a43fd13080c3c3eafd611"
+  integrity sha512-Q4QuXQ+o+PDp2rdCpu/6izzzET4CU9d5Fg74obSENnABQVpwO1/ADCOe6lhXE23uXJPJ2dkxpgDDqDMCm8Pt8Q==
+  dependencies:
+    langfuse "^2.3.0"
+    langfuse-core "^2.3.0"
+    winston "^3.11.0"
+
+langfuse@^2.0.0, langfuse@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/langfuse/-/langfuse-2.3.0.tgz#cbc7836ddbe42817755213a56a745481fe4fbcc5"
+  integrity sha512-XBX3eMPec719SW11ZM3tEkYKaxp5JBLLPXymWlXe7ZeSpJzhqU5P19Zkk2MUop3BfvNK2XgZiTxuqP+hlPR3iQ==
+  dependencies:
+    langfuse-core "^2.3.0"
+
 langsmith@~0.0.31:
   version "0.0.41"
   resolved "https://registry.npmjs.org/langsmith/-/langsmith-0.0.41.tgz"
