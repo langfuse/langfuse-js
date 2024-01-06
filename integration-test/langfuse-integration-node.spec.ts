@@ -44,13 +44,13 @@ describe("Langfuse Node.js", () => {
     });
 
     it("create trace", async () => {
-      const trace = langfuse.trace({ name: "trace-name" });
+      const trace = langfuse.trace({ name: "trace-name", tags: ["tag1", "tag2"] });
       await langfuse.flushAsync();
       // check from get api if trace is created
       const res = await axios.get(`${LANGFUSE_HOST}/api/public/traces/${trace.id}`, {
         headers: getHeaders,
       });
-      expect(res.data).toMatchObject({ id: trace.id, name: "trace-name" });
+      expect(res.data).toMatchObject({ id: trace.id, name: "trace-name", tags: ["tag1", "tag2"] });
     });
 
     it("update a trace", async () => {
