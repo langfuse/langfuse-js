@@ -10,7 +10,7 @@ import { z } from "zod";
 
 import { Langfuse, CallbackHandler } from "../langfuse-langchain";
 
-import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "./integration-utils";
+import { LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, getTraces } from "./integration-utils";
 
 describe("simple chains", () => {
   jest.setTimeout(30_000);
@@ -18,9 +18,9 @@ describe("simple chains", () => {
 
   it("should execute simple llm call", async () => {
     const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST,
       sessionId: "test-session",
     });
     const llm = new OpenAI({ streaming: true });
@@ -51,9 +51,9 @@ describe("simple chains", () => {
 
   it("should execute simple llm call (debug)", async () => {
     const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST,
       sessionId: "test-session",
     });
     handler.debug(true);
@@ -85,9 +85,9 @@ describe("simple chains", () => {
 
   it("should execute simple llm call twice on two different traces", async () => {
     const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST,
       sessionId: "test-session",
     });
     const llm = new OpenAI({ streaming: true });
@@ -113,9 +113,9 @@ describe("simple chains", () => {
 
   it.each([["OpenAI"], ["ChatOpenAI"]])("should execute llm chain with '%s' ", async (llm: string) => {
     const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST,
     });
     const model = (): OpenAI | ChatOpenAI | ChatAnthropic => {
       if (llm === "OpenAI") {
@@ -187,9 +187,9 @@ describe("simple chains", () => {
 
   it("conversation chain should pass", async () => {
     const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST,
       sessionId: "test-session",
     });
     const model = new OpenAI({});
@@ -211,9 +211,9 @@ describe("simple chains", () => {
 
   it("should trace agents", async () => {
     const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST,
     });
 
     const model = new OpenAI({ temperature: 0 });
@@ -236,7 +236,11 @@ describe("simple chains", () => {
   });
 
   it("function calls", async () => {
-    const callback = new CallbackHandler({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+    const callback = new CallbackHandler({ 
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST, 
+    });
 
     const zodSchema = z.object({
       "person-name": z.string().optional(),
@@ -268,7 +272,11 @@ describe("simple chains", () => {
   });
 
   it("create trace for callback", async () => {
-    const langfuse = new Langfuse({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+    const langfuse = new Langfuse({ 
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST, 
+    });
 
     const trace = langfuse.trace({ name: "test-123" });
 
@@ -291,7 +299,11 @@ describe("simple chains", () => {
   });
 
   it("create span for callback", async () => {
-    const langfuse = new Langfuse({ publicKey: LF_PUBLIC_KEY, secretKey: LF_SECRET_KEY, baseUrl: LF_HOST });
+    const langfuse = new Langfuse({ 
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_HOST, 
+    });
 
     const trace = langfuse.trace({ name: "test-trace" });
     const span = trace.span({ name: "test-span" });

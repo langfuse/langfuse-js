@@ -8,6 +8,7 @@ import {
 import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
+import { getEnv } from "langfuse-core/src/utils";
 
 // Required when users pass these as typed arguments
 export {
@@ -23,7 +24,15 @@ export class Langfuse extends LangfuseCore {
   private _storageKey: string;
 
   constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
+    params.publicKey = getEnv<string>('LANGFUSE_PUBLIC_KEY') || params.publicKey;
+    params.secretKey = getEnv<string>('LANGFUSE_SECRET_KEY') || params.secretKey;
+
+    if (!params.publicKey || !params.secretKey) {
+      throw new Error('LANGFUSE_PUBLIC_KEY and/or LANGFUSE_SECRET_KEY environment variables are not set.');
+    }
+
     super(params);
+
     const { publicKey, secretKey, ...options } = params;
     if (typeof window !== "undefined" && "Deno" in window === false) {
       this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
@@ -79,6 +88,12 @@ export class LangfuseWeb extends LangfuseWebStateless {
   private _storageKey: string;
 
   constructor(params: { publicKey: string } & LangfuseOptions) {
+
+    params.publicKey = getEnv<string>('LANGFUSE_PUBLIC_KEY') || params.publicKey;
+
+    if (!params.publicKey) {
+      throw new Error('LANGFUSE_PUBLIC_KEY environment variable is not set.');
+    }
     super(params);
 
     const { publicKey, ...options } = params;
