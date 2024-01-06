@@ -81,7 +81,7 @@ abstract class LangfuseCoreStateless {
   private debugMode: boolean = false;
   private pendingPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
-  private sdkIntegration: "DEFAULT" | "LANGCHAIN";
+  private sdkIntegration: "DEFAULT" | "LANGCHAIN" | string;
 
   // internal
   protected _events = new SimpleEventEmitter();
