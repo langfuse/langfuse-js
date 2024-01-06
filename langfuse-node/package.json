@@ -1,6 +1,6 @@
 {
   "name": "langfuse-node",
-  "version": "2.3.1-alpha.0",
+  "version": "2.3.1-alpha.1",
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "axios": "^1.6.4",
-    "langfuse-core": "^2.3.1-alpha.0"
+    "langfuse-core": "^2.3.1-alpha.1"
   },
   "devDependencies": {
     "@types/node": "^20.4.10",
