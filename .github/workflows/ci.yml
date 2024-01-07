@@ -18,24 +18,28 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [16, 18, 20]
     name: Test on Node ${{ matrix.node-version }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+
+      - name: Exclude langfuse-langchain for Node 16 and 18
+        if: matrix.node-version == '16' || matrix.node-version == '18'
+        run: |
+          jq 'del(.workspaces[] | select(. == "langfuse-langchain"))' package.json > package_temp.json && mv package_temp.json package.json
+
       - run: yarn install
       - run: yarn test
-
   integration-test:
-    timeout-minutes: 10
+    timeout-minutes: 3
     runs-on: ubuntu-latest
     env:
-      LF_HOST: "http://localhost:3000"
-      LF_SECRET_KEY: "sk-lf-1234567890"
-      LF_PUBLIC_KEY: "pk-lf-1234567890"
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGFUSE_HOST: "http://localhost:3000"
+      LANGFUSE_SECRET_KEY: "sk-lf-1234567890"
+      LANGFUSE_PUBLIC_KEY: "pk-lf-1234567890"
     steps:
       - uses: actions/checkout@v3
 
