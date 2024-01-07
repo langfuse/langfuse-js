@@ -19,7 +19,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "yarn compile",
+    "build": "git clean -fdx -e node_modules && yarn compile",
     "lint": "eslint -c .eslintrc.cjs --fix langfuse*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",

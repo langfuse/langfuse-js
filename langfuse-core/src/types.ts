@@ -17,7 +17,7 @@ export type LangfuseCoreOptions = {
   // release (version) of the application, defaults to env LANGFUSE_RELEASE
   release?: string;
   // integration type of the SDK.
-  sdkIntegration?: "DEFAULT" | "LANGCHAIN";
+  sdkIntegration?: "DEFAULT" | "LANGCHAIN" | string;
 };
 
 export enum LangfusePersistedProperty {
