@@ -6,6 +6,12 @@ export const LF_HOST = process.env.LF_HOST ?? "http://localhost:3000";
 export const LF_PUBLIC_KEY = process.env.LF_PUBLIC_KEY ?? "pk-lf-1234567890";
 export const LF_SECRET_KEY = process.env.LF_SECRET_KEY ?? "sk-lf-1234567890";
 
+export const getKeys = {
+  publicKey: LF_PUBLIC_KEY,
+  secretKey: LF_SECRET_KEY,
+  baseUrl: LF_HOST,
+};
+
 export const getHeaders = {
   Authorization: "Basic " + Buffer.from(`${LF_PUBLIC_KEY}:${LF_SECRET_KEY}`).toString("base64"),
 };
