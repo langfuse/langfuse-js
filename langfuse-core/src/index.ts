@@ -526,10 +526,13 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
 }
 
 export abstract class LangfuseCore extends LangfuseCoreStateless {
+  private _promptCache: LangfusePromptCache;
+
   constructor(params: { publicKey: string; secretKey: string } & LangfuseCoreOptions) {
     assert(params.publicKey, "You must pass your Langfuse project's api public key.");
     assert(params.secretKey, "You must pass your Langfuse project's api secret key.");
     super(params);
+    this._promptCache = new LangfusePromptCache();
   }
 
   trace(body?: CreateLangfuseTraceBody): LangfuseTraceClient {
@@ -615,9 +618,49 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return new LangfusePromptClient(prompt);
   }
 
-  async getPrompt(name: string, version?: number): Promise<LangfusePromptClient> {
-    const prompt = await this.getPromptStateless(name, version);
-    return new LangfusePromptClient(prompt);
+  async getPrompt(
+    name: string,
+    version?: number,
+    options?: { cacheTtlSeconds?: number }
+  ): Promise<LangfusePromptClient> {
+    const cacheKey = this._getPromptCacheKey(name, version);
+    const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
+
+    if (!cachedPrompt) {
+      return this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds);
+    }
+
+    if (cachedPrompt.isExpired) {
+      return this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds).catch(() => {
+        console.warn(`Returning expired prompt cache for '${name}-${version}' due to fetch error`);
+
+        return cachedPrompt.value;
+      });
+    }
+
+    return cachedPrompt.value;
+  }
+
+  private _getPromptCacheKey(name: string, version?: number): string {
+    return `${name}-${version ?? "latest"}`;
+  }
+
+  private async _fetchPromptAndUpdateCache(
+    name: string,
+    version?: number,
+    cacheTtlSeconds?: number
+  ): Promise<LangfusePromptClient> {
+    try {
+      const promptResponse = await this.getPromptStateless(name, version);
+      const prompt = new LangfusePromptClient(promptResponse);
+      this._promptCache.set(this._getPromptCacheKey(name, version), prompt, cacheTtlSeconds);
+
+      return prompt;
+    } catch (error) {
+      console.error(`Error while fetching prompt '${name}-${version}':`, error);
+
+      throw error;
+    }
   }
 
   _updateSpan(body: UpdateLangfuseSpanBody): this {
@@ -791,6 +834,40 @@ export class LangfusePromptClient {
 
   compile(variables?: { [key: string]: string }): string {
     return mustache.render(this.promptResponse.prompt, variables ?? {});
+  }
+}
+
+class LangfusePromptCacheItem {
+  private _expiry: number;
+
+  constructor(
+    public value: LangfusePromptClient,
+    ttlSeconds: number
+  ) {
+    this._expiry = Date.now() + ttlSeconds * 1000;
+  }
+
+  get isExpired(): boolean {
+    return Date.now() > this._expiry;
+  }
+}
+
+export class LangfusePromptCache {
+  private _cache: Map<string, LangfusePromptCacheItem>;
+  private _defaultTtlSeconds: number;
+
+  constructor() {
+    this._cache = new Map<string, LangfusePromptCacheItem>();
+    this._defaultTtlSeconds = 60;
+  }
+
+  public getIncludingExpired(key: string): LangfusePromptCacheItem | null {
+    return this._cache.get(key) ?? null;
+  }
+
+  public set(key: string, value: LangfusePromptClient, ttlSeconds?: number): void {
+    const effectiveTtlSeconds = ttlSeconds ?? this._defaultTtlSeconds;
+    this._cache.set(key, new LangfusePromptCacheItem(value, effectiveTtlSeconds));
   }
 }
 
