@@ -49,6 +49,8 @@ export { LangfuseMemoryStorage } from "./storage-memory";
 
 export type IngestionBody = SingleIngestionEvent["body"];
 
+export const DEFAULT_PROMPT_CACHE_TTL_SECONDS = 60;
+
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
 
@@ -627,12 +629,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
 
     if (!cachedPrompt) {
-      return this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds);
+      return await this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds);
     }
 
     if (cachedPrompt.isExpired) {
-      return this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds).catch(() => {
-        console.warn(`Returning expired prompt cache for '${name}-${version}' due to fetch error`);
+      return await this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds).catch(() => {
+        console.warn(`Returning expired prompt cache for '${name}-${version ?? "latest"}' due to fetch error`);
 
         return cachedPrompt.value;
       });
@@ -657,7 +659,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
       return prompt;
     } catch (error) {
-      console.error(`Error while fetching prompt '${name}-${version}':`, error);
+      console.error(`Error while fetching prompt '${name}-${version ?? "latest"}':`, error);
 
       throw error;
     }
@@ -852,13 +854,13 @@ class LangfusePromptCacheItem {
   }
 }
 
-export class LangfusePromptCache {
+class LangfusePromptCache {
   private _cache: Map<string, LangfusePromptCacheItem>;
   private _defaultTtlSeconds: number;
 
   constructor() {
     this._cache = new Map<string, LangfusePromptCacheItem>();
-    this._defaultTtlSeconds = 60;
+    this._defaultTtlSeconds = DEFAULT_PROMPT_CACHE_TTL_SECONDS;
   }
 
   public getIncludingExpired(key: string): LangfusePromptCacheItem | null {
