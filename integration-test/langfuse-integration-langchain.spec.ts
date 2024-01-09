@@ -18,7 +18,7 @@ describe("simple chains", () => {
 
   it("should execute simple llm call", async () => {
     const handler = new CallbackHandler({
-      ...getKeys,
+      ...getKeys(),
       sessionId: "test-session",
     });
     const llm = new OpenAI({ streaming: true });
@@ -49,7 +49,7 @@ describe("simple chains", () => {
 
   it("should execute simple llm call (debug)", async () => {
     const handler = new CallbackHandler({
-      ...getKeys,
+      ...getKeys(),
       sessionId: "test-session",
     });
     handler.debug(true);
@@ -81,7 +81,7 @@ describe("simple chains", () => {
 
   it("should execute simple llm call twice on two different traces", async () => {
     const handler = new CallbackHandler({
-      ...getKeys,
+      ...getKeys(),
       sessionId: "test-session",
     });
     const llm = new OpenAI({ streaming: true });
@@ -106,7 +106,7 @@ describe("simple chains", () => {
   });
 
   it.each([["OpenAI"], ["ChatOpenAI"]])("should execute llm chain with '%s' ", async (llm: string) => {
-    const handler = new CallbackHandler(getKeys);
+    const handler = new CallbackHandler(getKeys());
     const model = (): OpenAI | ChatOpenAI | ChatAnthropic => {
       if (llm === "OpenAI") {
         return new OpenAI({ temperature: 0 });
@@ -177,7 +177,7 @@ describe("simple chains", () => {
 
   it("conversation chain should pass", async () => {
     const handler = new CallbackHandler({
-      ...getKeys,
+      ...getKeys(),
       sessionId: "test-session",
     });
     const model = new OpenAI({});
@@ -198,7 +198,7 @@ describe("simple chains", () => {
   });
 
   it("should trace agents", async () => {
-    const handler = new CallbackHandler(getKeys);
+    const handler = new CallbackHandler(getKeys());
 
     const model = new OpenAI({ temperature: 0 });
     // A tool is a function that performs a specific duty
@@ -220,7 +220,7 @@ describe("simple chains", () => {
   });
 
   it("function calls", async () => {
-    const callback = new CallbackHandler(getKeys);
+    const callback = new CallbackHandler(getKeys());
 
     const zodSchema = z.object({
       "person-name": z.string().optional(),
@@ -252,7 +252,7 @@ describe("simple chains", () => {
   });
 
   it("create trace for callback", async () => {
-    const langfuse = new Langfuse(getKeys);
+    const langfuse = new Langfuse(getKeys());
 
     const trace = langfuse.trace({ name: "test-123" });
 
@@ -275,7 +275,7 @@ describe("simple chains", () => {
   });
 
   it("create span for callback", async () => {
-    const langfuse = new Langfuse(getKeys);
+    const langfuse = new Langfuse(getKeys());
 
     const trace = langfuse.trace({ name: "test-trace" });
     const span = trace.span({ name: "test-span" });

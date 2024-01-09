@@ -7,7 +7,7 @@ import { getKeys } from "./integration-utils";
 describe("Langfuse Langchain", () => {
   describe("core", () => {
     it("exports the Langfuse SDK", () => {
-      const langfuse = new Langfuse(getKeys);
+      const langfuse = new Langfuse(getKeys());
       expect(langfuse).toBeInstanceOf(Langfuse);
     });
   });

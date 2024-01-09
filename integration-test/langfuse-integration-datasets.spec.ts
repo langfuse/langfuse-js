@@ -9,7 +9,8 @@ describe("Langfuse Node.js", () => {
   jest.useRealTimers();
 
   beforeEach(() => {
-    langfuse = new Langfuse(getKeys);
+    const keys = getKeys();
+    langfuse = new Langfuse(keys);
     langfuse.debug(true);
   });
 
