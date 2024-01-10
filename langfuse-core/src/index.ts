@@ -298,8 +298,6 @@ abstract class LangfuseCoreStateless {
 
   async getPromptStateless(name: string, version?: number): Promise<GetLangfusePromptResponse> {
     const url = `${this.baseUrl}/api/public/prompts/?name=${name}` + (version ? `&version=${version}` : "");
-    console.log(url);
-
     return this.fetch(url, this.getFetchOptions({ method: "GET" })).then((res) => res.json());
   }
 
