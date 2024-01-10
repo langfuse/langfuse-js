@@ -64,6 +64,12 @@ yarn test:integration
 
 ## Publishing a new version
 
+```
+git clean -fdx -e node_modules -e .env
+yarn
+yarn build
+```
+
 Run `npx lerna publish --force-publish --no-private`
 
 - Bumps version number of langfuse and langfuse-node, ignores langfuse-core
