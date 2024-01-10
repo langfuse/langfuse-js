@@ -78,6 +78,8 @@ Run `npx lerna publish --force-publish --no-private`
 
 Alpha: `npx lerna publish prerelease --force-publish --no-private --dist-tag alpha --preid alpha`
 
+Write release notes in GitHub releases.
+
 ## License
 
 [MIT](LICENSE)
