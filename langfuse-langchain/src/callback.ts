@@ -40,6 +40,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   sessionId?: string;
   rootProvided: boolean = false;
   debugEnabled: boolean = false;
+  debugEnabled: boolean = false;
 
   constructor(params: ConstructorParams) {
     super();
