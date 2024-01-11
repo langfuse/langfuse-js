@@ -35,8 +35,7 @@
   "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
   "dependencies": {
     "langfuse": "^2.3.2",
-    "langfuse-core": "^2.3.2",
-    "winston": "^3.11.0"
+    "langfuse-core": "^2.3.2"
   },
   "peerDependencies": {
     "langchain": ">=0.0.157 <0.1.0"
