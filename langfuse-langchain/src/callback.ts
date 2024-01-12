@@ -12,8 +12,6 @@ import { type Document } from "langchain/document";
 
 import { Langfuse, type LangfuseOptions } from "langfuse";
 import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core";
-import { createLogger } from "langfuse-langchain/src/logger";
-import type winston from "winston";
 
 type RootParams = {
   root: LangfuseTraceClient | LangfuseSpanClient;
@@ -41,7 +39,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   version?: string;
   sessionId?: string;
   rootProvided: boolean = false;
-  logger: winston.Logger;
+  debugEnabled: boolean = false;
 
   constructor(params: ConstructorParams) {
     super();
@@ -56,7 +54,6 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
     this.userId = params.userId;
     this.version = params.version;
-    this.logger = createLogger(false);
   }
 
   async flushAsync(): Promise<any> {
@@ -69,11 +66,17 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   debug(enabled: boolean = true): void {
     this.langfuse.debug(enabled);
-    this.logger = createLogger(enabled);
+    this.debugEnabled = enabled;
+  }
+
+  _log(message: any): void {
+    if (this.debugEnabled) {
+      console.log(message);
+    }
   }
 
   async handleNewToken(token: string, runId: string): Promise<void> {
-    this.logger.debug(`New token: ${token} with ID: ${runId}`);
+    this._log(`New token: ${token} with ID: ${runId}`);
   }
 
   getTraceId(): string | undefined {
@@ -90,7 +93,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   async handleRetrieverError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      this.logger.debug(`Retriever error: ${err} with ID: ${runId}`);
+      this._log(`Retriever error: ${err} with ID: ${runId}`);
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -101,7 +104,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
@@ -114,7 +117,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      this.logger.debug(`Chain start with Id: ${runId}`);
+      this._log(`Chain start with Id: ${runId}`);
+
       this.generateTrace(chain, runId, parentRunId, tags, metadata, inputs);
       this.langfuse.span({
         id: runId,
@@ -126,13 +130,13 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
     try {
-      this.logger.debug(`Agent action with ID: ${runId}`);
+      this._log(`Agent action with ID: ${runId}`);
 
       this.langfuse.span({
         id: runId,
@@ -143,13 +147,14 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleAgentEnd?(action: AgentFinish, runId: string, parentRunId?: string): Promise<void> {
     try {
-      this.logger.debug(`Agent finish with ID: ${runId}`);
+      this._log(`Agent finish with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -159,13 +164,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, action);
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleChainError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      this.logger.debug(`Chain error: ${err} with ID: ${runId}`);
+      this._log(`Chain error: ${err} with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -176,7 +182,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
@@ -217,7 +223,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
-    this.logger.debug(`Generation start with ID: ${runId}`);
+    this._log(`Generation start with ID: ${runId}`);
+
     this.generateTrace(llm, runId, parentRunId, tags, metadata, messages);
 
     const modelParameters: Record<string, any> = {};
@@ -272,16 +279,18 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      this.logger.debug(`Chat model start with ID: ${runId}`);
+      this._log(`Chat model start with ID: ${runId}`);
+
       this.handleGenerationStart(llm, messages, runId, parentRunId, extraParams, tags, metadata);
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleChainEnd(outputs: ChainValues, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      this.logger.debug(`Chain end with ID: ${runId}`);
+      this._log(`Chain end with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -291,7 +300,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, outputs);
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
@@ -305,10 +314,11 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      this.logger.debug(`LLM start with ID: ${runId}`);
+      this._log(`LLM start with ID: ${runId}`);
+
       this.handleGenerationStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata);
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
@@ -321,7 +331,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      this.logger.debug(`Tool start with ID: ${runId}`);
+      this._log(`Tool start with ID: ${runId}`);
 
       this.langfuse.span({
         id: runId,
@@ -333,7 +343,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
@@ -346,7 +356,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      this.logger.debug(`Retriever start with ID: ${runId}`);
+      this._log(`Retriever start with ID: ${runId}`);
 
       this.langfuse.span({
         id: runId,
@@ -358,7 +368,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
@@ -368,7 +378,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     parentRunId?: string | undefined
   ): Promise<void> {
     try {
-      this.logger.debug(`Retriever end with ID: ${runId}`);
+      this._log(`Retriever end with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -378,13 +389,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, documents);
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleToolEnd(output: string, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      this.logger.debug(`Tool end with ID: ${runId}`);
+      this._log(`Tool end with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -394,13 +406,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, output);
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleToolError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      this.logger.debug(`Tool error ${err} with ID: ${runId}`);
+      this._log(`Tool error ${err} with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -411,13 +424,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleLLMEnd(output: LLMResult, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      this.logger.debug(`LLM end with ID: ${runId}`);
+      this._log(`LLM end with ID: ${runId}`);
+
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
 
@@ -441,13 +455,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, extractedOutput);
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 
   async handleLLMError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      this.logger.debug(`LLM error ${err} with ID: ${runId}`);
+      this._log(`LLM error ${err} with ID: ${runId}`);
+
       this.langfuse._updateGeneration({
         id: runId,
         traceId: this.traceId,
@@ -458,7 +473,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      this.logger.error(e);
+      this._log(e);
     }
   }
 

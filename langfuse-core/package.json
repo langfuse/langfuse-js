@@ -1,6 +1,6 @@
 {
   "name": "langfuse-core",
-  "version": "2.3.1-alpha.0",
+  "version": "2.3.3",
   "engines": {
     "node": ">=18"
   },
@@ -37,5 +37,5 @@
   "devDependencies": {
     "@types/mustache": "^4.2.5"
   },
-  "gitHead": "b8ae5d369a04ded28cf93f7c25291e5e9f6cd2eb"
+  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091"
 }
