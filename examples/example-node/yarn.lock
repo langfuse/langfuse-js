@@ -203,10 +203,10 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
 
-axios@^1.6.3:
-  version "1.6.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.4.tgz#184ee1f63d412caffcf30d2c50982253c3ee86e0"
-  integrity sha512-heJnIs6N4aa1eSthhN9M5ioILu8Wi8vmQW9iHQ9NUvfkJb0lEEDUiIdQNAuBtfUt3FxReaKdpQA5DbmMOqzF/A==
+axios@^1.6.4:
+  version "1.6.5"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.5.tgz#2c090da14aeeab3770ad30c3a1461bc970fb0cd8"
+  integrity sha512-Ii012v05KEVuUoFWmMW/UQv9aRIc3ZwkWDcM+h5Il8izZCtRVpDUfwpoFf7eOtajT3QiGR4yDUx7lPqHJULgbg==
   dependencies:
     follow-redirects "^1.15.4"
     form-data "^4.0.0"
@@ -835,16 +835,16 @@ jsonfile@^4.0.0:
   optionalDependencies:
     graceful-fs "^4.1.6"
 
-langfuse-core@^2.2.1, "langfuse-core@file:.yalc/langfuse-core":
-  version "2.2.1"
+langfuse-core@^2.3.1-alpha.1, "langfuse-core@file:.yalc/langfuse-core":
+  version "2.3.1-alpha.1"
   dependencies:
     mustache "^4.2.0"
 
 "langfuse-node@file:.yalc/langfuse-node":
-  version "2.2.1"
+  version "2.3.1-alpha.1"
   dependencies:
-    axios "^1.6.3"
-    langfuse-core "^2.2.1"
+    axios "^1.6.4"
+    langfuse-core "^2.3.1-alpha.1"
 
 levn@^0.4.1:
   version "0.4.1"

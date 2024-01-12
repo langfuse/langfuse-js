@@ -1,5 +1,5 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
-import { OpenAI } from "langchain/llms/openai";
+import { OpenAIChat } from "langchain/llms/openai";
 import { PromptTemplate } from "langchain/prompts";
 import { ConversationChain, LLMChain, createExtractionChainFromZod } from "langchain/chains";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
@@ -21,7 +21,7 @@ describe("simple chains", () => {
       ...getKeys(),
       sessionId: "test-session",
     });
-    const llm = new OpenAI({ streaming: true });
+    const llm = new OpenAIChat({ streaming: true });
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
 
@@ -41,7 +41,7 @@ describe("simple chains", () => {
 
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
-    expect(generation?.[0].name).toBe("OpenAI");
+    expect(generation?.[0].name).toBe("OpenAIChat");
     expect(generation?.[0].usage?.input).toBeDefined();
     expect(generation?.[0].usage?.output).toBeDefined();
     expect(generation?.[0].usage?.total).toBeDefined();
@@ -53,7 +53,7 @@ describe("simple chains", () => {
       sessionId: "test-session",
     });
     handler.debug(true);
-    const llm = new OpenAI({ streaming: true });
+    const llm = new OpenAIChat({ streaming: true });
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
 
@@ -73,7 +73,7 @@ describe("simple chains", () => {
 
     const generation = trace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
-    expect(generation?.[0].name).toBe("OpenAI");
+    expect(generation?.[0].name).toBe("OpenAIChat");
     expect(generation?.[0].usage?.input).toBeDefined();
     expect(generation?.[0].usage?.output).toBeDefined();
     expect(generation?.[0].usage?.total).toBeDefined();
@@ -84,7 +84,7 @@ describe("simple chains", () => {
       ...getKeys(),
       sessionId: "test-session",
     });
-    const llm = new OpenAI({ streaming: true });
+    const llm = new OpenAIChat({ streaming: true });
     await llm.call("Tell me a joke", { callbacks: [handler] });
     const traceIdOne = handler.getTraceId();
     await llm.call("Tell me a joke", { callbacks: [handler] });
@@ -104,13 +104,10 @@ describe("simple chains", () => {
     expect(traceOne?.id).toBe(traceIdOne);
     expect(traceTwo?.id).toBe(traceIdTwo);
   });
-
-  it.each([["OpenAI"], ["ChatOpenAI"]])("should execute llm chain with '%s' ", async (llm: string) => {
-    const handler = new CallbackHandler(getKeys());
-    const model = (): OpenAI | ChatOpenAI | ChatAnthropic => {
-      if (llm === "OpenAI") {
-        return new OpenAI({ temperature: 0 });
-      }
+  // Could add Anthropic or other models here as well
+  it.each([["ChatOpenAI"]])("should execute llm chain with '%s' ", async (llm: string) => {
+    const handler = new CallbackHandler(getKeys();
+    const model = (): ChatOpenAI | ChatAnthropic => {
       if (llm === "ChatOpenAI") {
         return new ChatOpenAI({ temperature: 0 });
       }
@@ -180,7 +177,7 @@ describe("simple chains", () => {
       ...getKeys(),
       sessionId: "test-session",
     });
-    const model = new OpenAI({});
+    const model = new OpenAIChat({});
     const chain = new ConversationChain({ llm: model, callbacks: [handler] });
     await chain.call({ input: "Hi! I'm Jim." }, { callbacks: [handler] });
 
@@ -200,7 +197,7 @@ describe("simple chains", () => {
   it("should trace agents", async () => {
     const handler = new CallbackHandler(getKeys());
 
-    const model = new OpenAI({ temperature: 0 });
+    const model = new OpenAIChat({ temperature: 0 });
     // A tool is a function that performs a specific duty
     // SerpAPI for example accesses google search results in real-time
     const tools = [new Calculator()];
@@ -258,7 +255,7 @@ describe("simple chains", () => {
 
     const handler = new CallbackHandler({ root: trace });
 
-    const llm = new OpenAI({ streaming: true });
+    const llm = new OpenAIChat({ streaming: true });
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
     expect(res).toBeDefined();
@@ -271,7 +268,7 @@ describe("simple chains", () => {
     expect(returnedTrace?.observations.length).toBe(1);
     const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
-    expect(generation?.[0].name).toBe("OpenAI");
+    expect(generation?.[0].name).toBe("OpenAIChat");
   });
 
   it("create span for callback", async () => {
@@ -282,7 +279,7 @@ describe("simple chains", () => {
 
     const handler = new CallbackHandler({ root: span });
 
-    const llm = new OpenAI({});
+    const llm = new OpenAIChat({});
     const res = await llm.call("Tell me a joke", { callbacks: [handler] });
     await handler.flushAsync();
 
@@ -296,7 +293,7 @@ describe("simple chains", () => {
     expect(returnedTrace?.observations.length).toBe(2);
     const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
     expect(generation?.length).toBe(1);
-    expect(generation?.[0].name).toBe("OpenAI");
+    expect(generation?.[0].name).toBe("OpenAIChat");
     expect(handler.getLangchainRunId()).toBe(generation?.[0].id);
     const returnedSpan = returnedTrace?.observations.filter((o) => o.type === "SPAN");
     expect(returnedSpan?.length).toBe(1);

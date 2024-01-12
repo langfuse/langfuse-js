@@ -321,27 +321,28 @@ describe("Langfuse Node.js", () => {
   });
   describe("prompt methods", () => {
     it("create and get a prompt", async () => {
+      const promptName = "test-prompt" + Math.random().toString(36);
       await langfuse.createPrompt({
-        name: "test-prompt",
+        name: promptName,
         prompt: "This is a prompt with a {{variable}}",
         isActive: true,
       });
 
-      const prompt = await langfuse.getPrompt("test-prompt");
+      const prompt = await langfuse.getPrompt(promptName);
 
       const filledPrompt = prompt.compile({ variable: "1.0.0" });
 
       expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
-      expect(prompt.name).toEqual("test-prompt");
+      expect(prompt.name).toEqual(promptName);
       expect(prompt.prompt).toEqual("This is a prompt with a {{variable}}");
       expect(prompt.version).toEqual(1);
 
-      const res = await axios.get(`${getKeys().baseUrl}/api/public/prompts/?name=test-prompt`, {
+      const res = await axios.get(`${getKeys().baseUrl}/api/public/prompts/?name=${promptName}`, {
         headers: getHeaders,
       });
 
       expect(res.data).toMatchObject({
-        name: "test-prompt",
+        name: promptName,
         prompt: "This is a prompt with a {{variable}}",
         isActive: true,
         version: expect.any(Number),
@@ -350,13 +351,14 @@ describe("Langfuse Node.js", () => {
   });
 
   it("link prompt to generation", async () => {
+    const promptName = "test-prompt" + Math.random().toString(36);
     await langfuse.createPrompt({
-      name: "test-prompt",
+      name: promptName,
       prompt: "This is a prompt with a {{variable}}",
       isActive: true,
     });
 
-    const prompt = await langfuse.getPrompt("test-prompt");
+    const prompt = await langfuse.getPrompt(promptName);
 
     const filledPrompt = prompt.compile({ variable: "1.0.0" });
 
@@ -368,12 +370,12 @@ describe("Langfuse Node.js", () => {
 
     await langfuse.flushAsync();
 
-    const res = await axios.get(`${getKeys().baseUrl}/api/public/prompts/?name=test-prompt`, {
+    const res = await axios.get(`${getKeys().baseUrl}/api/public/prompts/?name=${promptName}`, {
       headers: getHeaders,
     });
 
     expect(res.data).toMatchObject({
-      name: "test-prompt",
+      name: promptName,
       prompt: "This is a prompt with a {{variable}}",
       isActive: true,
       version: expect.any(Number),
@@ -391,25 +393,26 @@ describe("Langfuse Node.js", () => {
   });
 
   it("create and get a prompt for a specific variable", async () => {
+    const promptName = "test-prompt" + Math.random().toString(36);
     await langfuse.createPrompt({
-      name: "test-prompt",
+      name: promptName,
       prompt: "This is a prompt with a {{variable}}",
       isActive: true,
     });
 
     await langfuse.createPrompt({
-      name: "test-prompt",
+      name: promptName,
       prompt: "This is a prompt with a {{wrongVariable}}",
       isActive: true,
     });
 
-    const prompt = await langfuse.getPrompt("test-prompt", 1);
+    const prompt = await langfuse.getPrompt(promptName, 1);
 
     const filledPrompt = prompt.compile({ variable: "1.0.0" });
 
     expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
 
-    const res = await axios.get(`${getKeys().baseUrl}/api/public/prompts/?name=test-prompt`, {
+    const res = await axios.get(`${getKeys().baseUrl}/api/public/prompts/?name=${promptName}`, {
       headers: getHeaders,
     });
     expect(res.data).toMatchObject({});
