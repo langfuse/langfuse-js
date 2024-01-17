@@ -212,7 +212,7 @@ describe("Langfuse Core", () => {
         output: { key: "output" },
         completionStartTime: new Date("2023-01-01"),
         model: "test-model",
-        modelParameters: { temperature: 0.5 },
+        modelParameters: { temperature: 0.5, stop: ["user-1", "user-2"] },
         usage: {
           input: 1,
           output: 2,
@@ -247,7 +247,7 @@ describe("Langfuse Core", () => {
               output: { key: "output" },
               completionStartTime: "2023-01-01T00:00:00.000Z",
               model: "test-model",
-              modelParameters: { temperature: 0.5 },
+              modelParameters: { temperature: 0.5, stop: ["user-1", "user-2"] },
               usage: {
                 input: 1,
                 output: 2,

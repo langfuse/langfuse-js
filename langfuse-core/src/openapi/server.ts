@@ -87,13 +87,13 @@ export interface components {
       /** Format: date-time */
       timestamp: string;
       name?: string | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      input?: unknown;
+      output?: unknown;
       sessionId?: string | null;
       release?: string | null;
       version?: string | null;
       userId?: string | null;
-      metadata?: Record<string, unknown> | null;
+      metadata?: unknown;
       tags?: string[] | null;
       /** @description Public traces are accessible via url without login */
       public?: boolean | null;
@@ -144,12 +144,12 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
-      input?: Record<string, unknown> | null;
+      input?: unknown;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      metadata?: unknown;
+      output?: unknown;
       usage?: components["schemas"]["Usage"];
       level: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
@@ -179,7 +179,6 @@ export interface components {
     Dataset: {
       id: string;
       name: string;
-      status: components["schemas"]["DatasetStatus"];
       projectId: string;
       /** Format: date-time */
       createdAt: string;
@@ -193,7 +192,7 @@ export interface components {
       id: string;
       status: components["schemas"]["DatasetStatus"];
       input: unknown;
-      expectedOutput?: Record<string, unknown> | null;
+      expectedOutput?: unknown;
       sourceObservationId?: string | null;
       datasetId: string;
       /** Format: date-time */
@@ -234,7 +233,7 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null);
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
     /**
      * DatasetStatus
      * @enum {string}
@@ -244,7 +243,7 @@ export interface components {
     CreateDatasetItemRequest: {
       datasetName: string;
       input: unknown;
-      expectedOutput?: Record<string, unknown> | null;
+      expectedOutput?: unknown;
       id?: string | null;
     };
     /** CreateDatasetRunItemRequest */
@@ -358,9 +357,9 @@ export interface components {
       name?: string | null;
       /** Format: date-time */
       startTime?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      metadata?: unknown;
+      input?: unknown;
+      output?: unknown;
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
@@ -393,7 +392,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
       promptName?: string | null;
@@ -405,7 +404,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
       promptName?: string | null;
@@ -425,12 +424,12 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
-      input?: Record<string, unknown> | null;
+      input?: unknown;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      metadata?: unknown;
+      output?: unknown;
       usage?: components["schemas"]["Usage"];
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
@@ -441,12 +440,12 @@ export interface components {
       id?: string | null;
       name?: string | null;
       userId?: string | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      input?: unknown;
+      output?: unknown;
       sessionId?: string | null;
       release?: string | null;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
+      metadata?: unknown;
       tags?: string[] | null;
       /** @description Make trace publicly accessible via url */
       public?: boolean | null;
@@ -551,7 +550,7 @@ export interface components {
       id: string;
       status: number;
       message?: string | null;
-      error?: Record<string, unknown> | null;
+      error?: unknown;
     };
     /** IngestionResponse */
     IngestionResponse: {
@@ -622,6 +621,8 @@ export interface components {
   headers: never;
   pathItems: never;
 }
+
+export type $defs = Record<string, never>;
 
 export type external = Record<string, never>;
 
@@ -1322,6 +1323,8 @@ export interface operations {
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
+        /** @description Only traces that include all of these tags will be returned. */
+        tags?: (string | null)[];
       };
     };
     responses: {
