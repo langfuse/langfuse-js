@@ -115,7 +115,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     parentRunId?: string | undefined,
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined,
-    runType?: string
+    runType?: string,
     name?: string
   ): Promise<void> {
     try {
