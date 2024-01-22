@@ -10,6 +10,9 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Packages
 
+> [!IMPORTANT]
+> The SDK was rewritten in v2 and released on December 18, 2023. Refer to the [v2 migration guide](https://langfuse.com/docs/sdk/typescript#upgrade1to2) for instructions on updating your code.
+
 | Package                                    | NPM                                                                                                                                   | Environments          |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | [langfuse](./langfuse)                     | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)                     | Node >= 18, Web, Edge |
@@ -61,11 +64,21 @@ yarn test:integration
 
 ## Publishing a new version
 
+```
+git clean -fdx -e node_modules -e .env
+yarn
+yarn build
+```
+
 Run `npx lerna publish --force-publish --no-private`
 
 - Bumps version number of langfuse and langfuse-node, ignores langfuse-core
 - Publishes to NPM, publishes also when there are no changes to keep the version numbers in sync
 - Confirm with npmjs OTP
+
+Alpha: `npx lerna publish prerelease --force-publish --no-private --dist-tag alpha --preid alpha`
+
+Write release notes in GitHub releases.
 
 ## License
 

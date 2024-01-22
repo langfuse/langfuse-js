@@ -9,9 +9,12 @@ describe("Test Different Module Conventions", () => {
         cwd: join(__dirname, "modules"),
         encoding: "utf-8",
       });
-
+      console.log(result.output);
+      console.log(result.stdout);
+      console.log(result.stderr);
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Did construct objects and called them.");
+      expect(result.status).toBe(0);
     }
   );
 

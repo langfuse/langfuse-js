@@ -15,7 +15,7 @@ describe("Langfuse Core", () => {
     [langfuse, mocks] = createTestClient({
       publicKey: "pk-lf-111",
       secretKey: "sk-lf-111",
-      flushAt: 1000,
+      flushAt: 1,
     });
   });
 
@@ -37,14 +37,31 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/spans");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toMatchObject({
-        traceId: trace.id,
-        spanId: span.id,
-        output: { text: "test-output" },
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "span-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              id: span.id,
+              output: { text: "test-output" },
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
+        metadata: {
+          batch_size: 1,
+          public_key: "pk-lf-111",
+          sdk_integration: "DEFAULT",
+          sdk_name: "langfuse-js",
+          sdk_variant: "langfuse-core-tests",
+          sdk_version: "2.0.0-alpha.2",
+        },
       });
     });
 
@@ -63,13 +80,30 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/spans");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toEqual({
-        traceId: trace.id,
-        spanId: span.id,
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "span-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              id: span.id,
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
+        metadata: {
+          batch_size: 1,
+          public_key: "pk-lf-111",
+          sdk_integration: "DEFAULT",
+          sdk_name: "langfuse-js",
+          sdk_variant: "langfuse-core-tests",
+          sdk_version: "2.0.0-alpha.2",
+        },
       });
     });
   });
@@ -92,14 +126,23 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/generations");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toMatchObject({
-        traceId: trace.id,
-        generationId: generation.id,
-        version: "1.0.0",
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "generation-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              id: generation.id,
+              version: "1.0.0",
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
       });
     });
 
@@ -118,13 +161,22 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       const [url, options] = mocks.fetch.mock.calls[2];
-      expect(url).toMatch("https://cloud.langfuse.com/api/public/generations");
-      expect(options.method).toBe("PATCH");
+      expect(url).toMatch("https://cloud.langfuse.com/api/public/ingestion");
+      expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[2]);
       expect(body).toMatchObject({
-        traceId: trace.id,
-        generationId: generation.id,
-        endTime: "2022-01-01T00:00:00.000Z",
+        batch: [
+          {
+            id: expect.any(String),
+            type: "generation-update",
+            timestamp: expect.any(String),
+            body: {
+              traceId: trace.id,
+              id: generation.id,
+              endTime: "2022-01-01T00:00:00.000Z",
+            },
+          },
+        ],
       });
     });
   });

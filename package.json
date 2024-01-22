@@ -25,6 +25,7 @@
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
     "generateAPI": "openapi-typescript langfuse-core/openapi-spec/openapi-server.yaml --output langfuse-core/src/openapi/server.ts && openapi-typescript langfuse-core/openapi-spec/openapi-client.yaml --output langfuse-core/src/openapi/client.ts && yarn prettier",
     "test": "jest langfuse-core/* langfuse-node/* langfuse/*",
+    "test:watch": "jest langfuse-core/* langfuse-node/* langfuse/* --watch --runInBand",
     "test:all": "jest langfuse-core/* langfuse-node/* langfuse/*",
     "test:core": "jest langfuse-core/*",
     "test:node": "jest langfuse-node/*",
@@ -33,7 +34,6 @@
     "test:datasets": "jest integration-test/langfuse-integration-datasets*",
     "test:modules": "jest integration-test/langfuse-integration-modules*",
     "test:examples": "jest integration-test/langfuse-integration-examples*",
-    "test:langchain": "yarn workspace langfuse-langchain run test:integration",
     "compile": "rollup -c --bundleConfigAsCjs"
   },
   "devDependencies": {
@@ -81,5 +81,8 @@
   },
   "lint-staged": {
     "*.{ts,js,css,scss}": "prettier --write"
+  },
+  "dependencies": {
+    "langfuse": "^2.0.0"
   }
 }

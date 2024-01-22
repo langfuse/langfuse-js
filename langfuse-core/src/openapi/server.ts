@@ -8,8 +8,12 @@ type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
 export interface paths {
   "/api/public/dataset-items": {
-    /** @description Create a dataset item */
+    /** @description Create a dataset item, upserts on id */
     post: operations["datasetItems_create"];
+  };
+  "/api/public/dataset-items/{id}": {
+    /** @description Get a specific dataset item */
+    get: operations["datasetItems_get"];
   };
   "/api/public/dataset-run-items": {
     /** @description Create a dataset run item */
@@ -27,13 +31,13 @@ export interface paths {
     /** @description Get a dataset run and its items */
     get: operations["datasets_getRuns"];
   };
-  "/api/public/events": {
-    /** @description Add an event to the database */
-    post: operations["event_create"];
+  "/api/public/health": {
+    /** @description Check health of API and database */
+    get: operations["health_health"];
   };
-  "/api/public/generations": {
-    post: operations["generations_log"];
-    patch: operations["generations_update"];
+  "/api/public/ingestion": {
+    /** @description Ingest multiple events to Langfuse */
+    post: operations["ingestion_batch"];
   };
   "/api/public/observations/{observationId}": {
     /** @description Get a specific observation */
@@ -43,27 +47,32 @@ export interface paths {
     /** @description Get a list of observations */
     get: operations["observations_getMany"];
   };
+  "/api/public/projects": {
+    get: operations["projects_get"];
+  };
+  "/api/public/prompts": {
+    /** @description Get a specific prompt */
+    get: operations["prompts_get"];
+    /** @description Create a specific prompt */
+    post: operations["prompts_create"];
+  };
   "/api/public/scores": {
     /** @description Get scores */
     get: operations["score_get"];
-    /** @description Add a score to the database */
+    /** @description Add a score to the database, upserts on id */
     post: operations["score_create"];
   };
-  "/api/public/spans": {
-    /** @description Add a span to the database */
-    post: operations["span_create"];
-    /** @description Update a span to the database */
-    patch: operations["span_update"];
-  };
-  "/api/public/traces": {
-    /** @description Get list of traces */
-    get: operations["trace_list"];
-    /** @description Add a trace to the database */
-    post: operations["trace_create"];
+  "/api/public/sessions/{sessionId}": {
+    /** @description Get a session */
+    get: operations["sessions_get"];
   };
   "/api/public/traces/{traceId}": {
     /** @description Get a specific trace */
     get: operations["trace_get"];
+  };
+  "/api/public/traces": {
+    /** @description Get list of traces */
+    get: operations["trace_list"];
   };
 }
 
@@ -71,51 +80,23 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
-    /** CreateEventRequest */
-    CreateEventRequest: {
-      id?: string | null;
-      traceId?: string | null;
-      traceIdType?: components["schemas"]["TraceIdTypeEnum"];
-      name?: string | null;
-      /** Format: date-time */
-      startTime?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components["schemas"]["ObservationLevel"];
-      statusMessage?: string | null;
-      parentObservationId?: string | null;
-      version?: string | null;
-    };
-    /** CreateSpanRequest */
-    CreateSpanRequest: {
-      /** Format: date-time */
-      endTime?: string | null;
-    } & components["schemas"]["CreateEventRequest"];
-    /** CreateGenerationRequest */
-    CreateGenerationRequest: {
-      /** Format: date-time */
-      completionStartTime?: string | null;
-      model?: string | null;
-      modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
-      } | null;
-      prompt?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
-      usage?: components["schemas"]["LLMUsage"];
-    } & components["schemas"]["CreateSpanRequest"];
     /** Trace */
     Trace: {
       /** @description The unique identifier of a trace */
       id: string;
       /** Format: date-time */
       timestamp: string;
-      externalId?: string | null;
       name?: string | null;
+      input?: unknown;
+      output?: unknown;
+      sessionId?: string | null;
       release?: string | null;
       version?: string | null;
       userId?: string | null;
-      metadata?: Record<string, unknown> | null;
+      metadata?: unknown;
+      tags?: string[] | null;
+      /** @description Public traces are accessible via url without login */
+      public?: boolean | null;
     };
     /** TraceWithDetails */
     TraceWithDetails: WithRequired<
@@ -135,6 +116,20 @@ export interface components {
       } & components["schemas"]["Trace"],
       "observations" | "scores"
     >;
+    /** Session */
+    Session: {
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      projectId: string;
+    };
+    /** SessionWithTraces */
+    SessionWithTraces: WithRequired<
+      {
+        traces: components["schemas"]["Trace"][];
+      } & components["schemas"]["Session"],
+      "traces"
+    >;
     /** Observation */
     Observation: {
       id: string;
@@ -149,18 +144,24 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
-      input?: Record<string, unknown> | null;
+      input?: unknown;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
+      metadata?: unknown;
+      output?: unknown;
+      usage?: components["schemas"]["Usage"];
       level: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+      promptId?: string | null;
+    };
+    /** Usage */
+    Usage: {
+      input?: number | null;
+      output?: number | null;
+      total?: number | null;
+      unit?: components["schemas"]["ModelUsageUnit"];
     };
     /** Score */
     Score: {
@@ -178,7 +179,6 @@ export interface components {
     Dataset: {
       id: string;
       name: string;
-      status: components["schemas"]["DatasetStatus"];
       projectId: string;
       /** Format: date-time */
       createdAt: string;
@@ -192,7 +192,7 @@ export interface components {
       id: string;
       status: components["schemas"]["DatasetStatus"];
       input: unknown;
-      expectedOutput?: Record<string, unknown> | null;
+      expectedOutput?: unknown;
       sourceObservationId?: string | null;
       datasetId: string;
       /** Format: date-time */
@@ -223,23 +223,17 @@ export interface components {
       datasetRunItems: components["schemas"]["DatasetRunItem"][];
     };
     /**
+     * ModelUsageUnit
+     * @enum {string}
+     */
+    ModelUsageUnit: "CHARACTERS" | "TOKENS";
+    /**
      * ObservationLevel
      * @enum {string}
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null);
-    /**
-     * TraceIdTypeEnum
-     * @enum {string}
-     */
-    TraceIdTypeEnum: "LANGFUSE" | "EXTERNAL";
-    /** LLMUsage */
-    LLMUsage: {
-      promptTokens?: number | null;
-      completionTokens?: number | null;
-      totalTokens?: number | null;
-    };
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
     /**
      * DatasetStatus
      * @enum {string}
@@ -249,7 +243,8 @@ export interface components {
     CreateDatasetItemRequest: {
       datasetName: string;
       input: unknown;
-      expectedOutput?: Record<string, unknown> | null;
+      expectedOutput?: unknown;
+      id?: string | null;
     };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
@@ -261,37 +256,337 @@ export interface components {
     CreateDatasetRequest: {
       name: string;
     };
-    /** UpdateGenerationRequest */
-    UpdateGenerationRequest: {
-      generationId: string;
+    /** HealthResponse */
+    HealthResponse: {
+      /**
+       * @description Langfuse server version
+       * @example 1.25.0
+       */
+      version: string;
+      /** @example OK */
+      status: string;
+    };
+    /** IngestionEvent */
+    IngestionEvent:
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "trace-create";
+          } & components["schemas"]["TraceEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "score-create";
+          } & components["schemas"]["ScoreEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "event-create";
+          } & components["schemas"]["CreateEventEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "generation-create";
+          } & components["schemas"]["CreateGenerationEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "generation-update";
+          } & components["schemas"]["UpdateGenerationEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "span-create";
+          } & components["schemas"]["CreateSpanEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "span-update";
+          } & components["schemas"]["UpdateSpanEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "sdk-log";
+          } & components["schemas"]["SDKLogEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "observation-create";
+          } & components["schemas"]["CreateObservationEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
+            type?: "observation-update";
+          } & components["schemas"]["UpdateObservationEvent"],
+          "type"
+        >;
+    /**
+     * ObservationType
+     * @enum {string}
+     */
+    ObservationType: "SPAN" | "GENERATION" | "EVENT";
+    /** IngestionUsage */
+    IngestionUsage: components["schemas"]["Usage"] | components["schemas"]["OpenAIUsage"];
+    /** OpenAIUsage */
+    OpenAIUsage: {
+      promptTokens?: number | null;
+      completionTokens?: number | null;
+      totalTokens?: number | null;
+    };
+    /** OptionalObservationBody */
+    OptionalObservationBody: {
       traceId?: string | null;
       name?: string | null;
+      /** Format: date-time */
+      startTime?: string | null;
+      metadata?: unknown;
+      input?: unknown;
+      output?: unknown;
+      level?: components["schemas"]["ObservationLevel"];
+      statusMessage?: string | null;
+      parentObservationId?: string | null;
+      version?: string | null;
+    };
+    /** CreateEventBody */
+    CreateEventBody: {
+      id?: string | null;
+    } & components["schemas"]["OptionalObservationBody"];
+    /** UpdateEventBody */
+    UpdateEventBody: WithRequired<
+      {
+        id: string;
+      } & components["schemas"]["OptionalObservationBody"],
+      "id"
+    >;
+    /** CreateSpanBody */
+    CreateSpanBody: {
+      /** Format: date-time */
+      endTime?: string | null;
+    } & components["schemas"]["CreateEventBody"];
+    /** UpdateSpanBody */
+    UpdateSpanBody: {
+      /** Format: date-time */
+      endTime?: string | null;
+    } & components["schemas"]["UpdateEventBody"];
+    /** CreateGenerationBody */
+    CreateGenerationBody: {
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components["schemas"]["MapValue"];
+      } | null;
+      usage?: components["schemas"]["IngestionUsage"];
+      promptName?: string | null;
+      promptVersion?: number | null;
+    } & components["schemas"]["CreateSpanBody"];
+    /** UpdateGenerationBody */
+    UpdateGenerationBody: {
+      /** Format: date-time */
+      completionStartTime?: string | null;
+      model?: string | null;
+      modelParameters?: {
+        [key: string]: components["schemas"]["MapValue"];
+      } | null;
+      usage?: components["schemas"]["IngestionUsage"];
+      promptName?: string | null;
+      promptVersion?: number | null;
+    } & components["schemas"]["UpdateSpanBody"];
+    /** ObservationBody */
+    ObservationBody: {
+      id?: string | null;
+      traceId?: string | null;
+      type: components["schemas"]["ObservationType"];
+      name?: string | null;
+      /** Format: date-time */
+      startTime?: string | null;
       /** Format: date-time */
       endTime?: string | null;
       /** Format: date-time */
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
-      prompt?: Record<string, unknown> | null;
+      input?: unknown;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      completion?: Record<string, unknown> | null;
-      usage?: components["schemas"]["LLMUsage"];
+      metadata?: unknown;
+      output?: unknown;
+      usage?: components["schemas"]["Usage"];
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
+      parentObservationId?: string | null;
+    };
+    /** TraceBody */
+    TraceBody: {
+      id?: string | null;
+      name?: string | null;
+      userId?: string | null;
+      input?: unknown;
+      output?: unknown;
+      sessionId?: string | null;
+      release?: string | null;
+      version?: string | null;
+      metadata?: unknown;
+      tags?: string[] | null;
+      /** @description Make trace publicly accessible via url */
+      public?: boolean | null;
+    };
+    /** SDKLogBody */
+    SDKLogBody: {
+      log: unknown;
+    };
+    /** ScoreBody */
+    ScoreBody: {
+      id?: string | null;
+      traceId: string;
+      name: string;
+      /** Format: double */
+      value: number;
+      observationId?: string | null;
+      comment?: string | null;
+    };
+    /** BaseEvent */
+    BaseEvent: {
+      id: string;
+      timestamp: string;
+      metadata: unknown;
+    };
+    /** TraceEvent */
+    TraceEvent: WithRequired<
+      {
+        body: components["schemas"]["TraceBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** CreateObservationEvent */
+    CreateObservationEvent: WithRequired<
+      {
+        body: components["schemas"]["ObservationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** UpdateObservationEvent */
+    UpdateObservationEvent: WithRequired<
+      {
+        body: components["schemas"]["ObservationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** ScoreEvent */
+    ScoreEvent: WithRequired<
+      {
+        body: components["schemas"]["ScoreBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** SDKLogEvent */
+    SDKLogEvent: WithRequired<
+      {
+        body: components["schemas"]["SDKLogBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** CreateGenerationEvent */
+    CreateGenerationEvent: WithRequired<
+      {
+        body: components["schemas"]["CreateGenerationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** UpdateGenerationEvent */
+    UpdateGenerationEvent: WithRequired<
+      {
+        body: components["schemas"]["UpdateGenerationBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** CreateSpanEvent */
+    CreateSpanEvent: WithRequired<
+      {
+        body: components["schemas"]["CreateSpanBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** UpdateSpanEvent */
+    UpdateSpanEvent: WithRequired<
+      {
+        body: components["schemas"]["UpdateSpanBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** CreateEventEvent */
+    CreateEventEvent: WithRequired<
+      {
+        body: components["schemas"]["CreateEventBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** IngestionSuccess */
+    IngestionSuccess: {
+      id: string;
+      status: number;
+    };
+    /** IngestionError */
+    IngestionError: {
+      id: string;
+      status: number;
+      message?: string | null;
+      error?: unknown;
+    };
+    /** IngestionResponse */
+    IngestionResponse: {
+      successes: components["schemas"]["IngestionSuccess"][];
+      errors: components["schemas"]["IngestionError"][];
     };
     /** Observations */
     Observations: {
       data: components["schemas"]["Observation"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
+    /** Projects */
+    Projects: {
+      data: components["schemas"]["Project"][];
+    };
+    /** Project */
+    Project: {
+      id: string;
+      name: string;
+    };
+    /** CreatePromptRequest */
+    CreatePromptRequest: {
+      name: string;
+      isActive: boolean;
+      prompt: string;
+    };
+    /** Prompt */
+    Prompt: {
+      name: string;
+      version: number;
+      prompt: string;
+    };
     /** CreateScoreRequest */
     CreateScoreRequest: {
       id?: string | null;
       traceId: string;
-      traceIdType?: components["schemas"]["TraceIdTypeEnum"];
       name: string;
       /** Format: double */
       value: number;
@@ -302,30 +597,6 @@ export interface components {
     Scores: {
       data: components["schemas"]["Score"][];
       meta: components["schemas"]["utilsMetaResponse"];
-    };
-    /** UpdateSpanRequest */
-    UpdateSpanRequest: {
-      spanId: string;
-      traceId?: string | null;
-      /** Format: date-time */
-      endTime?: string | null;
-      name?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
-      level?: components["schemas"]["ObservationLevel"];
-      version?: string | null;
-      statusMessage?: string | null;
-    };
-    /** CreateTraceRequest */
-    CreateTraceRequest: {
-      id?: string | null;
-      name?: string | null;
-      userId?: string | null;
-      externalId?: string | null;
-      release?: string | null;
-      version?: string | null;
-      metadata?: Record<string, unknown> | null;
     };
     /** Traces */
     Traces: {
@@ -351,10 +622,12 @@ export interface components {
   pathItems: never;
 }
 
+export type $defs = Record<string, never>;
+
 export type external = Record<string, never>;
 
 export interface operations {
-  /** @description Create a dataset item */
+  /** @description Create a dataset item, upserts on id */
   datasetItems_create: {
     requestBody: {
       content: {
@@ -369,27 +642,67 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a specific dataset item */
+  datasetItems_get: {
+    parameters: {
+      path: {
+        id: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["DatasetItem"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
         };
       };
     };
@@ -409,27 +722,27 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
@@ -449,27 +762,27 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
@@ -489,27 +802,27 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
@@ -530,145 +843,107 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
   };
-  /** @description Add an event to the database */
-  event_create: {
+  /** @description Check health of API and database */
+  health_health: {
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["HealthResponse"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      503: {
+        content: never;
+      };
+    };
+  };
+  /** @description Ingest multiple events to Langfuse */
+  ingestion_batch: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["CreateEventRequest"];
+        "application/json": {
+          batch: components["schemas"]["IngestionEvent"][];
+        };
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Observation"];
+          "application/json": components["schemas"]["IngestionResponse"];
         };
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
-        };
-      };
-    };
-  };
-  generations_log: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateGenerationRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": string;
-        };
-      };
-      401: {
-        content: {
-          "application/json": string;
-        };
-      };
-      403: {
-        content: {
-          "application/json": string;
-        };
-      };
-      404: {
-        content: {
-          "application/json": string;
-        };
-      };
-      405: {
-        content: {
-          "application/json": string;
-        };
-      };
-    };
-  };
-  generations_update: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateGenerationRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": string;
-        };
-      };
-      401: {
-        content: {
-          "application/json": string;
-        };
-      };
-      403: {
-        content: {
-          "application/json": string;
-        };
-      };
-      404: {
-        content: {
-          "application/json": string;
-        };
-      };
-      405: {
-        content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
@@ -689,27 +964,27 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
@@ -723,6 +998,8 @@ export interface operations {
         name?: string | null;
         userId?: string | null;
         type?: string | null;
+        traceId?: string | null;
+        parentObservationId?: string | null;
       };
     };
     responses: {
@@ -733,27 +1010,142 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  projects_get: {
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Projects"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a specific prompt */
+  prompts_get: {
+    parameters: {
+      query: {
+        name: string;
+        version?: number | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Prompt"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Create a specific prompt */
+  prompts_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreatePromptRequest"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Prompt"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
         };
       };
     };
@@ -776,32 +1168,32 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
   };
-  /** @description Add a score to the database */
+  /** @description Add a score to the database, upserts on id */
   score_create: {
     requestBody: {
       content: {
@@ -816,190 +1208,68 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
   };
-  /** @description Add a span to the database */
-  span_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateSpanRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": string;
-        };
-      };
-      401: {
-        content: {
-          "application/json": string;
-        };
-      };
-      403: {
-        content: {
-          "application/json": string;
-        };
-      };
-      404: {
-        content: {
-          "application/json": string;
-        };
-      };
-      405: {
-        content: {
-          "application/json": string;
-        };
-      };
-    };
-  };
-  /** @description Update a span to the database */
-  span_update: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateSpanRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Observation"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": string;
-        };
-      };
-      401: {
-        content: {
-          "application/json": string;
-        };
-      };
-      403: {
-        content: {
-          "application/json": string;
-        };
-      };
-      404: {
-        content: {
-          "application/json": string;
-        };
-      };
-      405: {
-        content: {
-          "application/json": string;
-        };
-      };
-    };
-  };
-  /** @description Get list of traces */
-  trace_list: {
+  /** @description Get a session */
+  sessions_get: {
     parameters: {
-      query?: {
-        page?: number | null;
-        limit?: number | null;
-        userId?: string | null;
-        name?: string | null;
+      path: {
+        /** @description The unique id of a session */
+        sessionId: string;
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Traces"];
+          "application/json": components["schemas"]["SessionWithTraces"];
         };
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
-        };
-      };
-    };
-  };
-  /** @description Add a trace to the database */
-  trace_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateTraceRequest"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Trace"];
-        };
-      };
-      400: {
-        content: {
-          "application/json": string;
-        };
-      };
-      401: {
-        content: {
-          "application/json": string;
-        };
-      };
-      403: {
-        content: {
-          "application/json": string;
-        };
-      };
-      404: {
-        content: {
-          "application/json": string;
-        };
-      };
-      405: {
-        content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
     };
@@ -1020,27 +1290,72 @@ export interface operations {
       };
       400: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       401: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       403: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       404: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
         };
       };
       405: {
         content: {
-          "application/json": string;
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get list of traces */
+  trace_list: {
+    parameters: {
+      query?: {
+        page?: number | null;
+        limit?: number | null;
+        userId?: string | null;
+        name?: string | null;
+        /** @description Only traces that include all of these tags will be returned. */
+        tags?: (string | null)[];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Traces"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
         };
       };
     };

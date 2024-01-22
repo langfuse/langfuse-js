@@ -1,6 +1,6 @@
 {
   "name": "langfuse-integration-test-modules",
-  "version": "2.0.0-alpha.0",
+  "version": "2.0.0",
   "private": true,
   "description": "",
   "main": "dist/main.js",
@@ -15,10 +15,10 @@
   "dependencies": {
     "dotenv": "^16.3.1",
     "langchain": "^0.0.163",
-    "langfuse-langchain": "^2.0.0-alpha.0"
+    "langfuse-langchain": "^2"
   },
   "devDependencies": {
-    "tsx": "^4.2.0",
+    "tsx": "^4.6.2",
     "typescript": "^5.1.6"
   }
 }

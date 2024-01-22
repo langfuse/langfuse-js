@@ -44,13 +44,13 @@ describe("Langfuse Node.js", () => {
     });
 
     it("create trace", async () => {
-      const trace = langfuse.trace({ name: "trace-name" });
+      const trace = langfuse.trace({ name: "trace-name", tags: ["tag1", "tag2"] });
       await langfuse.flushAsync();
       // check from get api if trace is created
       const res = await axios.get(`${LF_HOST}/api/public/traces/${trace.id}`, {
         headers: getHeaders,
       });
-      expect(res.data).toMatchObject({ id: trace.id, name: "trace-name" });
+      expect(res.data).toMatchObject({ id: trace.id, name: "trace-name", tags: ["tag1", "tag2"] });
     });
 
     it("update a trace", async () => {
@@ -133,10 +133,10 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: {
+        input: {
           text: "prompt",
         },
-        completion: {
+        output: {
           foo: "bar",
         },
       });
@@ -161,12 +161,12 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: [
+        input: [
           {
             text: "prompt",
           },
         ],
-        completion: [
+        output: [
           {
             foo: "bar",
           },
@@ -196,8 +196,8 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: "prompt",
-        completion: "completion",
+        input: "prompt",
+        output: "completion",
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
@@ -211,6 +211,58 @@ describe("Langfuse Node.js", () => {
       });
     });
 
+    it("create many objects", async () => {
+      const trace = langfuse.trace({ name: "trace-name-generation-new" });
+      const generation = trace.generation({
+        name: "generation-name-new",
+        input: "prompt",
+        output: "completion",
+      });
+      generation.update({
+        version: "1.0.0",
+      });
+      const span = generation.span({
+        name: "span-name",
+        input: "span-input",
+        output: "span-output",
+      });
+      span.end({ metadata: { foo: "bar" } });
+      generation.end({ metadata: { foo: "bar" } });
+
+      await langfuse.flushAsync();
+      // check from get api if trace is created
+      const returnedGeneration = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, {
+        headers: getHeaders,
+      });
+      expect(returnedGeneration.data).toMatchObject({
+        id: generation.id,
+        name: "generation-name-new",
+        type: "GENERATION",
+        input: "prompt",
+        output: "completion",
+        version: "1.0.0",
+        endTime: expect.any(String),
+        metadata: {
+          foo: "bar",
+        },
+      });
+
+      const returnedSpan = await axios.get(`${LF_HOST}/api/public/observations/${span.id}`, {
+        headers: getHeaders,
+      });
+      expect(returnedSpan.data).toMatchObject({
+        id: span.id,
+        name: "span-name",
+        type: "SPAN",
+        input: "span-input",
+        output: "span-output",
+        endTime: expect.any(String),
+        metadata: {
+          foo: "bar",
+        },
+      });
+    });
+
     it("update a generation", async () => {
       const trace = langfuse.trace({
         name: "test-trace",
@@ -220,7 +272,7 @@ describe("Langfuse Node.js", () => {
         completionStartTime: new Date("2020-01-01T00:00:00.000Z"),
       });
       generation.end({
-        completion: "Hello world",
+        output: "Hello world",
         usage: {
           promptTokens: 10,
           completionTokens: 15,
@@ -270,5 +322,103 @@ describe("Langfuse Node.js", () => {
         type: "EVENT",
       });
     });
+  });
+  describe("prompt methods", () => {
+    it("create and get a prompt", async () => {
+      const promptName = "test-prompt" + Math.random().toString(36);
+      await langfuse.createPrompt({
+        name: promptName,
+        prompt: "This is a prompt with a {{variable}}",
+        isActive: true,
+      });
+
+      const prompt = await langfuse.getPrompt(promptName);
+
+      const filledPrompt = prompt.compile({ variable: "1.0.0" });
+
+      expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
+      expect(prompt.name).toEqual(promptName);
+      expect(prompt.prompt).toEqual("This is a prompt with a {{variable}}");
+      expect(prompt.version).toEqual(1);
+
+      const res = await axios.get(`${LF_HOST}/api/public/prompts/?name=${promptName}`, {
+        headers: getHeaders,
+      });
+
+      expect(res.data).toMatchObject({
+        name: promptName,
+        prompt: "This is a prompt with a {{variable}}",
+        isActive: true,
+        version: expect.any(Number),
+      });
+    });
+  });
+
+  it("link prompt to generation", async () => {
+    const promptName = "test-prompt" + Math.random().toString(36);
+    await langfuse.createPrompt({
+      name: promptName,
+      prompt: "This is a prompt with a {{variable}}",
+      isActive: true,
+    });
+
+    const prompt = await langfuse.getPrompt(promptName);
+
+    const filledPrompt = prompt.compile({ variable: "1.0.0" });
+
+    const generation = langfuse.generation({
+      name: "test-generation",
+      input: filledPrompt,
+      prompt: prompt,
+    });
+
+    await langfuse.flushAsync();
+
+    const res = await axios.get(`${LF_HOST}/api/public/prompts/?name=${promptName}`, {
+      headers: getHeaders,
+    });
+
+    expect(res.data).toMatchObject({
+      name: promptName,
+      prompt: "This is a prompt with a {{variable}}",
+      isActive: true,
+      version: expect.any(Number),
+    });
+    console.log("post prompt", generation.id);
+
+    const observation = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, {
+      headers: getHeaders,
+    });
+
+    expect(observation.data).toMatchObject({
+      input: "This is a prompt with a 1.0.0",
+      promptId: res.data.id,
+    });
+  });
+
+  it("create and get a prompt for a specific variable", async () => {
+    const promptName = "test-prompt" + Math.random().toString(36);
+    await langfuse.createPrompt({
+      name: promptName,
+      prompt: "This is a prompt with a {{variable}}",
+      isActive: true,
+    });
+
+    await langfuse.createPrompt({
+      name: promptName,
+      prompt: "This is a prompt with a {{wrongVariable}}",
+      isActive: true,
+    });
+
+    const prompt = await langfuse.getPrompt(promptName, 1);
+
+    const filledPrompt = prompt.compile({ variable: "1.0.0" });
+
+    expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
+
+    const res = await axios.get(`${LF_HOST}/api/public/prompts/?name=${promptName}`, {
+      headers: getHeaders,
+    });
+    expect(res.data).toMatchObject({});
   });
 });

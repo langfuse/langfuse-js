@@ -13,7 +13,7 @@ describe("Langfuse Core", () => {
     [langfuse, mocks] = createTestClient({
       publicKey: "pk-lf-111",
       secretKey: "sk-lf-111",
-      flushAt: 3,
+      flushAt: 1,
     });
   });
 
@@ -27,13 +27,7 @@ describe("Langfuse Core", () => {
       langfuse.debug();
       langfuse.trace({ name: "test-trace2" });
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith(
-        "Langfuse Debug",
-        "createTrace",
-        expect.objectContaining({
-          name: "test-trace2",
-        })
-      );
+      expect(spy).toHaveBeenCalledWith("Langfuse Debug", "trace-create", expect.stringContaining("test-trace2"));
 
       spy.mockReset();
       langfuse.debug(false);

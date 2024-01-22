@@ -71,6 +71,48 @@ describe("Langfuse Node.js", () => {
           expect.objectContaining({ ...item3, link: expect.any(Function) }),
         ]),
       });
+
+      const getDatasetItem = await langfuse.getDatasetItem(item1.id);
+      expect(getDatasetItem).toEqual(item1);
+    }, 10000);
+
+    it("create, upsert and get dataset item", async () => {
+      const projectNameRandom = Math.random().toString(36).substring(7);
+      await langfuse.createDataset(projectNameRandom);
+
+      const createRes = await langfuse.createDatasetItem({
+        datasetName: projectNameRandom,
+        input: {
+          text: "hello world",
+        },
+        expectedOutput: {
+          text: "hello world",
+        },
+      });
+      const getRes = await langfuse.getDatasetItem(createRes.id);
+      expect(getRes).toEqual(createRes);
+
+      const UpdateRes = await langfuse.createDatasetItem({
+        datasetName: projectNameRandom,
+        id: createRes.id,
+        input: {
+          text: "hello world2",
+        },
+        expectedOutput: {
+          text: "hello world2",
+        },
+      });
+      const getUpdateRes = await langfuse.getDatasetItem(createRes.id);
+      expect(getUpdateRes).toEqual(UpdateRes);
+      expect(getUpdateRes).toMatchObject({
+        id: createRes.id,
+        input: {
+          text: "hello world2",
+        },
+        expectedOutput: {
+          text: "hello world2",
+        },
+      });
     }, 10000);
 
     it("e2e", async () => {
@@ -86,8 +128,8 @@ describe("Langfuse Node.js", () => {
       for (const item of dataset.items) {
         const generation = langfuse.generation({
           id: "test-generation-id-" + projectNameRandom,
-          prompt: item.input,
-          completion: "Hello world generated",
+          input: item.input,
+          output: "Hello world generated",
         });
         await item.link(generation, "test-run-" + projectNameRandom);
         generation.score({

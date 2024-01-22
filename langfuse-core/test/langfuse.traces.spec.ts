@@ -26,16 +26,40 @@ describe("Langfuse Core", () => {
 
       langfuse.trace({
         name: "test-trace",
+        sessionId: "123456789",
+        input: {
+          hello: "world",
+        },
+        output: {
+          hello: "world",
+        },
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
-      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/traces$/);
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/ingestion$/);
       expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        name: "test-trace",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              id: expect.any(String),
+              name: "test-trace",
+              sessionId: "123456789",
+              input: {
+                hello: "world",
+              },
+              output: {
+                hello: "world",
+              },
+            },
+          },
+        ],
       });
     });
 
@@ -47,7 +71,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        id: expect.any(String),
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              id: expect.any(String),
+            },
+          },
+        ],
       });
     });
 
@@ -59,7 +92,24 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toEqual({
-        id: "123456789",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              id: "123456789",
+            },
+          },
+        ],
+        metadata: {
+          batch_size: 1,
+          public_key: "pk-lf-111",
+          sdk_integration: "DEFAULT",
+          sdk_name: "langfuse-js",
+          sdk_variant: "langfuse-core-tests",
+          sdk_version: "2.0.0-alpha.2",
+        },
       });
     });
 
@@ -76,20 +126,31 @@ describe("Langfuse Core", () => {
           },
         },
         version: "1.0.0",
+        tags: ["tag1", "tag2"],
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const body = parseBody(mocks.fetch.mock.calls[0]);
       expect(body).toMatchObject({
-        name: "test-trace",
-        id: "123456789",
-        metadata: {
-          test: "test",
-          mira: {
-            hello: "world",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              name: "test-trace",
+              id: "123456789",
+              metadata: {
+                test: "test",
+                mira: {
+                  hello: "world",
+                },
+              },
+              version: "1.0.0",
+              tags: ["tag1", "tag2"],
+            },
           },
-        },
-        version: "1.0.0",
+        ],
       });
     });
 
@@ -105,8 +166,17 @@ describe("Langfuse Core", () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(2);
       const body = parseBody(mocks.fetch.mock.calls[1]);
       expect(body).toMatchObject({
-        id: trace.id,
-        userId: "123456789",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              id: trace.id,
+              userId: "123456789",
+            },
+          },
+        ],
       });
     });
   });
@@ -127,7 +197,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        release: "v1.0.0-alpha.1",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              release: "v1.0.0-alpha.1",
+            },
+          },
+        ],
       });
     });
 
@@ -147,7 +226,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        release: "v1.0.0-alpha.200",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              release: "v1.0.0-alpha.200",
+            },
+          },
+        ],
       });
     });
 
@@ -168,7 +256,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        release: "v1.0.0-alpha.10",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              release: "v1.0.0-alpha.10",
+            },
+          },
+        ],
       });
     });
 
@@ -187,7 +284,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        release: "v2",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              release: "v2",
+            },
+          },
+        ],
       });
     });
 
@@ -200,7 +306,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        release: "v5",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              release: "v5",
+            },
+          },
+        ],
       });
     });
 
@@ -209,7 +324,7 @@ describe("Langfuse Core", () => {
         name: "test-trace",
       });
       const body = parseBody(mocks.fetch.mock.calls[0]);
-      expect(body).not.toHaveProperty("release");
+      expect(body["batch"][0]).not.toHaveProperty("release");
     });
 
     it("should allow overridding the release in constructor", async () => {
@@ -228,7 +343,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        release: "v4",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              release: "v4",
+            },
+          },
+        ],
       });
     });
 
@@ -249,7 +373,16 @@ describe("Langfuse Core", () => {
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        release: "v3",
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              release: "v3",
+            },
+          },
+        ],
       });
     });
   });

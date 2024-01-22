@@ -5,7 +5,7 @@ import {
   type LangfuseFetchResponse,
 } from "../../src";
 
-const version = "2.0.0-alpha";
+const version = "2.0.0-alpha.2";
 
 export interface LangfuseCoreTestClientMocks {
   fetch: jest.Mock<Promise<LangfuseFetchResponse>, [string, LangfuseFetchOptions]>;

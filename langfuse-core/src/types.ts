@@ -1,4 +1,5 @@
-import { type paths } from "./openapi/server";
+import { type LangfusePromptClient } from ".";
+import { type components, type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {
   // Langfuse API baseUrl (https://cloud.langfuse.com by default)
@@ -15,6 +16,8 @@ export type LangfuseCoreOptions = {
   requestTimeout?: number;
   // release (version) of the application, defaults to env LANGFUSE_RELEASE
   release?: string;
+  // integration type of the SDK.
+  sdkIntegration?: "DEFAULT" | "LANGCHAIN" | string;
 };
 
 export enum LangfusePersistedProperty {
@@ -36,13 +39,18 @@ export type LangfuseFetchResponse<T = any> = {
   json: () => Promise<T>;
 };
 
-export type LangfuseQueueItem = {
-  apiRoute: keyof paths;
-  method: "POST" | "PATCH";
-  id: string;
-  body: any;
+export type LangfuseObject = SingleIngestionEvent["type"];
+
+export type LangfuseQueueItem = SingleIngestionEvent & {
   callback?: (err: any) => void;
 };
+
+export type SingleIngestionEvent =
+  paths["/api/public/ingestion"]["post"]["requestBody"]["content"]["application/json"]["batch"][number];
+
+// return type of ingestion endpoint defined on 200 status error in fern as 207 is not possible
+export type IngestionReturnType =
+  paths["/api/public/ingestion"]["post"]["responses"][200]["content"]["application/json"];
 
 export type LangfuseEventProperties = {
   [key: string]: any;
@@ -53,47 +61,18 @@ export type LangfuseMetadataProperties = {
 };
 
 // ASYNC
-export type CreateLangfuseTraceBody = FixTypes<
-  paths["/api/public/traces"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type CreateLangfuseEventBody = FixTypes<
-  paths["/api/public/events"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type CreateLangfuseSpanBody = FixTypes<
-  paths["/api/public/spans"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type CreateLangfuseGenerationBody = Omit<
-  FixTypes<paths["/api/public/generations"]["post"]["requestBody"]["content"]["application/json"]>,
-  "input" | "output"
->;
-export type CreateLangfuseScoreBody = FixTypes<
-  paths["/api/public/scores"]["post"]["requestBody"]["content"]["application/json"]
->;
-export type UpdateLangfuseSpanBody = FixTypes<
-  paths["/api/public/spans"]["patch"]["requestBody"]["content"]["application/json"]
->;
-export type UpdateLangfuseGenerationBody = FixTypes<
-  paths["/api/public/generations"]["patch"]["requestBody"]["content"]["application/json"]
->;
+export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"]>;
 
-export type LangfuseObject =
-  | "createTrace"
-  | "createEvent"
-  | "createSpan"
-  | "createGeneration"
-  | "createScore"
-  | "updateSpan"
-  | "updateGeneration";
+export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEventBody"]>;
 
-export const LangfusePostApiRoutes: Record<LangfuseObject, [LangfuseQueueItem["method"], keyof paths]> = {
-  createTrace: ["POST", "/api/public/traces"],
-  createEvent: ["POST", "/api/public/events"],
-  createSpan: ["POST", "/api/public/spans"],
-  updateSpan: ["PATCH", "/api/public/spans"],
-  createGeneration: ["POST", "/api/public/generations"],
-  updateGeneration: ["PATCH", "/api/public/generations"],
-  createScore: ["POST", "/api/public/scores"],
-};
+export type CreateLangfuseSpanBody = FixTypes<components["schemas"]["CreateSpanBody"]>;
+export type UpdateLangfuseSpanBody = FixTypes<components["schemas"]["UpdateSpanBody"]>;
+
+export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
+export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
+export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
+
+export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
 
 // SYNC
 export type GetLangfuseDatasetParams = FixTypes<
@@ -125,6 +104,19 @@ export type GetLangfuseDatasetRunParams = FixTypes<
 export type GetLangfuseDatasetRunResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type CreateLangfusePromptBody = FixTypes<
+  paths["/api/public/prompts"]["post"]["requestBody"]["content"]["application/json"]
+>;
+export type CreateLangfusePromptResponse = FixTypes<
+  paths["/api/public/prompts"]["post"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfusePromptResponse = FixTypes<
+  paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+
+export type PromptInput = {
+  prompt?: LangfusePromptClient;
+};
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
@@ -135,9 +127,9 @@ type FixTypes<T> = Omit<
       ? // Dates instead of strings
         Date | OptionalTypes<T[P]>
       : P extends "metadata" | "input" | "output" | "prompt" | "completion" | "expectedOutput"
-      ? // JSON instead of strings
-        any | OptionalTypes<T[P]>
-      : T[P];
+        ? // JSON instead of strings
+          any | OptionalTypes<T[P]>
+        : T[P];
   },
   "externalId" | "traceIdType"
 >;

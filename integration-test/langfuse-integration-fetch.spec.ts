@@ -1,10 +1,10 @@
-// uses the compiled node.js version, run yarn build after making changes to the SDKs
+// uses the compiled fetch version, run yarn build after making changes to the SDKs
 import Langfuse from "../langfuse";
 
 import axios from "axios";
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getHeaders } from "./integration-utils";
 
-describe("Langfuse Node.js", () => {
+describe("Langfuse (fetch)", () => {
   let langfuse: Langfuse;
   // jest.setTimeout(100000)
   jest.useRealTimers();
@@ -36,13 +36,24 @@ describe("Langfuse Node.js", () => {
     });
 
     it("create trace", async () => {
-      const trace = langfuse.trace({ name: "trace-name" });
+      const trace = langfuse.trace({
+        name: "trace-name",
+        sessionId: "123456789",
+        input: { hello: "world" },
+        output: "hi there",
+      });
       await langfuse.flushAsync();
       // check from get api if trace is created
       const res = await axios.get(`${LF_HOST}/api/public/traces/${trace.id}`, {
         headers: getHeaders,
       });
-      expect(res.data).toMatchObject({ id: trace.id, name: "trace-name" });
+      expect(res.data).toMatchObject({
+        id: trace.id,
+        name: "trace-name",
+        sessionId: "123456789",
+        input: { hello: "world" },
+        output: "hi there",
+      });
     });
 
     it("update a trace", async () => {
@@ -141,10 +152,10 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: {
+        input: {
           text: "prompt",
         },
-        completion: {
+        output: {
           foo: "bar",
         },
       });
@@ -169,12 +180,12 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: [
+        input: [
           {
             text: "prompt",
           },
         ],
-        completion: [
+        output: [
           {
             foo: "bar",
           },
@@ -204,8 +215,8 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name-generation-new" });
       const generation = trace.generation({
         name: "generation-name-new",
-        prompt: "prompt",
-        completion: "completion",
+        input: "prompt",
+        output: "completion",
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
@@ -228,7 +239,7 @@ describe("Langfuse Node.js", () => {
         completionStartTime: new Date("2020-01-01T00:00:00.000Z"),
       });
       generation.end({
-        completion: "Hello world",
+        output: "Hello world",
         usage: {
           promptTokens: 10,
           completionTokens: 15,

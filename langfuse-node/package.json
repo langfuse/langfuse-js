@@ -1,6 +1,6 @@
 {
   "name": "langfuse-node",
-  "version": "2.0.0-alpha.1",
+  "version": "2.3.4",
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
@@ -27,8 +27,8 @@
     }
   },
   "dependencies": {
-    "axios": "^1.4.0",
-    "langfuse-core": "^2.0.0-alpha.1"
+    "axios": "^1.6.4",
+    "langfuse-core": "^2.3.4"
   },
   "devDependencies": {
     "@types/node": "^20.4.10",
@@ -38,5 +38,5 @@
     "lib",
     "Readme.md"
   ],
-  "gitHead": "1b8f422c3d4b0de925cabd2e5901a8c388738887"
+  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091"
 }
