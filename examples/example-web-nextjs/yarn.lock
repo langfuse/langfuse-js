@@ -445,12 +445,12 @@ axe-core@^4.6.2:
   resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.7.2.tgz#040a7342b20765cb18bb50b628394c21bccc17a0"
   integrity sha512-zIURGIS1E1Q4pcrMjp+nnEh+16G56eG/MUllJH8yEvw7asDo7Ac9uhC9KIH5jzpITueEZolfYglnCGIuSBz39g==
 
-axios@^1.4.0:
-  version "1.6.2"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.2.tgz#de67d42c755b571d3e698df1b6504cde9b0ee9f2"
-  integrity sha512-7i24Ri4pmDRfJTR7LDBhsOTtcm+9kjX5WiY1X3wIisx6G9So3pfMkEiU7emUBe46oceVImccTEM3k6C5dbVW8A==
+axios@^1.6.4:
+  version "1.6.5"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.5.tgz#2c090da14aeeab3770ad30c3a1461bc970fb0cd8"
+  integrity sha512-Ii012v05KEVuUoFWmMW/UQv9aRIc3ZwkWDcM+h5Il8izZCtRVpDUfwpoFf7eOtajT3QiGR4yDUx7lPqHJULgbg==
   dependencies:
-    follow-redirects "^1.15.0"
+    follow-redirects "^1.15.4"
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
@@ -1065,10 +1065,10 @@ flatted@^3.1.0:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.7.tgz#609f39207cb614b89d0765b477cb2d437fbf9787"
   integrity sha512-5nqDSxl8nn5BSNxyR3n4I6eDmbolI6WT+QqR547RwxQapgjQBmtktdP+HTBb/a/zLsbzERTONyUB5pefh5TtjQ==
 
-follow-redirects@^1.15.0:
-  version "1.15.3"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.3.tgz#fe2f3ef2690afce7e82ed0b44db08165b207123a"
-  integrity sha512-1VzOtuEM8pC9SFU1E+8KfTjZyMztRsgEfwQl44z8A25uy13jSzTj6dyK2Df52iV0vgHCfBwLhDWevLn95w5v6Q==
+follow-redirects@^1.15.4:
+  version "1.15.4"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.4.tgz#cdc7d308bf6493126b17ea2191ea0ccf3e535adf"
+  integrity sha512-Cr4D/5wlrb0z9dgERpUL3LrmPKVDsETIJhaCMeDfuFYcqa5bldGV6wBsAN6X/vxlXQtFBMrXdXxdL8CbDTGniw==
 
 for-each@^0.3.3:
   version "0.3.3"
@@ -1549,24 +1549,28 @@ jsonfile@^4.0.0:
     object.assign "^4.1.4"
     object.values "^1.1.6"
 
-langfuse-core@^2.0.0-alpha.2:
-  version "2.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.0.0-alpha.2.tgz#2a54a9965a959b79f9f944f5303f1c9d8bc03527"
-  integrity sha512-fXluLlLNjoknMt6Kk/RD7zDrcfNmnC0BId4ay9q5e8voOX6PdKKa2Cu5mjHvMU8bXR+mseSY5UwL280eMypbVA==
+langfuse-core@^2.3.1-alpha.1:
+  version "2.3.1-alpha.1"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.3.1-alpha.1.tgz#058e58af926b5511d3d9aadbb269ce2df5c9d7be"
+  integrity sha512-gOR2XWNdtba7QhDWNyp7GsVKkFuJaw5JHwBPvBSxNMF26TqSb7TJH72mKxnvowzeelG0QMfTIsg9/BR8ONnL6w==
+  dependencies:
+    mustache "^4.2.0"
 
 "langfuse-core@file:.yalc/langfuse-core":
-  version "2.0.0-alpha.2"
+  version "2.3.1-alpha.1"
+  dependencies:
+    mustache "^4.2.0"
 
 "langfuse-node@file:.yalc/langfuse-node":
-  version "2.0.0-alpha.2"
+  version "2.3.1-alpha.1"
   dependencies:
-    axios "^1.4.0"
-    langfuse-core "^2.0.0-alpha.2"
+    axios "^1.6.4"
+    langfuse-core "^2.3.1-alpha.1"
 
 "langfuse@file:.yalc/langfuse":
-  version "2.0.0-alpha.2"
+  version "2.3.1-alpha.1"
   dependencies:
-    langfuse-core "^2.0.0-alpha.2"
+    langfuse-core "^2.3.1-alpha.1"
 
 language-subtag-registry@~0.3.2:
   version "0.3.22"
@@ -1670,6 +1674,11 @@ ms@^2.1.1:
   version "2.1.3"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
+
+mustache@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/mustache/-/mustache-4.2.0.tgz#e5892324d60a12ec9c2a73359edca52972bf6f64"
+  integrity sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==
 
 mz@^2.7.0:
   version "2.7.0"

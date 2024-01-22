@@ -1,3 +1,4 @@
+import { type LangfusePromptClient } from ".";
 import { type components, type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {
@@ -16,7 +17,7 @@ export type LangfuseCoreOptions = {
   // release (version) of the application, defaults to env LANGFUSE_RELEASE
   release?: string;
   // integration type of the SDK.
-  sdkIntegration?: "DEFAULT" | "LANGCHAIN";
+  sdkIntegration?: "DEFAULT" | "LANGCHAIN" | string;
 };
 
 export enum LangfusePersistedProperty {
@@ -103,6 +104,19 @@ export type GetLangfuseDatasetRunParams = FixTypes<
 export type GetLangfuseDatasetRunResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type CreateLangfusePromptBody = FixTypes<
+  paths["/api/public/prompts"]["post"]["requestBody"]["content"]["application/json"]
+>;
+export type CreateLangfusePromptResponse = FixTypes<
+  paths["/api/public/prompts"]["post"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfusePromptResponse = FixTypes<
+  paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+
+export type PromptInput = {
+  prompt?: LangfusePromptClient;
+};
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
@@ -113,9 +127,9 @@ type FixTypes<T> = Omit<
       ? // Dates instead of strings
         Date | OptionalTypes<T[P]>
       : P extends "metadata" | "input" | "output" | "prompt" | "completion" | "expectedOutput"
-      ? // JSON instead of strings
-        any | OptionalTypes<T[P]>
-      : T[P];
+        ? // JSON instead of strings
+          any | OptionalTypes<T[P]>
+        : T[P];
   },
   "externalId" | "traceIdType"
 >;

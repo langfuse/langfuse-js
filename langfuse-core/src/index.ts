@@ -25,6 +25,10 @@ import {
   type DeferRuntime,
   type IngestionReturnType,
   type SingleIngestionEvent,
+  type CreateLangfusePromptResponse,
+  type CreateLangfusePromptBody,
+  type GetLangfusePromptResponse,
+  type PromptInput,
 } from "./types";
 import {
   assert,
@@ -36,6 +40,8 @@ import {
   getEnv,
   currentISOTime,
 } from "./utils";
+import mustache from "mustache";
+
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
@@ -75,7 +81,7 @@ abstract class LangfuseCoreStateless {
   private debugMode: boolean = false;
   private pendingPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
-  private sdkIntegration: "DEFAULT" | "LANGCHAIN";
+  private sdkIntegration: "DEFAULT" | "LANGCHAIN" | string;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -129,7 +135,9 @@ abstract class LangfuseCoreStateless {
     this.debugMode = enabled;
 
     if (enabled) {
-      this.removeDebugCallback = this.on("*", (event, payload) => console.log("Langfuse Debug", event, payload));
+      this.removeDebugCallback = this.on("*", (event, payload) =>
+        console.log("Langfuse Debug", event, JSON.stringify(payload))
+      );
     }
   }
 
@@ -179,14 +187,17 @@ abstract class LangfuseCoreStateless {
     return id;
   }
 
-  protected generationStateless(body: CreateLangfuseGenerationBody): string {
-    const { id: bodyId, startTime: bodyStartTime, ...rest } = body;
+  protected generationStateless(
+    body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
+  ): string {
+    const { id: bodyId, startTime: bodyStartTime, prompt, ...rest } = body;
 
     const id = bodyId || generateUUID();
 
     const parsedBody: CreateLangfuseGenerationBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
       ...rest,
     };
 
@@ -212,8 +223,15 @@ abstract class LangfuseCoreStateless {
     return body.id;
   }
 
-  protected updateGenerationStateless(body: UpdateLangfuseGenerationBody): string {
-    this.enqueue("generation-update", body);
+  protected updateGenerationStateless(
+    body: Omit<UpdateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
+  ): string {
+    const { prompt, ...rest } = body;
+    const parsedBody: UpdateLangfuseGenerationBody = {
+      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
+      ...rest,
+    };
+    this.enqueue("generation-update", parsedBody);
     return body.id;
   }
 
@@ -269,6 +287,18 @@ abstract class LangfuseCoreStateless {
     } catch {
       return response;
     }
+  }
+
+  async createPromptStateless(body: CreateLangfusePromptBody): Promise<CreateLangfusePromptResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/prompts/`,
+      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+    ).then((res) => res.json());
+  }
+
+  async getPromptStateless(name: string, version?: number): Promise<GetLangfusePromptResponse> {
+    const url = `${this.baseUrl}/api/public/prompts/?name=${name}` + (version ? `&version=${version}` : "");
+    return this.fetch(url, this.getFetchOptions({ method: "GET" })).then((res) => res.json());
   }
 
   /***
@@ -526,7 +556,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return new LangfuseSpanClient(this, id, traceId);
   }
 
-  generation(body: CreateLangfuseGenerationBody): LangfuseGenerationClient {
+  generation(
+    body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
+  ): LangfuseGenerationClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
     const id = this.generationStateless({ ...body, traceId });
     return new LangfuseGenerationClient(this, id, traceId);
@@ -574,6 +606,16 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     };
 
     return returnDataset;
+  }
+
+  async createPrompt(body: CreateLangfusePromptBody): Promise<LangfusePromptClient> {
+    const prompt = await this.createPromptStateless(body);
+    return new LangfusePromptClient(prompt);
+  }
+
+  async getPrompt(name: string, version?: number): Promise<LangfusePromptClient> {
+    const prompt = await this.getPromptStateless(name, version);
+    return new LangfusePromptClient(prompt);
   }
 
   _updateSpan(body: UpdateLangfuseSpanBody): this {
@@ -626,7 +668,10 @@ export abstract class LangfuseObjectClient {
     });
   }
 
-  generation(body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId">): LangfuseGenerationClient {
+  generation(
+    body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> &
+      PromptInput
+  ): LangfuseGenerationClient {
     return this.client.generation({
       ...body,
       traceId: this.traceId,
@@ -698,7 +743,9 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
-  update(body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId">): this {
+  update(
+    body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "promptName" | "promptVersion"> & PromptInput
+  ): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
@@ -707,7 +754,10 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     return this;
   }
 
-  end(body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime">): this {
+  end(
+    body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime" | "promptName" | "promptVersion"> &
+      PromptInput
+  ): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
@@ -721,6 +771,24 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
 export class LangfuseEventClient extends LangfuseObservationClient {
   constructor(client: LangfuseCore, id: string, traceId: string) {
     super(client, id, traceId);
+  }
+}
+
+export class LangfusePromptClient {
+  private promptResponse: CreateLangfusePromptResponse;
+  public readonly name: string;
+  public readonly version: number;
+  public readonly prompt: string;
+
+  constructor(prompt: CreateLangfusePromptResponse) {
+    this.promptResponse = prompt;
+    this.name = prompt.name;
+    this.version = prompt.version;
+    this.prompt = prompt.prompt;
+  }
+
+  compile(variables?: { [key: string]: string }): string {
+    return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
 }
 

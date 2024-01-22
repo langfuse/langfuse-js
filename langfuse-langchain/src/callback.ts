@@ -39,6 +39,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   version?: string;
   sessionId?: string;
   rootProvided: boolean = false;
+  debugEnabled: boolean = false;
 
   constructor(params: ConstructorParams) {
     super();
@@ -65,10 +66,17 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   debug(enabled: boolean = true): void {
     this.langfuse.debug(enabled);
+    this.debugEnabled = enabled;
+  }
+
+  _log(message: any): void {
+    if (this.debugEnabled) {
+      console.log(message);
+    }
   }
 
   async handleNewToken(token: string, runId: string): Promise<void> {
-    console.log("New token:", token, "with ID:", runId);
+    this._log(`New token: ${token} with ID: ${runId}`);
   }
 
   getTraceId(): string | undefined {
@@ -85,7 +93,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   async handleRetrieverError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("Retriever error:", err, runId);
+      this._log(`Retriever error: ${err} with ID: ${runId}`);
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -96,7 +104,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
@@ -109,7 +117,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      console.log("Chain start with Id:", runId);
+      this._log(`Chain start with Id: ${runId}`);
+
       this.generateTrace(chain, runId, parentRunId, tags, metadata, inputs);
       this.langfuse.span({
         id: runId,
@@ -121,13 +130,13 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
     try {
-      console.log("Agent action:", runId);
+      this._log(`Agent action with ID: ${runId}`);
 
       this.langfuse.span({
         id: runId,
@@ -138,13 +147,14 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleAgentEnd?(action: AgentFinish, runId: string, parentRunId?: string): Promise<void> {
     try {
-      console.log("Agent finish:", runId);
+      this._log(`Agent finish with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -154,13 +164,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, action);
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleChainError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("Chain error:", err, runId);
+      this._log(`Chain error: ${err} with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -171,7 +182,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
@@ -212,7 +223,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
-    console.log("Generation start:", runId);
+    this._log(`Generation start with ID: ${runId}`);
+
     this.generateTrace(llm, runId, parentRunId, tags, metadata, messages);
 
     const modelParameters: Record<string, any> = {};
@@ -267,16 +279,18 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      console.log("ChatModel start:", runId);
+      this._log(`Chat model start with ID: ${runId}`);
+
       this.handleGenerationStart(llm, messages, runId, parentRunId, extraParams, tags, metadata);
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleChainEnd(outputs: ChainValues, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("Chain end:", runId, parentRunId);
+      this._log(`Chain end with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -286,7 +300,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, outputs);
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
@@ -300,10 +314,11 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      console.log("LLM start:", runId);
+      this._log(`LLM start with ID: ${runId}`);
+
       this.handleGenerationStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata);
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
@@ -316,7 +331,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      console.log("Tool start:", runId);
+      this._log(`Tool start with ID: ${runId}`);
 
       this.langfuse.span({
         id: runId,
@@ -328,7 +343,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
@@ -341,7 +356,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata?: Record<string, unknown> | undefined
   ): Promise<void> {
     try {
-      console.log("Retriever start:", runId);
+      this._log(`Retriever start with ID: ${runId}`);
 
       this.langfuse.span({
         id: runId,
@@ -353,7 +368,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
@@ -363,7 +378,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     parentRunId?: string | undefined
   ): Promise<void> {
     try {
-      console.log("Retriever end:", runId);
+      this._log(`Retriever end with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -373,13 +389,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, documents);
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleToolEnd(output: string, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("Tool end:", runId);
+      this._log(`Tool end with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -389,13 +406,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, output);
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleToolError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("Tool error:", err, runId);
+      this._log(`Tool error ${err} with ID: ${runId}`);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
@@ -406,13 +424,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleLLMEnd(output: LLMResult, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("LLM end:", runId, parentRunId);
+      this._log(`LLM end with ID: ${runId}`);
+
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
 
@@ -436,13 +455,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, extractedOutput);
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 
   async handleLLMError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
-      console.log("LLM error:", err, runId);
+      this._log(`LLM error ${err} with ID: ${runId}`);
+
       this.langfuse._updateGeneration({
         id: runId,
         traceId: this.traceId,
@@ -453,7 +473,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, err.toString());
     } catch (e) {
-      console.log("Error:", e);
+      this._log(e);
     }
   }
 

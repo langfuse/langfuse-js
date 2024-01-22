@@ -41,7 +41,6 @@ describe("Langfuse Core", () => {
       expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
-      console.log(body);
       expect(body).toMatchObject({
         batch: [
           {
@@ -127,6 +126,7 @@ describe("Langfuse Core", () => {
           },
         },
         version: "1.0.0",
+        tags: ["tag1", "tag2"],
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
@@ -147,6 +147,7 @@ describe("Langfuse Core", () => {
                 },
               },
               version: "1.0.0",
+              tags: ["tag1", "tag2"],
             },
           },
         ],

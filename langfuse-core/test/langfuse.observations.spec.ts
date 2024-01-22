@@ -19,7 +19,7 @@ describe("Langfuse Core", () => {
     });
   });
 
-  describe("observations", () => {
+  describe("generations", () => {
     [
       {
         usage: {
@@ -198,7 +198,7 @@ describe("Langfuse Core", () => {
     it("test all params", async () => {
       jest.setSystemTime(new Date("2022-01-01"));
 
-      langfuse.trace({
+      langfuse.generation({
         name: "test-trace",
         id: "123456789",
         metadata: {
@@ -208,16 +208,31 @@ describe("Langfuse Core", () => {
           },
         },
         version: "1.0.0",
+        input: { key: "input" },
+        output: { key: "output" },
+        completionStartTime: new Date("2023-01-01"),
+        model: "test-model",
+        modelParameters: { temperature: 0.5, stop: ["user-1", "user-2"] },
+        usage: {
+          input: 1,
+          output: 2,
+          total: 3,
+          unit: "CHARACTERS",
+        },
+        endTime: new Date("2023-01-03"),
+        startTime: new Date("2023-01-02"),
+        level: "DEFAULT",
+        statusMessage: "test-status",
       });
 
-      expect(mocks.fetch).toHaveBeenCalledTimes(1);
-      const body = parseBody(mocks.fetch.mock.calls[0]);
+      expect(mocks.fetch).toHaveBeenCalledTimes(2); // two times as the generation will also create a trace
+      const body = parseBody(mocks.fetch.mock.calls[1]);
       expect(body).toMatchObject({
         batch: [
           {
             id: expect.any(String),
             timestamp: expect.any(String),
-            type: "trace-create",
+            type: "generation-create",
             body: {
               name: "test-trace",
               id: "123456789",
@@ -228,6 +243,21 @@ describe("Langfuse Core", () => {
                 },
               },
               version: "1.0.0",
+              input: { key: "input" },
+              output: { key: "output" },
+              completionStartTime: "2023-01-01T00:00:00.000Z",
+              model: "test-model",
+              modelParameters: { temperature: 0.5, stop: ["user-1", "user-2"] },
+              usage: {
+                input: 1,
+                output: 2,
+                total: 3,
+                unit: "CHARACTERS",
+              },
+              endTime: "2023-01-03T00:00:00.000Z",
+              startTime: "2023-01-02T00:00:00.000Z",
+              level: "DEFAULT",
+              statusMessage: "test-status",
             },
           },
         ],

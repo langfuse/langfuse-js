@@ -50,6 +50,12 @@ export interface paths {
   "/api/public/projects": {
     get: operations["projects_get"];
   };
+  "/api/public/prompts": {
+    /** @description Get a specific prompt */
+    get: operations["prompts_get"];
+    /** @description Create a specific prompt */
+    post: operations["prompts_create"];
+  };
   "/api/public/scores": {
     /** @description Get scores */
     get: operations["score_get"];
@@ -81,13 +87,14 @@ export interface components {
       /** Format: date-time */
       timestamp: string;
       name?: string | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      input?: unknown;
+      output?: unknown;
       sessionId?: string | null;
       release?: string | null;
       version?: string | null;
       userId?: string | null;
-      metadata?: Record<string, unknown> | null;
+      metadata?: unknown;
+      tags?: string[] | null;
       /** @description Public traces are accessible via url without login */
       public?: boolean | null;
     };
@@ -137,16 +144,17 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
-      input?: Record<string, unknown> | null;
+      input?: unknown;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      metadata?: unknown;
+      output?: unknown;
       usage?: components["schemas"]["Usage"];
       level: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+      promptId?: string | null;
     };
     /** Usage */
     Usage: {
@@ -171,7 +179,6 @@ export interface components {
     Dataset: {
       id: string;
       name: string;
-      status: components["schemas"]["DatasetStatus"];
       projectId: string;
       /** Format: date-time */
       createdAt: string;
@@ -185,7 +192,7 @@ export interface components {
       id: string;
       status: components["schemas"]["DatasetStatus"];
       input: unknown;
-      expectedOutput?: Record<string, unknown> | null;
+      expectedOutput?: unknown;
       sourceObservationId?: string | null;
       datasetId: string;
       /** Format: date-time */
@@ -226,7 +233,7 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null);
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
     /**
      * DatasetStatus
      * @enum {string}
@@ -236,7 +243,7 @@ export interface components {
     CreateDatasetItemRequest: {
       datasetName: string;
       input: unknown;
-      expectedOutput?: Record<string, unknown> | null;
+      expectedOutput?: unknown;
       id?: string | null;
     };
     /** CreateDatasetRunItemRequest */
@@ -248,6 +255,16 @@ export interface components {
     /** CreateDatasetRequest */
     CreateDatasetRequest: {
       name: string;
+    };
+    /** HealthResponse */
+    HealthResponse: {
+      /**
+       * @description Langfuse server version
+       * @example 1.25.0
+       */
+      version: string;
+      /** @example OK */
+      status: string;
     };
     /** IngestionEvent */
     IngestionEvent:
@@ -303,6 +320,13 @@ export interface components {
       | WithRequired<
           {
             /** @enum {string} */
+            type?: "sdk-log";
+          } & components["schemas"]["SDKLogEvent"],
+          "type"
+        >
+      | WithRequired<
+          {
+            /** @enum {string} */
             type?: "observation-create";
           } & components["schemas"]["CreateObservationEvent"],
           "type"
@@ -333,9 +357,9 @@ export interface components {
       name?: string | null;
       /** Format: date-time */
       startTime?: string | null;
-      metadata?: Record<string, unknown> | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      metadata?: unknown;
+      input?: unknown;
+      output?: unknown;
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
@@ -368,9 +392,11 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
+      promptName?: string | null;
+      promptVersion?: number | null;
     } & components["schemas"]["CreateSpanBody"];
     /** UpdateGenerationBody */
     UpdateGenerationBody: {
@@ -378,9 +404,11 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
+      promptName?: string | null;
+      promptVersion?: number | null;
     } & components["schemas"]["UpdateSpanBody"];
     /** ObservationBody */
     ObservationBody: {
@@ -396,12 +424,12 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
-      input?: Record<string, unknown> | null;
+      input?: unknown;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      metadata?: unknown;
+      output?: unknown;
       usage?: components["schemas"]["Usage"];
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
@@ -412,14 +440,19 @@ export interface components {
       id?: string | null;
       name?: string | null;
       userId?: string | null;
-      input?: Record<string, unknown> | null;
-      output?: Record<string, unknown> | null;
+      input?: unknown;
+      output?: unknown;
       sessionId?: string | null;
       release?: string | null;
       version?: string | null;
-      metadata?: Record<string, unknown> | null;
+      metadata?: unknown;
+      tags?: string[] | null;
       /** @description Make trace publicly accessible via url */
       public?: boolean | null;
+    };
+    /** SDKLogBody */
+    SDKLogBody: {
+      log: unknown;
     };
     /** ScoreBody */
     ScoreBody: {
@@ -462,6 +495,13 @@ export interface components {
     ScoreEvent: WithRequired<
       {
         body: components["schemas"]["ScoreBody"];
+      } & components["schemas"]["BaseEvent"],
+      "body"
+    >;
+    /** SDKLogEvent */
+    SDKLogEvent: WithRequired<
+      {
+        body: components["schemas"]["SDKLogBody"];
       } & components["schemas"]["BaseEvent"],
       "body"
     >;
@@ -510,7 +550,7 @@ export interface components {
       id: string;
       status: number;
       message?: string | null;
-      error?: Record<string, unknown> | null;
+      error?: unknown;
     };
     /** IngestionResponse */
     IngestionResponse: {
@@ -530,6 +570,18 @@ export interface components {
     Project: {
       id: string;
       name: string;
+    };
+    /** CreatePromptRequest */
+    CreatePromptRequest: {
+      name: string;
+      isActive: boolean;
+      prompt: string;
+    };
+    /** Prompt */
+    Prompt: {
+      name: string;
+      version: number;
+      prompt: string;
     };
     /** CreateScoreRequest */
     CreateScoreRequest: {
@@ -569,6 +621,8 @@ export interface components {
   headers: never;
   pathItems: never;
 }
+
+export type $defs = Record<string, never>;
 
 export type external = Record<string, never>;
 
@@ -817,8 +871,10 @@ export interface operations {
   /** @description Check health of API and database */
   health_health: {
     responses: {
-      204: {
-        content: never;
+      200: {
+        content: {
+          "application/json": components["schemas"]["HealthResponse"];
+        };
       };
       400: {
         content: {
@@ -984,6 +1040,87 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["Projects"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a specific prompt */
+  prompts_get: {
+    parameters: {
+      query: {
+        name: string;
+        version?: number | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Prompt"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Create a specific prompt */
+  prompts_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreatePromptRequest"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Prompt"];
         };
       };
       400: {
@@ -1186,6 +1323,8 @@ export interface operations {
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
+        /** @description Only traces that include all of these tags will be returned. */
+        tags?: (string | null)[];
       };
     };
     responses: {
