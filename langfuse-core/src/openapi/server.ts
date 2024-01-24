@@ -162,6 +162,12 @@ export interface components {
       output?: number | null;
       total?: number | null;
       unit?: components["schemas"]["ModelUsageUnit"];
+      /** Format: double */
+      inputCost?: number | null;
+      /** Format: double */
+      outputCost?: number | null;
+      /** Format: double */
+      totalCost?: number | null;
     };
     /** Score */
     Score: {
@@ -602,6 +608,10 @@ export interface components {
     Traces: {
       data: components["schemas"]["TraceWithDetails"][];
       meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** Sort */
+    Sort: {
+      id: string;
     };
     /** utilsMetaResponse */
     utilsMetaResponse: {
@@ -1318,11 +1328,13 @@ export interface operations {
   /** @description Get list of traces */
   trace_list: {
     parameters: {
-      query?: {
+      query: {
         page?: number | null;
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
+        /** @description Format of the string sort_by=timestamp.asc (id, timestamp, name, userId, release, version, public, bookmarked, sessionId) */
+        orderBy: string;
         /** @description Only traces that include all of these tags will be returned. */
         tags?: (string | null)[];
       };
