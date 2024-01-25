@@ -45,6 +45,7 @@ import mustache from "mustache";
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
+import { utils } from "langfuse-core";
 export { LangfuseMemoryStorage } from "./storage-memory";
 
 export type IngestionBody = SingleIngestionEvent["body"];
@@ -98,7 +99,8 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params: { publicKey: string; secretKey?: string } & LangfuseCoreOptions) {
-    const { publicKey, secretKey, ...options } = params;
+    const { ...options } = params;
+    const { publicKey, secretKey } = utils.configLangfuseSDK(params);
     assert(publicKey, "You must pass your Langfuse project's api public key.");
 
     this.publicKey = publicKey;

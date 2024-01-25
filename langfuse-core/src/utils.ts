@@ -1,3 +1,5 @@
+import { type LangfuseCoreOptions } from "./types";
+
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue) {
     throw new Error(message);
@@ -89,4 +91,41 @@ export function getEnv<T = string>(key: string): T | undefined {
     return (globalThis as any)[key];
   }
   return;
+}
+
+interface Params extends LangfuseCoreOptions {
+  publicKey: string;
+  secretKey?: string;
+}
+
+export function configLangfuseSDK(params: Params): Params {
+  const { publicKey, secretKey, ...coreOptions } = params;
+
+  // check environment variables if values not provided
+  const finalPublicKey = publicKey ?? getEnv("LANGFUSE_PUBLIC_KEY");
+  const finalSecretKey = secretKey ?? getEnv("LANGFUSE_SECRET_KEY");
+
+  const finalCoreOptions: any = {};
+
+  Object.entries(coreOptions).forEach(([key, value]) => {
+    const envVariable = `LANGFUSE_${key.toUpperCase()}`;
+    finalCoreOptions[key] = value ?? getEnv(envVariable);
+  });
+
+  // check required parameters
+  if (!finalPublicKey) {
+    console.error("publicKey is required, but was not provided");
+  }
+
+  if (!finalSecretKey) {
+    console.error("secretKey is required, but was not provided");
+  }
+
+  for (const [key, value] of Object.entries(finalCoreOptions)) {
+    if (value == null) {
+      console.error(`${key} is required, but was not provided`);
+    }
+  }
+
+  return { publicKey: finalPublicKey, secretKey: finalSecretKey, ...finalCoreOptions };
 }

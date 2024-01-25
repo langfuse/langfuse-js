@@ -7,6 +7,7 @@ import {
   type LangfuseFetchResponse,
   type LangfusePersistedProperty,
   LangfuseMemoryStorage,
+  utils,
 } from "langfuse-core";
 import { type LangfuseOptions } from "./types";
 import { fetch } from "./fetch";
@@ -26,8 +27,10 @@ export default class Langfuse extends LangfuseCore {
   private options: LangfuseOptions;
 
   constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
-    const { publicKey, secretKey, ...options } = params;
     super(params);
+
+    const { secretKey, ...options } = utils.configLangfuseSDK(params);
+
     this.options = options;
   }
 
