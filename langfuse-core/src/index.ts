@@ -99,8 +99,7 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params: { publicKey: string; secretKey?: string } & LangfuseCoreOptions) {
-    const { ...options } = params;
-    const { publicKey, secretKey } = utils.configLangfuseSDK(params);
+    const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
     assert(publicKey, "You must pass your Langfuse project's api public key.");
 
     this.publicKey = publicKey;

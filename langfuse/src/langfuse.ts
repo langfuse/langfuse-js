@@ -27,11 +27,11 @@ export class Langfuse extends LangfuseCore {
     super(params);
     const { publicKey } = utils.configLangfuseSDK(params);
 
-    const { ...options } = params;
+    const { persistence, persistence_name } = params;
 
     if (typeof window !== "undefined" && "Deno" in window === false) {
-      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
-      this._storage = getStorage(options?.persistence || "localStorage", window);
+      this._storageKey = persistence_name ? `lf_${persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;
       this._storage = getStorage("memory", undefined);
@@ -87,10 +87,10 @@ export class LangfuseWeb extends LangfuseWebStateless {
 
     const { publicKey } = utils.configLangfuseSDK(params);
 
-    const { ...options } = params;
+    const { persistence, persistence_name } = params;
     if (typeof window !== "undefined") {
-      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
-      this._storage = getStorage(options?.persistence || "localStorage", window);
+      this._storageKey = persistence_name ? `lf_${persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;
       this._storage = getStorage("memory", undefined);
