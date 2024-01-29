@@ -72,6 +72,7 @@ describe("Langfuse Node.js", () => {
     });
 
     it("create span", async () => {
+      langfuse.debug(false);
       const trace = langfuse.trace({ name: "trace-name-span" });
       const span = trace.span({
         name: "span-name",
