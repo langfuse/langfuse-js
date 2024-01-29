@@ -121,11 +121,5 @@ export function configLangfuseSDK(params: Params): Params {
     console.error("secretKey is required, but was not provided");
   }
 
-  for (const [key, value] of Object.entries(finalCoreOptions)) {
-    if (value == null) {
-      console.error(`${key} is required, but was not provided`);
-    }
-  }
-
   return { publicKey: finalPublicKey, secretKey: finalSecretKey, ...finalCoreOptions };
 }
