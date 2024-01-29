@@ -463,7 +463,7 @@ abstract class LangfuseCoreStateless {
         }
 
         if (res.status < 200 || res.status >= 400) {
-          const body = await res.text();
+          const body = await res.json();
           throw new LangfuseFetchHttpError(res, JSON.stringify(body));
         }
         const returnBody = await res.json();
