@@ -94,7 +94,7 @@ export function getEnv<T = string>(key: string): T | undefined {
 }
 
 interface Params extends LangfuseCoreOptions {
-  publicKey: string;
+  publicKey?: string;
   secretKey?: string;
 }
 

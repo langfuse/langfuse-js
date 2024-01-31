@@ -1,4 +1,11 @@
-import { assert, removeTrailingSlash, generateUUID, currentISOTime, currentTimestamp } from "../src/utils";
+import {
+  assert,
+  removeTrailingSlash,
+  generateUUID,
+  currentISOTime,
+  currentTimestamp,
+  configLangfuseSDK,
+} from "../src/utils";
 
 describe("utils", () => {
   describe("assert", () => {
@@ -39,6 +46,41 @@ describe("utils", () => {
     it("should get the iso time", () => {
       jest.setSystemTime(new Date("2022-01-01"));
       expect(currentISOTime()).toEqual("2022-01-01T00:00:00.000Z");
+    });
+  });
+
+  describe("configLangfuseSDK", () => {
+    beforeEach(() => {
+      process.env.LANGFUSE_PUBLIC_KEY = "envPublicKey";
+      process.env.LANGFUSE_SECRET_KEY = "envSecretKey";
+      process.env.LANGFUSE_OPTION1 = "envOption1";
+      process.env.LANGFUSE_OPTION2 = "envOption2";
+    });
+
+    afterEach(() => {
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+      delete process.env.LANGFUSE_OPTION1;
+      delete process.env.LANGFUSE_OPTION2;
+    });
+
+    it("should return the publicKey from the environment variables if not provided", () => {
+      const config = configLangfuseSDK({ secretKey: "1234" });
+      expect(config).toEqual({ publicKey: "envPublicKey", secretKey: "1234" });
+    });
+
+    it("should return the secretKey from the environment variables if not provided", () => {
+      const config = configLangfuseSDK({ publicKey: "1234" });
+      expect(config).toEqual({ publicKey: "1234", secretKey: "envSecretKey" });
+    });
+
+    it("should return the options from the input params if provided", () => {
+      const config = configLangfuseSDK({
+        publicKey: "1234",
+        secretKey: "5678",
+        baseUrl: "http://localhost:3000",
+      });
+      expect(config).toEqual({ publicKey: "1234", secretKey: "5678", baseUrl: "http://localhost:3000" });
     });
   });
 });
