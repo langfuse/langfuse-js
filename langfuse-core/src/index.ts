@@ -357,6 +357,8 @@ abstract class LangfuseCoreStateless {
     const items = queue.splice(0, this.flushAt);
     this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
+    this.processQueueItems(items, this.flushAt, this.flushInterval);
+
     const promiseUUID = generateUUID();
 
     const done = (err?: any): void => {
@@ -396,6 +398,39 @@ abstract class LangfuseCoreStateless {
       .catch((err) => {
         done(err);
       });
+  }
+
+  public processQueueItems(
+    queue: LangfuseQueueItem[],
+    MAX_MSG_SIZE: number,
+    BATCH_SIZE_LIMIT: number
+  ): LangfuseQueueItem[] {
+    let itemSize;
+    let totalSize = 0;
+    const items: LangfuseQueueItem[] = [];
+
+    for (const item of queue) {
+      try {
+        itemSize = new Blob([JSON.stringify(item)]).size; // calculates the byte size
+
+        if (itemSize > MAX_MSG_SIZE) {
+          console.warn(`Item exceeds size limit (size: ${itemSize}), dropping item.`);
+          continue;
+        }
+
+        items.push(item);
+        totalSize += itemSize;
+
+        if (totalSize >= BATCH_SIZE_LIMIT) {
+          console.warn(`hit batch size limit (size: ${totalSize})`);
+          break;
+        }
+      } catch (error) {
+        console.error(error);
+        break;
+      }
+    }
+    return items; // return the array of items processed
   }
 
   private getFetchOptions(p: {
