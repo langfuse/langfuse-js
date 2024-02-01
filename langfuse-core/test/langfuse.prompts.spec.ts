@@ -4,17 +4,27 @@ import {
   type LangfuseCoreTestClient,
   type LangfuseCoreTestClientMocks,
 } from "./test-utils/LangfuseCoreTestClient";
-import { LangfusePromptClient, DEFAULT_PROMPT_CACHE_TTL_SECONDS } from "../src";
+import { LangfusePromptClient, DEFAULT_PROMPT_CACHE_TTL_SECONDS, type GetLangfusePromptResponse } from "../src";
 
 describe("Langfuse Core", () => {
   let langfuse: LangfuseCoreTestClient;
   let mocks: LangfuseCoreTestClientMocks;
 
-  const prompt = {
-    name: "test-prompt",
-    prompt: "This is a prompt with a {{variable}}",
-    version: 1,
-    isActive: true,
+  const getPromptStatelessSuccess: GetLangfusePromptResponse = {
+    fetchResult: "success",
+    data: {
+      name: "test-prompt",
+      prompt: "This is a prompt with a {{variable}}",
+      version: 1,
+    },
+  };
+
+  // Currently the fetch API doesn't throw on client or server errors, but resolves with a response object
+  const getPromptStatelessFailure: GetLangfusePromptResponse = {
+    fetchResult: "failure",
+    data: {
+      message: "Prompt not found",
+    },
   };
 
   jest.useFakeTimers();
@@ -74,15 +84,28 @@ describe("Langfuse Core", () => {
     });
 
     it("should fetch and cache a prompt when not in cache", async () => {
-      const mockGetPromptStateless = jest.spyOn(langfuse, "getPromptStateless").mockResolvedValueOnce(prompt);
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValueOnce(getPromptStatelessSuccess);
       const result = await langfuse.getPrompt("test-prompt");
 
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(new LangfusePromptClient(prompt));
+      expect(result).toEqual(new LangfusePromptClient(getPromptStatelessSuccess.data));
+    });
+
+    it("should throw an error if nothing in cache and fetch fails", async () => {
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValueOnce(getPromptStatelessFailure);
+
+      expect(async () => await langfuse.getPrompt("test-prompt")).rejects.toThrow();
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
     });
 
     it("should return cached prompt if not expired", async () => {
-      const mockGetPromptStateless = jest.spyOn(langfuse, "getPromptStateless").mockResolvedValueOnce(prompt);
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValueOnce(getPromptStatelessSuccess);
 
       await langfuse.getPrompt("test-prompt");
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
@@ -90,12 +113,14 @@ describe("Langfuse Core", () => {
       const result = await langfuse.getPrompt("test-prompt");
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
 
-      expect(result).toEqual(new LangfusePromptClient(prompt));
+      expect(result).toEqual(new LangfusePromptClient(getPromptStatelessSuccess.data));
     });
 
     it("should refetch and return new prompt if cached one is expired according to custom TTL", async () => {
       const cacheTtlSeconds = Math.max(DEFAULT_PROMPT_CACHE_TTL_SECONDS - 20, 10);
-      const mockGetPromptStateless = jest.spyOn(langfuse, "getPromptStateless").mockResolvedValue(prompt);
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValue(getPromptStatelessSuccess);
 
       await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
@@ -104,11 +129,13 @@ describe("Langfuse Core", () => {
       const result = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
 
-      expect(result).toEqual(new LangfusePromptClient(prompt));
+      expect(result).toEqual(new LangfusePromptClient(getPromptStatelessSuccess.data));
     });
 
     it("should refetch and return new prompt if cached one is expired according to default TTL", async () => {
-      const mockGetPromptStateless = jest.spyOn(langfuse, "getPromptStateless").mockResolvedValue(prompt);
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValue(getPromptStatelessSuccess);
 
       await langfuse.getPrompt("test-prompt", undefined);
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
@@ -117,28 +144,55 @@ describe("Langfuse Core", () => {
       const result = await langfuse.getPrompt("test-prompt", undefined);
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
 
-      expect(result).toEqual(new LangfusePromptClient(prompt));
+      expect(result).toEqual(new LangfusePromptClient(getPromptStatelessSuccess.data));
     });
 
     it("should return expired prompt if refetch fails", async () => {
       const cacheTtlSeconds = Math.max(DEFAULT_PROMPT_CACHE_TTL_SECONDS - 20, 10);
-      const mockGetPromptStateless = jest.spyOn(langfuse, "getPromptStateless").mockResolvedValueOnce(prompt);
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValueOnce(getPromptStatelessSuccess);
 
       await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
       jest.advanceTimersByTime(cacheTtlSeconds * 1000 + 1);
 
-      mockGetPromptStateless.mockRejectedValueOnce("Server timeout");
+      mockGetPromptStateless.mockResolvedValueOnce(getPromptStatelessFailure);
       const result = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
 
-      expect(result).toEqual(new LangfusePromptClient(prompt));
+      expect(result).toEqual(new LangfusePromptClient(getPromptStatelessSuccess.data));
+    });
+
+    it("should return expired prompt if refetch fails", async () => {
+      const cacheTtlSeconds = Math.max(DEFAULT_PROMPT_CACHE_TTL_SECONDS - 20, 10);
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValueOnce(getPromptStatelessSuccess);
+
+      await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
+      jest.advanceTimersByTime(cacheTtlSeconds * 1000 + 1);
+
+      mockGetPromptStateless.mockResolvedValueOnce(getPromptStatelessFailure);
+      const result = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
+
+      expect(result).toEqual(new LangfusePromptClient(getPromptStatelessSuccess.data));
     });
 
     it("should fetch new prompt if version changes", async () => {
-      const newPromptVersion = prompt.version - 1;
-      const versionChangedPrompt = { ...prompt, version: prompt.version - 1 };
-      const mockGetPromptStateless = jest.spyOn(langfuse, "getPromptStateless").mockResolvedValueOnce(prompt);
+      const newPromptVersion = getPromptStatelessSuccess.data.version - 1;
+      const versionChangedPrompt = {
+        ...getPromptStatelessSuccess,
+        data: {
+          ...getPromptStatelessSuccess.data,
+          version: getPromptStatelessSuccess.data.version - 1,
+        },
+      };
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValueOnce(getPromptStatelessSuccess);
 
       await langfuse.getPrompt("test-prompt", undefined);
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
@@ -147,14 +201,14 @@ describe("Langfuse Core", () => {
       const result1 = await langfuse.getPrompt("test-prompt", newPromptVersion);
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
 
-      expect(result1).toEqual(new LangfusePromptClient(versionChangedPrompt));
+      expect(result1).toEqual(new LangfusePromptClient(versionChangedPrompt.data));
 
       // Return cached value on subsequent calls
       mockGetPromptStateless.mockResolvedValue(versionChangedPrompt);
       const result2 = await langfuse.getPrompt("test-prompt", newPromptVersion);
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
 
-      expect(result2).toEqual(new LangfusePromptClient(versionChangedPrompt));
+      expect(result2).toEqual(new LangfusePromptClient(versionChangedPrompt.data));
 
       // Refetch if cache has expired
       jest.advanceTimersByTime(DEFAULT_PROMPT_CACHE_TTL_SECONDS * 1000 + 1);
@@ -162,7 +216,7 @@ describe("Langfuse Core", () => {
       const result3 = await langfuse.getPrompt("test-prompt", newPromptVersion);
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(3);
 
-      expect(result3).toEqual(new LangfusePromptClient(versionChangedPrompt));
+      expect(result3).toEqual(new LangfusePromptClient(versionChangedPrompt.data));
     });
   });
 });

@@ -110,9 +110,16 @@ export type CreateLangfusePromptBody = FixTypes<
 export type CreateLangfusePromptResponse = FixTypes<
   paths["/api/public/prompts"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
-export type GetLangfusePromptResponse = FixTypes<
+export type GetLangfusePromptSuccessData = FixTypes<
   paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfusePromptFailureData = { message?: string };
+export type GetLangfusePromptResponse =
+  | {
+      fetchResult: "success";
+      data: GetLangfusePromptSuccessData;
+    }
+  | { fetchResult: "failure"; data: GetLangfusePromptFailureData };
 
 export type PromptInput = {
   prompt?: LangfusePromptClient;

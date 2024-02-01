@@ -304,7 +304,11 @@ abstract class LangfuseCoreStateless {
 
   async getPromptStateless(name: string, version?: number): Promise<GetLangfusePromptResponse> {
     const url = `${this.baseUrl}/api/public/prompts/?name=${name}` + (version ? `&version=${version}` : "");
-    return this.fetch(url, this.getFetchOptions({ method: "GET" })).then((res) => res.json());
+    return this.fetch(url, this.getFetchOptions({ method: "GET" })).then(async (res) => {
+      const data = await res.json();
+
+      return { fetchResult: res.status === 200 ? "success" : "failure", data };
+    });
   }
 
   /***
@@ -656,8 +660,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     cacheTtlSeconds?: number
   ): Promise<LangfusePromptClient> {
     try {
-      const promptResponse = await this.getPromptStateless(name, version);
-      const prompt = new LangfusePromptClient(promptResponse);
+      const { data, fetchResult } = await this.getPromptStateless(name, version);
+      if (fetchResult === "failure") {
+        throw Error(data.message ?? "Internal error while fetching prompt");
+      }
+
+      const prompt = new LangfusePromptClient(data);
       this._promptCache.set(this._getPromptCacheKey(name, version), prompt, cacheTtlSeconds);
 
       return prompt;
