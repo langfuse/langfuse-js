@@ -53,9 +53,13 @@ export const DEFAULT_PROMPT_CACHE_TTL_SECONDS = 60;
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
+  body: string | undefined;
 
-  constructor(public response: LangfuseFetchResponse) {
-    super("HTTP error while fetching Langfuse: " + response.status);
+  constructor(
+    public response: LangfuseFetchResponse,
+    body: string
+  ) {
+    super("HTTP error while fetching Langfuse: " + response.status + " and body: " + body);
   }
 }
 
@@ -461,11 +465,12 @@ abstract class LangfuseCoreStateless {
         }
 
         if (res.status < 200 || res.status >= 400) {
-          throw new LangfuseFetchHttpError(res);
+          const body = await res.json();
+          throw new LangfuseFetchHttpError(res, JSON.stringify(body));
         }
         const returnBody = await res.json();
         if (res.status === 207 && returnBody.errors.length > 0) {
-          throw new LangfuseFetchHttpError(res);
+          throw new LangfuseFetchHttpError(res, JSON.stringify(returnBody.errors));
         }
 
         return res;
