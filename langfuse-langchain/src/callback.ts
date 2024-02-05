@@ -18,8 +18,8 @@ type RootParams = {
 };
 
 type KeyParams = {
-  publicKey: string;
-  secretKey: string;
+  publicKey?: string;
+  secretKey?: string;
 } & LangfuseOptions;
 
 type ConstructorParams = (RootParams | KeyParams) & {

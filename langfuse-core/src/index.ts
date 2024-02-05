@@ -77,7 +77,7 @@ function isLangfuseFetchError(err: any): boolean {
 abstract class LangfuseCoreStateless {
   // options
   private secretKey: string | undefined;
-  private publicKey: string;
+  private publicKey: string | undefined;
   baseUrl: string;
   private flushAt: number;
   private flushInterval: number;
@@ -102,9 +102,8 @@ abstract class LangfuseCoreStateless {
   abstract getPersistedProperty<T>(key: LangfusePersistedProperty): T | undefined;
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
-  constructor(params: { publicKey: string; secretKey?: string } & LangfuseCoreOptions) {
+  constructor(params: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
     const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
-    assert(publicKey, "You must pass your Langfuse project's api public key.");
 
     this.publicKey = publicKey;
     this.secretKey = secretKey;
@@ -410,8 +409,8 @@ abstract class LangfuseCoreStateless {
         "X-Langfuse-Sdk-Name": "langfuse-js",
         "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
         "X-Langfuse-Sdk-Variant": this.getLibraryId(),
-        "X-Langfuse-Public-Key": this.publicKey,
-        ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
+        ...(this.publicKey ? { "X-Langfuse-Public-Key": this.publicKey } : undefined),
+        ...(this.publicKey ? this.constructAuthorizationHeader(this.publicKey, this.secretKey) : undefined),
       },
       body: p.body,
     };
@@ -513,7 +512,7 @@ abstract class LangfuseCoreStateless {
 }
 
 export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
-  constructor(params: { publicKey: string } & LangfuseCoreOptions) {
+  constructor(params: { publicKey?: string } & LangfuseCoreOptions) {
     const { flushAt, flushInterval, ...rest } = params;
     super({
       ...rest,
@@ -530,7 +529,7 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
 }
 
 export abstract class LangfuseCore extends LangfuseCoreStateless {
-  constructor(params: { publicKey: string; secretKey: string } & LangfuseCoreOptions) {
+  constructor(params: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
     assert(params.publicKey, "You must pass your Langfuse project's api public key.");
     assert(params.secretKey, "You must pass your Langfuse project's api secret key.");
     super(params);
