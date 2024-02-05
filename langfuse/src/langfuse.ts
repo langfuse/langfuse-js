@@ -24,8 +24,8 @@ export class Langfuse extends LangfuseCore {
   private _storageKey: string;
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
-    super(params);
-    const { publicKey } = utils.configLangfuseSDK(params);
+    const { publicKey, ...options } = utils.configLangfuseSDK(params);
+    super({ publicKey, ...options });
 
     if (typeof window !== "undefined" && "Deno" in window === false) {
       this._storageKey = params?.persistence_name ? `lf_${params?.persistence_name}` : `lf_${publicKey}_langfuse`;
@@ -81,9 +81,8 @@ export class LangfuseWeb extends LangfuseWebStateless {
   private _storageKey: string;
 
   constructor(params: { publicKey?: string } & LangfuseOptions) {
-    super(params);
-
-    const { publicKey } = utils.configLangfuseSDK(params);
+    const { publicKey, ...options } = utils.configLangfuseSDK(params);
+    super({ publicKey, ...options });
 
     const { persistence, persistence_name } = params;
     if (typeof window !== "undefined") {
