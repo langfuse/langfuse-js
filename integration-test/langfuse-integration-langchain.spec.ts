@@ -9,6 +9,7 @@ const { initializeAgentExecutorWithOptions } = require(`${base}/agents`);
 const { Calculator } = require(`${base}/tools/calculator`);
 const { ChatAnthropic } = require(`${base}/chat_models/anthropic`);
 const { ChatOpenAI } = require(`${base}/chat_models/openai`);
+const { ConversationChain, LLMChain, createExtractionChainFromZod } = require(`${base}/chains`);
 
 import { z } from "zod";
 
@@ -120,7 +121,7 @@ describe("simple chains", () => {
       secretKey: LF_SECRET_KEY,
       baseUrl: LF_HOST,
     });
-    const model = (): ChatOpenAI | ChatAnthropic => {
+    const model = (): typeof ChatOpenAI | typeof ChatAnthropic => {
       if (llm === "ChatOpenAI") {
         return new ChatOpenAI({ temperature: 0 });
       }
