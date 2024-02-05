@@ -297,13 +297,13 @@ abstract class LangfuseCoreStateless {
 
   async createPromptStateless(body: CreateLangfusePromptBody): Promise<CreateLangfusePromptResponse> {
     return this.fetch(
-      `${this.baseUrl}/api/public/prompts/`,
+      `${this.baseUrl}/api/public/prompts`,
       this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
   async getPromptStateless(name: string, version?: number): Promise<GetLangfusePromptResponse> {
-    const url = `${this.baseUrl}/api/public/prompts/?name=${name}` + (version ? `&version=${version}` : "");
+    const url = `${this.baseUrl}/api/public/prompts?name=${name}` + (version ? `&version=${version}` : "");
     return this.fetch(url, this.getFetchOptions({ method: "GET" })).then(async (res) => {
       const data = await res.json();
 

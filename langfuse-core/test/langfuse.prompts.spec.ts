@@ -70,7 +70,7 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
-      expect(url).toEqual("https://cloud.langfuse.com/api/public/prompts/?name=test-prompt");
+      expect(url).toEqual("https://cloud.langfuse.com/api/public/prompts?name=test-prompt");
       expect(options.method).toBe("GET");
     });
 
@@ -79,7 +79,7 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
-      expect(url).toEqual("https://cloud.langfuse.com/api/public/prompts/?name=test-prompt&version=2");
+      expect(url).toEqual("https://cloud.langfuse.com/api/public/prompts?name=test-prompt&version=2");
       expect(options.method).toBe("GET");
     });
 
