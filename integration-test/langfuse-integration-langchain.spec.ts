@@ -1,15 +1,18 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
-import { OpenAIChat } from "langchain/llms/openai";
-import { PromptTemplate } from "langchain/prompts";
-import { ConversationChain, LLMChain, createExtractionChainFromZod } from "langchain/chains";
-import { initializeAgentExecutorWithOptions } from "langchain/agents";
-import { Calculator } from "langchain/tools/calculator";
-import { ChatAnthropic } from "langchain/chat_models/anthropic";
-import { ChatOpenAI } from "langchain/chat_models/openai";
+const langchainVersion = process.env.LANGCHAIN_VERSION || "default";
+
+const base = `langchain${langchainVersion}`;
+const { OpenAIChat } = require(`${base}/llms/openai`);
+const { PromptTemplate } = require(`${base}/prompts`);
+const { initializeAgentExecutorWithOptions } = require(`${base}/agents`);
+const { Calculator } = require(`${base}/tools/calculator`);
+const { ChatAnthropic } = require(`${base}/chat_models/anthropic`);
+const { ChatOpenAI } = require(`${base}/chat_models/openai`);
+
 import { z } from "zod";
 
 import { Langfuse, CallbackHandler } from "../langfuse-langchain";
-
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getTraces } from "./integration-utils";
 
 describe("simple chains", () => {
