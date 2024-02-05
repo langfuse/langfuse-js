@@ -13,13 +13,7 @@ import * as dotenv from "dotenv";
 export async function run(): Promise<void> {
   dotenv.config();
 
-  const secrets = {
-    baseUrl: String(process.env["LF_HOST"]),
-    publicKey: String(process.env["LF_PUBLIC_KEY"]),
-    secretKey: String(process.env["LF_SECRET_KEY"]),
-  };
-
-  const langfuse = new Langfuse(secrets);
+  const langfuse = new Langfuse();
 
   const trace = langfuse.trace({ userId: "user-id" });
 
@@ -31,8 +25,8 @@ export async function run(): Promise<void> {
 
   console.log("Did construct objects and called them.");
 
-  const langfuseNode = new LangfuseNode(secrets);
-  const langfuseNodeDefault = new LangfuseNodeDefault(secrets);
+  const langfuseNode = new LangfuseNode();
+  const langfuseNodeDefault = new LangfuseNodeDefault();
 
   const prompt = PromptTemplate.fromTemplate("What is a good name for a company that makes {product}?");
   const llm = new OpenAI({

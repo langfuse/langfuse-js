@@ -23,15 +23,13 @@ export class Langfuse extends LangfuseCore {
   private _storageCache: any;
   private _storageKey: string;
 
-  constructor(params: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
+  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
     super(params);
     const { publicKey } = utils.configLangfuseSDK(params);
 
-    const { persistence, persistence_name } = params;
-
     if (typeof window !== "undefined" && "Deno" in window === false) {
-      this._storageKey = persistence_name ? `lf_${persistence_name}` : `lf_${publicKey}_langfuse`;
-      this._storage = getStorage(persistence || "localStorage", window);
+      this._storageKey = params?.persistence_name ? `lf_${params?.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(params?.persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;
       this._storage = getStorage("memory", undefined);
