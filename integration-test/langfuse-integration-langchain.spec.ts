@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
-const langchainVersion = process.env.LANGCHAIN_VERSION || "default";
+const langchainVersion = process.env.LANGCHAIN_VERSION || "0";
 
 const base = `langchain${langchainVersion}`;
 const { OpenAIChat } = require(`${base}/llms/openai`);
