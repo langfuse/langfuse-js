@@ -25,7 +25,6 @@ describe("Langfuse (fetch)", () => {
 
   describe("core methods", () => {
     it("check health of langfuse server", async () => {
-      console.log("hehe", LANGFUSE_HOST, "/api/public/health", { headers: getHeaders() });
       const res = await axios
         .get(LANGFUSE_HOST + "/api/public/health", { headers: getHeaders() })
         .then((res) => res.data)
@@ -34,6 +33,7 @@ describe("Langfuse (fetch)", () => {
     });
 
     it("create trace", async () => {
+      langfuse.debug(true);
       const trace = langfuse.trace({
         name: "trace-name",
         sessionId: "123456789",
@@ -42,9 +42,12 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
+      console.log("hehe", LANGFUSE_HOST, "/api/public/health", { headers: getHeaders() });
+
       const res = await axios.get(`${LANGFUSE_HOST}/api/public/traces/${trace.id}`, {
         headers: getHeaders(),
       });
+      console.log("res", res.data);
       expect(res.data).toMatchObject({
         id: trace.id,
         name: "trace-name",
