@@ -21,7 +21,7 @@ describe("No errors should be thrown by SDKs", () => {
         baseUrl: "https://incorrect-host",
         flushAt: 2,
         fetchRetryDelay: 1,
-        fetchRetryCount: 3,
+        fetchRetryCount: 2,
       });
 
       const trace = langfuse.trace({ name: "trace-name" });
@@ -45,7 +45,7 @@ describe("No errors should be thrown by SDKs", () => {
         baseUrl: LF_HOST,
         flushAt: 2,
         fetchRetryDelay: 1,
-        fetchRetryCount: 3,
+        fetchRetryCount: 2,
       });
 
       const trace = langfuse.trace({ name: "trace-name" });
@@ -74,7 +74,7 @@ describe("No errors should be thrown by SDKs", () => {
         baseUrl: "https://incorrect-host",
         flushAt: 2,
         fetchRetryDelay: 1,
-        fetchRetryCount: 3,
+        fetchRetryCount: 2,
       });
 
       for (let i = 0; i < 10; i++) {
@@ -100,7 +100,7 @@ describe("No errors should be thrown by SDKs", () => {
         baseUrl: LF_HOST,
         flushAt: 2,
         fetchRetryDelay: 1,
-        fetchRetryCount: 3,
+        fetchRetryCount: 2,
       });
 
       for (let i = 0; i < 10; i++) {

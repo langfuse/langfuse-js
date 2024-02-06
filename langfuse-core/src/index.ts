@@ -370,8 +370,6 @@ abstract class LangfuseCoreStateless {
         this._events.emit("error", err);
       }
       callback?.(err, items);
-      // remove promise from pendingPromises
-      delete this.pendingPromises[promiseUUID];
       this._events.emit("flush", items);
     };
 
@@ -400,6 +398,9 @@ abstract class LangfuseCoreStateless {
         done(err);
       });
     this.pendingPromises[promiseUUID] = requestPromise;
+    requestPromise.finally(() => {
+      delete this.pendingPromises[promiseUUID];
+    });
   }
 
   private getFetchOptions(p: {
@@ -493,6 +494,8 @@ abstract class LangfuseCoreStateless {
           })
         )
       );
+      // flush again in case there are new events that were added while we were waiting for the pending promises to resolve
+      await this.flushAsync();
     } catch (e) {
       console.error("Error while shutting down Langfuse", e);
     }
