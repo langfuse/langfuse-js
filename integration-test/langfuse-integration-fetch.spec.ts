@@ -41,11 +41,9 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-
       const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
         headers: getHeaders(),
       });
-
       expect(res.data).toMatchObject({
         id: trace.id,
         name: "trace-name",

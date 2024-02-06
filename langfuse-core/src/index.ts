@@ -45,7 +45,6 @@ import mustache from "mustache";
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
-import { utils } from "langfuse-core";
 export { LangfuseMemoryStorage } from "./storage-memory";
 
 export type IngestionBody = SingleIngestionEvent["body"];
@@ -79,7 +78,7 @@ function isLangfuseFetchError(err: any): boolean {
 abstract class LangfuseCoreStateless {
   // options
   private secretKey: string | undefined;
-  private publicKey: string | undefined;
+  private publicKey: string;
   baseUrl: string;
   private flushAt: number;
   private flushInterval: number;
@@ -104,22 +103,25 @@ abstract class LangfuseCoreStateless {
   abstract getPersistedProperty<T>(key: LangfusePersistedProperty): T | undefined;
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
-  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
-    this.publicKey = params?.publicKey;
-    this.secretKey = params?.secretKey;
-    this.baseUrl = removeTrailingSlash(params?.baseUrl || "https://cloud.langfuse.com");
-    this.flushAt = params?.flushAt ? Math.max(params?.flushAt, 1) : 20;
-    this.flushInterval = params?.flushInterval ?? 10000;
-    this.release = params?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
+  constructor(params: { publicKey: string; secretKey?: string } & LangfuseCoreOptions) {
+    const { publicKey, secretKey, ...options } = params;
+    assert(publicKey, "You must pass your Langfuse project's api public key.");
+
+    this.publicKey = publicKey;
+    this.secretKey = secretKey;
+    this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
+    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20;
+    this.flushInterval = options?.flushInterval ?? 10000;
+    this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
 
     this._retryOptions = {
-      retryCount: params?.fetchRetryCount ?? 3,
-      retryDelay: params?.fetchRetryDelay ?? 3000,
+      retryCount: options?.fetchRetryCount ?? 3,
+      retryDelay: options?.fetchRetryDelay ?? 3000,
       retryCheck: isLangfuseFetchError,
     };
-    this.requestTimeout = params?.requestTimeout ?? 10000; // 10 seconds
+    this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
-    this.sdkIntegration = params?.sdkIntegration ?? ("DEFAULT" as const);
+    this.sdkIntegration = options?.sdkIntegration ?? ("DEFAULT" as const);
   }
 
   protected getCommonEventProperties(): any {
@@ -413,8 +415,8 @@ abstract class LangfuseCoreStateless {
         "X-Langfuse-Sdk-Name": "langfuse-js",
         "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
         "X-Langfuse-Sdk-Variant": this.getLibraryId(),
-        ...(this.publicKey ? { "X-Langfuse-Public-Key": this.publicKey } : undefined),
-        ...(this.publicKey ? this.constructAuthorizationHeader(this.publicKey, this.secretKey) : undefined),
+        "X-Langfuse-Public-Key": this.publicKey,
+        ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
       },
       body: p.body,
     };
@@ -516,7 +518,7 @@ abstract class LangfuseCoreStateless {
 }
 
 export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
-  constructor(params: { publicKey?: string } & LangfuseCoreOptions) {
+  constructor(params: { publicKey: string } & LangfuseCoreOptions) {
     const { flushAt, flushInterval, ...rest } = params;
     super({
       ...rest,
@@ -535,9 +537,9 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
 export abstract class LangfuseCore extends LangfuseCoreStateless {
   private _promptCache: LangfusePromptCache;
 
-  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
-    assert(params?.publicKey, "You must pass your Langfuse project's api public key.");
-    assert(params?.secretKey, "You must pass your Langfuse project's api secret key.");
+  constructor(params: { publicKey: string; secretKey: string } & LangfuseCoreOptions) {
+    assert(params.publicKey, "You must pass your Langfuse project's api public key.");
+    assert(params.secretKey, "You must pass your Langfuse project's api secret key.");
     super(params);
     this._promptCache = new LangfusePromptCache();
   }

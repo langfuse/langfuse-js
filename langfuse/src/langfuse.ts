@@ -9,6 +9,7 @@ import {
 import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
+import { assert } from "langfuse-core/src/utils";
 
 // Required when users pass these as typed arguments
 export {
@@ -24,12 +25,20 @@ export class Langfuse extends LangfuseCore {
   private _storageKey: string;
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
-    const { publicKey, ...options } = utils.configLangfuseSDK(params);
+    const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
+    if (!secretKey) {
+      throw new Error("secretKey is required");
+    }
+    assert(secretKey, "secretKey is required");
+    if (!publicKey) {
+      throw new Error("publicKey is required");
+    }
+    assert(publicKey, "publicKey is required");
 
-    super({ publicKey, ...options });
+    super({ publicKey, secretKey, ...options });
 
     if (typeof window !== "undefined" && "Deno" in window === false) {
-      this._storageKey = params?.persistence_name ? `lf_${params?.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storageKey = params?.persistence_name ? `lf_${params.persistence_name}` : `lf_${publicKey}_langfuse`;
       this._storage = getStorage(params?.persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;
@@ -83,11 +92,15 @@ export class LangfuseWeb extends LangfuseWebStateless {
 
   constructor(params?: { publicKey?: string } & LangfuseOptions) {
     const { publicKey, ...options } = utils.configLangfuseSDK(params, false);
+    if (!publicKey) {
+      throw new Error("publicKey is required");
+    }
+    assert(publicKey, "publicKey is required");
 
     super({ publicKey, ...options });
 
     if (typeof window !== "undefined") {
-      this._storageKey = params?.persistence_name ? `lf_${params?.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storageKey = params?.persistence_name ? `lf_${params.persistence_name}` : `lf_${publicKey}_langfuse`;
       this._storage = getStorage(params?.persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;

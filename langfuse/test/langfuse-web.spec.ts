@@ -36,7 +36,7 @@ describe("langfuseWeb", () => {
     });
   });
 
-  describe("init", () => {
+  describe("instantiation", () => {
     it("instantiates with env variables", async () => {
       console.log("process.env.LANGFUSE_PUBLIC_KEY", process.env.LANGFUSE_BASEURL);
       const langfuse = new LangfuseWeb();
