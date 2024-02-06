@@ -38,6 +38,8 @@ describe("Langfuse Node.js", () => {
       // @ts-expect-error
       const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
 
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
+
       expect(options).toMatchObject({
         headers: {
           "Content-Type": "application/json",
@@ -51,10 +53,11 @@ describe("Langfuse Node.js", () => {
     });
 
     it("instantiates with constructor variables", async () => {
-      const langfuse = new Langfuse({ publicKey: "test", secretKey: "test" });
+      const langfuse = new Langfuse({ publicKey: "test", secretKey: "test", baseUrl: "http://example.com" });
       // @ts-expect-error
       const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
 
+      expect(langfuse.baseUrl).toEqual("http://example.com");
       expect(options).toMatchObject({
         headers: {
           "Content-Type": "application/json",

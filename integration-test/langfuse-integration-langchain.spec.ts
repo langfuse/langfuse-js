@@ -14,7 +14,7 @@ const { ConversationChain, LLMChain, createExtractionChainFromZod } = require(`$
 import { z } from "zod";
 
 import { Langfuse, CallbackHandler } from "../langfuse-langchain";
-import { LANGFUSE_PUBLIC_KEY, getHeaders, getTraces } from "./integration-utils";
+import { LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY, getHeaders, getTraces } from "./integration-utils";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
@@ -25,7 +25,7 @@ describe("Langchain", () => {
       const callback = new CallbackHandler();
       // @ts-expect-error
       const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
-
+      expect(callback.langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
       expect(options).toMatchObject({
         headers: {
           "Content-Type": "application/json",
@@ -39,10 +39,11 @@ describe("Langchain", () => {
     });
 
     it("instantiates with constructor variables", async () => {
-      const callback = new CallbackHandler({ publicKey: "test", secretKey: "test" });
+      const callback = new CallbackHandler({ publicKey: "test", secretKey: "test", baseUrl: "http://example.com" });
       // @ts-expect-error
       const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
 
+      expect(callback.langfuse.baseUrl).toEqual("http://example.com");
       expect(options).toMatchObject({
         headers: {
           "Content-Type": "application/json",
