@@ -25,6 +25,7 @@ describe("Langfuse (fetch)", () => {
 
   describe("core methods", () => {
     it("check health of langfuse server", async () => {
+      console.log("hehe", LANGFUSE_HOST, "/api/public/health", { headers: getHeaders() });
       const res = await axios
         .get(LANGFUSE_HOST + "/api/public/health", { headers: getHeaders() })
         .then((res) => res.data)

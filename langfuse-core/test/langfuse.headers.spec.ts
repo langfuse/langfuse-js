@@ -1,4 +1,3 @@
-import { LangfuseCore } from "../src";
 import {
   createTestClient,
   type LangfuseCoreTestClient,
