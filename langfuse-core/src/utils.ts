@@ -110,6 +110,7 @@ export function configLangfuseSDK(params?: Params, secretRequired: boolean = tru
   const finalSecretKey = secretRequired ? secretKey ?? getEnv("LANGFUSE_SECRET_KEY") : undefined;
   const finalBaseUrl = coreOptions.baseUrl ?? getEnv("LANGFUSE_BASEURL");
 
+  console.log("finalBaseUrl", coreOptions.baseUrl, getEnv("LANGFUSE_BASEURL"));
   const finalCoreOptions = {
     ...coreOptions,
     baseUrl: finalBaseUrl,
