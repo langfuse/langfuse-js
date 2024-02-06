@@ -7,8 +7,8 @@ export const LANGFUSE_PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY ?? "pk-lf-123
 export const LANGFUSE_SECRET_KEY = process.env.LANGFUSE_SECRET_KEY ?? "sk-lf-1234567890";
 
 export const getHeaders = (
-  pk: string | undefined = LANGFUSE_PUBLIC_KEY,
-  sk: string | undefined = LANGFUSE_SECRET_KEY
+  pk: string = LANGFUSE_PUBLIC_KEY,
+  sk: string = LANGFUSE_SECRET_KEY
 ): Record<string, string> => {
   return { Authorization: "Basic " + Buffer.from(`${pk}:${sk}`).toString("base64") };
 };
