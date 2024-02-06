@@ -3,7 +3,7 @@ import Langfuse from "../langfuse-node";
 
 // import { wait } from '../langfuse-core/test/test-utils/test-utils'
 import axios from "axios";
-import { LANGFUSE_HOST, getHeaders } from "./integration-utils";
+import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
@@ -27,7 +27,7 @@ describe("Langfuse Node.js", () => {
   describe("core methods", () => {
     it("check health of langfuse server", async () => {
       const res = await axios
-        .get(LANGFUSE_HOST + "/api/public/health", { headers: getHeaders() })
+        .get(LANGFUSE_BASEURL + "/api/public/health", { headers: getHeaders() })
         .then((res) => res.data)
         .catch((err) => console.log(err));
       expect(res).toMatchObject({ status: "OK" });
@@ -71,7 +71,7 @@ describe("Langfuse Node.js", () => {
       const trace = langfuse.trace({ name: "trace-name", tags: ["tag1", "tag2"] });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/traces/${trace.id}`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({ id: trace.id, name: "trace-name", tags: ["tag1", "tag2"] });
@@ -86,7 +86,7 @@ describe("Langfuse Node.js", () => {
       });
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/traces/${trace.id}`, { headers: getHeaders() });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, { headers: getHeaders() });
 
       expect(res.data).toMatchObject({
         id: trace.id,
@@ -103,7 +103,7 @@ describe("Langfuse Node.js", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${span.id}`, { headers: getHeaders() });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
       expect(res.data).toMatchObject({
         id: span.id,
         name: "span-name",
@@ -140,7 +140,7 @@ describe("Langfuse Node.js", () => {
       span.end();
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${span.id}`, { headers: getHeaders() });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
 
       expect(res.data).toMatchObject({
         id: span.id,
@@ -167,7 +167,7 @@ describe("Langfuse Node.js", () => {
 
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${generation.id}`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -200,7 +200,7 @@ describe("Langfuse Node.js", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${generation.id}`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -229,7 +229,7 @@ describe("Langfuse Node.js", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${generation.id}`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -261,7 +261,7 @@ describe("Langfuse Node.js", () => {
 
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const returnedGeneration = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${generation.id}`, {
+      const returnedGeneration = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(returnedGeneration.data).toMatchObject({
@@ -277,7 +277,7 @@ describe("Langfuse Node.js", () => {
         },
       });
 
-      const returnedSpan = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${span.id}`, {
+      const returnedSpan = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, {
         headers: getHeaders(),
       });
       expect(returnedSpan.data).toMatchObject({
@@ -311,7 +311,7 @@ describe("Langfuse Node.js", () => {
 
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${generation.id}`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
 
@@ -334,7 +334,7 @@ describe("Langfuse Node.js", () => {
       await langfuse.flushAsync();
 
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${event.id}`, { headers: getHeaders() });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, { headers: getHeaders() });
       expect(res.data).toMatchObject({
         id: event.id,
         name: "event-name",
@@ -347,7 +347,7 @@ describe("Langfuse Node.js", () => {
       await langfuse.flushAsync();
 
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${event.id}`, { headers: getHeaders() });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, { headers: getHeaders() });
       expect(res.data).toMatchObject({
         id: event.id,
         name: "event-name",
@@ -373,7 +373,7 @@ describe("Langfuse Node.js", () => {
       expect(prompt.prompt).toEqual("This is a prompt with a {{variable}}");
       expect(prompt.version).toEqual(1);
 
-      const res = await axios.get(`${LANGFUSE_HOST}/api/public/prompts/?name=${promptName}`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/prompts/?name=${promptName}`, {
         headers: getHeaders(),
       });
 
@@ -406,7 +406,7 @@ describe("Langfuse Node.js", () => {
 
     await langfuse.flushAsync();
 
-    const res = await axios.get(`${LANGFUSE_HOST}/api/public/prompts/?name=${promptName}`, {
+    const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/prompts/?name=${promptName}`, {
       headers: getHeaders(),
     });
 
@@ -417,7 +417,7 @@ describe("Langfuse Node.js", () => {
       version: expect.any(Number),
     });
 
-    const observation = await axios.get(`${LANGFUSE_HOST}/api/public/observations/${generation.id}`, {
+    const observation = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
       headers: getHeaders(),
     });
 
@@ -447,7 +447,7 @@ describe("Langfuse Node.js", () => {
 
     expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
 
-    const res = await axios.get(`${LANGFUSE_HOST}/api/public/prompts/?name=${promptName}`, {
+    const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/prompts/?name=${promptName}`, {
       headers: getHeaders(),
     });
     expect(res.data).toMatchObject({});
