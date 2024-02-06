@@ -394,14 +394,12 @@ abstract class LangfuseCoreStateless {
       body: payload,
     });
 
-    const requestPromise = this.fetchWithRetry(url, fetchOptions);
-    this.pendingPromises[promiseUUID] = requestPromise;
-
-    requestPromise
+    const requestPromise = this.fetchWithRetry(url, fetchOptions)
       .then(() => done())
       .catch((err) => {
         done(err);
       });
+    this.pendingPromises[promiseUUID] = requestPromise;
   }
 
   private getFetchOptions(p: {
