@@ -3,9 +3,7 @@ import Langfuse from "../langfuse-node";
 
 // import { wait } from '../langfuse-core/test/test-utils/test-utils'
 import axios from "axios";
-import { getHeaders } from "./integration-utils";
-
-const LANGFUSE_HOST = process.env.LANGFUSE_HOST ?? "http://localhost:3000";
+import { LANGFUSE_HOST, getHeaders } from "./integration-utils";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;

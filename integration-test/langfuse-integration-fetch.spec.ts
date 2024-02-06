@@ -2,9 +2,7 @@
 import Langfuse from "../langfuse";
 
 import axios from "axios";
-import { getHeaders } from "./integration-utils";
-
-const LANGFUSE_HOST = process.env.LANGFUSE_HOST ?? "http://localhost:3000";
+import { getHeaders, LANGFUSE_HOST } from "./integration-utils";
 
 describe("Langfuse (fetch)", () => {
   let langfuse: Langfuse;

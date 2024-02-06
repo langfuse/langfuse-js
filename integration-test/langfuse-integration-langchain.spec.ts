@@ -14,7 +14,7 @@ const { ConversationChain, LLMChain, createExtractionChainFromZod } = require(`$
 import { z } from "zod";
 
 import { Langfuse, CallbackHandler } from "../langfuse-langchain";
-import { LANFGFUSE_PUBLIC_KEY, getHeaders, getTraces } from "./integration-utils";
+import { LANGFUSE_PUBLIC_KEY, getHeaders, getTraces } from "./integration-utils";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
@@ -31,7 +31,7 @@ describe("Langchain", () => {
           "Content-Type": "application/json",
           "X-Langfuse-Sdk-Name": "langfuse-js",
           "X-Langfuse-Sdk-Variant": "langfuse",
-          "X-Langfuse-Public-Key": LANFGFUSE_PUBLIC_KEY,
+          "X-Langfuse-Public-Key": LANGFUSE_PUBLIC_KEY,
           ...getHeaders(),
         },
         body: "test",
