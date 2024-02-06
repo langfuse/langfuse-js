@@ -28,11 +28,11 @@ export class Langfuse extends LangfuseCore {
     if (!secretKey) {
       throw new Error("secretKey is required");
     }
-    utils.assert(secretKey, "secretKey is required");
+    utils.assert(secretKey, "[Langfuse] secretKey is required for instantiation");
     if (!publicKey) {
       throw new Error("publicKey is required");
     }
-    utils.assert(publicKey, "publicKey is required");
+    utils.assert(publicKey, "[Langfuse] publicKey is required for instantiation");
 
     super({ publicKey, secretKey, ...options });
 
@@ -94,7 +94,7 @@ export class LangfuseWeb extends LangfuseWebStateless {
     if (!publicKey) {
       throw new Error("publicKey is required");
     }
-    utils.assert(publicKey, "publicKey is required");
+    utils.assert(publicKey, "[Langfuse] publicKey is required for instantiation");
 
     super({ publicKey, ...options });
 
