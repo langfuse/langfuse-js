@@ -104,7 +104,7 @@ abstract class LangfuseCoreStateless {
   abstract getPersistedProperty<T>(key: LangfusePersistedProperty): T | undefined;
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
-  constructor(params: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
+  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
     const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
 
     this.publicKey = publicKey;
@@ -537,9 +537,9 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
 export abstract class LangfuseCore extends LangfuseCoreStateless {
   private _promptCache: LangfusePromptCache;
 
-  constructor(params: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
-    assert(params.publicKey, "You must pass your Langfuse project's api public key.");
-    assert(params.secretKey, "You must pass your Langfuse project's api secret key.");
+  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
+    assert(params?.publicKey, "You must pass your Langfuse project's api public key.");
+    assert(params?.secretKey, "You must pass your Langfuse project's api secret key.");
     super(params);
     this._promptCache = new LangfusePromptCache();
   }

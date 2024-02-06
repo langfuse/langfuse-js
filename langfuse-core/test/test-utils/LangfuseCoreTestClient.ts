@@ -20,7 +20,7 @@ export class LangfuseCoreTestClient extends LangfuseCore {
 
   constructor(
     private mocks: LangfuseCoreTestClientMocks,
-    params: { publicKey: string; secretKey: string } & LangfuseCoreOptions
+    params?: { publicKey: string; secretKey: string } & LangfuseCoreOptions
   ) {
     super(params);
   }
@@ -46,7 +46,7 @@ export class LangfuseCoreTestClient extends LangfuseCore {
 }
 
 export const createTestClient = (
-  params: {
+  params?: {
     publicKey: string;
     secretKey: string;
   } & LangfuseCoreOptions,

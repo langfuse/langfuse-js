@@ -98,19 +98,21 @@ interface Params extends LangfuseCoreOptions {
   secretKey?: string;
 }
 
-export function configLangfuseSDK(params: Params): Params {
+export function configLangfuseSDK(params?: Params): Params {
+  if (!params) {
+    params = {};
+  }
   const { publicKey, secretKey, ...coreOptions } = params;
 
   // check environment variables if values not provided
   const finalPublicKey = publicKey ?? getEnv("LANGFUSE_PUBLIC_KEY");
   const finalSecretKey = secretKey ?? getEnv("LANGFUSE_SECRET_KEY");
+  const finalBaseUrl = coreOptions.baseUrl ?? getEnv("LANGFUSE_BASEURL");
 
-  const finalCoreOptions: any = {};
-
-  Object.entries(coreOptions).forEach(([key, value]) => {
-    const envVariable = `LANGFUSE_${key.toUpperCase()}`;
-    finalCoreOptions[key] = value ?? getEnv(envVariable);
-  });
+  const finalCoreOptions = {
+    ...coreOptions,
+    baseUrl: finalBaseUrl,
+  };
 
   // check required parameters
   if (!finalPublicKey) {
