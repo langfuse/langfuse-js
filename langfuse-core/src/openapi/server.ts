@@ -111,7 +111,7 @@ export interface components {
     /** TraceWithFullDetails */
     TraceWithFullDetails: WithRequired<
       {
-        observations: components["schemas"]["Observation"][];
+        observations: components["schemas"]["ObservationsView"][];
         scores: components["schemas"]["Score"][];
       } & components["schemas"]["Trace"],
       "observations" | "scores"
@@ -156,6 +156,22 @@ export interface components {
       parentObservationId?: string | null;
       promptId?: string | null;
     };
+    /** ObservationsView */
+    ObservationsView: {
+      modelId?: string | null;
+      /** Format: double */
+      inputPrice?: number | null;
+      /** Format: double */
+      outputPrice?: number | null;
+      /** Format: double */
+      totalPrice?: number | null;
+      /** Format: double */
+      calculatedInputCost?: number | null;
+      /** Format: double */
+      calculatedOutputCost?: number | null;
+      /** Format: double */
+      calculatedTotalCost?: number | null;
+    } & components["schemas"]["Observation"];
     /** Usage */
     Usage: {
       input?: number | null;
@@ -232,7 +248,7 @@ export interface components {
      * ModelUsageUnit
      * @enum {string}
      */
-    ModelUsageUnit: "CHARACTERS" | "TOKENS";
+    ModelUsageUnit: "CHARACTERS" | "TOKENS" | "MILLISECONDS" | "SECONDS" | "IMAGES";
     /**
      * ObservationLevel
      * @enum {string}
@@ -566,6 +582,11 @@ export interface components {
     /** Observations */
     Observations: {
       data: components["schemas"]["Observation"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** ObservationsViews */
+    ObservationsViews: {
+      data: components["schemas"]["ObservationsView"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
     /** Projects */
@@ -969,7 +990,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Observation"];
+          "application/json": components["schemas"]["ObservationsView"];
         };
       };
       400: {
@@ -1015,7 +1036,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["Observations"];
+          "application/json": components["schemas"]["ObservationsViews"];
         };
       };
       400: {
