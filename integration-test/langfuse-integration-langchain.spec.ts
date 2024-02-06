@@ -14,13 +14,13 @@ const { ConversationChain, LLMChain, createExtractionChainFromZod } = require(`$
 import { z } from "zod";
 
 import { Langfuse, CallbackHandler } from "../langfuse-langchain";
-import { LANGFUSE_PUBLIC_KEY, getHeaders, getTraces } from "./integration-utils";
+import { getTraces } from "./integration-utils";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
   jest.useRealTimers();
 
-  describe("setup", () => {
+  // describe("setup", () => {
   //   it("instantiates with env variables", async () => {
   //     const callback = new CallbackHandler();
   //     // @ts-expect-error
