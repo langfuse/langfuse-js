@@ -1,5 +1,4 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
-import { env } from "process";
 import Langfuse from "../langfuse-node";
 
 // import { wait } from '../langfuse-core/test/test-utils/test-utils'
@@ -46,7 +45,7 @@ describe("Langfuse Node.js", () => {
           "Content-Type": "application/json",
           "X-Langfuse-Sdk-Name": "langfuse-js",
           "X-Langfuse-Sdk-Variant": "langfuse-node",
-          "X-Langfuse-Public-Key": env.LANGFUSE_PUBLIC_KEY,
+          "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
           ...getHeaders(),
         },
         body: "test",
