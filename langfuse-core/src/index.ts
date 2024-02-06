@@ -496,9 +496,6 @@ abstract class LangfuseCoreStateless {
         )
       );
     } catch (e) {
-      if (!isLangfuseFetchError(e)) {
-        throw e;
-      }
       console.error("Error while shutting down Langfuse", e);
     }
   }
