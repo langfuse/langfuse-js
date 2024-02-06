@@ -106,7 +106,7 @@ abstract class LangfuseCoreStateless {
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
     const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
-    console.log("all", publicKey, secretKey, options);
+
     this.publicKey = publicKey;
     this.secretKey = secretKey;
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
@@ -420,8 +420,6 @@ abstract class LangfuseCoreStateless {
       },
       body: p.body,
     };
-
-    console.log("fetchOptions", fetchOptions);
 
     return fetchOptions;
   }
