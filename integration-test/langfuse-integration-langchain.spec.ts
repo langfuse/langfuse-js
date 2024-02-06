@@ -14,47 +14,47 @@ const { ConversationChain, LLMChain, createExtractionChainFromZod } = require(`$
 import { z } from "zod";
 
 import { Langfuse, CallbackHandler } from "../langfuse-langchain";
-import { getTraces } from "./integration-utils";
+import { LANGFUSE_PUBLIC_KEY, getHeaders, getTraces } from "./integration-utils";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
   jest.useRealTimers();
 
-  // describe("setup", () => {
-  //   it("instantiates with env variables", async () => {
-  //     const callback = new CallbackHandler();
-  //     // @ts-expect-error
-  //     const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
+  describe("setup", () => {
+    it("instantiates with env variables", async () => {
+      const callback = new CallbackHandler();
+      // @ts-expect-error
+      const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
 
-  //     expect(options).toMatchObject({
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "X-Langfuse-Sdk-Name": "langfuse-js",
-  //         "X-Langfuse-Sdk-Variant": "langfuse",
-  //         "X-Langfuse-Public-Key": LANGFUSE_PUBLIC_KEY,
-  //         ...getHeaders(),
-  //       },
-  //       body: "test",
-  //     });
-  //   });
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse",
+          "X-Langfuse-Public-Key": LANGFUSE_PUBLIC_KEY,
+          ...getHeaders(),
+        },
+        body: "test",
+      });
+    });
 
-  //   it("instantiates with constructor variables", async () => {
-  //     const callback = new CallbackHandler({ publicKey: "test", secretKey: "test" });
-  //     // @ts-expect-error
-  //     const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
+    it("instantiates with constructor variables", async () => {
+      const callback = new CallbackHandler({ publicKey: "test", secretKey: "test" });
+      // @ts-expect-error
+      const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
 
-  //     expect(options).toMatchObject({
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "X-Langfuse-Sdk-Name": "langfuse-js",
-  //         "X-Langfuse-Sdk-Variant": "langfuse",
-  //         "X-Langfuse-Public-Key": "test",
-  //         ...getHeaders("test", "test"),
-  //       },
-  //       body: "test",
-  //     });
-  //   });
-  // });
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse",
+          "X-Langfuse-Public-Key": "test",
+          ...getHeaders("test", "test"),
+        },
+        body: "test",
+      });
+    });
+  });
 
   describe("chains", () => {
     it("should execute simple llm call", async () => {
