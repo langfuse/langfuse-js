@@ -11,7 +11,6 @@ import {
 } from "langfuse-core";
 import { type LangfuseOptions } from "./types";
 import { fetch } from "./fetch";
-import { assert } from "langfuse-core/src/utils";
 
 // Required when users pass these as typed arguments
 export {
@@ -37,7 +36,7 @@ export default class Langfuse extends LangfuseCore {
       throw new Error("publicKey is required");
     }
 
-    assert(secretKey, "secretKey is required");
+    utils.assert(secretKey, "secretKey is required");
 
     super({ publicKey, secretKey, ...options });
 

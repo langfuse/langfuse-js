@@ -9,7 +9,6 @@ import {
 import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
-import { assert } from "langfuse-core/src/utils";
 
 // Required when users pass these as typed arguments
 export {
@@ -29,11 +28,11 @@ export class Langfuse extends LangfuseCore {
     if (!secretKey) {
       throw new Error("secretKey is required");
     }
-    assert(secretKey, "secretKey is required");
+    utils.assert(secretKey, "secretKey is required");
     if (!publicKey) {
       throw new Error("publicKey is required");
     }
-    assert(publicKey, "publicKey is required");
+    utils.assert(publicKey, "publicKey is required");
 
     super({ publicKey, secretKey, ...options });
 
@@ -95,7 +94,7 @@ export class LangfuseWeb extends LangfuseWebStateless {
     if (!publicKey) {
       throw new Error("publicKey is required");
     }
-    assert(publicKey, "publicKey is required");
+    utils.assert(publicKey, "publicKey is required");
 
     super({ publicKey, ...options });
 
