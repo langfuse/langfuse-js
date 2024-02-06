@@ -5,6 +5,7 @@
 // import { LangfuseWeb } from '../'
 import { utils } from "langfuse-core";
 import { LangfuseWeb } from "../index";
+import { LANGFUSE_BASEURL } from "../../integration-test/integration-utils";
 
 describe("langfuseWeb", () => {
   let fetch: jest.Mock;
@@ -36,12 +37,49 @@ describe("langfuseWeb", () => {
   });
 
   describe("init", () => {
+    it("instantiates with env variables", async () => {
+      console.log("process.env.LANGFUSE_PUBLIC_KEY", process.env.LANGFUSE_PUBLIC_KEY);
+      const langfuse = new LangfuseWeb();
+      // @ts-expect-error
+      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
+
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse-frontend",
+          "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
+          Authorization: `Bearer ${process.env.LANGFUSE_PUBLIC_KEY}`,
+        },
+        body: "test",
+      });
+    });
+
+    it("instantiates with constructor variables", async () => {
+      const langfuse = new LangfuseWeb({ publicKey: "test", baseUrl: "http://example.com" });
+      // @ts-expect-error
+      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual("http://example.com");
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse-frontend",
+          "X-Langfuse-Public-Key": "test",
+          Authorization: "Bearer test",
+        },
+        body: "test",
+      });
+    });
     it("should initialise", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
         flushAt: 10,
       });
-      expect(langfuse.baseUrl).toEqual("https://cloud.langfuse.com");
+      expect(langfuse.baseUrl).toEqual("http://localhost:3000");
 
       const id = utils.generateUUID();
       const score = langfuse.score({
@@ -60,7 +98,7 @@ describe("langfuseWeb", () => {
       expect(fetch).toHaveBeenCalledTimes(1);
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://cloud.langfuse.com/api/public/ingestion",
+        "http://localhost:3000/api/public/ingestion",
         expect.objectContaining({
           body: expect.stringContaining(
             JSON.stringify({

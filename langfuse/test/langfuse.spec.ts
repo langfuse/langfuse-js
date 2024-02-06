@@ -34,7 +34,7 @@ describe("langfuseWeb", () => {
         secretKey: "sk",
         flushAt: 1,
       });
-      expect(langfuse.baseUrl).toEqual("https://cloud.langfuse.com");
+      expect(langfuse.baseUrl).toEqual("http://localhost:3000");
 
       langfuse.trace({ name: "test-trace-1" });
 
@@ -50,7 +50,7 @@ describe("langfuseWeb", () => {
 
       langfuse.trace({ name: "test-trace-1", id: "test-id" });
 
-      expect(fetch).toHaveBeenCalledWith("https://cloud.langfuse.com/api/public/ingestion", {
+      expect(fetch).toHaveBeenCalledWith("http://localhost:3000/api/public/ingestion", {
         body: expect.stringContaining(
           JSON.stringify({
             id: "test-id",

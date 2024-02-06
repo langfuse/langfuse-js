@@ -66,12 +66,12 @@ describe("utils", () => {
 
     it("should return the publicKey from the environment variables if not provided", () => {
       const config = configLangfuseSDK({ secretKey: "1234" });
-      expect(config).toEqual({ publicKey: "envPublicKey", secretKey: "1234" });
+      expect(config).toEqual({ publicKey: "envPublicKey", secretKey: "1234", baseUrl: "http://localhost:3000" });
     });
 
     it("should return the secretKey from the environment variables if not provided", () => {
       const config = configLangfuseSDK({ publicKey: "1234" });
-      expect(config).toEqual({ publicKey: "1234", secretKey: "envSecretKey" });
+      expect(config).toEqual({ publicKey: "1234", secretKey: "envSecretKey", baseUrl: "http://localhost:3000" });
     });
 
     it("should return the options from the input params if provided", () => {

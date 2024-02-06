@@ -81,14 +81,14 @@ export class LangfuseWeb extends LangfuseWebStateless {
   private _storageCache: any;
   private _storageKey: string;
 
-  constructor(params: { publicKey?: string } & LangfuseOptions) {
-    const { publicKey, ...options } = utils.configLangfuseSDK(params);
+  constructor(params?: { publicKey?: string } & LangfuseOptions) {
+    const { publicKey, ...options } = utils.configLangfuseSDK(params, false);
+
     super({ publicKey, ...options });
 
-    const { persistence, persistence_name } = params;
     if (typeof window !== "undefined") {
-      this._storageKey = persistence_name ? `lf_${persistence_name}` : `lf_${publicKey}_langfuse`;
-      this._storage = getStorage(persistence || "localStorage", window);
+      this._storageKey = params?.persistence_name ? `lf_${params?.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(params?.persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;
       this._storage = getStorage("memory", undefined);

@@ -105,23 +105,21 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
-    const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
-
-    this.publicKey = publicKey;
-    this.secretKey = secretKey;
-    this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
-    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20;
-    this.flushInterval = options?.flushInterval ?? 10000;
-    this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
+    this.publicKey = params?.publicKey;
+    this.secretKey = params?.secretKey;
+    this.baseUrl = removeTrailingSlash(params?.baseUrl || "https://cloud.langfuse.com");
+    this.flushAt = params?.flushAt ? Math.max(params?.flushAt, 1) : 20;
+    this.flushInterval = params?.flushInterval ?? 10000;
+    this.release = params?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
 
     this._retryOptions = {
-      retryCount: options?.fetchRetryCount ?? 3,
-      retryDelay: options?.fetchRetryDelay ?? 3000,
+      retryCount: params?.fetchRetryCount ?? 3,
+      retryDelay: params?.fetchRetryDelay ?? 3000,
       retryCheck: isLangfuseFetchError,
     };
-    this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
+    this.requestTimeout = params?.requestTimeout ?? 10000; // 10 seconds
 
-    this.sdkIntegration = options?.sdkIntegration ?? ("DEFAULT" as const);
+    this.sdkIntegration = params?.sdkIntegration ?? ("DEFAULT" as const);
   }
 
   protected getCommonEventProperties(): any {

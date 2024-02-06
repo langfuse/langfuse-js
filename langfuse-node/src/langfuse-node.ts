@@ -28,7 +28,6 @@ export default class Langfuse extends LangfuseCore {
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
     const { secretKey, ...options } = utils.configLangfuseSDK(params);
-
     super({ secretKey, ...options });
 
     this.options = options;
