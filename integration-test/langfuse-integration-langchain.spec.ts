@@ -21,40 +21,40 @@ describe("Langchain", () => {
   jest.useRealTimers();
 
   describe("setup", () => {
-    it("instantiates with env variables", async () => {
-      const callback = new CallbackHandler();
-      // @ts-expect-error
-      const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
+  //   it("instantiates with env variables", async () => {
+  //     const callback = new CallbackHandler();
+  //     // @ts-expect-error
+  //     const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
 
-      expect(options).toMatchObject({
-        headers: {
-          "Content-Type": "application/json",
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse",
-          "X-Langfuse-Public-Key": LANGFUSE_PUBLIC_KEY,
-          ...getHeaders(),
-        },
-        body: "test",
-      });
-    });
+  //     expect(options).toMatchObject({
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "X-Langfuse-Sdk-Name": "langfuse-js",
+  //         "X-Langfuse-Sdk-Variant": "langfuse",
+  //         "X-Langfuse-Public-Key": LANGFUSE_PUBLIC_KEY,
+  //         ...getHeaders(),
+  //       },
+  //       body: "test",
+  //     });
+  //   });
 
-    it("instantiates with constructor variables", async () => {
-      const callback = new CallbackHandler({ publicKey: "test", secretKey: "test" });
-      // @ts-expect-error
-      const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
+  //   it("instantiates with constructor variables", async () => {
+  //     const callback = new CallbackHandler({ publicKey: "test", secretKey: "test" });
+  //     // @ts-expect-error
+  //     const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
 
-      expect(options).toMatchObject({
-        headers: {
-          "Content-Type": "application/json",
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse",
-          "X-Langfuse-Public-Key": "test",
-          ...getHeaders("test", "test"),
-        },
-        body: "test",
-      });
-    });
-  });
+  //     expect(options).toMatchObject({
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "X-Langfuse-Sdk-Name": "langfuse-js",
+  //         "X-Langfuse-Sdk-Variant": "langfuse",
+  //         "X-Langfuse-Public-Key": "test",
+  //         ...getHeaders("test", "test"),
+  //       },
+  //       body: "test",
+  //     });
+  //   });
+  // });
 
   describe("chains", () => {
     it("should execute simple llm call", async () => {

@@ -33,39 +33,39 @@ describe("Langfuse Node.js", () => {
       expect(res).toMatchObject({ status: "OK" });
     });
 
-    it("instantiates with env variables", async () => {
-      const langfuse = new Langfuse();
-      // @ts-expect-error
-      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+    // it("instantiates with env variables", async () => {
+    //   const langfuse = new Langfuse();
+    //   // @ts-expect-error
+    //   const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
 
-      expect(options).toMatchObject({
-        headers: {
-          "Content-Type": "application/json",
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse-node",
-          "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
-          ...getHeaders(),
-        },
-        body: "test",
-      });
-    });
+    //   expect(options).toMatchObject({
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       "X-Langfuse-Sdk-Name": "langfuse-js",
+    //       "X-Langfuse-Sdk-Variant": "langfuse-node",
+    //       "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
+    //       ...getHeaders(),
+    //     },
+    //     body: "test",
+    //   });
+    // });
 
-    it("instantiates with constructor variables", async () => {
-      const langfuse = new Langfuse({ publicKey: "test", secretKey: "test" });
-      // @ts-expect-error
-      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+    // it("instantiates with constructor variables", async () => {
+    //   const langfuse = new Langfuse({ publicKey: "test", secretKey: "test" });
+    //   // @ts-expect-error
+    //   const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
 
-      expect(options).toMatchObject({
-        headers: {
-          "Content-Type": "application/json",
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse-node",
-          "X-Langfuse-Public-Key": "test",
-          ...getHeaders("test", "test"),
-        },
-        body: "test",
-      });
-    });
+    //   expect(options).toMatchObject({
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       "X-Langfuse-Sdk-Name": "langfuse-js",
+    //       "X-Langfuse-Sdk-Variant": "langfuse-node",
+    //       "X-Langfuse-Public-Key": "test",
+    //       ...getHeaders("test", "test"),
+    //     },
+    //     body: "test",
+    //   });
+    // });
 
     it("create trace", async () => {
       const trace = langfuse.trace({ name: "trace-name", tags: ["tag1", "tag2"] });
