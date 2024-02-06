@@ -7,7 +7,7 @@ export async function run() {
   dotenv.config();
 
   const langfuse = new Langfuse({
-    baseUrl: String(process.env["LANGFUSE_HOST"]),
+    baseUrl: String(process.env["LANGFUSE_BASEURL"]),
     publicKey: String(process.env["LANGFUSE_PUBLIC_KEY"]),
     secretKey: String(process.env["LANGFUSE_SECRET_KEY"]),
   });
