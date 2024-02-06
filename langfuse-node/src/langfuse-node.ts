@@ -31,12 +31,12 @@ export default class Langfuse extends LangfuseCore {
     if (!secretKey) {
       throw new Error("secretKey is required");
     }
+    utils.assert(secretKey, "secretKey is required");
 
     if (!publicKey) {
       throw new Error("publicKey is required");
     }
-
-    utils.assert(secretKey, "secretKey is required");
+    utils.assert(publicKey, "publicKey is required");
 
     super({ publicKey, secretKey, ...options });
 
