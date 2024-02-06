@@ -7,7 +7,8 @@ import axios from "axios";
 const LANGFUSE_HOST = process.env.LANGFUSE_HOST ?? "http://localhost:3000";
 
 const getHeaders = {
-  Authorization: "Basic " + Buffer.from(`${process.env.LF_PUBLIC_KEY}:${process.env.LF_SECRET_KEY}`).toString("base64"),
+  Authorization:
+    "Basic " + Buffer.from(`${process.env.LANGFUSE_PUBLIC_KEY}:${process.env.LANGFUSE_SECRET_KEY}`).toString("base64"),
 };
 
 describe("Langfuse Node.js", () => {
