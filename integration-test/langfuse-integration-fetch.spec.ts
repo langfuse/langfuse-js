@@ -48,7 +48,7 @@ describe("Langfuse (fetch)", () => {
           LANGFUSE_HOST,
           "/api/public/health",
           { headers: getHeaders() },
-          JSON.stringify(getHeaders())
+          JSON.stringify({ headers: getHeaders() })
         );
 
         const res = await axios.get(`${LANGFUSE_HOST}/api/public/traces/${trace.id}`, {

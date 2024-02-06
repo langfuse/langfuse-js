@@ -25,6 +25,7 @@ export class Langfuse extends LangfuseCore {
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
     const { publicKey, ...options } = utils.configLangfuseSDK(params);
+    console.log("Langfuse publicKey", publicKey, "options", options);
     super({ publicKey, ...options });
 
     if (typeof window !== "undefined" && "Deno" in window === false) {
