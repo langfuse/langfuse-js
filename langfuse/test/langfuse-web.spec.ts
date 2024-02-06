@@ -38,7 +38,7 @@ describe("langfuseWeb", () => {
 
   describe("init", () => {
     it("instantiates with env variables", async () => {
-      console.log("process.env.LANGFUSE_PUBLIC_KEY", process.env.LANGFUSE_PUBLIC_KEY);
+      console.log("process.env.LANGFUSE_PUBLIC_KEY", process.env.LANGFUSE_BASEURL);
       const langfuse = new LangfuseWeb();
       // @ts-expect-error
       const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
