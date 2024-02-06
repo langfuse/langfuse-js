@@ -2,8 +2,6 @@
 import Langfuse from "../langfuse";
 import { CallbackHandler } from "../langfuse-langchain";
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-
 import { FakeListLLM } from "langchain1/llms/fake";
 
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY } from "./integration-utils";
