@@ -30,7 +30,7 @@
     "test:core": "jest langfuse-core/*",
     "test:node": "jest langfuse-node/*",
     "test:fetch": "jest langfuse/*",
-    "test:integration": "dotenv -- jest integration-test/* --verbose",
+    "test:integration": "dotenv -- jest integration-test/* --verbose --runInBand",
     "test:datasets": "jest integration-test/langfuse-integration-datasets*",
     "test:modules": "jest integration-test/langfuse-integration-modules*",
     "test:examples": "jest integration-test/langfuse-integration-examples*",
