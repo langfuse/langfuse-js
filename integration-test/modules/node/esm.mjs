@@ -6,7 +6,11 @@ import * as dotenv from "dotenv";
 export async function run() {
   dotenv.config();
 
-  const langfuse = new Langfuse();
+  const langfuse = new Langfuse({
+    baseUrl: String(process.env["LANGFUSE_HOST"]),
+    publicKey: String(process.env["LANGFUSE_PUBLIC_KEY"]),
+    secretKey: String(process.env["LANGFUSE_SECRET_KEY"]),
+  });
 
   const trace = langfuse.trace({ userId: "user-id" });
 
