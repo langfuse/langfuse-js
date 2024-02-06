@@ -33,39 +33,26 @@ describe("Langfuse (fetch)", () => {
     });
 
     it("create trace", async () => {
-      try {
-        langfuse.debug(true);
-        const trace = langfuse.trace({
-          name: "trace-name",
-          sessionId: "123456789",
-          input: { hello: "world" },
-          output: "hi there",
-        });
-        await langfuse.flushAsync();
-        // check from get api if trace is created
-        console.log(
-          "hehe",
-          LANGFUSE_BASEURL,
-          "/api/public/health",
-          { headers: getHeaders() },
-          JSON.stringify({ headers: getHeaders() })
-        );
+      const trace = langfuse.trace({
+        name: "trace-name",
+        sessionId: "123456789",
+        input: { hello: "world" },
+        output: "hi there",
+      });
+      await langfuse.flushAsync();
+      // check from get api if trace is created
 
-        const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
-          headers: getHeaders(),
-        });
-        console.log("res", res.data);
-        expect(res.data).toMatchObject({
-          id: trace.id,
-          name: "trace-name",
-          sessionId: "123456789",
-          input: { hello: "world" },
-          output: "hi there",
-        });
-      } catch (e) {
-        console.log(e);
-        throw e;
-      }
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
+        headers: getHeaders(),
+      });
+
+      expect(res.data).toMatchObject({
+        id: trace.id,
+        name: "trace-name",
+        sessionId: "123456789",
+        input: { hello: "world" },
+        output: "hi there",
+      });
     });
 
     it("update a trace", async () => {

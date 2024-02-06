@@ -106,7 +106,6 @@ abstract class LangfuseCoreStateless {
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseCoreOptions) {
     const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
-    console.log("Langfuse core publicKey", publicKey, "secretkey", secretKey, "options", options);
 
     this.publicKey = publicKey;
     this.secretKey = secretKey;
