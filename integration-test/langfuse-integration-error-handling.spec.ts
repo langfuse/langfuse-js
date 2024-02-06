@@ -3,10 +3,8 @@ import Langfuse from "../langfuse";
 import { CallbackHandler } from "../langfuse-langchain";
 
 /* eslint-disable @typescript-eslint/no-var-requires */
-const langchainVersion = process.env.LANGCHAIN_VERSION || "1";
-const base = `langchain${langchainVersion}`;
-const { FakeListLLM } = require(`${base}/llms/fake`);
-// import { FakeListLLM } from "langchain1/llms/fake";
+
+import { FakeListLLM } from "langchain1/llms/fake";
 
 import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY } from "./integration-utils";
 
@@ -108,7 +106,7 @@ describe("No errors should be thrown by SDKs", () => {
       });
 
       for (let i = 0; i < 10; i++) {
-        fakeListLLM.invoke("Hello world", { callbacks: [handler as any] });
+        fakeListLLM.invoke("Hello world", { callbacks: [handler as any] }); // TODO fix typing of handler
       }
 
       await new Promise((resolve) => setTimeout(resolve, 4000));
