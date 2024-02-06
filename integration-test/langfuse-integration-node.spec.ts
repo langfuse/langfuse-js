@@ -4,16 +4,9 @@ import Langfuse from "../langfuse-node";
 
 // import { wait } from '../langfuse-core/test/test-utils/test-utils'
 import axios from "axios";
+import { getHeaders } from "./integration-utils";
 
 const LANGFUSE_HOST = process.env.LANGFUSE_HOST ?? "http://localhost:3000";
-
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const getHeaders = (
-  pk: string | undefined = process.env.LANGFUSE_PUBLIC_KEY,
-  sk: string | undefined = process.env.LANGFUSE_SECRET_KEY
-): Record<string, string> => {
-  return { Authorization: "Basic " + Buffer.from(`${pk}:${sk}`).toString("base64") };
-};
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
