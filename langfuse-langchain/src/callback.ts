@@ -359,7 +359,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    name?: string
   ): Promise<void> {
     try {
       this._log(`Retriever start with ID: ${runId}`);
@@ -368,7 +369,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         id: runId,
         parentObservationId: parentRunId,
         traceId: this.traceId,
-        name: retriever.id.at(-1)?.toString(),
+        name: name ?? retriever.id.at(-1)?.toString(),
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
