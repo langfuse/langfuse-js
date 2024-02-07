@@ -170,12 +170,7 @@ describe("Langfuse Core", () => {
       );
 
       // create jest callback which consumes the flush event
-      const flushStartCallback = jest.fn();
       const flushCallback = jest.fn();
-
-      langfuse.on("flush-start", () => {
-        flushStartCallback();
-      });
       langfuse.on("flush", () => {
         flushCallback();
       });
@@ -186,11 +181,9 @@ describe("Langfuse Core", () => {
 
       // before flush
       expect(mocks.fetch).toHaveBeenCalledTimes(4_000);
-      expect(flushStartCallback).toHaveBeenCalledTimes(4_000);
 
       // after flush
       await langfuse.shutdownAsync();
-      expect(flushStartCallback).toHaveBeenCalledTimes(4_001);
       expect(flushCallback).toHaveBeenCalledTimes(4_001);
       expect(mocks.fetch).toHaveBeenCalledTimes(4_001);
     });

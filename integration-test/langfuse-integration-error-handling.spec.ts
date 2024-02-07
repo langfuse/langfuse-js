@@ -135,13 +135,9 @@ describe("shutdown async behavior", () => {
     });
 
     // create jest callback which consumes the flush event
-    const flushStartCallback = jest.fn();
     const flushCallback = jest.fn();
     const anyCallback = jest.fn();
 
-    langfuse.on("flush-start", () => {
-      flushStartCallback();
-    });
     langfuse.on("flush", () => {
       flushCallback();
     });
@@ -153,10 +149,7 @@ describe("shutdown async behavior", () => {
       langfuse.trace({ name: `test-trace-${i}` });
     }
 
-    expect(flushStartCallback).toHaveBeenCalledTimes(50);
-
     await langfuse.shutdownAsync();
-    expect(flushStartCallback).toHaveBeenCalledTimes(51);
     expect(flushCallback).toHaveBeenCalledTimes(51);
 
     const anyCallbackCount = anyCallback.mock.calls.length;
@@ -181,13 +174,9 @@ describe("shutdown async behavior", () => {
     });
 
     // create jest callback which consumes the flush event
-    const flushStartCallback = jest.fn();
     const flushCallback = jest.fn();
     const anyCallback = jest.fn();
 
-    handler.langfuse.on("flush-start", () => {
-      flushStartCallback();
-    });
     handler.langfuse.on("flush", () => {
       flushCallback();
     });
@@ -199,10 +188,7 @@ describe("shutdown async behavior", () => {
       await fakeListLLM.invoke("Hello world", { callbacks: [handler as any] }); // TODO fix typing of handler
     }
 
-    expect(flushStartCallback).toHaveBeenCalledTimes(14);
-
     await handler.shutdownAsync();
-    expect(flushStartCallback).toHaveBeenCalledTimes(15);
     expect(flushCallback).toHaveBeenCalledTimes(15);
 
     const anyCallbackCount = anyCallback.mock.calls.length;

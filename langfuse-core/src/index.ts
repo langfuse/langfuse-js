@@ -365,8 +365,6 @@ abstract class LangfuseCoreStateless {
 
     const promiseUUID = generateUUID();
 
-    this._events.emit("flush-start", items);
-
     const done = (err?: any): void => {
       if (err) {
         this._events.emit("error", err);
