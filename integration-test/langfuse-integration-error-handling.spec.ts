@@ -67,6 +67,7 @@ describe("No errors should be thrown by SDKs", () => {
       global.console.error = jest.fn();
       const fakeListLLM = new FakeListLLM({
         responses: ["I'll callback later.", "You 'console' them!"],
+        sleep: 100,
       });
       const handler = new CallbackHandler({
         publicKey: LF_PUBLIC_KEY,
@@ -114,5 +115,100 @@ describe("No errors should be thrown by SDKs", () => {
       expect(true).toBe(true);
       expect(global.console.error).toHaveBeenCalledTimes(1);
     }, 10000);
+  });
+});
+
+describe("shutdown async behavior", () => {
+  jest.useRealTimers();
+
+  // beforeEach(() => {});
+  // afterEach(async () => {});
+
+  it("langfuse - no events after shutdownAync is awaited", async () => {
+    const langfuse = new Langfuse({
+      publicKey: LF_PUBLIC_KEY,
+      secretKey: LF_SECRET_KEY,
+      baseUrl: LF_HOST,
+      flushAt: 2,
+      fetchRetryDelay: 1,
+      fetchRetryCount: 2,
+    });
+
+    // create jest callback which consumes the flush event
+    const flushStartCallback = jest.fn();
+    const flushCallback = jest.fn();
+    const anyCallback = jest.fn();
+
+    langfuse.on("flush-start", () => {
+      flushStartCallback();
+    });
+    langfuse.on("flush", () => {
+      flushCallback();
+    });
+    langfuse.on("*", () => {
+      anyCallback();
+    });
+
+    for (let i = 0; i < 101; i++) {
+      langfuse.trace({ name: `test-trace-${i}` });
+    }
+
+    expect(flushStartCallback).toHaveBeenCalledTimes(50);
+
+    await langfuse.shutdownAsync();
+    expect(flushStartCallback).toHaveBeenCalledTimes(51);
+    expect(flushCallback).toHaveBeenCalledTimes(51);
+
+    const anyCallbackCount = anyCallback.mock.calls.length;
+
+    // expect no events to be emitted after shutdownAsync
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(anyCallback).toHaveBeenCalledTimes(anyCallbackCount);
+  });
+
+  it("langchain - no events after shutdownAync is awaited", async () => {
+    const fakeListLLM = new FakeListLLM({
+      responses: ["I'll callback later.", "You 'console' them!"],
+      sleep: 100,
+    });
+    const handler = new CallbackHandler({
+      publicKey: LF_PUBLIC_KEY,
+      secretKey: LF_SECRET_KEY,
+      baseUrl: LF_HOST,
+      flushAt: 3,
+      fetchRetryDelay: 1,
+      fetchRetryCount: 2,
+    });
+
+    // create jest callback which consumes the flush event
+    const flushStartCallback = jest.fn();
+    const flushCallback = jest.fn();
+    const anyCallback = jest.fn();
+
+    handler.langfuse.on("flush-start", () => {
+      flushStartCallback();
+    });
+    handler.langfuse.on("flush", () => {
+      flushCallback();
+    });
+    handler.langfuse.on("*", () => {
+      anyCallback();
+    });
+
+    for (let i = 0; i < 11; i++) {
+      await fakeListLLM.invoke("Hello world", { callbacks: [handler as any] }); // TODO fix typing of handler
+    }
+
+    expect(flushStartCallback).toHaveBeenCalledTimes(14);
+
+    await handler.shutdownAsync();
+    expect(flushStartCallback).toHaveBeenCalledTimes(15);
+    expect(flushCallback).toHaveBeenCalledTimes(15);
+
+    const anyCallbackCount = anyCallback.mock.calls.length;
+
+    // expect no events to be emitted after shutdownAsync
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(anyCallback).toHaveBeenCalledTimes(anyCallbackCount);
   });
 });

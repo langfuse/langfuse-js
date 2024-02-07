@@ -133,7 +133,6 @@ describe("Langfuse Core", () => {
         flushAt: 5,
       });
 
-      // create 2000 traces
       for (let i = 0; i < 20_004; i++) {
         langfuse.trace({ name: `test-trace-${i}` });
       }
@@ -142,6 +141,57 @@ describe("Langfuse Core", () => {
       // wait for the last flush
       jest.advanceTimersByTime(200);
 
+      expect(mocks.fetch).toHaveBeenCalledTimes(4_001);
+    });
+
+    it("no flush events after shutdownAync is awaited", async () => {
+      jest.useRealTimers();
+      [langfuse, mocks] = createTestClient(
+        {
+          publicKey: "pk-lf-111",
+          secretKey: "sk-lf-111",
+          flushInterval: 200,
+          flushAt: 5,
+        },
+        ({ fetch }) => {
+          fetch.mockImplementation(() => {
+            return new Promise((resolve) => {
+              // resolve fetch promise after 100ms
+              setTimeout(() => {
+                resolve({
+                  status: 200,
+                  text: async () => "ok",
+                  json: async () => ({ status: "ok" }),
+                });
+              }, 500); // add delay to simulate network request
+            });
+          });
+        }
+      );
+
+      // create jest callback which consumes the flush event
+      const flushStartCallback = jest.fn();
+      const flushCallback = jest.fn();
+
+      langfuse.on("flush-start", () => {
+        flushStartCallback();
+      });
+      langfuse.on("flush", () => {
+        flushCallback();
+      });
+
+      for (let i = 0; i < 20_004; i++) {
+        langfuse.trace({ name: `test-trace-${i}` });
+      }
+
+      // before flush
+      expect(mocks.fetch).toHaveBeenCalledTimes(4_000);
+      expect(flushStartCallback).toHaveBeenCalledTimes(4_000);
+
+      // after flush
+      await langfuse.shutdownAsync();
+      expect(flushStartCallback).toHaveBeenCalledTimes(4_001);
+      expect(flushCallback).toHaveBeenCalledTimes(4_001);
       expect(mocks.fetch).toHaveBeenCalledTimes(4_001);
     });
 
