@@ -125,6 +125,26 @@ describe("Langfuse Core", () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(5);
     });
 
+    it("expect number of calls to match the number of items (more scale)", async () => {
+      [langfuse, mocks] = createTestClient({
+        publicKey: "pk-lf-111",
+        secretKey: "sk-lf-111",
+        flushInterval: 200,
+        flushAt: 5,
+      });
+
+      // create 2000 traces
+      for (let i = 0; i < 20_004; i++) {
+        langfuse.trace({ name: `test-trace-${i}` });
+      }
+      expect(mocks.fetch).toHaveBeenCalledTimes(4_000);
+
+      // wait for the last flush
+      jest.advanceTimersByTime(200);
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(4_001);
+    });
+
     it("expect number of calls to match when flushing at intervals", async () => {
       [langfuse, mocks] = createTestClient({
         publicKey: "pk-lf-111",
