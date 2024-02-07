@@ -36,7 +36,6 @@ describe("Langfuse (fetch)", () => {
       const langfuse = new Langfuse();
 
       const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
-
       expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
       expect(options).toMatchObject({
