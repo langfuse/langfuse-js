@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
-const langchainVersion = process.env.LANGCHAIN_VERSION || "0";
+const langchainVersion = process.env.LANGCHAIN_VERSION || "1";
 
 const base = `langchain${langchainVersion}`;
 const { OpenAIChat } = require(`${base}/llms/openai`);
@@ -326,6 +326,39 @@ describe("Langchain", () => {
       const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
       expect(generation?.[0].name).toBe("OpenAIChat");
+    });
+
+    it("create trace for callback and sets the correct name if specified", async () => {
+      const langfuse = new Langfuse();
+      const trace = langfuse.trace({ name: "test-123" });
+      const handler = new CallbackHandler({ root: trace });
+
+      const model = new OpenAIChat();
+
+      const prompt = PromptTemplate.fromTemplate("What is a good name for a company that makes {product}?");
+      const promptName = "Ice cream prompt";
+      prompt.name = promptName;
+
+      const chain = prompt.pipe(model);
+      const res = await chain.invoke(
+        {
+          product: "ice cream",
+        },
+        { callbacks: [handler] }
+      );
+
+      await handler.flushAsync();
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const returnedTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+      expect(returnedTrace).toBeDefined();
+      expect(returnedTrace?.name).toBe("test-123");
+      expect(returnedTrace?.observations.length).toBe(3);
+
+      const tracedPrompt = returnedTrace?.observations?.[1]; // prompt should be nested inside a RunnableSequence in LCEL
+      expect(tracedPrompt?.name).toBe(promptName);
     });
 
     it("create span for callback", async () => {
