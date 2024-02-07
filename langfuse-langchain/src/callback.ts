@@ -1,16 +1,14 @@
-import { BaseCallbackHandler } from "langchain/callbacks";
-import type { Serialized } from "langchain/load/serializable";
-import {
-  AIMessage,
-  type AgentAction,
-  type AgentFinish,
-  type BaseMessage,
-  type ChainValues,
-  type LLMResult,
-} from "langchain/schema";
-import { type Document } from "langchain/document";
-
 import { Langfuse, type LangfuseOptions } from "langfuse";
+
+import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
+import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+
+import type { Serialized } from "@langchain/core/load/serializable";
+import type { AgentAction, AgentFinish } from "@langchain/core/agents";
+import type { ChainValues } from "@langchain/core/utils/types";
+import type { LLMResult } from "@langchain/core/outputs";
+import type { Document } from "@langchain/core/documents";
+
 import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core";
 
 type RootParams = {

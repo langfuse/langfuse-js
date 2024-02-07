@@ -4,9 +4,8 @@ import LangfuseDefaultCallbackHandler from "langfuse-langchain";
 import { Langfuse as LangfuseNode } from "langfuse-node";
 import LangfuseNodeDefault from "langfuse-node";
 
-import { LLMChain } from "langchain/chains";
-import { OpenAI } from "langchain/llms/openai";
-import { PromptTemplate } from "langchain/prompts";
+import { OpenAI } from "@langchain/openai";
+import { PromptTemplate } from "@langchain/core/prompts";
 
 import * as dotenv from "dotenv";
 
@@ -31,25 +30,18 @@ export async function run(): Promise<void> {
 
   console.log("Did construct objects and called them.");
 
-  const langfuseNode = new LangfuseNode();
-  const langfuseNodeDefault = new LangfuseNodeDefault();
+  new LangfuseNode();
+  new LangfuseNodeDefault();
 
   const prompt = PromptTemplate.fromTemplate("What is a good name for a company that makes {product}?");
   const llm = new OpenAI({
     temperature: 0,
     openAIApiKey: String(process.env["OPENAI_API_KEY"]),
   });
+
   // we are not calling the chain, just testing that it typechecks
-  const chain = new LLMChain({
-    llm,
-    prompt,
-    callbacks: [langfuseHandler],
-  });
-  const chain2 = new LLMChain({
-    llm,
-    prompt,
-    callbacks: [langfuseHandler2],
-  });
+  prompt.pipe(llm).withConfig({ callbacks: [langfuseHandler] });
+  prompt.pipe(llm).withConfig({ callbacks: [langfuseHandler2] });
 }
 
 run();
