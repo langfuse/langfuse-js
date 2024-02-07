@@ -35,8 +35,8 @@ describe("Langfuse Node.js", () => {
 
     it("instantiates with env variables", async () => {
       const langfuse = new Langfuse();
-      // @ts-expect-error
-      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
 
       expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
@@ -53,9 +53,8 @@ describe("Langfuse Node.js", () => {
     });
 
     it("instantiates with constructor variables", async () => {
-      const langfuse = new Langfuse({ publicKey: "test", secretKey: "test", baseUrl: "http://example.com" });
-      // @ts-expect-error
-      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+      const langfuse = new Langfuse({ publicKey: "test-pk", secretKey: "test-sk", baseUrl: "http://example.com" });
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
 
       expect(langfuse.baseUrl).toEqual("http://example.com");
       expect(options).toMatchObject({
@@ -63,8 +62,8 @@ describe("Langfuse Node.js", () => {
           "Content-Type": "application/json",
           "X-Langfuse-Sdk-Name": "langfuse-js",
           "X-Langfuse-Sdk-Variant": "langfuse-node",
-          "X-Langfuse-Public-Key": "test",
-          ...getHeaders("test", "test"),
+          "X-Langfuse-Public-Key": "test-pk",
+          ...getHeaders("test-pk", "test-sk"),
         },
         body: "test",
       });

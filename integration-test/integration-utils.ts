@@ -2,9 +2,9 @@ import axios from "axios";
 
 import { type components } from "../langfuse-core/src/openapi/server";
 
-export const LANGFUSE_BASEURL = process.env.LANGFUSE_BASEURL ?? "http://localhost:3000";
-export const LANGFUSE_PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY ?? "pk-lf-1234567890";
-export const LANGFUSE_SECRET_KEY = process.env.LANGFUSE_SECRET_KEY ?? "sk-lf-1234567890";
+export const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
+export const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
+export const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
 
 export const getHeaders = (
   pk: string = LANGFUSE_PUBLIC_KEY,

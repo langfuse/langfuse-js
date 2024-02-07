@@ -38,10 +38,9 @@ describe("langfuseWeb", () => {
 
   describe("instantiation", () => {
     it("instantiates with env variables", async () => {
-      console.log("process.env.LANGFUSE_PUBLIC_KEY", process.env.LANGFUSE_BASEURL);
       const langfuse = new LangfuseWeb();
-      // @ts-expect-error
-      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
 
       expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
@@ -59,8 +58,8 @@ describe("langfuseWeb", () => {
 
     it("instantiates with constructor variables", async () => {
       const langfuse = new LangfuseWeb({ publicKey: "test", baseUrl: "http://example.com" });
-      // @ts-expect-error
-      const options = langfuse.getFetchOptions({ method: "POST", body: "test" });
+
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
 
       expect(langfuse.baseUrl).toEqual("http://example.com");
       expect(options).toMatchObject({
@@ -79,7 +78,7 @@ describe("langfuseWeb", () => {
         publicKey: "pk",
         flushAt: 10,
       });
-      expect(langfuse.baseUrl).toEqual("http://localhost:3000");
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
       const id = utils.generateUUID();
       const score = langfuse.score({
@@ -98,7 +97,7 @@ describe("langfuseWeb", () => {
       expect(fetch).toHaveBeenCalledTimes(1);
 
       expect(fetch).toHaveBeenCalledWith(
-        "http://localhost:3000/api/public/ingestion",
+        `${LANGFUSE_BASEURL}/api/public/ingestion`,
         expect.objectContaining({
           body: expect.stringContaining(
             JSON.stringify({

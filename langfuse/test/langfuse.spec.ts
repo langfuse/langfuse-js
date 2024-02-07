@@ -3,6 +3,7 @@
  */
 
 // import { Langfuse } from '../'
+import { LANGFUSE_BASEURL } from "../../integration-test/integration-utils";
 import { Langfuse } from "../index";
 
 describe("langfuseWeb", () => {
@@ -34,7 +35,7 @@ describe("langfuseWeb", () => {
         secretKey: "sk",
         flushAt: 1,
       });
-      expect(langfuse.baseUrl).toEqual("http://localhost:3000");
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
       langfuse.trace({ name: "test-trace-1" });
 
@@ -50,7 +51,7 @@ describe("langfuseWeb", () => {
 
       langfuse.trace({ name: "test-trace-1", id: "test-id" });
 
-      expect(fetch).toHaveBeenCalledWith("http://localhost:3000/api/public/ingestion", {
+      expect(fetch).toHaveBeenCalledWith(`${LANGFUSE_BASEURL}/api/public/ingestion`, {
         body: expect.stringContaining(
           JSON.stringify({
             id: "test-id",

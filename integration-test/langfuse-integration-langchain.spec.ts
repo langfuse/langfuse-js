@@ -23,8 +23,7 @@ describe("Langchain", () => {
   describe("setup", () => {
     it("instantiates with env variables", async () => {
       const callback = new CallbackHandler();
-      // @ts-expect-error
-      const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
+      const options = callback.langfuse._getFetchOptions({ method: "POST", body: "test" });
       expect(callback.langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
       expect(options).toMatchObject({
         headers: {
@@ -39,9 +38,13 @@ describe("Langchain", () => {
     });
 
     it("instantiates with constructor variables", async () => {
-      const callback = new CallbackHandler({ publicKey: "test", secretKey: "test", baseUrl: "http://example.com" });
-      // @ts-expect-error
-      const options = callback.langfuse.getFetchOptions({ method: "POST", body: "test" });
+      const callback = new CallbackHandler({
+        publicKey: "test-pk",
+        secretKey: "test-sk",
+        baseUrl: "http://example.com",
+      });
+
+      const options = callback.langfuse._getFetchOptions({ method: "POST", body: "test" });
 
       expect(callback.langfuse.baseUrl).toEqual("http://example.com");
       expect(options).toMatchObject({
@@ -49,8 +52,8 @@ describe("Langchain", () => {
           "Content-Type": "application/json",
           "X-Langfuse-Sdk-Name": "langfuse-js",
           "X-Langfuse-Sdk-Variant": "langfuse",
-          "X-Langfuse-Public-Key": "test",
-          ...getHeaders("test", "test"),
+          "X-Langfuse-Public-Key": "test-pk",
+          ...getHeaders("test-pk", "test-sk"),
         },
         body: "test",
       });

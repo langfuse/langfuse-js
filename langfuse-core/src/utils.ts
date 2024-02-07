@@ -93,16 +93,16 @@ export function getEnv<T = string>(key: string): T | undefined {
   return;
 }
 
-interface Params extends LangfuseCoreOptions {
+type Params = LangfuseCoreOptions & {
   publicKey?: string;
   secretKey?: string;
-}
+};
 
 export function configLangfuseSDK(params?: Params, secretRequired: boolean = true): Params {
   if (!params) {
     params = {};
   }
-  console.log("params", params, secretRequired);
+
   const { publicKey, secretKey, ...coreOptions } = params;
 
   // check environment variables if values not provided

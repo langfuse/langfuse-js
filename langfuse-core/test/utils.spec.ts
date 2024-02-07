@@ -53,34 +53,42 @@ describe("utils", () => {
     beforeEach(() => {
       process.env.LANGFUSE_PUBLIC_KEY = "envPublicKey";
       process.env.LANGFUSE_SECRET_KEY = "envSecretKey";
-      process.env.LANGFUSE_OPTION1 = "envOption1";
-      process.env.LANGFUSE_OPTION2 = "envOption2";
+      process.env.LANGFUSE_BASEURL = "http://example.com";
     });
 
     afterEach(() => {
       delete process.env.LANGFUSE_PUBLIC_KEY;
       delete process.env.LANGFUSE_SECRET_KEY;
-      delete process.env.LANGFUSE_OPTION1;
-      delete process.env.LANGFUSE_OPTION2;
+      delete process.env.LANGFUSE_BASEURL;
     });
 
     it("should return the publicKey from the environment variables if not provided", () => {
       const config = configLangfuseSDK({ secretKey: "1234" });
-      expect(config).toEqual({ publicKey: "envPublicKey", secretKey: "1234", baseUrl: "http://localhost:3000" });
+      expect(config).toEqual({ publicKey: "envPublicKey", secretKey: "1234", baseUrl: "http://example.com" });
     });
 
     it("should return the secretKey from the environment variables if not provided", () => {
       const config = configLangfuseSDK({ publicKey: "1234" });
-      expect(config).toEqual({ publicKey: "1234", secretKey: "envSecretKey", baseUrl: "http://localhost:3000" });
+      expect(config).toEqual({ publicKey: "1234", secretKey: "envSecretKey", baseUrl: "http://example.com" });
     });
 
     it("should return the options from the input params if provided", () => {
       const config = configLangfuseSDK({
         publicKey: "1234",
         secretKey: "5678",
-        baseUrl: "http://localhost:3000",
+        baseUrl: "http://localhost:9999",
       });
-      expect(config).toEqual({ publicKey: "1234", secretKey: "5678", baseUrl: "http://localhost:3000" });
+      expect(config).toEqual({ publicKey: "1234", secretKey: "5678", baseUrl: "http://localhost:9999" });
+    });
+
+    it("should return nothing if nothing is provided", () => {
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+      delete process.env.LANGFUSE_BASEURL;
+      delete process.env.LANGFUSE_OPTION1;
+      delete process.env.LANGFUSE_OPTION2;
+      const config = configLangfuseSDK({});
+      expect(config).toEqual({});
     });
   });
 });

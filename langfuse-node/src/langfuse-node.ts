@@ -29,14 +29,12 @@ export default class Langfuse extends LangfuseCore {
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
     const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
     if (!secretKey) {
-      throw new Error("secretKey is required");
+      throw new Error("[Langfuse] secretKey is required for instantiation");
     }
-    utils.assert(secretKey, "[Langfuse] secretKey is required for instantiation");
 
     if (!publicKey) {
-      throw new Error("publicKey is required");
+      throw new Error("[Langfuse] publicKey is required for instantiation");
     }
-    utils.assert(publicKey, "[Langfuse] publicKey is required for instantiation");
 
     super({ publicKey, secretKey, ...options });
 
