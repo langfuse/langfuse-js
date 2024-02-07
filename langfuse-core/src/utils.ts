@@ -116,12 +116,6 @@ export function configLangfuseSDK(params?: Params, secretRequired: boolean = tru
     baseUrl: finalBaseUrl,
   };
 
-  console.log("finalCoreOptions", finalCoreOptions, {
-    publicKey: finalPublicKey,
-    ...(secretRequired === true ? { secretKey: finalSecretKey } : undefined),
-    ...finalCoreOptions,
-  });
-
   // check required parameters
   if (!finalPublicKey) {
     console.error(
