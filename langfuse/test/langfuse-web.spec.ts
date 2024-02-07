@@ -74,6 +74,30 @@ describe("langfuseWeb", () => {
       });
     });
 
+    it("throws an error when no secretKey is provided", () => {
+      let error;
+      try {
+        const langfuse = new LangfuseWeb({ publicKey: "testPublicKey" });
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeInstanceOf(Error);
+      expect(error).toHaveProperty("message", "[Langfuse] secretKey is required for instantiation");
+    });
+
+    it("throws an error when no publicKey is provided", () => {
+      let error;
+      try {
+        const langfuseWeb = new LangfuseWeb();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeInstanceOf(Error);
+      expect(error).toHaveProperty("message", "[Langfuse] publicKey is required for instantiation");
+    });
+
     it("instantiates with without mandatory variables", async () => {
       const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
       const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
