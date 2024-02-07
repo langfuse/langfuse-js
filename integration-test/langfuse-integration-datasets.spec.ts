@@ -1,21 +1,13 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import Langfuse from "../langfuse-node";
 
-const LF_HOST = process.env.LF_HOST ?? "http://localhost:3000";
-const LF_PUBLIC_KEY = process.env.LF_PUBLIC_KEY ?? "pk-lf-1234567890";
-const LF_SECRET_KEY = process.env.LF_SECRET_KEY ?? "sk-lf-1234567890";
-
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
   // jest.setTimeout(100000)
   jest.useRealTimers();
 
   beforeEach(() => {
-    langfuse = new Langfuse({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
-    });
+    langfuse = new Langfuse();
     langfuse.debug(true);
   });
 

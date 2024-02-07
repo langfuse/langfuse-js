@@ -7,6 +7,7 @@ import {
   type LangfuseFetchResponse,
   type LangfusePersistedProperty,
   LangfuseMemoryStorage,
+  utils,
 } from "langfuse-core";
 import { type LangfuseOptions } from "./types";
 import { fetch } from "./fetch";
@@ -25,9 +26,18 @@ export default class Langfuse extends LangfuseCore {
 
   private options: LangfuseOptions;
 
-  constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
-    const { publicKey, secretKey, ...options } = params;
-    super(params);
+  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
+    const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
+    if (!secretKey) {
+      throw new Error("[Langfuse] secretKey is required for instantiation");
+    }
+
+    if (!publicKey) {
+      throw new Error("[Langfuse] publicKey is required for instantiation");
+    }
+
+    super({ publicKey, secretKey, ...options });
+
     this.options = options;
   }
 
