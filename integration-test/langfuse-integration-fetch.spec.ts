@@ -2,7 +2,7 @@
 import Langfuse from "../langfuse";
 
 import axios from "axios";
-import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY, getHeaders } from "./integration-utils";
+import { getHeaders, LANGFUSE_BASEURL } from "./integration-utils";
 
 describe("Langfuse (fetch)", () => {
   let langfuse: Langfuse;
@@ -11,9 +11,6 @@ describe("Langfuse (fetch)", () => {
 
   beforeEach(() => {
     langfuse = new Langfuse({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
       flushAt: 100,
       fetchRetryDelay: 100,
       fetchRetryCount: 3,
@@ -29,10 +26,61 @@ describe("Langfuse (fetch)", () => {
   describe("core methods", () => {
     it("check health of langfuse server", async () => {
       const res = await axios
-        .get(LF_HOST + "/api/public/health", { headers: getHeaders })
+        .get(LANGFUSE_BASEURL + "/api/public/health", { headers: getHeaders() })
         .then((res) => res.data)
         .catch((err) => console.log(err));
       expect(res).toMatchObject({ status: "OK" });
+    });
+
+    it("instantiates with env variables", async () => {
+      const langfuse = new Langfuse();
+
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
+
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse",
+          "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
+          ...getHeaders(),
+        },
+        body: "test",
+      });
+    });
+
+    it("instantiates with constructor variables", async () => {
+      const langfuse = new Langfuse({ publicKey: "test-pk", secretKey: "test-sk", baseUrl: "http://example.com" });
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual("http://example.com");
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse",
+          "X-Langfuse-Public-Key": "test-pk",
+          ...getHeaders("test-pk", "test-sk"),
+        },
+        body: "test",
+      });
+    });
+
+    it("instantiates with without mandatory variables", async () => {
+      const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
+      const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
+      const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
+
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+      delete process.env.LANGFUSE_BASEURL;
+
+      expect(() => new Langfuse()).toThrow();
+
+      process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
+      process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
+      process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
     });
 
     it("create trace", async () => {
@@ -44,8 +92,8 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/traces/${trace.id}`, {
-        headers: getHeaders,
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
+        headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
         id: trace.id,
@@ -65,7 +113,7 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LF_HOST}/api/public/traces/${trace.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, { headers: getHeaders() });
 
       expect(res.data).toMatchObject({
         id: trace.id,
@@ -82,7 +130,7 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${span.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
       expect(res.data).toMatchObject({
         id: span.id,
         name: "span-name",
@@ -121,7 +169,7 @@ describe("Langfuse (fetch)", () => {
       span.end();
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${span.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
 
       expect(res.data).toMatchObject({
         id: span.id,
@@ -140,7 +188,9 @@ describe("Langfuse (fetch)", () => {
       const generation = trace.generation({ name: "generation-name-new" });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+        headers: getHeaders(),
+      });
       expect(res.data).toMatchObject({
         id: generation.id,
         name: "generation-name-new",
@@ -162,7 +212,9 @@ describe("Langfuse (fetch)", () => {
 
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+        headers: getHeaders(),
+      });
       expect(res.data).toMatchObject({
         id: generation.id,
         name: "generation-name-new",
@@ -193,7 +245,9 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+        headers: getHeaders(),
+      });
       expect(res.data).toMatchObject({
         id: generation.id,
         name: "generation-name-new",
@@ -220,7 +274,9 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+        headers: getHeaders(),
+      });
       expect(res.data).toMatchObject({
         id: generation.id,
         name: "generation-name-new",
@@ -248,7 +304,9 @@ describe("Langfuse (fetch)", () => {
 
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${generation.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+        headers: getHeaders(),
+      });
 
       expect(res.data).toMatchObject({
         id: generation.id,
@@ -268,7 +326,7 @@ describe("Langfuse (fetch)", () => {
       await langfuse.flushAsync();
 
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${event.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, { headers: getHeaders() });
       expect(res.data).toMatchObject({
         id: event.id,
         name: "event-name",
@@ -281,7 +339,7 @@ describe("Langfuse (fetch)", () => {
       await langfuse.flushAsync();
 
       // check from get api if trace is created
-      const res = await axios.get(`${LF_HOST}/api/public/observations/${event.id}`, { headers: getHeaders });
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, { headers: getHeaders() });
       expect(res.data).toMatchObject({
         id: event.id,
         name: "event-name",
