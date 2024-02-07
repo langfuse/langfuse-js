@@ -26,7 +26,7 @@
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
-    "docs": "typedoc"
+    "docs": "cd .. && yarn build && cd langfuse && typedoc"
   },
   "files": [
     "lib",
