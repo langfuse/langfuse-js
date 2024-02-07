@@ -42,7 +42,7 @@ describe("Langfuse (fetch)", () => {
         headers: {
           "Content-Type": "application/json",
           "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse-node",
+          "X-Langfuse-Sdk-Variant": "langfuse",
           "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
           ...getHeaders(),
         },
@@ -59,7 +59,7 @@ describe("Langfuse (fetch)", () => {
         headers: {
           "Content-Type": "application/json",
           "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse-node",
+          "X-Langfuse-Sdk-Variant": "langfuse",
           "X-Langfuse-Public-Key": "test-pk",
           ...getHeaders("test-pk", "test-sk"),
         },
