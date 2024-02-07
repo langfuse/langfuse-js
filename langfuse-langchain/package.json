@@ -26,7 +26,8 @@
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
-    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.callback.spec.ts"
+    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.callback.spec.ts",
+    "docs": "cd .. && yarn build && cd langfuse-langchain && typedoc index.ts"
   },
   "files": [
     "lib",
@@ -41,6 +42,7 @@
     "langchain": ">=0.0.157 <0.2.0"
   },
   "devDependencies": {
-    "cheerio": "^1.0.0-rc.12"
+    "cheerio": "^1.0.0-rc.12",
+    "typedoc": "^0.25.7"
   }
 }
