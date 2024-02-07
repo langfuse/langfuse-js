@@ -2,7 +2,8 @@
   "name": "langfuse-node",
   "version": "2.7.0",
   "scripts": {
-    "prepublishOnly": "cd .. && yarn build"
+    "prepublishOnly": "cd .. && yarn build",
+    "docs": "cd .. && yarn build && cd langfuse-node && typedoc index.ts"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -32,7 +33,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.4.10",
-    "commander": "^11.0.0"
+    "commander": "^11.0.0",
+    "typedoc": "^0.25.7"
   },
   "files": [
     "lib",

@@ -10,3 +10,5 @@ lib/
 yalc.lock
 .env
 langfuse-server
+docs
+.DS_Store
