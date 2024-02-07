@@ -32,6 +32,58 @@ describe("Langfuse (fetch)", () => {
       expect(res).toMatchObject({ status: "OK" });
     });
 
+    it("instantiates with env variables", async () => {
+      const langfuse = new Langfuse();
+
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
+
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse-node",
+          "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
+          ...getHeaders(),
+        },
+        body: "test",
+      });
+    });
+
+    it("instantiates with constructor variables", async () => {
+      const langfuse = new Langfuse({ publicKey: "test-pk", secretKey: "test-sk", baseUrl: "http://example.com" });
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual("http://example.com");
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse-node",
+          "X-Langfuse-Public-Key": "test-pk",
+          ...getHeaders("test-pk", "test-sk"),
+        },
+        body: "test",
+      });
+    });
+
+    it("instantiates with without mandatory variables", async () => {
+      const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
+      const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
+      const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
+
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+      delete process.env.LANGFUSE_BASEURL;
+
+      expect(() => new Langfuse()).toThrow();
+
+      process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
+      process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
+      process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
+    });
+
     it("create trace", async () => {
       const trace = langfuse.trace({
         name: "trace-name",
