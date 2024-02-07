@@ -28,7 +28,6 @@ describe("Langfuse Core", () => {
       expect(langfuse.getPersistedProperty(LangfusePersistedProperty.Queue)).toHaveLength(1);
 
       const item = langfuse.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue)?.pop();
-      console.log(item);
 
       expect(item).toMatchObject({
         id: expect.any(String),

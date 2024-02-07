@@ -242,7 +242,7 @@ abstract class LangfuseCoreStateless {
   }
 
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
-    return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this.getFetchOptions({ method: "GET" })).then(
+    return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this._getFetchOptions({ method: "GET" })).then(
       (res) => res.json()
     );
   }
@@ -250,14 +250,14 @@ abstract class LangfuseCoreStateless {
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/datasets/${params.datasetName}/runs/${params.runName}`,
-      this.getFetchOptions({ method: "GET" })
+      this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
 
   async createDatasetRunItem(body: CreateLangfuseDatasetRunItemBody): Promise<CreateLangfuseDatasetRunItemResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-run-items`,
-      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+      this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
@@ -265,7 +265,7 @@ abstract class LangfuseCoreStateless {
     const body: CreateLangfuseDatasetBody = { name };
     return this.fetch(
       `${this.baseUrl}/api/public/datasets`,
-      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+      this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
@@ -277,12 +277,12 @@ abstract class LangfuseCoreStateless {
   async createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-items`,
-      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+      this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
   async getDatasetItem(id: string): Promise<CreateLangfuseDatasetItemResponse> {
-    return this.fetch(`${this.baseUrl}/api/public/dataset-items/${id}`, this.getFetchOptions({ method: "GET" })).then(
+    return this.fetch(`${this.baseUrl}/api/public/dataset-items/${id}`, this._getFetchOptions({ method: "GET" })).then(
       (res) => res.json()
     );
   }
@@ -298,13 +298,13 @@ abstract class LangfuseCoreStateless {
   async createPromptStateless(body: CreateLangfusePromptBody): Promise<CreateLangfusePromptResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/prompts`,
-      this.getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+      this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
   async getPromptStateless(name: string, version?: number): Promise<GetLangfusePromptResponse> {
     const url = `${this.baseUrl}/api/public/prompts?name=${name}` + (version ? `&version=${version}` : "");
-    return this.fetch(url, this.getFetchOptions({ method: "GET" })).then(async (res) => {
+    return this.fetch(url, this._getFetchOptions({ method: "GET" })).then(async (res) => {
       const data = await res.json();
 
       return { fetchResult: res.status === 200 ? "success" : "failure", data };
@@ -391,7 +391,7 @@ abstract class LangfuseCoreStateless {
 
     const url = `${this.baseUrl}/api/public/ingestion`;
 
-    const fetchOptions = this.getFetchOptions({
+    const fetchOptions = this._getFetchOptions({
       method: "POST",
       body: payload,
     });
@@ -439,7 +439,7 @@ abstract class LangfuseCoreStateless {
     return items; // return the array of items processed
   }
 
-  private getFetchOptions(p: {
+  _getFetchOptions(p: {
     method: LangfuseFetchOptions["method"];
     body?: LangfuseFetchOptions["body"];
   }): LangfuseFetchOptions {

@@ -5,6 +5,7 @@
 // import { LangfuseWeb } from '../'
 import { utils } from "langfuse-core";
 import { LangfuseWeb } from "../index";
+import { LANGFUSE_BASEURL } from "../../integration-test/integration-utils";
 
 describe("langfuseWeb", () => {
   let fetch: jest.Mock;
@@ -35,13 +36,66 @@ describe("langfuseWeb", () => {
     });
   });
 
-  describe("init", () => {
+  describe("instantiation", () => {
+    it("instantiates with env variables", async () => {
+      const langfuse = new LangfuseWeb();
+
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
+
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse-frontend",
+          "X-Langfuse-Public-Key": process.env.LANGFUSE_PUBLIC_KEY,
+          Authorization: `Bearer ${process.env.LANGFUSE_PUBLIC_KEY}`,
+        },
+        body: "test",
+      });
+    });
+
+    it("instantiates with constructor variables", async () => {
+      const langfuse = new LangfuseWeb({ publicKey: "test", baseUrl: "http://example.com" });
+
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual("http://example.com");
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse-frontend",
+          "X-Langfuse-Public-Key": "test",
+          Authorization: "Bearer test",
+        },
+        body: "test",
+      });
+    });
+
+    it("instantiates with without mandatory variables", async () => {
+      const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
+      const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
+      const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
+
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+      delete process.env.LANGFUSE_BASEURL;
+
+      expect(() => new LangfuseWeb()).toThrow();
+
+      process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
+      process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
+      process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
+    });
+
     it("should initialise", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
         flushAt: 10,
       });
-      expect(langfuse.baseUrl).toEqual("https://cloud.langfuse.com");
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
       const id = utils.generateUUID();
       const score = langfuse.score({
@@ -60,7 +114,7 @@ describe("langfuseWeb", () => {
       expect(fetch).toHaveBeenCalledTimes(1);
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://cloud.langfuse.com/api/public/ingestion",
+        `${LANGFUSE_BASEURL}/api/public/ingestion`,
         expect.objectContaining({
           body: expect.stringContaining(
             JSON.stringify({

@@ -5784,22 +5784,22 @@ klona@^2.0.4, klona@^2.0.5:
   resolved "https://registry.yarnpkg.com/klona/-/klona-2.0.5.tgz#d166574d90076395d9963aa7a928fabb8d76afbc"
   integrity sha512-pJiBpiXMbt7dkzXe8Ghj/u4FfXOOa98fPW+bihOJ4SjnoijweJrNThJfd3ifXpXhREjpoF2mZVH1GfS9LV3kHQ==
 
-langfuse-core@^2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.4.0.tgz#581651df6ca8f1c6cb3fd9e25e55762979bc1999"
-  integrity sha512-Y72GIKW+3xzt0RplPlMzhXSp4LgmZztp02TfKKzVgs0Vasku1IXHEz8xGFEgGkZBGfzsus1n3Ecr4H1hANyPpw==
+langfuse-core@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.6.0.tgz#acdf4233f89cb8206a028e477dddf6a3b6571ffd"
+  integrity sha512-HGesAV0bnZ10g1F109i0VYCqacCGMPIO3ijoPHSsKyZC83YL2Gqhn4HzOXDZI+gQUNQC1qu3bKl8DLbqOhmyOA==
   dependencies:
     mustache "^4.2.0"
 
 "langfuse-core@file:.yalc/langfuse-core":
-  version "2.4.0"
+  version "2.6.0"
   dependencies:
     mustache "^4.2.0"
 
 "langfuse@file:.yalc/langfuse":
-  version "2.4.0"
+  version "2.6.0"
   dependencies:
-    langfuse-core "^2.4.0"
+    langfuse-core "^2.6.0"
 
 language-subtag-registry@~0.3.2:
   version "0.3.22"

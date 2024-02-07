@@ -14,9 +14,9 @@ export async function run(): Promise<void> {
   dotenv.config();
 
   const secrets = {
-    baseUrl: String(process.env["LF_HOST"]),
-    publicKey: String(process.env["LF_PUBLIC_KEY"]),
-    secretKey: String(process.env["LF_SECRET_KEY"]),
+    baseUrl: String(process.env["LANGFUSE_BASEURL"]),
+    publicKey: String(process.env["LANGFUSE_PUBLIC_KEY"]),
+    secretKey: String(process.env["LANGFUSE_SECRET_KEY"]),
   };
 
   const langfuse = new Langfuse(secrets);
@@ -31,8 +31,8 @@ export async function run(): Promise<void> {
 
   console.log("Did construct objects and called them.");
 
-  const langfuseNode = new LangfuseNode(secrets);
-  const langfuseNodeDefault = new LangfuseNodeDefault(secrets);
+  const langfuseNode = new LangfuseNode();
+  const langfuseNodeDefault = new LangfuseNodeDefault();
 
   const prompt = PromptTemplate.fromTemplate("What is a good name for a company that makes {product}?");
   const llm = new OpenAI({
