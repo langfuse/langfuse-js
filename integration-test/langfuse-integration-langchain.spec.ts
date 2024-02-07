@@ -58,6 +58,22 @@ describe("Langchain", () => {
         body: "test",
       });
     });
+
+    it("instantiates with without mandatory variables", async () => {
+      const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
+      const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
+      const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
+
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+      delete process.env.LANGFUSE_BASEURL;
+
+      expect(() => new CallbackHandler()).toThrow();
+
+      process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
+      process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
+      process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
+    });
   });
 
   describe("chains", () => {

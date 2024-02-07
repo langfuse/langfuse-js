@@ -124,11 +124,15 @@ export function configLangfuseSDK(params?: Params, secretRequired: boolean = tru
 
   // check required parameters
   if (!finalPublicKey) {
-    console.error("publicKey is required, but was not provided");
+    console.error(
+      "publicKey is required, but was not provided. It can be provided as an argument or as an environment variable LANGFUSE_PUBLIC_KEY."
+    );
   }
 
   if (!finalSecretKey && secretRequired) {
-    console.error("secretKey is required, but was not provided");
+    console.error(
+      "secretKey is required, but was not provided. It can be provided as an argument or as an environment variable LANGFUSE_SECRET_KEY."
+    );
   }
 
   return {

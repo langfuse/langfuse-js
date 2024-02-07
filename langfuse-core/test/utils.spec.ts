@@ -85,8 +85,7 @@ describe("utils", () => {
       delete process.env.LANGFUSE_PUBLIC_KEY;
       delete process.env.LANGFUSE_SECRET_KEY;
       delete process.env.LANGFUSE_BASEURL;
-      delete process.env.LANGFUSE_OPTION1;
-      delete process.env.LANGFUSE_OPTION2;
+
       const config = configLangfuseSDK({});
       expect(config).toEqual({});
     });
