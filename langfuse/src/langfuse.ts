@@ -4,6 +4,7 @@ import {
   type LangfuseFetchOptions,
   type LangfuseFetchResponse,
   type LangfusePersistedProperty,
+  utils,
 } from "langfuse-core";
 import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
@@ -22,12 +23,20 @@ export class Langfuse extends LangfuseCore {
   private _storageCache: any;
   private _storageKey: string;
 
-  constructor(params: { publicKey: string; secretKey: string } & LangfuseOptions) {
-    super(params);
-    const { publicKey, secretKey, ...options } = params;
+  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
+    const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
+    if (!secretKey) {
+      throw new Error("[Langfuse] secretKey is required for instantiation");
+    }
+    if (!publicKey) {
+      throw new Error("[Langfuse] publicKey is required for instantiation");
+    }
+
+    super({ publicKey, secretKey, ...options });
+
     if (typeof window !== "undefined" && "Deno" in window === false) {
-      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
-      this._storage = getStorage(options?.persistence || "localStorage", window);
+      this._storageKey = params?.persistence_name ? `lf_${params.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(params?.persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;
       this._storage = getStorage("memory", undefined);
@@ -78,13 +87,17 @@ export class LangfuseWeb extends LangfuseWebStateless {
   private _storageCache: any;
   private _storageKey: string;
 
-  constructor(params: { publicKey: string } & LangfuseOptions) {
-    super(params);
+  constructor(params?: { publicKey?: string } & LangfuseOptions) {
+    const { publicKey, ...options } = utils.configLangfuseSDK(params, false);
+    if (!publicKey) {
+      throw new Error("[Langfuse] publicKey is required for instantiation");
+    }
 
-    const { publicKey, ...options } = params;
+    super({ publicKey, ...options });
+
     if (typeof window !== "undefined") {
-      this._storageKey = options?.persistence_name ? `lf_${options.persistence_name}` : `lf_${publicKey}_langfuse`;
-      this._storage = getStorage(options?.persistence || "localStorage", window);
+      this._storageKey = params?.persistence_name ? `lf_${params.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storage = getStorage(params?.persistence || "localStorage", window);
     } else {
       this._storageKey = `lf_${publicKey}_langfuse`;
       this._storage = getStorage("memory", undefined);

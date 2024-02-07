@@ -18,8 +18,8 @@ type RootParams = {
 };
 
 type KeyParams = {
-  publicKey: string;
-  secretKey: string;
+  publicKey?: string;
+  secretKey?: string;
 } & LangfuseOptions;
 
 type ConstructorParams = (RootParams | KeyParams) & {
@@ -41,19 +41,19 @@ export class CallbackHandler extends BaseCallbackHandler {
   rootProvided: boolean = false;
   debugEnabled: boolean = false;
 
-  constructor(params: ConstructorParams) {
+  constructor(params?: ConstructorParams) {
     super();
-    if ("root" in params) {
+    if (params && "root" in params) {
       this.langfuse = params.root.client as Langfuse;
       this.rootObservationId = params.root.observationId ?? undefined;
       this.traceId = params.root.traceId;
       this.rootProvided = true;
     } else {
       this.langfuse = new Langfuse({ ...params, persistence: "memory", sdkIntegration: "LANGCHAIN" });
-      this.sessionId = params.sessionId;
+      this.sessionId = params?.sessionId;
     }
-    this.userId = params.userId;
-    this.version = params.version;
+    this.userId = params?.userId;
+    this.version = params?.version;
   }
 
   async flushAsync(): Promise<any> {

@@ -8,6 +8,7 @@ describe("Test Different Module Conventions", () => {
       const result = spawnSync("npm", ["run", testCommand], {
         cwd: join(__dirname, "modules"),
         encoding: "utf-8",
+        env: process.env,
       });
       console.log(result.output);
       console.log(result.stdout);
