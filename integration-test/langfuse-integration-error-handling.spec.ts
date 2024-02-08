@@ -33,7 +33,6 @@ describe("No errors should be thrown by SDKs", () => {
       await langfuse.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest) and console.error to be called
-      expect(true).toBe(true);
       expect(global.console.error).toHaveBeenCalledTimes(1);
     }, 10000);
 
@@ -57,7 +56,6 @@ describe("No errors should be thrown by SDKs", () => {
       await langfuse.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest) and console.error to be called
-      expect(true).toBe(true);
       expect(global.console.error).toHaveBeenCalledTimes(1);
     }, 10000);
   });
@@ -86,7 +84,6 @@ describe("No errors should be thrown by SDKs", () => {
       await handler.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest)
-      expect(true).toBe(true);
       expect(global.console.error).toHaveBeenCalledTimes(1);
     }, 10000);
 
@@ -112,7 +109,6 @@ describe("No errors should be thrown by SDKs", () => {
       await handler.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest)
-      expect(true).toBe(true);
       expect(global.console.error).toHaveBeenCalledTimes(1);
     }, 10000);
   });
