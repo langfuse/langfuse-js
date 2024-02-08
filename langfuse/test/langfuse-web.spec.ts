@@ -3,7 +3,7 @@
  */
 
 // import { LangfuseWeb } from '../'
-import { utils } from "langfuse-core";
+import { utils } from "../../langfuse-core/src";
 import { LangfuseWeb } from "../index";
 import { LANGFUSE_BASEURL } from "../../integration-test/integration-utils";
 
