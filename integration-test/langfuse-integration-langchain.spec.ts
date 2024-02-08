@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
-const langchainVersion = process.env.LANGCHAIN_VERSION || "0";
+const langchainVersion = process.env.LANGCHAIN_VERSION || "1";
 
 const base = `langchain${langchainVersion}`;
 const { OpenAIChat } = require(`${base}/llms/openai`);
@@ -328,6 +328,39 @@ describe("Langchain", () => {
       expect(generation?.[0].name).toBe("OpenAIChat");
     });
 
+    it("create trace for callback and sets the correct name if specified", async () => {
+      const langfuse = new Langfuse();
+      const trace = langfuse.trace({ name: "test-123" });
+      const handler = new CallbackHandler({ root: trace });
+
+      const model = new OpenAIChat();
+
+      const prompt = PromptTemplate.fromTemplate("What is a good name for a company that makes {product}?");
+      const promptName = "Ice cream prompt";
+      prompt.name = promptName;
+
+      const chain = prompt.pipe(model);
+      const res = await chain.invoke(
+        {
+          product: "ice cream",
+        },
+        { callbacks: [handler] }
+      );
+
+      await handler.flushAsync();
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const returnedTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+      expect(returnedTrace).toBeDefined();
+      expect(returnedTrace?.name).toBe("test-123");
+      expect(returnedTrace?.observations.length).toBe(3);
+
+      // An observation with the correct name should be present
+      expect(returnedTrace?.observations?.some((obs) => obs.name === promptName)).toBe(true);
+    });
+
     it("create span for callback", async () => {
       const langfuse = new Langfuse();
 
@@ -371,7 +404,8 @@ describe("Langchain", () => {
 
       const returnedNewGeneration = newTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(returnedNewGeneration?.length).toBe(2);
-      expect(handler.getLangchainRunId()).toBe(returnedNewGeneration?.[1].id);
+      // Returned observations within traces are currently not sorted, so we can't guarantee the order of the returned observations
+      expect(returnedNewGeneration?.some((gen) => gen.id === handler.getLangchainRunId())).toBe(true);
     });
   });
 });
