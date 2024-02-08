@@ -1,16 +1,14 @@
-import { BaseCallbackHandler } from "langchain/callbacks";
-import type { Serialized } from "langchain/load/serializable";
-import {
-  AIMessage,
-  type AgentAction,
-  type AgentFinish,
-  type BaseMessage,
-  type ChainValues,
-  type LLMResult,
-} from "langchain/schema";
-import { type Document } from "langchain/document";
-
 import { Langfuse, type LangfuseOptions } from "langfuse";
+
+import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
+import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+
+import type { Serialized } from "@langchain/core/load/serializable";
+import type { AgentAction, AgentFinish } from "@langchain/core/agents";
+import type { ChainValues } from "@langchain/core/utils/types";
+import type { LLMResult } from "@langchain/core/outputs";
+import type { Document } from "@langchain/core/documents";
+
 import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core";
 
 type RootParams = {
@@ -114,7 +112,9 @@ export class CallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    runType?: string,
+    name?: string
   ): Promise<void> {
     try {
       this._log(`Chain start with Id: ${runId}`);
@@ -124,7 +124,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         id: runId,
         traceId: this.traceId,
         parentObservationId: parentRunId ?? this.rootObservationId,
-        name: chain.id.at(-1)?.toString(),
+        name: name ?? chain.id.at(-1)?.toString(),
         metadata: this.joinTagsAndMetaData(tags, metadata),
         input: inputs,
         version: this.version,
@@ -221,7 +221,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     parentRunId?: string | undefined,
     extraParams?: Record<string, unknown> | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    name?: string
   ): Promise<void> {
     this._log(`Generation start with ID: ${runId}`);
 
@@ -259,7 +260,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     this.langfuse.generation({
       id: runId,
       traceId: this.traceId,
-      name: llm.id.at(-1)?.toString(),
+      name: name ?? llm.id.at(-1)?.toString(),
       metadata: this.joinTagsAndMetaData(tags, metadata),
       parentObservationId: parentRunId ?? this.rootObservationId,
       input: messages,
@@ -276,12 +277,13 @@ export class CallbackHandler extends BaseCallbackHandler {
     parentRunId?: string | undefined,
     extraParams?: Record<string, unknown> | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    name?: string
   ): Promise<void> {
     try {
       this._log(`Chat model start with ID: ${runId}`);
 
-      this.handleGenerationStart(llm, messages, runId, parentRunId, extraParams, tags, metadata);
+      this.handleGenerationStart(llm, messages, runId, parentRunId, extraParams, tags, metadata, name);
     } catch (e) {
       this._log(e);
     }
@@ -311,12 +313,13 @@ export class CallbackHandler extends BaseCallbackHandler {
     parentRunId?: string | undefined,
     extraParams?: Record<string, unknown> | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    name?: string
   ): Promise<void> {
     try {
       this._log(`LLM start with ID: ${runId}`);
 
-      this.handleGenerationStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata);
+      this.handleGenerationStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata, name);
     } catch (e) {
       this._log(e);
     }
@@ -328,7 +331,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    name?: string
   ): Promise<void> {
     try {
       this._log(`Tool start with ID: ${runId}`);
@@ -337,7 +341,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         id: runId,
         parentObservationId: parentRunId,
         traceId: this.traceId,
-        name: tool.id.at(-1)?.toString(),
+        name: name ?? tool.id.at(-1)?.toString(),
         input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
@@ -353,7 +357,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    name?: string
   ): Promise<void> {
     try {
       this._log(`Retriever start with ID: ${runId}`);
@@ -362,7 +367,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         id: runId,
         parentObservationId: parentRunId,
         traceId: this.traceId,
-        name: retriever.id.at(-1)?.toString(),
+        name: name ?? retriever.id.at(-1)?.toString(),
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,

@@ -3,9 +3,8 @@ import { Langfuse, CallbackHandler } from "langfuse-langchain";
 // as then the imports will be treated as CommonJS imports resulting in a missing default export.
 import LangfuseDefaultCallbackHandler from "langfuse-langchain";
 
-import { LLMChain } from "langchain/chains";
-import { OpenAI } from "langchain/llms/openai";
-import { PromptTemplate } from "langchain/prompts";
+import { OpenAI } from "@langchain/openai";
+import { PromptTemplate } from "@langchain/core/prompts";
 
 import * as dotenv from "dotenv";
 
@@ -35,16 +34,8 @@ export async function run(): Promise<void> {
     openAIApiKey: String(process.env["OPENAI_API_KEY"]),
   });
   // we are not calling the chain, just testing that it typechecks
-  const chain = new LLMChain({
-    llm,
-    prompt,
-    callbacks: [langfuseHandler],
-  });
-  const chain2 = new LLMChain({
-    llm,
-    prompt,
-    callbacks: [langfuseHandler2],
-  });
+  prompt.pipe(llm).withConfig({ callbacks: [langfuseHandler] });
+  prompt.pipe(llm).withConfig({ callbacks: [langfuseHandler2] });
 }
 
 run();
