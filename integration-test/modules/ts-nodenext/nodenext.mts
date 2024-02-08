@@ -26,8 +26,6 @@ export async function run(): Promise<void> {
   const langfuseHandler2 = new LangfuseDefaultCallbackHandler({ root: trace });
   await langfuseHandler2.flushAsync();
 
-  console.log("Did construct objects and called them.");
-
   const prompt = PromptTemplate.fromTemplate("What is a good name for a company that makes {product}?");
   const llm = new OpenAI({
     temperature: 0,
@@ -36,6 +34,7 @@ export async function run(): Promise<void> {
   // we are not calling the chain, just testing that it typechecks
   prompt.pipe(llm).withConfig({ callbacks: [langfuseHandler] });
   prompt.pipe(llm).withConfig({ callbacks: [langfuseHandler2] });
+  console.log("Did construct objects and called them.");
 }
 
 run();
