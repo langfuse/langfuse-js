@@ -46,7 +46,7 @@ describe("Langfuse Core", () => {
 
       const time = Date.now();
       jest.useRealTimers();
-      await expect(langfuse.flushAsync()).resolves.toBeNull();
+      expect(await langfuse.flushAsync()).toBeUndefined();
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(Date.now() - time).toBeGreaterThan(300);
       expect(Date.now() - time).toBeLessThan(500);
@@ -64,7 +64,7 @@ describe("Langfuse Core", () => {
 
       const time = Date.now();
       jest.useRealTimers();
-      await expect(langfuse.flushAsync()).resolves.toBeNull();
+      expect(await langfuse.flushAsync()).toBeUndefined();
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(Date.now() - time).toBeGreaterThan(300);
       expect(Date.now() - time).toBeLessThan(500);
