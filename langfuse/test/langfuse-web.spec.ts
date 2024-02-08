@@ -151,7 +151,7 @@ describe("langfuseWeb", () => {
       expect(langfuse.baseUrl).toEqual("https://cloud-fail.langfuse.com");
 
       const id = utils.generateUUID();
-      const score = langfuse.score({
+      await langfuse.score({
         id,
         name: "test",
         traceId: "test-trace-1",
@@ -160,8 +160,7 @@ describe("langfuseWeb", () => {
         observationId: "test-observation-id",
       });
 
-      // expect score promise to throw error and check error message
-      await expect(score).resolves.toHaveReturnedWith("HTTP error while fetching Langfuse: 404");
+      // should not throw error
 
       // 1 call + 2 retries
       expect(fetch).toHaveBeenCalledTimes(3);
