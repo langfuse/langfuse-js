@@ -2,7 +2,7 @@
 import Langfuse from "../langfuse";
 import { CallbackHandler } from "../langfuse-langchain";
 
-import { FakeListLLM } from "langchain1/llms/fake";
+import { FakeListLLM } from "langchain/llms/fake";
 
 import { LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY } from "./integration-utils";
 
