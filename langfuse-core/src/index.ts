@@ -354,14 +354,14 @@ abstract class LangfuseCoreStateless {
       try {
         this.flush((err, data) => {
           if (err) {
-            this._events.emit("error", err);
+            console.error("Error while flushing Langfuse", err);
             resolve();
           } else {
             resolve(data);
           }
         });
       } catch (e) {
-        this._events.emit("error", e);
+        console.error("Error while flushing Langfuse", e);
       }
     });
   }
