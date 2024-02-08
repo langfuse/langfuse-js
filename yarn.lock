@@ -5944,6 +5944,28 @@ langchainhub@~0.0.6:
   resolved "https://registry.yarnpkg.com/langchainhub/-/langchainhub-0.0.6.tgz#9d2d06e4ce0807b4e8a31e19611f57aef990b54d"
   integrity sha512-SW6105T+YP1cTe0yMf//7kyshCgvCTyFBMTgH2H3s9rTAR4e+78DA/BBrUL/Mt4Q5eMWui7iGuAYb3pgGsdQ9w==
 
+langfuse-core@^2.8.0:
+  version "2.8.0"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.8.0.tgz#e257754d097f99f7438ddfda9bb508f2295e776e"
+  integrity sha512-f+pit6Ibo5Q5cw605G+1aADpflzw/gfjz4RdYzJHwsX2OuSC+6x4Oz3i2oDWzvB2JqqhPSLyaLBVysJ3jJN5NA==
+  dependencies:
+    mustache "^4.2.0"
+
+langfuse-langchain@^2:
+  version "2.8.0"
+  resolved "https://registry.yarnpkg.com/langfuse-langchain/-/langfuse-langchain-2.8.0.tgz#92e70d0e1411f6c6a95091d82907612812badbb1"
+  integrity sha512-DpNsHoCkGIsFCqZ02u6HItVC3qB/BDJ9PHMkoOT+RGDIEmyE49OLfJsJQ2mFNp+XOix2q2Wip+CawvAyOO42Ug==
+  dependencies:
+    langfuse "^2.8.0"
+    langfuse-core "^2.8.0"
+
+langfuse@^2.0.0, langfuse@^2.8.0:
+  version "2.8.0"
+  resolved "https://registry.yarnpkg.com/langfuse/-/langfuse-2.8.0.tgz#db9c9a31d5d5f1ed5c325154eab46623b52f445e"
+  integrity sha512-+pWPIaBPnfF8vnslHjENHeuPN4upoUmSrLi3N53LHfMm5tdQiI/ORzpn0HjHPWwbMuVNzY5dIzC5CN5cm06lsA==
+  dependencies:
+    langfuse-core "^2.8.0"
+
 langsmith@~0.0.31:
   version "0.0.57"
   resolved "https://registry.yarnpkg.com/langsmith/-/langsmith-0.0.57.tgz#3a93dba4c37d7ca13c0a8bd6de1e9f023be80899"
