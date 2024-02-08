@@ -15,7 +15,7 @@
   "dependencies": {
     "dotenv": "^16.3.1",
     "langchain": "^0.0.163",
-    "langfuse-langchain": "^2"
+    "langfuse-langchain": "^3"
   },
   "devDependencies": {
     "tsx": "^4.6.2",
