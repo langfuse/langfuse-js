@@ -140,7 +140,7 @@ describe("langfuseWeb", () => {
       );
     });
 
-    it("should throw error if score was not created", async () => {
+    it("should log error if score was not created", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
         baseUrl: "https://cloud-fail.langfuse.com", // this will fail with 404
@@ -161,7 +161,7 @@ describe("langfuseWeb", () => {
       });
 
       // expect score promise to throw error and check error message
-      await expect(score).rejects.toThrow("HTTP error while fetching Langfuse: 404");
+      await expect(score).resolves.toHaveReturnedWith("HTTP error while fetching Langfuse: 404");
 
       // 1 call + 2 retries
       expect(fetch).toHaveBeenCalledTimes(3);

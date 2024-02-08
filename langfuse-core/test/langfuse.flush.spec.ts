@@ -46,13 +46,13 @@ describe("Langfuse Core", () => {
 
       const time = Date.now();
       jest.useRealTimers();
-      await expect(langfuse.flushAsync()).resolves.toHaveProperty("name", "LangfuseFetchHttpError");
+      await expect(langfuse.flushAsync()).resolves.toBeNull();
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(Date.now() - time).toBeGreaterThan(300);
       expect(Date.now() - time).toBeLessThan(500);
     });
 
-    it("responds with an error after retries 207", async () => {
+    it("resolves without an error after retries 207", async () => {
       const trace = langfuse.trace({ name: "test-trace-1" });
       mocks.fetch.mockImplementation(() => {
         return Promise.resolve({
@@ -64,7 +64,7 @@ describe("Langfuse Core", () => {
 
       const time = Date.now();
       jest.useRealTimers();
-      await expect(langfuse.flushAsync()).resolves.toHaveProperty("name", "LangfuseFetchHttpError");
+      await expect(langfuse.flushAsync()).resolves.toBeNull();
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(Date.now() - time).toBeGreaterThan(300);
       expect(Date.now() - time).toBeLessThan(500);

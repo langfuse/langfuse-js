@@ -345,7 +345,7 @@ abstract class LangfuseCoreStateless {
   /**
    * Asynchronously flushes all events that are not yet sent to the server.
    * This function always resolves, even if there were errors when flushing.
-   * Errors are emitted as "error" events and the promise resolves with the error.
+   * Errors are emitted as "error" events and the promise resolves.
    *
    * @returns {Promise<void>} A promise that resolves when the flushing is completed.
    */
@@ -355,7 +355,7 @@ abstract class LangfuseCoreStateless {
         this.flush((err, data) => {
           if (err) {
             this._events.emit("error", err);
-            resolve(err);
+            resolve();
           } else {
             resolve(data);
           }
