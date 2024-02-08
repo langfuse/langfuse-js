@@ -4,7 +4,7 @@ import { CallbackHandler } from "../langfuse-langchain";
 
 import { FakeListLLM } from "langchain1/llms/fake";
 
-import { LF_HOST, LF_PUBLIC_KEY, LF_SECRET_KEY } from "./integration-utils";
+import { LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY } from "./integration-utils";
 
 describe("No errors should be thrown by SDKs", () => {
   jest.useRealTimers();
@@ -16,8 +16,8 @@ describe("No errors should be thrown by SDKs", () => {
     it("incorrect host", async () => {
       global.console.error = jest.fn();
       const langfuse = new Langfuse({
-        publicKey: LF_PUBLIC_KEY,
-        secretKey: LF_SECRET_KEY,
+        publicKey: LANGFUSE_PUBLIC_KEY,
+        secretKey: LANGFUSE_SECRET_KEY,
         baseUrl: "https://incorrect-host",
         flushAt: 2,
         fetchRetryDelay: 1,
@@ -40,9 +40,9 @@ describe("No errors should be thrown by SDKs", () => {
     it("incorrect keys", async () => {
       global.console.error = jest.fn();
       const langfuse = new Langfuse({
-        publicKey: LF_PUBLIC_KEY,
+        publicKey: LANGFUSE_PUBLIC_KEY,
         secretKey: "incorrect_key",
-        baseUrl: LF_HOST,
+        baseUrl: LANGFUSE_BASEURL,
         flushAt: 2,
         fetchRetryDelay: 1,
         fetchRetryCount: 2,
@@ -70,8 +70,8 @@ describe("No errors should be thrown by SDKs", () => {
         sleep: 100,
       });
       const handler = new CallbackHandler({
-        publicKey: LF_PUBLIC_KEY,
-        secretKey: LF_SECRET_KEY,
+        publicKey: LANGFUSE_PUBLIC_KEY,
+        secretKey: LANGFUSE_SECRET_KEY,
         baseUrl: "https://incorrect-host",
         flushAt: 2,
         fetchRetryDelay: 1,
@@ -96,9 +96,9 @@ describe("No errors should be thrown by SDKs", () => {
         responses: ["I'll callback later.", "You 'console' them!"],
       });
       const handler = new CallbackHandler({
-        publicKey: LF_PUBLIC_KEY,
+        publicKey: LANGFUSE_PUBLIC_KEY,
         secretKey: "incorrect_key",
-        baseUrl: LF_HOST,
+        baseUrl: LANGFUSE_BASEURL,
         flushAt: 2,
         fetchRetryDelay: 1,
         fetchRetryCount: 2,
@@ -126,9 +126,9 @@ describe("shutdown async behavior", () => {
 
   it("langfuse - no events after shutdownAync is awaited", async () => {
     const langfuse = new Langfuse({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_BASEURL,
       flushAt: 2,
       fetchRetryDelay: 1,
       fetchRetryCount: 2,
@@ -165,9 +165,9 @@ describe("shutdown async behavior", () => {
       sleep: 100,
     });
     const handler = new CallbackHandler({
-      publicKey: LF_PUBLIC_KEY,
-      secretKey: LF_SECRET_KEY,
-      baseUrl: LF_HOST,
+      publicKey: LANGFUSE_PUBLIC_KEY,
+      secretKey: LANGFUSE_SECRET_KEY,
+      baseUrl: LANGFUSE_BASEURL,
       flushAt: 3,
       fetchRetryDelay: 1,
       fetchRetryCount: 2,
