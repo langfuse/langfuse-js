@@ -357,8 +357,8 @@ describe("Langchain", () => {
       expect(returnedTrace?.name).toBe("test-123");
       expect(returnedTrace?.observations.length).toBe(3);
 
-      const tracedPrompt = returnedTrace?.observations?.[1]; // prompt should be nested inside a RunnableSequence in LCEL
-      expect(tracedPrompt?.name).toBe(promptName);
+      // An observation with the correct name should be present
+      expect(returnedTrace?.observations?.some((obs) => obs.name === promptName)).toBe(true);
     });
 
     it("create span for callback", async () => {
@@ -404,7 +404,8 @@ describe("Langchain", () => {
 
       const returnedNewGeneration = newTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(returnedNewGeneration?.length).toBe(2);
-      expect(handler.getLangchainRunId()).toBe(returnedNewGeneration?.[1].id);
+      // Returned observations within traces are currently not sorted, so we can't guarantee the order of the returned observations
+      expect(returnedNewGeneration?.some((gen) => gen.id === handler.getLangchainRunId())).toBe(true);
     });
   });
 });
