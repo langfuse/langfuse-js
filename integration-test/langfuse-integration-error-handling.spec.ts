@@ -29,7 +29,7 @@ describe("No errors should be thrown by SDKs", () => {
         trace.generation({ name: "generation-name" });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await langfuse.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest) and console.error to be called
@@ -52,7 +52,7 @@ describe("No errors should be thrown by SDKs", () => {
         trace.generation({ name: "generation-name" });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await langfuse.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest) and console.error to be called
@@ -80,7 +80,7 @@ describe("No errors should be thrown by SDKs", () => {
         fakeListLLM.invoke("Hello world", { callbacks: [handler as any] });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await handler.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest)
@@ -105,7 +105,7 @@ describe("No errors should be thrown by SDKs", () => {
         fakeListLLM.invoke("Hello world", { callbacks: [handler as any] }); // TODO fix typing of handler
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await handler.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest)

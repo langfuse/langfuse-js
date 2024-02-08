@@ -46,7 +46,7 @@ describe("Langfuse Core", () => {
 
       const time = Date.now();
       jest.useRealTimers();
-      await expect(langfuse.flushAsync()).rejects.toHaveProperty("name", "LangfuseFetchHttpError");
+      await expect(langfuse.flushAsync()).resolves.toHaveProperty("name", "LangfuseFetchHttpError");
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(Date.now() - time).toBeGreaterThan(300);
       expect(Date.now() - time).toBeLessThan(500);
@@ -64,7 +64,7 @@ describe("Langfuse Core", () => {
 
       const time = Date.now();
       jest.useRealTimers();
-      await expect(langfuse.flushAsync()).rejects.toHaveProperty("name", "LangfuseFetchHttpError");
+      await expect(langfuse.flushAsync()).resolves.toHaveProperty("name", "LangfuseFetchHttpError");
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(Date.now() - time).toBeGreaterThan(300);
       expect(Date.now() - time).toBeLessThan(500);
@@ -186,6 +186,33 @@ describe("Langfuse Core", () => {
       await langfuse.shutdownAsync();
       expect(flushCallback).toHaveBeenCalledTimes(4_001);
       expect(mocks.fetch).toHaveBeenCalledTimes(4_001);
+    });
+
+    it("no exceptions if fetch timeouts", async () => {
+      jest.useRealTimers();
+      [langfuse, mocks] = createTestClient(
+        {
+          publicKey: "pk-lf-111",
+          secretKey: "sk-lf-111",
+          flushAt: 1,
+          requestTimeout: 100,
+          fetchRetryDelay: 1,
+          fetchRetryCount: 2,
+        },
+        ({ fetch }) => {
+          fetch.mockImplementation(() => {
+            throw new Error("unspecified error");
+          });
+        }
+      );
+
+      for (let i = 0; i < 2; i++) {
+        langfuse.trace({ name: `test-trace-${i}` });
+      }
+
+      // after flush
+      await langfuse.shutdownAsync();
+      expect(true).toBe(true);
     });
 
     it("expect number of calls to match when flushing at intervals", async () => {

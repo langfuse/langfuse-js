@@ -315,39 +315,58 @@ abstract class LangfuseCoreStateless {
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: LangfuseObject, body: any): void {
-    const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
+    try {
+      const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
 
-    queue.push({
-      id: generateUUID(),
-      type,
-      timestamp: currentISOTime(),
-      body,
-      metadata: undefined,
-    });
-    this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
+      queue.push({
+        id: generateUUID(),
+        type,
+        timestamp: currentISOTime(),
+        body,
+        metadata: undefined,
+      });
+      this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
-    this._events.emit(type, body);
+      this._events.emit(type, body);
 
-    // Flush queued events if we meet the flushAt length
-    if (queue.length >= this.flushAt) {
-      this.flush();
-    }
+      // Flush queued events if we meet the flushAt length
+      if (queue.length >= this.flushAt) {
+        this.flush();
+      }
 
-    if (this.flushInterval && !this._flushTimer) {
-      this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval);
+      if (this.flushInterval && !this._flushTimer) {
+        this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval);
+      }
+    } catch (e) {
+      this._events.emit("error", e);
     }
   }
 
+  /**
+   * Asynchronously flushes all events that are not yet sent to the server.
+   * This function always resolves, even if there were errors when flushing.
+   * Errors are emitted as "error" events and the promise resolves with the error.
+   *
+   * @returns {Promise<void>} A promise that resolves when the flushing is completed.
+   */
   flushAsync(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.flush((err, data) => {
-        return err ? reject(err) : resolve(data);
-      });
+    return new Promise((resolve, _reject) => {
+      try {
+        this.flush((err, data) => {
+          if (err) {
+            this._events.emit("error", err);
+            resolve(err);
+          } else {
+            resolve(data);
+          }
+        });
+      } catch (e) {
+        this._events.emit("error", e);
+      }
     });
   }
 
   // Flushes all events that are not yet sent to the server
-  // @returns {Promise[]} - list of promises for each item in the queue that is flushed
   flush(callback?: (err?: any, data?: any) => void): void {
     if (this._flushTimer) {
       clearTimeout(this._flushTimer);
