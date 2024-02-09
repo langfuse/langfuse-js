@@ -66,7 +66,8 @@ describe("Langfuse Core", () => {
         },
       ];
       const result = langfuse.processQueueItems(queue, 1000, 1000);
-      expect(result).toEqual(queue);
+      expect(result.processedItems).toEqual(queue);
+      expect(result.remainingItems).toEqual([]);
     });
 
     it("should only drop the items that exceed the size limit", () => {
@@ -87,15 +88,8 @@ describe("Langfuse Core", () => {
         },
       ];
       const result = langfuse.processQueueItems(queue, 1000, 1000);
-      expect(result).toEqual([
-        {
-          id: "2",
-          type: "observation-update",
-          timestamp: "2022-01-02",
-          body: { id: "124", name: "test2", type: "SPAN" },
-          metadata: {},
-        },
-      ]);
+      expect(result.processedItems).toEqual([queue[1]]);
+      expect(result.remainingItems).toEqual([]);
     });
 
     it("should drop items that exceed the size limit", () => {
@@ -115,8 +109,46 @@ describe("Langfuse Core", () => {
           metadata: {},
         },
       ];
-      const result = langfuse.processQueueItems(queue, 1000, 1000);
-      expect(result).toEqual([]);
+      const result = langfuse.processQueueItems(queue, 2000, 1000);
+      expect(result.processedItems.length).toBeLessThan(queue.length);
+    });
+
+    it("should process items up to the batch size limit and maintain ordering in remaining items", () => {
+      const queue: LangfuseQueueItem[] = [
+        {
+          id: "1",
+          type: "observation-update",
+          timestamp: "2022-01-01",
+          body: { id: "123", name: "test1", type: "SPAN" },
+          metadata: {},
+        },
+        {
+          id: "2",
+          type: "observation-update",
+          timestamp: "2022-01-02",
+          body: { id: "124", name: "test2", type: "SPAN" },
+          metadata: {},
+        },
+        {
+          id: "3",
+          type: "observation-update",
+          timestamp: "2022-01-03",
+          body: { id: "125", name: "test3", type: "SPAN" },
+          metadata: {},
+        },
+      ];
+
+      const MAX_MSG_SIZE = 1500;
+      const BATCH_SIZE_LIMIT = 1000;
+      const result = langfuse.processQueueItems(queue, MAX_MSG_SIZE, BATCH_SIZE_LIMIT);
+
+      expect(result.processedItems.length).toBeGreaterThan(0);
+
+      expect(result.processedItems[0].id).toEqual("1");
+      expect(result.remainingItems[0].id).not.toEqual(result.processedItems[result.processedItems.length - 1].id);
+
+      const remainingIds = result.remainingItems.map((item) => item.id);
+      expect(remainingIds).toEqual(remainingIds.sort());
     });
   });
 });

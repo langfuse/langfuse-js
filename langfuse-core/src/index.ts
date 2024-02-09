@@ -428,33 +428,37 @@ abstract class LangfuseCoreStateless {
     queue: LangfuseQueueItem[],
     MAX_MSG_SIZE: number,
     BATCH_SIZE_LIMIT: number
-  ): LangfuseQueueItem[] {
+  ): { processedItems: LangfuseQueueItem[]; remainingItems: LangfuseQueueItem[] } {
     let itemSize;
     let totalSize = 0;
-    const items: LangfuseQueueItem[] = [];
+    const processedItems: LangfuseQueueItem[] = [];
+    const remainingItems: LangfuseQueueItem[] = [];
 
-    for (const item of queue) {
+    for (let i = 0; i < queue.length; i++) {
       try {
-        itemSize = new Blob([JSON.stringify(item)]).size; // calculates the byte size
+        itemSize = new Blob([JSON.stringify(queue[i])]).size;
 
         if (itemSize > MAX_MSG_SIZE) {
           console.warn(`Item exceeds size limit (size: ${itemSize}), dropping item.`);
           continue;
         }
 
-        items.push(item);
-        totalSize += itemSize;
-
-        if (totalSize >= BATCH_SIZE_LIMIT) {
+        if (totalSize + itemSize >= BATCH_SIZE_LIMIT) {
           console.warn(`hit batch size limit (size: ${totalSize})`);
+          remainingItems.push(...queue.slice(i));
           break;
         }
+
+        processedItems.push(queue[i]);
+        totalSize += itemSize;
       } catch (error) {
         console.error(error);
+        remainingItems.push(...queue.slice(i));
         break;
       }
     }
-    return items; // return the array of items processed
+
+    return { processedItems, remainingItems };
   }
 
   _getFetchOptions(p: {
