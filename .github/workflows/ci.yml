@@ -36,15 +36,12 @@ jobs:
   integration-test:
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        langchain-version: [0, 1]
     env:
       LANGFUSE_BASEURL: "http://localhost:3000"
       LANGFUSE_SECRET_KEY: "sk-lf-1234567890"
       LANGFUSE_PUBLIC_KEY: "pk-lf-1234567890"
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      LANGCHAIN_VERSION: ${{ matrix.langchain-version }}
+      LANGCHAIN_VERSION: 1
 
     steps:
       - uses: actions/checkout@v3
