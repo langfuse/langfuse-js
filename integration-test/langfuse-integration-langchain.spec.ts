@@ -335,6 +335,8 @@ describe("Langchain", () => {
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-123");
+      expect(returnedTrace?.input).toBeUndefined();
+      expect(returnedTrace?.output).toBeUndefined();
       expect(returnedTrace?.observations.length).toBe(3);
 
       // An observation with the correct name should be present
