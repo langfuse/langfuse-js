@@ -103,9 +103,11 @@ describe("Langchain", () => {
     it("should execute simple llm call (debug)", async () => {
       const handler = new CallbackHandler({
         sessionId: "test-session",
+        tags: ["test-tag", "second-tag"],
+        metadata: { first: "hi" },
       });
       handler.debug(true);
-      const llm = new ChatOpenAI({ streaming: true });
+      const llm = new ChatOpenAI({ streaming: true, metadata: { second: "yay" }, tags: ["langchain-tag"] });
       const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
       await handler.flushAsync();
 
@@ -116,6 +118,8 @@ describe("Langchain", () => {
 
       expect(trace).toBeDefined();
       expect(trace?.sessionId).toBe("test-session");
+      expect(trace?.metadata).toStrictEqual({ first: "hi", second: "yay", tags: ["langchain-tag"] });
+      expect(trace?.tags).toStrictEqual(["test-tag", "second-tag"]);
       expect(trace?.observations.length).toBe(1);
 
       const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];

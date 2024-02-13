@@ -24,6 +24,8 @@ type ConstructorParams = (RootParams | KeyParams) & {
   userId?: string; // added to all traces
   version?: string; // added to all traces and observations
   sessionId?: string; // added to all traces
+  tags?: string[]; // added to all traces
+  metadata?: Record<string, unknown>; // added to all traces
 };
 
 export class CallbackHandler extends BaseCallbackHandler {
@@ -36,6 +38,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   userId?: string;
   version?: string;
   sessionId?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
   rootProvided: boolean = false;
   debugEnabled: boolean = false;
 
@@ -52,6 +56,8 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
     this.userId = params?.userId;
     this.version = params?.version;
+    this.tags = params?.tags;
+    this.metadata = params?.metadata;
   }
 
   async flushAsync(): Promise<any> {
@@ -203,7 +209,8 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse.trace({
         id: runId,
         name: serialized.id.at(-1)?.toString(),
-        metadata: this.joinTagsAndMetaData(tags, metadata),
+        metadata: this.joinTagsAndMetaData(tags, metadata, this.metadata),
+        tags: this.tags,
         userId: this.userId,
         version: this.version,
         sessionId: this.sessionId,
@@ -488,16 +495,34 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Merges tags and metadata into a single object.
+   *
+   * This method combines an array of tags and two metadata objects into a single
+   * metadata object. If tags are provided, they are added under the key 'tags'.
+   * The two metadata objects are merged into this final object, with values from
+   * `metadata2` potentially overwriting those from `metadata1` if they share keys.
+   *
+   * @param {string[] | undefined} tags - An optional array of tags to include.
+   * @param {Record<string, unknown> | undefined} metadata1 - The first optional metadata object.
+   * @param {Record<string, unknown> | undefined} metadata2 - The second optional metadata object.
+   * @returns {Record<string, unknown>} The merged metadata object containing tags and both metadata objects.
+   */
   joinTagsAndMetaData(
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata1?: Record<string, unknown> | undefined,
+    metadata2?: Record<string, unknown> | undefined
   ): Record<string, unknown> {
+    const finalDict: Record<string, unknown> = {};
     if (tags) {
-      const finalDict = { tags: tags };
-      if (metadata) {
-        return { ...finalDict, ...metadata };
-      }
+      finalDict.tags = tags;
     }
-    return metadata ?? {};
+    if (metadata1) {
+      Object.assign(finalDict, metadata1);
+    }
+    if (metadata2) {
+      Object.assign(finalDict, metadata2);
+    }
+    return finalDict;
   }
 }
