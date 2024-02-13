@@ -300,6 +300,8 @@ describe("Langchain", () => {
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-123");
+      expect(returnedTrace?.input).toBeNull();
+      expect(returnedTrace?.output).toBeNull();
       expect(returnedTrace?.observations.length).toBe(1);
       const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
@@ -333,6 +335,8 @@ describe("Langchain", () => {
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-123");
+      expect(returnedTrace?.input).toBeNull();
+      expect(returnedTrace?.output).toBeNull();
       expect(returnedTrace?.observations.length).toBe(3);
 
       // An observation with the correct name should be present
@@ -358,6 +362,8 @@ describe("Langchain", () => {
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-trace");
+      expect(returnedTrace?.input).toBeNull();
+      expect(returnedTrace?.output).toBeNull();
       expect(returnedTrace?.observations.length).toBe(2);
       const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
@@ -366,6 +372,8 @@ describe("Langchain", () => {
       const returnedSpan = returnedTrace?.observations.filter((o) => o.type === "SPAN");
       expect(returnedSpan?.length).toBe(1);
       expect(returnedSpan?.[0].name).toBe("test-span");
+      expect(returnedSpan?.[0].input).toBeNull();
+      expect(returnedSpan?.[0].output).toBeNull();
 
       expect(handler.getTraceId()).toBe(returnedTrace?.id);
 
