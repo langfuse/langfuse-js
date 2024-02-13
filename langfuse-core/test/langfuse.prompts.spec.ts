@@ -16,6 +16,9 @@ describe("Langfuse Core", () => {
       name: "test-prompt",
       prompt: "This is a prompt with a {{variable}}",
       version: 1,
+      config: {
+        temperature: 0.5,
+      },
     },
   };
 
@@ -50,6 +53,9 @@ describe("Langfuse Core", () => {
         name: "test-prompt",
         prompt: "This is a prompt with a {{variable}}",
         isActive: true,
+        config: {
+          temperature: 0.5,
+        },
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
@@ -62,6 +68,7 @@ describe("Langfuse Core", () => {
         isActive: true,
         prompt: "This is a prompt with a {{variable}}",
         name: "test-prompt",
+        config: { temperature: 0.5 },
       });
     });
 
@@ -72,6 +79,20 @@ describe("Langfuse Core", () => {
       const [url, options] = mocks.fetch.mock.calls[0];
       expect(url).toEqual("https://cloud.langfuse.com/api/public/prompts?name=test-prompt");
       expect(options.method).toBe("GET");
+    });
+
+    it("should fail if prompt config is not Json serializable", async () => {
+      try {
+        await langfuse.createPromptStateless({
+          name: "test-prompt",
+          prompt: "This is a prompt with a {{variable}}",
+          isActive: true,
+          config: ["temperature", 0.5],
+        });
+        fail("createPromptStateless should have thrown an error");
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+      }
     });
 
     it("should get a prompt with name and version", async () => {
