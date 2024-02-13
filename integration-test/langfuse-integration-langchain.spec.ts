@@ -372,6 +372,8 @@ describe("Langchain", () => {
       const returnedSpan = returnedTrace?.observations.filter((o) => o.type === "SPAN");
       expect(returnedSpan?.length).toBe(1);
       expect(returnedSpan?.[0].name).toBe("test-span");
+      expect(returnedSpan?.[0].input).toBeNull();
+      expect(returnedSpan?.[0].output).toBeNull();
 
       expect(handler.getTraceId()).toBe(returnedTrace?.id);
 
