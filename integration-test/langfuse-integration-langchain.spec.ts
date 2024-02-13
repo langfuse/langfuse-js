@@ -300,6 +300,8 @@ describe("Langchain", () => {
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-123");
+      expect(returnedTrace?.input).toBeUndefined();
+      expect(returnedTrace?.output).toBeUndefined();
       expect(returnedTrace?.observations.length).toBe(1);
       const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
@@ -358,6 +360,8 @@ describe("Langchain", () => {
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-trace");
+      expect(returnedTrace?.input).toBeUndefined();
+      expect(returnedTrace?.output).toBeUndefined();
       expect(returnedTrace?.observations.length).toBe(2);
       const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
