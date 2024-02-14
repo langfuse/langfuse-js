@@ -448,7 +448,7 @@ abstract class LangfuseCoreStateless {
         processedItems.push(queue[i]);
         totalSize += itemSize;
 
-        if (totalSize + itemSize >= BATCH_SIZE_LIMIT) {
+        if (totalSize >= BATCH_SIZE_LIMIT) {
           console.warn(`hit batch size limit (size: ${totalSize})`);
           remainingItems.push(...queue.slice(i));
           break;
