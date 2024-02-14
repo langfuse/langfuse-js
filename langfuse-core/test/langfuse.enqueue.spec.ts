@@ -1,4 +1,4 @@
-import { LangfusePersistedProperty, LangfuseWebStateless, type LangfuseQueueItem } from "../src";
+import { LangfusePersistedProperty, type LangfuseQueueItem } from "../src";
 import {
   createTestClient,
   type LangfuseCoreTestClient,
