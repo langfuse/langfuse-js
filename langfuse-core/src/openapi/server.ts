@@ -610,7 +610,7 @@ export interface components {
       name: string;
       version: number;
       prompt: string;
-      readonly config: object;
+      config: unknown;
     };
     /** CreateScoreRequest */
     CreateScoreRequest: {
