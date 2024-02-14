@@ -854,12 +854,14 @@ export class LangfusePromptClient {
   public readonly name: string;
   public readonly version: number;
   public readonly prompt: string;
+  public readonly config: unknown;
 
   constructor(prompt: CreateLangfusePromptResponse) {
     this.promptResponse = prompt;
     this.name = prompt.name;
     this.version = prompt.version;
     this.prompt = prompt.prompt;
+    this.config = prompt.config;
   }
 
   compile(variables?: { [key: string]: string }): string {
