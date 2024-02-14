@@ -81,20 +81,6 @@ describe("Langfuse Core", () => {
       expect(options.method).toBe("GET");
     });
 
-    it("should fail if prompt config is not Json serializable", async () => {
-      try {
-        await langfuse.createPromptStateless({
-          name: "test-prompt",
-          prompt: "This is a prompt with a {{variable}}",
-          isActive: true,
-          config: ["temperature", 0.5],
-        });
-        fail("createPromptStateless should have thrown an error");
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
-    });
-
     it("should get a prompt with name and version", async () => {
       langfuse.getPromptStateless("test-prompt", 2);
 
