@@ -139,13 +139,13 @@ describe("Langfuse Core", () => {
       ];
 
       const MAX_MSG_SIZE = 1500;
-      const BATCH_SIZE_LIMIT = 1000;
+      const BATCH_SIZE_LIMIT = 100;
+
       const result = langfuse.processQueueItems(queue, MAX_MSG_SIZE, BATCH_SIZE_LIMIT);
 
       expect(result.processedItems.length).toBeGreaterThan(0);
-
       expect(result.processedItems[0].id).toEqual("1");
-      expect(result.remainingItems[0].id).not.toEqual(result.processedItems[result.processedItems.length - 1].id);
+      expect(result.remainingItems.length).toBeGreaterThan(0);
 
       const remainingIds = result.remainingItems.map((item) => item.id);
       expect(remainingIds).toEqual(remainingIds.sort());

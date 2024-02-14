@@ -382,7 +382,10 @@ abstract class LangfuseCoreStateless {
     const items = queue.splice(0, this.flushAt);
     this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
-    this.processQueueItems(items, this.flushAt, this.flushInterval);
+    const MAX_MSG_SIZE = 1000000;
+    const BATCH_SIZE_LIMIT = 2500000;
+
+    this.processQueueItems(items, MAX_MSG_SIZE, BATCH_SIZE_LIMIT);
 
     const promiseUUID = generateUUID();
 
@@ -429,28 +432,27 @@ abstract class LangfuseCoreStateless {
     MAX_MSG_SIZE: number,
     BATCH_SIZE_LIMIT: number
   ): { processedItems: LangfuseQueueItem[]; remainingItems: LangfuseQueueItem[] } {
-    let itemSize;
     let totalSize = 0;
     const processedItems: LangfuseQueueItem[] = [];
     const remainingItems: LangfuseQueueItem[] = [];
 
     for (let i = 0; i < queue.length; i++) {
       try {
-        itemSize = new Blob([JSON.stringify(queue[i])]).size;
+        const itemSize = new Blob([JSON.stringify(queue[i])]).size;
 
         if (itemSize > MAX_MSG_SIZE) {
           console.warn(`Item exceeds size limit (size: ${itemSize}), dropping item.`);
           continue;
         }
 
+        processedItems.push(queue[i]);
+        totalSize += itemSize;
+
         if (totalSize + itemSize >= BATCH_SIZE_LIMIT) {
           console.warn(`hit batch size limit (size: ${totalSize})`);
           remainingItems.push(...queue.slice(i));
           break;
         }
-
-        processedItems.push(queue[i]);
-        totalSize += itemSize;
       } catch (error) {
         console.error(error);
         remainingItems.push(...queue.slice(i));
