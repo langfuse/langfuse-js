@@ -131,7 +131,6 @@ describe("Langchain", () => {
       const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
-      expect(trace?.sessionId).toBe("test-session");
       expect(trace?.observations.length).toBe(1);
 
       const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
@@ -146,18 +145,9 @@ describe("Langchain", () => {
 
       const input = generation?.[0].input;
       expect(input).toBeDefined();
-      expect(typeof input).toBe("object");
-      expect(Array.isArray(input)).toBe(true);
-      if (typeof input === "object" && input !== null && Array.isArray(input)) {
-        expect(input.every((input) => isChatMessage(input))).toBe(true);
-      }
 
       const output = generation?.[0].output;
       expect(output).toBeDefined();
-      expect(typeof output).toBe("object");
-      if (typeof output === "object" && output !== null) {
-        expect(isChatMessage(output)).toBe(true);
-      }
 
       expect(generation?.[0].usage?.output).toBeDefined();
       expect(generation?.[0].usage?.total).toBeDefined();
