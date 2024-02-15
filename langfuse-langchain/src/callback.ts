@@ -11,7 +11,7 @@ import type { Document } from "@langchain/core/documents";
 
 import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core";
 
-type LlmMessage = {
+export type LlmMessage = {
   role: string;
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
