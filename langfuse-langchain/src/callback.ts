@@ -455,13 +455,6 @@ export class CallbackHandler extends BaseCallbackHandler {
           ? this.extractMessageContent(lastResponse["message"])
           : lastResponse.text;
 
-      console.log(
-        "extractedOutput",
-        extractedOutput,
-        "message" in lastResponse,
-        "message" in lastResponse ? lastResponse["message"] instanceof BaseMessage : false
-      );
-
       this.langfuse._updateGeneration({
         id: runId,
         traceId: this.traceId,
@@ -477,8 +470,6 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   private extractMessageContent(message: BaseMessage): LlmMessage {
-    console.log("message", message);
-
     const ouput = { role: message.name ?? "assistant", content: message.content };
     if (message.additional_kwargs.function_call || message.additional_kwargs.tool_calls) {
       return { ...ouput, additional_kwargs: message.additional_kwargs };

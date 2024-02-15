@@ -7,6 +7,8 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
 
 import { CallbackHandler, Langfuse, LlmMessage } from "../langfuse-langchain";
+import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
+
 import { getHeaders, getTraces, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
 
 describe("Langchain", () => {
@@ -148,36 +150,38 @@ describe("Langchain", () => {
       expect(generation?.[0].usage?.total).toBeDefined();
     });
 
-    it("should execute simple llm call (debug)", async () => {
-      const handler = new CallbackHandler({
-        sessionId: "test-session",
-      });
+    it("should execute tool call", async () => {
+      const langfuse = new Langfuse();
+      const initialTrace = langfuse.trace({ name: "wikipedia-test" });
+
+      const handler = new CallbackHandler({ root: initialTrace });
       handler.debug(true);
-      const llm = new ChatOpenAI({ streaming: true });
-      const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
+
+      const tool = new WikipediaQueryRun({
+        topKResults: 3,
+        maxDocContentLength: 4000,
+      });
+
+      const res = await tool.invoke("Langchain", { callbacks: [handler] });
+
       await handler.flushAsync();
 
       expect(res).toBeDefined();
 
       expect(handler.traceId).toBeDefined();
+
       const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
-      expect(trace?.sessionId).toBe("test-session");
       expect(trace?.observations.length).toBe(1);
 
       const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
       expect(rootLevelObservation).toBeDefined();
-      expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
-      expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
 
-      const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+      const generation = trace?.observations.filter((o) => o.type === "SPAN");
       expect(generation?.length).toBe(1);
-      expect(generation?.[0].name).toBe("ChatOpenAI");
-      expect(generation?.[0].usage?.input).toBeDefined();
-
-      expect(generation?.[0].usage?.output).toBeDefined();
-      expect(generation?.[0].usage?.total).toBeDefined();
+      expect(generation?.[0].name).toBe("WikipediaQueryRun");
+      expect(generation?.[0].input).toBe("Langchain");
     });
 
     const isChatMessage = (message: unknown): message is LlmMessage => {
