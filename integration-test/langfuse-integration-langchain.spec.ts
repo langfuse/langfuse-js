@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { ConversationChain } from "langchain/chains";
+
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 import { PromptTemplate } from "@langchain/core/prompts";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatOpenAI, OpenAI } from "@langchain/openai";
 
-import { CallbackHandler, Langfuse } from "../langfuse-langchain";
+import { CallbackHandler, Langfuse, LlmMessage } from "../langfuse-langchain";
+import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
+
 import { getHeaders, getTraces, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
 
 describe("Langchain", () => {
@@ -74,7 +77,7 @@ describe("Langchain", () => {
       const handler = new CallbackHandler({
         sessionId: "test-session",
       });
-      const llm = new ChatOpenAI({ streaming: true });
+      const llm = new ChatOpenAI({ modelName: "gpt-4-1106-preview" });
       const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
       await handler.flushAsync();
 
@@ -96,6 +99,56 @@ describe("Langchain", () => {
       expect(generation?.length).toBe(1);
       expect(generation?.[0].name).toBe("ChatOpenAI");
       expect(generation?.[0].usage?.input).toBeDefined();
+
+      const input = generation?.[0].input;
+      expect(input).toBeDefined();
+      expect(typeof input).toBe("object");
+      expect(Array.isArray(input)).toBe(true);
+      if (typeof input === "object" && input !== null && Array.isArray(input)) {
+        expect(input.every((input) => isChatMessage(input))).toBe(true);
+      }
+
+      const output = generation?.[0].output;
+      expect(output).toBeDefined();
+      expect(typeof output).toBe("object");
+      if (typeof output === "object" && output !== null) {
+        expect(isChatMessage(output)).toBe(true);
+      }
+
+      expect(generation?.[0].usage?.output).toBeDefined();
+      expect(generation?.[0].usage?.total).toBeDefined();
+    });
+
+    it("should execute simple non chat llm call", async () => {
+      const handler = new CallbackHandler({});
+      const llm = new OpenAI({ modelName: "gpt-4-1106-preview" });
+      const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
+      await handler.flushAsync();
+
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+      expect(trace).toBeDefined();
+      expect(trace?.observations.length).toBe(1);
+
+      const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
+      expect(rootLevelObservation).toBeDefined();
+      expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
+      expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
+
+      const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generation?.length).toBe(1);
+      expect(generation?.[0].name).toBe("OpenAIChat");
+      expect(generation?.[0].usage?.input).toBeDefined();
+
+      const input = generation?.[0].input;
+      expect(input).toBeDefined();
+
+      const output = generation?.[0].output;
+      expect(output).toBeDefined();
+
       expect(generation?.[0].usage?.output).toBeDefined();
       expect(generation?.[0].usage?.total).toBeDefined();
     });
@@ -127,9 +180,55 @@ describe("Langchain", () => {
       expect(generation?.length).toBe(1);
       expect(generation?.[0].name).toBe("ChatOpenAI");
       expect(generation?.[0].usage?.input).toBeDefined();
+
       expect(generation?.[0].usage?.output).toBeDefined();
       expect(generation?.[0].usage?.total).toBeDefined();
     });
+
+    it("should execute tool call", async () => {
+      const langfuse = new Langfuse();
+      const initialTrace = langfuse.trace({ name: "wikipedia-test" });
+
+      const handler = new CallbackHandler({ root: initialTrace });
+      handler.debug(true);
+
+      const tool = new WikipediaQueryRun({
+        topKResults: 3,
+        maxDocContentLength: 4000,
+      });
+
+      const res = await tool.invoke("Langchain", { callbacks: [handler] });
+
+      await handler.flushAsync();
+
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+
+      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+      expect(trace).toBeDefined();
+      expect(trace?.observations.length).toBe(1);
+
+      const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
+      expect(rootLevelObservation).toBeDefined();
+
+      const generation = trace?.observations.filter((o) => o.type === "SPAN");
+      expect(generation?.length).toBe(1);
+      expect(generation?.[0].name).toBe("WikipediaQueryRun");
+      expect(generation?.[0].input).toBe("Langchain");
+    });
+
+    const isChatMessage = (message: unknown): message is LlmMessage => {
+      return (
+        typeof message === "object" &&
+        message !== null &&
+        "role" in message &&
+        typeof message.role === "string" &&
+        "content" in message &&
+        typeof message.content === "string"
+      );
+    };
 
     it("should execute simple llm call twice on two different traces", async () => {
       const handler = new CallbackHandler({
@@ -268,7 +367,7 @@ describe("Langchain", () => {
       console.log(
         await chain.invoke(
           `Alex is 5 feet tall. Claudia is 4 feet taller Alex and jumps higher than him. Claudia is a brunette and Alex is blonde.
-    Alex's dog Frosty is a labrador and likes to play hide and seek.`,
+      Alex's dog Frosty is a labrador and likes to play hide and seek.`,
           { callbacks: [callback] }
         )
       );
