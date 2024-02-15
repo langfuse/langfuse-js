@@ -1,7 +1,7 @@
 import { Langfuse, type LangfuseOptions } from "langfuse";
 
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
-import { BaseMessage, type BaseMessageFields } from "@langchain/core/messages";
+import { type BaseMessage, ChatMessage, type BaseMessageFields, type MessageContent } from "@langchain/core/messages";
 
 import type { Serialized } from "@langchain/core/load/serializable";
 import type { AgentAction, AgentFinish } from "@langchain/core/agents";
@@ -222,7 +222,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   async handleGenerationStart(
     llm: Serialized,
-    messages: LlmMessage[] | string[],
+    messages: (LlmMessage | MessageContent)[],
     runId: string,
     parentRunId?: string | undefined,
     extraParams?: Record<string, unknown> | undefined,
@@ -289,7 +289,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chat model start with ID: ${runId}`);
 
-      const prompts = messages.flatMap((message) => message.map((m) => this.extractMessageContent(m)));
+      const prompts = messages.flatMap((message) => message.map((m) => this.extractBaseMessageContent(m)));
 
       this.handleGenerationStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata, name);
     } catch (e) {
@@ -451,8 +451,8 @@ export class CallbackHandler extends BaseCallbackHandler {
       const llmUsage = output.llmOutput?.["tokenUsage"];
 
       const extractedOutput =
-        "message" in lastResponse && lastResponse["message"] instanceof BaseMessage
-          ? this.extractMessageContent(lastResponse["message"])
+        "message" in lastResponse && lastResponse["message"] instanceof ChatMessage
+          ? this.extractChatMessageContent(lastResponse["message"])
           : lastResponse.text;
 
       this.langfuse._updateGeneration({
@@ -469,8 +469,15 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  private extractMessageContent(message: BaseMessage): LlmMessage {
-    const ouput = { role: message.name ?? "assistant", content: message.content };
+  private extractBaseMessageContent(message: BaseMessage): LlmMessage | MessageContent {
+    if (message instanceof ChatMessage) {
+      return this.extractChatMessageContent(message);
+    }
+    return message.content;
+  }
+
+  private extractChatMessageContent(message: ChatMessage): LlmMessage {
+    const ouput = { role: message.role, content: message.content };
     if (message.additional_kwargs.function_call || message.additional_kwargs.tool_calls) {
       return { ...ouput, additional_kwargs: message.additional_kwargs };
     }
