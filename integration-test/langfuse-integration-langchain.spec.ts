@@ -74,7 +74,7 @@ describe("Langchain", () => {
       const handler = new CallbackHandler({
         sessionId: "test-session",
       });
-      const llm = new ChatOpenAI({ streaming: true });
+      const llm = new ChatOpenAI({ modelName: "gpt-4-1106-preview" });
       const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
       await handler.flushAsync();
 
@@ -268,7 +268,7 @@ describe("Langchain", () => {
       console.log(
         await chain.invoke(
           `Alex is 5 feet tall. Claudia is 4 feet taller Alex and jumps higher than him. Claudia is a brunette and Alex is blonde.
-    Alex's dog Frosty is a labrador and likes to play hide and seek.`,
+      Alex's dog Frosty is a labrador and likes to play hide and seek.`,
           { callbacks: [callback] }
         )
       );
