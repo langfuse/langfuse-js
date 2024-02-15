@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { ConversationChain } from "langchain/chains";
+
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 import { PromptTemplate } from "@langchain/core/prompts";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatOpenAI, OpenAI } from "@langchain/openai";
 
 import { CallbackHandler, Langfuse, LlmMessage } from "../langfuse-langchain";
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
@@ -97,6 +98,50 @@ describe("Langchain", () => {
       const generation = trace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
       expect(generation?.[0].name).toBe("ChatOpenAI");
+      expect(generation?.[0].usage?.input).toBeDefined();
+
+      const input = generation?.[0].input;
+      expect(input).toBeDefined();
+      expect(typeof input).toBe("object");
+      expect(Array.isArray(input)).toBe(true);
+      if (typeof input === "object" && input !== null && Array.isArray(input)) {
+        expect(input.every((input) => isChatMessage(input))).toBe(true);
+      }
+
+      const output = generation?.[0].output;
+      expect(output).toBeDefined();
+      expect(typeof output).toBe("object");
+      if (typeof output === "object" && output !== null) {
+        expect(isChatMessage(output)).toBe(true);
+      }
+
+      expect(generation?.[0].usage?.output).toBeDefined();
+      expect(generation?.[0].usage?.total).toBeDefined();
+    });
+
+    it("should execute simple non chat llm call", async () => {
+      const handler = new CallbackHandler({});
+      const llm = new OpenAI({ modelName: "gpt-4-1106-preview" });
+      const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
+      await handler.flushAsync();
+
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+
+      expect(trace).toBeDefined();
+      expect(trace?.sessionId).toBe("test-session");
+      expect(trace?.observations.length).toBe(1);
+
+      const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
+      expect(rootLevelObservation).toBeDefined();
+      expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
+      expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
+
+      const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generation?.length).toBe(1);
+      expect(generation?.[0].name).toBe("OpenAIChat");
       expect(generation?.[0].usage?.input).toBeDefined();
 
       const input = generation?.[0].input;
