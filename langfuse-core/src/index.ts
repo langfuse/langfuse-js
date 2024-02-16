@@ -382,8 +382,8 @@ abstract class LangfuseCoreStateless {
     const items = queue.splice(0, this.flushAt);
     this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
-    const MAX_MSG_SIZE = 1000000;
-    const BATCH_SIZE_LIMIT = 2500000;
+    const MAX_MSG_SIZE = 1_000_000;
+    const BATCH_SIZE_LIMIT = 2_500_000;
 
     this.processQueueItems(items, MAX_MSG_SIZE, BATCH_SIZE_LIMIT);
 
@@ -440,19 +440,26 @@ abstract class LangfuseCoreStateless {
       try {
         const itemSize = new Blob([JSON.stringify(queue[i])]).size;
 
+        console.log(`Item: ${queue[i].id}, Size: ${itemSize}`);
+
+        // discard item if it exceeds the maximum size per event
         if (itemSize > MAX_MSG_SIZE) {
           console.warn(`Item exceeds size limit (size: ${itemSize}), dropping item.`);
           continue;
         }
 
-        processedItems.push(queue[i]);
-        totalSize += itemSize;
-
-        if (totalSize >= BATCH_SIZE_LIMIT) {
-          console.warn(`hit batch size limit (size: ${totalSize})`);
+        // if adding the next item would exceed the batch size limit, stop processing
+        if (totalSize + itemSize >= BATCH_SIZE_LIMIT) {
+          console.debug(`hit batch size limit (size: ${totalSize + itemSize})`);
           remainingItems.push(...queue.slice(i));
+          console.log(`Remaining items: ${remainingItems.length}`);
+          console.log(`processes items: ${processedItems.length}`);
           break;
         }
+
+        // only add the item if it passes both requirements
+        totalSize += itemSize;
+        processedItems.push(queue[i]);
       } catch (error) {
         console.error(error);
         remainingItems.push(...queue.slice(i));
