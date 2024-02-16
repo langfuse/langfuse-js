@@ -104,6 +104,21 @@ describe("Langfuse (fetch)", () => {
       });
     });
 
+    it("create trace with timestamp", async () => {
+      const timestamp = new Date("2023-01-01T00:00:00.000Z");
+      const trace = langfuse.trace({
+        timestamp: timestamp,
+      });
+      await langfuse.flushAsync();
+      // check from get api if trace is created with the specified timestamp
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
+        headers: getHeaders(),
+      });
+      expect(res.data).toMatchObject({
+        timestamp: timestamp.toISOString(),
+      });
+    });
+
     it("update a trace", async () => {
       const trace = langfuse.trace({
         name: "test-trace-10",
