@@ -440,8 +440,6 @@ abstract class LangfuseCoreStateless {
       try {
         const itemSize = new Blob([JSON.stringify(queue[i])]).size;
 
-        console.log(`Item: ${queue[i].id}, Size: ${itemSize}`);
-
         // discard item if it exceeds the maximum size per event
         if (itemSize > MAX_MSG_SIZE) {
           console.warn(`Item exceeds size limit (size: ${itemSize}), dropping item.`);
