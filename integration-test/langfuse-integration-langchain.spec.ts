@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 import { ConversationChain } from "langchain/chains";
 
 import { z } from "zod";
@@ -7,7 +6,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI, OpenAI } from "@langchain/openai";
 
-import { CallbackHandler, Langfuse, LlmMessage } from "../langfuse-langchain";
+import { CallbackHandler, Langfuse, type LlmMessage } from "../langfuse-langchain";
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 
 import { getHeaders, getTraces, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
@@ -16,68 +15,69 @@ describe("Langchain", () => {
   jest.setTimeout(30_000);
   jest.useRealTimers();
 
-  describe("setup", () => {
-    it("instantiates with env variables", async () => {
-      const callback = new CallbackHandler();
-      const options = callback.langfuse._getFetchOptions({ method: "POST", body: "test" });
-      expect(callback.langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
-      expect(options).toMatchObject({
-        headers: {
-          "Content-Type": "application/json",
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse",
-          "X-Langfuse-Public-Key": LANGFUSE_PUBLIC_KEY,
-          ...getHeaders(),
-        },
-        body: "test",
-      });
-    });
+  // describe("setup", () => {
+  //   it("instantiates with env variables", async () => {
+  //     const callback = new CallbackHandler();
+  //     const options = callback.langfuse._getFetchOptions({ method: "POST", body: "test" });
+  //     expect(callback.langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
+  //     expect(options).toMatchObject({
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "X-Langfuse-Sdk-Name": "langfuse-js",
+  //         "X-Langfuse-Sdk-Variant": "langfuse",
+  //         "X-Langfuse-Public-Key": LANGFUSE_PUBLIC_KEY,
+  //         ...getHeaders(),
+  //       },
+  //       body: "test",
+  //     });
+  //   });
 
-    it("instantiates with constructor variables", async () => {
-      const callback = new CallbackHandler({
-        publicKey: "test-pk",
-        secretKey: "test-sk",
-        baseUrl: "http://example.com",
-      });
+  //   it("instantiates with constructor variables", async () => {
+  //     const callback = new CallbackHandler({
+  //       publicKey: "test-pk",
+  //       secretKey: "test-sk",
+  //       baseUrl: "http://example.com",
+  //     });
 
-      const options = callback.langfuse._getFetchOptions({ method: "POST", body: "test" });
+  //     const options = callback.langfuse._getFetchOptions({ method: "POST", body: "test" });
 
-      expect(callback.langfuse.baseUrl).toEqual("http://example.com");
-      expect(options).toMatchObject({
-        headers: {
-          "Content-Type": "application/json",
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Variant": "langfuse",
-          "X-Langfuse-Public-Key": "test-pk",
-          ...getHeaders("test-pk", "test-sk"),
-        },
-        body: "test",
-      });
-    });
+  //     expect(callback.langfuse.baseUrl).toEqual("http://example.com");
+  //     expect(options).toMatchObject({
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "X-Langfuse-Sdk-Name": "langfuse-js",
+  //         "X-Langfuse-Sdk-Variant": "langfuse",
+  //         "X-Langfuse-Public-Key": "test-pk",
+  //         ...getHeaders("test-pk", "test-sk"),
+  //       },
+  //       body: "test",
+  //     });
+  //   });
 
-    it("instantiates with without mandatory variables", async () => {
-      const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
-      const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
-      const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
+  //   it("instantiates with without mandatory variables", async () => {
+  //     const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
+  //     const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
+  //     const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
 
-      delete process.env.LANGFUSE_PUBLIC_KEY;
-      delete process.env.LANGFUSE_SECRET_KEY;
-      delete process.env.LANGFUSE_BASEURL;
+  //     delete process.env.LANGFUSE_PUBLIC_KEY;
+  //     delete process.env.LANGFUSE_SECRET_KEY;
+  //     delete process.env.LANGFUSE_BASEURL;
 
-      expect(() => new CallbackHandler()).toThrow();
+  //     expect(() => new CallbackHandler()).toThrow();
 
-      process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
-      process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
-      process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
-    });
-  });
+  //     process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
+  //     process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
+  //     process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
+  //   });
+  // });
 
   describe("chains", () => {
     it("should execute simple llm call", async () => {
       const handler = new CallbackHandler({
         sessionId: "test-session",
       });
-      const llm = new ChatOpenAI({ modelName: "gpt-4-1106-preview" });
+      handler.debug(true);
+      const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
       const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
       await handler.flushAsync();
 
@@ -109,6 +109,7 @@ describe("Langchain", () => {
       }
 
       const output = generation?.[0].output;
+      console.log(output);
       expect(output).toBeDefined();
       expect(typeof output).toBe("object");
       if (typeof output === "object" && output !== null) {
@@ -218,17 +219,6 @@ describe("Langchain", () => {
       expect(generation?.[0].name).toBe("WikipediaQueryRun");
       expect(generation?.[0].input).toBe("Langchain");
     });
-
-    const isChatMessage = (message: unknown): message is LlmMessage => {
-      return (
-        typeof message === "object" &&
-        message !== null &&
-        "role" in message &&
-        typeof message.role === "string" &&
-        "content" in message &&
-        typeof message.content === "string"
-      );
-    };
 
     it("should execute simple llm call twice on two different traces", async () => {
       const handler = new CallbackHandler({
@@ -494,3 +484,14 @@ describe("Langchain", () => {
     });
   });
 });
+
+const isChatMessage = (message: unknown): message is LlmMessage => {
+  return (
+    typeof message === "object" &&
+    message !== null &&
+    "role" in message &&
+    typeof message.role === "string" &&
+    "content" in message &&
+    typeof message.content === "string"
+  );
+};

@@ -1,7 +1,17 @@
 import { Langfuse, type LangfuseOptions } from "langfuse";
 
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
-import { BaseMessage, type BaseMessageFields } from "@langchain/core/messages";
+import {
+  BaseMessage,
+  HumanMessage,
+  ChatMessage,
+  AIMessage,
+  SystemMessage,
+  FunctionMessage,
+  ToolMessage,
+  type BaseMessageFields,
+  type MessageContent,
+} from "@langchain/core/messages";
 
 import type { Serialized } from "@langchain/core/load/serializable";
 import type { AgentAction, AgentFinish } from "@langchain/core/agents";
@@ -13,6 +23,11 @@ import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core";
 
 export type LlmMessage = {
   role: string;
+  content: BaseMessageFields["content"];
+  additional_kwargs?: BaseMessageFields["additional_kwargs"];
+};
+
+export type AnonymousLlmMessage = {
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
 };
@@ -222,7 +237,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   async handleGenerationStart(
     llm: Serialized,
-    messages: LlmMessage[] | string[],
+    messages: (LlmMessage | MessageContent | AnonymousLlmMessage)[],
     runId: string,
     parentRunId?: string | undefined,
     extraParams?: Record<string, unknown> | undefined,
@@ -289,7 +304,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chat model start with ID: ${runId}`);
 
-      const prompts = messages.flatMap((message) => message.map((m) => this.extractMessageContent(m)));
+      const prompts = messages.flatMap((message) => message.map((m) => this.extractChatMessageContent(m)));
 
       this.handleGenerationStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata, name);
     } catch (e) {
@@ -452,7 +467,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const extractedOutput =
         "message" in lastResponse && lastResponse["message"] instanceof BaseMessage
-          ? this.extractMessageContent(lastResponse["message"])
+          ? this.extractChatMessageContent(lastResponse["message"])
           : lastResponse.text;
 
       this.langfuse._updateGeneration({
@@ -469,12 +484,33 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  private extractMessageContent(message: BaseMessage): LlmMessage {
-    const ouput = { role: message.name ?? "assistant", content: message.content };
-    if (message.additional_kwargs.function_call || message.additional_kwargs.tool_calls) {
-      return { ...ouput, additional_kwargs: message.additional_kwargs };
+  private extractChatMessageContent(message: BaseMessage): LlmMessage | AnonymousLlmMessage | MessageContent {
+    let response = undefined;
+
+    if (message instanceof HumanMessage) {
+      response = { content: message.content, role: "user" };
+    } else if (message instanceof ChatMessage) {
+      response = { content: message.content, role: message.name };
+    } else if (message instanceof AIMessage) {
+      response = { content: message.content, role: "assistant" };
+    } else if (message instanceof SystemMessage) {
+      response = { content: message.content };
+    } else if (message instanceof FunctionMessage) {
+      response = { content: message.content, additional_kwargs: message.additional_kwargs, role: message.name };
+    } else if (message instanceof ToolMessage) {
+      response = { content: message.content, additional_kwargs: message.additional_kwargs, role: message.name };
+    } else if (!message.name) {
+      response = { content: message.content };
+    } else {
+      response = {
+        role: message.name,
+        content: message.content,
+      };
     }
-    return ouput;
+    if (message.additional_kwargs.function_call || message.additional_kwargs.tool_calls) {
+      return { ...response, additional_kwargs: message.additional_kwargs };
+    }
+    return response;
   }
 
   async handleLLMError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
