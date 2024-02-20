@@ -382,6 +382,11 @@ abstract class LangfuseCoreStateless {
     const items = queue.splice(0, this.flushAt);
     this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
+    const MAX_MSG_SIZE = 1_000_000;
+    const BATCH_SIZE_LIMIT = 2_500_000;
+
+    this.processQueueItems(items, MAX_MSG_SIZE, BATCH_SIZE_LIMIT);
+
     const promiseUUID = generateUUID();
 
     const done = (err?: any): void => {
@@ -420,6 +425,47 @@ abstract class LangfuseCoreStateless {
     requestPromise.finally(() => {
       delete this.pendingPromises[promiseUUID];
     });
+  }
+
+  public processQueueItems(
+    queue: LangfuseQueueItem[],
+    MAX_MSG_SIZE: number,
+    BATCH_SIZE_LIMIT: number
+  ): { processedItems: LangfuseQueueItem[]; remainingItems: LangfuseQueueItem[] } {
+    let totalSize = 0;
+    const processedItems: LangfuseQueueItem[] = [];
+    const remainingItems: LangfuseQueueItem[] = [];
+
+    for (let i = 0; i < queue.length; i++) {
+      try {
+        const itemSize = new Blob([JSON.stringify(queue[i])]).size;
+
+        // discard item if it exceeds the maximum size per event
+        if (itemSize > MAX_MSG_SIZE) {
+          console.warn(`Item exceeds size limit (size: ${itemSize}), dropping item.`);
+          continue;
+        }
+
+        // if adding the next item would exceed the batch size limit, stop processing
+        if (totalSize + itemSize >= BATCH_SIZE_LIMIT) {
+          console.debug(`hit batch size limit (size: ${totalSize + itemSize})`);
+          remainingItems.push(...queue.slice(i));
+          console.log(`Remaining items: ${remainingItems.length}`);
+          console.log(`processes items: ${processedItems.length}`);
+          break;
+        }
+
+        // only add the item if it passes both requirements
+        totalSize += itemSize;
+        processedItems.push(queue[i]);
+      } catch (error) {
+        console.error(error);
+        remainingItems.push(...queue.slice(i));
+        break;
+      }
+    }
+
+    return { processedItems, remainingItems };
   }
 
   _getFetchOptions(p: {

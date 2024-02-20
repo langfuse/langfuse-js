@@ -171,6 +171,8 @@ export interface components {
       calculatedOutputCost?: number | null;
       /** Format: double */
       calculatedTotalCost?: number | null;
+      /** Format: double */
+      latency?: number | null;
     } & components["schemas"]["Observation"];
     /** Usage */
     Usage: {
@@ -460,6 +462,8 @@ export interface components {
     /** TraceBody */
     TraceBody: {
       id?: string | null;
+      /** Format: date-time */
+      timestamp?: string | null;
       name?: string | null;
       userId?: string | null;
       input?: unknown;
