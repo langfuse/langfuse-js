@@ -16,6 +16,9 @@ describe("Langfuse Core", () => {
       name: "test-prompt",
       prompt: "This is a prompt with a {{variable}}",
       version: 1,
+      config: {
+        temperature: 0.5,
+      },
     },
   };
 
@@ -50,6 +53,9 @@ describe("Langfuse Core", () => {
         name: "test-prompt",
         prompt: "This is a prompt with a {{variable}}",
         isActive: true,
+        config: {
+          temperature: 0.5,
+        },
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
@@ -62,6 +68,7 @@ describe("Langfuse Core", () => {
         isActive: true,
         prompt: "This is a prompt with a {{variable}}",
         name: "test-prompt",
+        config: { temperature: 0.5 },
       });
     });
 

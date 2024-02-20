@@ -607,12 +607,14 @@ export interface components {
       name: string;
       isActive: boolean;
       prompt: string;
+      config?: unknown;
     };
     /** Prompt */
     Prompt: {
       name: string;
       version: number;
       prompt: string;
+      config: unknown;
     };
     /** CreateScoreRequest */
     CreateScoreRequest: {

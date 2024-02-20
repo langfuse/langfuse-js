@@ -20,6 +20,7 @@
   "license": "MIT",
   "scripts": {
     "build": "yarn compile",
+    "clean:build": "git clean -fdx -e node_modules -e .env && rm -rf node_modules && yarn install && yarn build",
     "lint": "eslint -c .eslintrc.cjs --fix langfuse*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",

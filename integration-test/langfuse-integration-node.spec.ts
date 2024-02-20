@@ -464,10 +464,66 @@ describe("Langfuse Node.js", () => {
     const filledPrompt = prompt.compile({ variable: "1.0.0" });
 
     expect(filledPrompt).toEqual("This is a prompt with a 1.0.0");
-
+    expect(prompt.config).toEqual({});
     const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/prompts/?name=${promptName}`, {
       headers: getHeaders(),
     });
-    expect(res.data).toMatchObject({});
+    expect(res.data).toMatchObject({
+      name: promptName,
+      prompt: "This is a prompt with a {{wrongVariable}}",
+      isActive: true,
+      version: expect.any(Number),
+    });
+  });
+
+  it("create and get a prompt with a config", async () => {
+    const promptName = "test-prompt" + Math.random().toString(36);
+
+    await langfuse.createPrompt({
+      name: promptName,
+      prompt: "This is a prompt with a config",
+      isActive: true,
+      config: {
+        temperature: 0.5,
+      },
+    });
+
+    const prompt = await langfuse.getPrompt(promptName, 1);
+    expect(prompt.config).toEqual({ temperature: 0.5 });
+    const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/prompts/?name=${promptName}`, {
+      headers: getHeaders(),
+    });
+    expect(res.data).toMatchObject({
+      name: promptName,
+      prompt: "This is a prompt with a config",
+      isActive: true,
+      version: expect.any(Number),
+      config: {
+        temperature: 0.5,
+      },
+    });
+  });
+
+  it("create a prompt with nullish config and get a prompt with an empty config", async () => {
+    const promptName = "test-prompt" + Math.random().toString(36);
+    await langfuse.createPrompt({
+      name: promptName,
+      prompt: "This is a prompt with a nullish config",
+      isActive: true,
+      config: null,
+    });
+
+    const prompt = await langfuse.getPrompt(promptName, 1);
+    expect(prompt.config).toEqual({});
+    const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/prompts/?name=${promptName}`, {
+      headers: getHeaders(),
+    });
+    expect(res.data).toMatchObject({
+      name: promptName,
+      prompt: "This is a prompt with a nullish config",
+      isActive: true,
+      version: expect.any(Number),
+      config: {},
+    });
   });
 });
