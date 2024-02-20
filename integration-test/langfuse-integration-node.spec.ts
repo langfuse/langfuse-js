@@ -518,6 +518,12 @@ describe("Langfuse Node.js", () => {
     const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/prompts/?name=${promptName}`, {
       headers: getHeaders(),
     });
-    expect(res.data).toMatchObject({});
+    expect(res.data).toMatchObject({
+      name: promptName,
+      prompt: "This is a prompt with a nullish config",
+      isActive: true,
+      version: expect.any(Number),
+      config: {},
+    });
   });
 });
