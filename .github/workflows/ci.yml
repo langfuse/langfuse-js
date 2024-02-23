@@ -67,16 +67,29 @@ jobs:
           cd ./langfuse-server
 
           echo "::group::Run langfuse server"
-          TELEMETRY_ENABLED=false docker-compose up -d
+          TELEMETRY_ENABLED=false docker-compose up -d db
+          echo "::endgroup::"
+
+          echo "::group::Logs from langfuse server"
+          TELEMETRY_ENABLED=false docker-compose logs
           echo "::endgroup::"
 
           echo "::group::Install dependencies (necessary to run seeder)"
           npm ci
           echo "::endgroup::"
 
-          echo "::group::Apply migrations and seed db"
+          echo "::group::Seed db"
           cp .env.dev.example .env
-          npx --yes prisma migrate reset --force --skip-generate
+          pwd
+          cd ./web
+          pwd
+          npm run db:migrate
+          npm run db:seed
+          cd ..
+          echo "::endgroup::"
+
+          echo "::group::Run server"
+          TELEMETRY_ENABLED=false docker-compose up -d langfuse-server
           echo "::endgroup::"
 
       - run: yarn install
