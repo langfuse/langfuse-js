@@ -98,10 +98,18 @@ export class CallbackHandler extends BaseCallbackHandler {
     this._log(`New token: ${token} with ID: ${runId}`);
   }
 
+  /**
+   * @deprecated This method will be removed in a future version as it is not concurrency-safe.
+   * Please use interop with the Langfuse SDK to get the trace ID ([docs](https://langfuse.com/docs/integrations/langchain/get-started#interoperability)).
+   */
   getTraceId(): string | undefined {
     return this.traceId;
   }
 
+  /**
+   * @deprecated This method will be removed in a future version as it is not concurrency-safe.
+   * For more information on how to get trace URLs, see {@link https://langfuse.com/docs/tracing/url}.
+   */
   getTraceUrl(): string | undefined {
     return this.traceId ? `${this.langfuse.baseUrl}/trace/${this.traceId}` : undefined;
   }
