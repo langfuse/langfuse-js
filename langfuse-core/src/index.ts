@@ -913,6 +913,15 @@ export class LangfusePromptClient {
   compile(variables?: { [key: string]: string }): string {
     return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
+
+  public getLangchainPrompt(): string {
+    /**
+     * Converts Langfuse prompt into a string compatible with Langchain PromptTemplate.
+     *
+     * @returns The string that can be plugged into Langchain's PromptTemplate.
+     */
+    return this.prompt.replace(/\{\{(.*?)\}\}/g, '{$1}');
+  }
 }
 
 class LangfusePromptCacheItem {
