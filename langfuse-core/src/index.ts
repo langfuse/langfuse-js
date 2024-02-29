@@ -916,9 +916,12 @@ export class LangfusePromptClient {
 
   public getLangchainPrompt(): string {
     /**
-     * Converts Langfuse prompt into a string compatible with Langchain PromptTemplate.
+     * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
      *
-     * @returns The string that can be plugged into Langchain's PromptTemplate.
+     * It specifically adapts the mustache-style double curly braces {{variable}} used in Langfuse
+     * to the single curly brace {variable} format expected by Langchain.
+     *
+     * @returns {string} The string that can be plugged into Langchain's PromptTemplate.
      */
     return this.prompt.replace(/\{\{(.*?)\}\}/g, '{$1}');
   }
