@@ -110,7 +110,7 @@ abstract class LangfuseCoreStateless {
     this.publicKey = publicKey;
     this.secretKey = secretKey;
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
-    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20;
+    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 15;
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
 
@@ -119,7 +119,7 @@ abstract class LangfuseCoreStateless {
       retryDelay: options?.fetchRetryDelay ?? 3000,
       retryCheck: isLangfuseFetchError,
     };
-    this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
+    this.requestTimeout = options?.requestTimeout ?? 15000; // 15 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? ("DEFAULT" as const);
   }
