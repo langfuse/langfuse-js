@@ -119,7 +119,7 @@ abstract class LangfuseCoreStateless {
       retryDelay: options?.fetchRetryDelay ?? 3000,
       retryCheck: isLangfuseFetchError,
     };
-    this.requestTimeout = options?.requestTimeout ?? 15000; // 15 seconds
+    this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? ("DEFAULT" as const);
   }
