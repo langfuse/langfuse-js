@@ -228,35 +228,52 @@ describe("Langfuse Core", () => {
     });
 
     it('should correctly get langchain prompt format', async () => {
-      const testPrompts = ["This is a {{test}}", "This is a {{test}}. And this is a {{test2}}"];
-
+      const testPrompts = [
+       { 
+        prompt: "This is a {{test}}", 
+        values: { test: "test" }, 
+        expected: "Human: This is a test" 
+       }, // test simple input argument
+       { 
+        prompt: "This is a {{test}}. And this is a {{test}}", 
+        values: { test: "test", test2: "test2" }, 
+        expected: "Human: This is a test. And this is a test" 
+       }, // test single input arguments multiple times
+       { 
+        prompt: "This is a {{test}}. And this is a {{test2}}", 
+        values: { test: "test", test2: "test2" }, 
+        expected: "Human: This is a test. And this is a test2" 
+       }, // test multiple input arguments
+       { 
+        prompt: "This is a test. And this is a test", 
+        values: { test: "test", test2: "test2" }, 
+        expected: "Human: This is a test. And this is a test"  
+       } // test no arguments
+      ];
+     
       for (let i = 0; i < testPrompts.length; i++) {
-        const testPrompt = testPrompts[i];
-
-        // Create a new prompt
-        const langfusePrompt = new LangfusePromptClient({
-          name: `test_${i}`,
-          version: 1,
-          prompt: testPrompt,
-          config: {
-            model: "gpt-3.5-turbo-1106",
-            temperature: 0,
-          }
-        });
-  
-        // Convert to Langchain prompt
-        const langchainPrompt = await ChatPromptTemplate.fromTemplate(langfusePrompt.getLangchainPrompt());
-  
-        // Assertions
-        if (i === 0) {
-          // Print the formatted Langchain prompt
-          const message = await langchainPrompt.format({ test: "test" });
-          expect(message === "Human: This is a test");
-        } else {
-          const message = await langchainPrompt.format({ test: "test", test2: "test2" });
-          expect(message === "Human: This is a test. And this is a test2");
+       const testPrompt = testPrompts[i].prompt;
+       const values = testPrompts[i].values;
+       const expected = testPrompts[i].expected;
+     
+       // Create a new prompt
+       const langfusePrompt = new LangfusePromptClient({
+        name: `test_${i}`,
+        version: 1,
+        prompt: testPrompt,
+        config: {
+         model: "gpt-3.5-turbo-1106",
+         temperature: 0,
         }
+       });
+     
+       // Convert to Langchain prompt
+       const langchainPrompt = await ChatPromptTemplate.fromTemplate(langfusePrompt.getLangchainPrompt());
+     
+       // Assertions
+       const message = await langchainPrompt.format(values);
+       expect(message).toBe(expected);
       }
-    });
+     });
   });
 });
