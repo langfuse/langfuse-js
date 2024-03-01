@@ -923,7 +923,7 @@ export class LangfusePromptClient {
      *
      * @returns {string} The string that can be plugged into Langchain's PromptTemplate.
      */
-    return this.prompt.replace(/\{\{(.*?)\}\}/g, '{$1}');
+    return this.prompt.replace(/\{\{(.*?)\}\}/g, "{$1}");
   }
 }
 
