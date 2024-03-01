@@ -5,6 +5,7 @@ import {
   type LangfuseCoreTestClientMocks,
 } from "./test-utils/LangfuseCoreTestClient";
 import { LangfusePromptClient, DEFAULT_PROMPT_CACHE_TTL_SECONDS, type GetLangfusePromptResponse } from "../src";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 describe("Langfuse Core", () => {
   let langfuse: LangfuseCoreTestClient;
@@ -224,6 +225,55 @@ describe("Langfuse Core", () => {
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(3);
 
       expect(result3).toEqual(new LangfusePromptClient(versionChangedPrompt.data));
+    });
+
+    it("should correctly get langchain prompt format", async () => {
+      const testPrompts = [
+        {
+          prompt: "This is a {{test}}",
+          values: { test: "test" },
+          expected: "Human: This is a test",
+        }, // test simple input argument
+        {
+          prompt: "This is a {{test}}. And this is a {{test}}",
+          values: { test: "test", test2: "test2" },
+          expected: "Human: This is a test. And this is a test",
+        }, // test single input arguments multiple times
+        {
+          prompt: "This is a {{test}}. And this is a {{test2}}",
+          values: { test: "test", test2: "test2" },
+          expected: "Human: This is a test. And this is a test2",
+        }, // test multiple input arguments
+        {
+          prompt: "This is a test. And this is a test",
+          values: { test: "test", test2: "test2" },
+          expected: "Human: This is a test. And this is a test",
+        }, // test no arguments
+      ];
+
+      for (let i = 0; i < testPrompts.length; i++) {
+        const testPrompt = testPrompts[i].prompt;
+        const values = testPrompts[i].values;
+        const expected = testPrompts[i].expected;
+
+        // Create a new prompt
+        const langfusePrompt = new LangfusePromptClient({
+          name: `test_${i}`,
+          version: 1,
+          prompt: testPrompt,
+          config: {
+            model: "gpt-3.5-turbo-1106",
+            temperature: 0,
+          },
+        });
+
+        // Convert to Langchain prompt
+        const langchainPrompt = await ChatPromptTemplate.fromTemplate(langfusePrompt.getLangchainPrompt());
+
+        // Assertions
+        const message = await langchainPrompt.format(values);
+        expect(message).toBe(expected);
+      }
     });
   });
 });
