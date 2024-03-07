@@ -87,7 +87,7 @@ abstract class LangfuseCoreStateless {
   private debugMode: boolean = false;
   private pendingPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
-  private sdkIntegration: "DEFAULT" | "LANGCHAIN" | string;
+  private sdkIntegration: string;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -121,7 +121,11 @@ abstract class LangfuseCoreStateless {
     };
     this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
-    this.sdkIntegration = options?.sdkIntegration ?? ("DEFAULT" as const);
+    this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
+  }
+
+  getSdkIntegration(): string {
+    return this.sdkIntegration;
   }
 
   protected getCommonEventProperties(): any {
@@ -479,6 +483,7 @@ abstract class LangfuseCoreStateless {
         "X-Langfuse-Sdk-Name": "langfuse-js",
         "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
         "X-Langfuse-Sdk-Variant": this.getLibraryId(),
+        "X-Langfuse-Sdk-Integration": this.sdkIntegration,
         "X-Langfuse-Public-Key": this.publicKey,
         ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
       },
