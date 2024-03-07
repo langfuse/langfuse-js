@@ -26,7 +26,7 @@ describe("Langfuse Core", () => {
       });
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
-      // cehck headers
+      // check headers
       const options = mocks.fetch.mock.calls[0][1];
       expect(options.method).toBe("POST");
       expect(options.headers).toMatchObject({
@@ -34,6 +34,7 @@ describe("Langfuse Core", () => {
         "X-Langfuse-Sdk-Name": "langfuse-js",
         "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
         "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
+        "X-Langfuse-Sdk-Integration": langfuse.getSdkIntegration(),
       });
     });
   });

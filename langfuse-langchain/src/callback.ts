@@ -68,7 +68,11 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.traceId = params.root.traceId;
       this.rootProvided = true;
     } else {
-      this.langfuse = new Langfuse({ ...params, persistence: "memory", sdkIntegration: "LANGCHAIN" });
+      this.langfuse = new Langfuse({
+        ...params,
+        persistence: "memory",
+        sdkIntegration: params?.sdkIntegration ?? "LANGCHAIN",
+      });
       this.sessionId = params?.sessionId;
     }
     this.userId = params?.userId;
