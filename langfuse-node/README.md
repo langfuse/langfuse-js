@@ -9,7 +9,7 @@ This is the Node.js client for Langfuse.
 ## Documentation
 
 - Docs: https://langfuse.com/docs/sdk/typescript
-- Reference: https://js.reference.langfuse.com/modules/langfuse-node.html
+- Reference: https://js.reference.langfuse.com/modules/langfuse_node.html
 
 ## Installation
 

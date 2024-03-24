@@ -4,7 +4,7 @@
 
 This is the core package for the Langfuse JS/TS client libraries. It is not meant to be used directly.
 
-Reference: https://js.reference.langfuse.com/modules/langfuse-core.html
+Reference: https://js.reference.langfuse.com/modules/langfuse_core.html
 
 **Client Libraries**
 

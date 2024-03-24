@@ -7,7 +7,7 @@ This is the JS/TS client for the Langfuse Langchain integration.
 ## Documentation
 
 - Docs: https://langfuse.com/docs/integrations/langchain
-- Reference: https://js.reference.langfuse.com/modules/langfuse-langchain.html
+- Reference: https://js.reference.langfuse.com/modules/langfuse_langchain.html
 
 ## Environments
 
