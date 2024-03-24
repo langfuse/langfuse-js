@@ -75,6 +75,12 @@ describe("Langchain", () => {
     it("should execute simple llm call", async () => {
       const handler = new CallbackHandler({
         sessionId: "test-session",
+        userId: "test-user",
+        metadata: {
+          foo: "bar",
+          array: ["a", "b"],
+        },
+        version: "1.0.0",
       });
       handler.debug(true);
       const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
@@ -88,17 +94,25 @@ describe("Langchain", () => {
 
       expect(trace).toBeDefined();
       expect(trace?.sessionId).toBe("test-session");
+      expect(trace?.userId).toBe("test-user");
+      expect(trace?.metadata).toMatchObject({
+        foo: "bar",
+        array: ["a", "b"],
+      });
+      expect(trace?.version).toBe("1.0.0");
       expect(trace?.observations.length).toBe(1);
 
       const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
       expect(rootLevelObservation).toBeDefined();
       expect(trace?.input).toStrictEqual(rootLevelObservation?.input);
       expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
+      expect(rootLevelObservation?.version).toBe("1.0.0");
 
       const generation = trace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
       expect(generation?.[0].name).toBe("ChatOpenAI");
       expect(generation?.[0].usage?.input).toBeDefined();
+      expect(generation?.[0].version).toBe("1.0.0");
 
       const input = generation?.[0].input;
       expect(input).toBeDefined();
