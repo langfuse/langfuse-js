@@ -4,6 +4,11 @@
 
 This is the main JS/TS client for Langfuse.
 
+## Documentation
+
+- Docs: https://langfuse.com/docs/sdk/typescript
+- Reference: https://js.reference.langfuse.com
+
 ## Environments
 
 **Supported**
@@ -23,7 +28,3 @@ yarn add langfuse
 # or
 pnpm i langfuse
 ```
-
-## Documentation
-
-[→ docs.langfuse.com](https://langfuse.com/docs/integrations/sdk/typescript)
