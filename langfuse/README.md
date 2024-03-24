@@ -7,7 +7,7 @@ This is the main JS/TS client for Langfuse.
 ## Documentation
 
 - Docs: https://langfuse.com/docs/sdk/typescript
-- Reference: https://js.reference.langfuse.com
+- Reference: https://js.reference.langfuse.com/modules/langfuse.html
 
 ## Environments
 

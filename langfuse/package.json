@@ -25,8 +25,7 @@
   },
   "scripts": {
     "test": "jest -c jest.config.js",
-    "prepublishOnly": "cd .. && yarn build",
-    "docs": "cd .. && yarn build && cd langfuse && typedoc index.ts"
+    "prepublishOnly": "cd .. && yarn build"
   },
   "files": [
     "lib",

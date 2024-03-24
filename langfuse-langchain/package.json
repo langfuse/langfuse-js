@@ -26,8 +26,7 @@
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
-    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.callback.spec.ts",
-    "docs": "cd .. && yarn build && cd langfuse-langchain && typedoc index.ts"
+    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.callback.spec.ts"
   },
   "files": [
     "lib",
