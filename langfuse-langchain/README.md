@@ -4,6 +4,11 @@
 
 This is the JS/TS client for the Langfuse Langchain integration.
 
+## Documentation
+
+- Docs: https://langfuse.com/docs/integrations/langchain
+- Reference: https://js.reference.langfuse.com/modules/langfuse_langchain.html
+
 ## Environments
 
 **Supported**
@@ -21,7 +26,3 @@ yarn add langfuse-langchain
 # or
 pnpm i langfuse-langchain
 ```
-
-## Documentation
-
-[→ docs.langfuse.com](https://langfuse.com/docs/integrations/langchain/typescript)

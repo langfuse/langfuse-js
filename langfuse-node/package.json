@@ -1,9 +1,8 @@
 {
   "name": "langfuse-node",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "scripts": {
-    "prepublishOnly": "cd .. && yarn build",
-    "docs": "cd .. && yarn build && cd langfuse-node && typedoc index.ts"
+    "prepublishOnly": "cd .. && yarn build"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -29,7 +28,7 @@
   },
   "dependencies": {
     "axios": "^1.6.4",
-    "langfuse-core": "^3.3.1"
+    "langfuse-core": "^3.3.2"
   },
   "devDependencies": {
     "@types/node": "^20.4.10",

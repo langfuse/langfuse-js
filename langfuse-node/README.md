@@ -6,6 +6,11 @@ This is the Node.js client for Langfuse.
 
 **Using Node.js >=18?** Consider using [`langfuse`](https://www.npmjs.com/package/langfuse) instead as it uses `fetch` and other Web APIs.
 
+## Documentation
+
+- Docs: https://langfuse.com/docs/sdk/typescript
+- Reference: https://js.reference.langfuse.com/modules/langfuse_node.html
+
 ## Installation
 
 ```bash
@@ -15,7 +20,3 @@ yarn add langfuse-node
 # or
 pnpm i langfuse-node
 ```
-
-## Documentation
-
-[→ docs.langfuse.com](https://langfuse.com/docs/integrations/sdk/typescript)

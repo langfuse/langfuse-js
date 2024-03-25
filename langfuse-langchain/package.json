@@ -1,6 +1,6 @@
 {
   "name": "langfuse-langchain",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "engines": {
     "node": ">=18"
   },
@@ -26,8 +26,7 @@
   "scripts": {
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
-    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.callback.spec.ts",
-    "docs": "cd .. && yarn build && cd langfuse-langchain && typedoc index.ts"
+    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.callback.spec.ts"
   },
   "files": [
     "lib",
@@ -35,8 +34,8 @@
   ],
   "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
   "dependencies": {
-    "langfuse": "^3.3.1",
-    "langfuse-core": "^3.3.1"
+    "langfuse": "^3.3.2",
+    "langfuse-core": "^3.3.2"
   },
   "peerDependencies": {
     "langchain": ">=0.0.157 <0.2.0"
