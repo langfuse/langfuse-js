@@ -45,6 +45,7 @@ type ConstructorParams = (RootParams | KeyParams) & {
   userId?: string; // added to all traces
   version?: string; // added to all traces and observations
   sessionId?: string; // added to all traces
+  metadata?: Record<string, unknown>; // added to all traces
 };
 
 export class CallbackHandler extends BaseCallbackHandler {
@@ -57,6 +58,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   userId?: string;
   version?: string;
   sessionId?: string;
+  metadata?: Record<string, unknown>;
   rootProvided: boolean = false;
   debugEnabled: boolean = false;
 
@@ -74,8 +76,9 @@ export class CallbackHandler extends BaseCallbackHandler {
         sdkIntegration: params?.sdkIntegration ?? "LANGCHAIN",
       });
       this.sessionId = params?.sessionId;
+      this.userId = params?.userId;
+      this.metadata = params?.metadata;
     }
-    this.userId = params?.userId;
     this.version = params?.version;
   }
 
@@ -236,7 +239,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.langfuse.trace({
         id: runId,
         name: serialized.id.at(-1)?.toString(),
-        metadata: this.joinTagsAndMetaData(tags, metadata),
+        metadata: this.joinTagsAndMetaData(tags, metadata, this.metadata),
         userId: this.userId,
         version: this.version,
         sessionId: this.sessionId,
@@ -551,14 +554,19 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   joinTagsAndMetaData(
     tags?: string[] | undefined,
-    metadata?: Record<string, unknown> | undefined
+    metadata1?: Record<string, unknown> | undefined,
+    metadata2?: Record<string, unknown> | undefined
   ): Record<string, unknown> {
+    const finalDict: Record<string, unknown> = {};
     if (tags) {
-      const finalDict = { tags: tags };
-      if (metadata) {
-        return { ...finalDict, ...metadata };
-      }
+      finalDict.tags = tags;
     }
-    return metadata ?? {};
+    if (metadata1) {
+      Object.assign(finalDict, metadata1);
+    }
+    if (metadata2) {
+      Object.assign(finalDict, metadata2);
+    }
+    return finalDict;
   }
 }
