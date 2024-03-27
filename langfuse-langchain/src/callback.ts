@@ -46,6 +46,7 @@ type ConstructorParams = (RootParams | KeyParams) & {
   version?: string; // added to all traces and observations
   sessionId?: string; // added to all traces
   metadata?: Record<string, unknown>; // added to all traces
+  tags?: string[]; // added to all traces
 };
 
 export class CallbackHandler extends BaseCallbackHandler {
@@ -59,6 +60,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   version?: string;
   sessionId?: string;
   metadata?: Record<string, unknown>;
+  tags?: string[];
   rootProvided: boolean = false;
   debugEnabled: boolean = false;
 
@@ -78,6 +80,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.sessionId = params?.sessionId;
       this.userId = params?.userId;
       this.metadata = params?.metadata;
+      this.tags = params?.tags;
     }
     this.version = params?.version;
   }
@@ -244,6 +247,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
         sessionId: this.sessionId,
         input: input,
+        tags: this.tags,
       });
       this.traceId = runId;
     }
