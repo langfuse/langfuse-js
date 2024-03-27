@@ -80,6 +80,7 @@ describe("Langchain", () => {
           foo: "bar",
           array: ["a", "b"],
         },
+        tags: ["test-tag", "test-tag-2"],
         version: "1.0.0",
       });
       handler.debug(true);
@@ -99,6 +100,7 @@ describe("Langchain", () => {
         foo: "bar",
         array: ["a", "b"],
       });
+      expect(trace?.tags).toMatchObject(["test-tag", "test-tag-2"]);
       expect(trace?.version).toBe("1.0.0");
       expect(trace?.observations.length).toBe(1);
 
