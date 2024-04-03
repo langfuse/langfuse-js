@@ -3,6 +3,8 @@ import { Langfuse } from "./langfuse";
 
 const client = new Langfuse();
 
+
+// TODO: Change this approach to accomodate all the openAI methods and their params..
 const getModelParams = (args: OpenAiArgs): Record<string, any> => {
     let params: Record<string, any> = {}
     params = {
@@ -52,7 +54,6 @@ const getModelParams = (args: OpenAiArgs): Record<string, any> => {
         modelParams: params
     }
 }
-
 
 type OpenAiArgs = OpenAI.ChatCompletionCreateParams | OpenAI.CompletionCreateParams
 
