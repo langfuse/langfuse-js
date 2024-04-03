@@ -1,140 +1,182 @@
 import OpenAI from "openai";
 import { Langfuse } from "./langfuse";
-import { config } from "process";
+
 const client = new Langfuse();
 
-interface ModelArgs {
-    model: string,
-    messages: Array<any>
-}
-
-
-
-const getModelParams = (modelsArgs: OpenAI.ChatCompletionCreateParams): Record<string, any> => {
-
-    const params: Record<string, any> = {
-        // frequency_penalty: modelsArgs.frequency_penalty,
-        // function_call: modelsArgs.function_call,
-        // functions: modelsArgs.functions,
-        // logit_bias: modelsArgs.logit_bias,
-        // logprobs: modelsArgs.logprobs,
-        // max_tokens: modelsArgs.max_tokens,
-        // messages: modelsArgs.messages,
-        // n: modelsArgs.n,
-        // presence_penalty: modelsArgs.presence_penalty,
-        // response_format: modelsArgs.response_format,
-        // seed: modelsArgs.seed,
-        // stop: modelsArgs.stop,
-        // stream: modelsArgs.stream,
-        // temperature: modelsArgs.temperature,
-        // tool_choice: modelsArgs.tool_choice,
-        // tools: modelsArgs.tools,
-        // top_logprobs: modelsArgs.top_logprobs,
-        // top_p: modelsArgs.top_p,
-        user: modelsArgs.user,
+const getModelParams = (args: OpenAiArgs): Record<string, any> => {
+    let params: Record<string, any> = {}
+    params = {
+        frequency_penalty: args.frequency_penalty,
+        logit_bias: args.logit_bias,
+        logprobs: args.logprobs,
+        max_tokens: args.max_tokens,
+        n: args.n,
+        presence_penalty: args.presence_penalty,
+        seed: args.seed,
+        stop: args.stop,
+        stream: args.stream,
+        temperature: args.temperature,
+        top_p: args.top_p,
+        user: args.user,
+    }
+    let input;
+    if ('messages' in args) {
+        input = args.messages[0].content
+    } else if ('prompt' in args) {
+        input = args.prompt ?? ""
     }
 
-    return params
 
+    if ('function_call' in args) {
+        params.function_call = args.function_call;
+    }
+    if ('functions' in args) {
+        params.functions = args.functions;
+    }
+    if ('response_format' in args) {
+        params.response_format = args.response_format;
+    }
+    if ('tool_choice' in args) {
+        params.tool_choice = args.tool_choice;
+    }
+    if ('tools' in args) {
+        params.tools = args.tools;
+    }
+    if ('top_logprobs' in args) {
+        params.top_logprobs = args.top_logprobs;
+    }
 
+    return {
+        model: args.model,
+        input: input,
+        modelParams: params
+    }
 }
 
 
-export const traceable = <Func extends (...args: any[]) => any>(
-    wrappedFunc: Func,
-    config?: any
-): (...args: Parameters<Func>) => Promise<ReturnType<Func>> => {
-    type Inputs = Parameters<Func>;
-    type Output = ReturnType<Func>;
-    const traceableFunc = async (
-        ...args: Inputs
-    ): Promise<Output> => {
-        const modelsArgs = args as unknown as Array<OpenAI.ChatCompletionCreateParams>
-        modelsArgs
-        console.log("ARGS: ", args, "\n\n\n")
-        console.log("CONFIG:", config)
-        const messages = modelsArgs[0].messages
-        console.log("MESSAGES: ", messages)
-        const res = await wrappedFunc(...args)
-        console.log('IsAsync ? ', isAsyncIterable(res))
-        if (isAsyncIterable(res)) {
-            console.log("comes inside.,...")
-            async function* wrapOutputForTracing(): AsyncGenerator<unknown, void, unknown> {
-                const response = res
-                const chunks: unknown[] = [];
-                // TypeScript thinks this is unsafe
-                for await (const chunk of response as AsyncIterable<unknown>) {
-                    const _chunk = chunk as OpenAI.ChatCompletionChunk
-                    chunks.push(_chunk.choices[0]?.delta?.content || "");
-                    yield chunk;
-                }
-                const trace = client.trace({
-                    name: config.traceName,
-                    input: messages[0].content,
-                    output: chunks.join(""),
-                    metadata: { user: "noble@langfuse.com" },
-                    tags: ["testing"]
+type OpenAiArgs = OpenAI.ChatCompletionCreateParams | OpenAI.CompletionCreateParams
 
-                })
-                trace.generation({
-                    model: modelsArgs[0].model,
-                    input: messages[0].content,
-                    output: chunks.join(""),
-                    modelParameters: getModelParams(modelsArgs[0])
-                })
-                client.flush()
+export const openaiTracer = async<T extends (...args: any[]) => any>(
+    baseFunction: T,
+    config?: WrapperConfig,
+    ...args: Parameters<T>
+): Promise<ReturnType<T>> => {
+    const modelInput: OpenAiArgs = args[0]
 
-                // await currentRunTree.end({ outputs: chunks });
-                // await currentRunTree.patchRun();
+    const inputParams = getModelParams(modelInput)
+    const res = await baseFunction(...args)
+    if (isAsyncIterable(res)) {
+        async function* tracedOutputGenerator(): AsyncGenerator<unknown, void, unknown> {
+            const response = res
+            const chunks: unknown[] = [];
+            // TypeScript thinks this is unsafe
+            for await (const chunk of response as AsyncIterable<unknown>) {
+                const _chunk = chunk as OpenAI.ChatCompletionChunk
+                chunks.push(_chunk.choices[0]?.delta?.content || "");
+                yield chunk;
             }
-            return wrapOutputForTracing() as Output
-
-        } else {
             const trace = client.trace({
-                name: config.traceName,
-                input: messages[0].content,
-                output: (await res).choices[0].message.content,
-                metadata: { user: "noble@langfuse.com" },
-                tags: ["testing"],
+                name: config?.trace_name,
+                input: inputParams.input,
+                output: chunks.join(""),
+                metadata: config?.metadata,
+                tags: config?.tags,
+                userId: config?.user_id
+
             })
             trace.generation({
-                model: modelsArgs[0].model,
-                input: messages[0].content,
-                output: (await res).choices[0].message.content
+                model: inputParams.model,
+                input: inputParams.input,
+                output: chunks.join(""),
+                modelParameters: inputParams.modelParams
             })
+            client.flush()
 
         }
+        return tracedOutputGenerator() as ReturnType<T>
 
-        client.flush()
+    } else {
+        const trace = client.trace({
+            name: config?.trace_name,
+            input: inputParams.input,
+            output: (await res).choices[0].message.content,
+            metadata: config?.metadata,
+            tags: config?.tags,
+            userId: config?.user_id
 
-        return res
+        })
+        trace.generation({
+            model: inputParams.model,
+            input: inputParams.input,
+            modelParameters: inputParams.modelParams,
+            output: (await res).choices[0].message.content,
+        })
+
     }
-    Object.defineProperty(traceableFunc, "Langfuse:traceable", {
-        value: config,
-    });
-    return traceableFunc
+
+    client.flush()
+
+    return res
 }
 
-interface config {
-    traceName: string
-}
 
 const isAsyncIterable = (x: unknown): x is AsyncIterable<unknown> =>
     x != null &&
     typeof x === "object" &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     typeof (x as any)[Symbol.asyncIterator] === "function";
 
-const OpenAIWrapper = <T extends object>(sdk: T, config?: config): T => {
+
+export const wrappedTracer = <T extends (...args: any[]) => any>(
+    baseFuntion: T,
+    config?: any
+): (...args: Parameters<T>) => Promise<ReturnType<T>> => {
+    return (...args: Parameters<T>): Promise<ReturnType<T>> => openaiTracer(baseFuntion, config, ...args);
+}
+
+interface WrapperConfig {
+    trace_name: string,
+    session_id?: string,
+    user_id?: string,
+    release?: string,
+    version?: string,
+    metadata?: any // TODO: Add this to the doc
+    tags?: any
+}
+
+
+
+/**
+ * Wraps an OpenAI SDK object with tracing capabilities, allowing for detailed tracing of SDK method calls.
+ * It wraps function calls with a tracer that logs detailed information about the call, including the method name,
+ * input parameters, and output.
+ * 
+ * @template T - The SDK object to be wrapped.
+ * @param {T} sdk - The OpenAI SDK object to be wrapped.
+ * @param {WrapperConfig} [config] - Optional configuration object for the wrapper.
+ * @param {string} [config.trace_name] - The name to use for tracing. If not provided, a default name based on the SDK's constructor name and the method name will be used.
+ * @param {string} [config.session_id] - Optional session ID for tracing.
+ * @param {string} [config.user_id] - Optional user ID for tracing.
+ * @param {string} [config.release] - Optional release version for tracing.
+ * @param {string} [config.version] - Optional version for tracing.
+ * @returns {T} - A proxy of the original SDK object with methods wrapped for tracing.
+ *
+ * @example
+ * const client = new OpenAI();
+ * const res = OpenAIWrapper(client, { traceName: "My.OpenAI.Chat.Trace" }).chat.completions.create({
+ *      messages: [{ role: "system", content: "Say this is a test!" }],
+        model: "gpt-3.5-turbo",
+        user: "langfuse",
+        max_tokens: 300
+ * });
+ * console.log(res); // This call will be traced.
+ * */
+const OpenAIWrapper = <T extends object>(sdk: T, config?: WrapperConfig): T => {
     return new Proxy(sdk, {
         get(target, propKey, receiver) {
-            // console.log("TARGET: ", target, "\n\n")
-            // console.log("PROPKEY: ", propKey, "\n\n")
-            // console.log("RECEIVER: ", receiver, "\n\n")
             const originalValue = target[propKey as keyof T];
 
             if (typeof originalValue === "function") {
-                return traceable(originalValue.bind(target), { traceName: config?.traceName ?? `${sdk.constructor?.name}.${propKey.toString()}` })
+                return wrappedTracer(originalValue.bind(target), { trace_name: config?.trace_name ?? `${sdk.constructor?.name}.${propKey.toString()}` })
 
             } else if (
                 originalValue != null &&
@@ -144,7 +186,7 @@ const OpenAIWrapper = <T extends object>(sdk: T, config?: config): T => {
             ) {
                 return OpenAIWrapper(
                     originalValue,
-                    { traceName: config?.traceName ?? `${sdk.constructor?.name}.${propKey.toString()}` }
+                    { trace_name: config?.trace_name ?? `${sdk.constructor?.name}.${propKey.toString()}` }
                 );
             } else {
                 return Reflect.get(target, propKey, receiver);
