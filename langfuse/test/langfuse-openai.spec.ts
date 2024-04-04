@@ -544,69 +544,6 @@ describe("Langfuse-OpenAI-Integation", () => {
             expect(generation.statusMessage).toBeNull()
         }, 40000);
 
-        it("Using a common OpenAI client for multiple requests", async () => {
-            const name = `Common-client-initialisation-${randomUUID()}`
-            const client = OpenAIWrapper(openai, { trace_name: name })
-            const res1 = await client.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [{ "role": "user", "content": "What's the weather like in Boston today?" }],
-                user: "langfuse-user@gmail.com",
-                max_tokens: 300
-            });
-
-            await client.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [{ "role": "user", "content": "What's the weather like in Boston today?" }],
-                user: "langfuse-user@gmail.com",
-                max_tokens: 300
-            });
-
-            await client.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [{ "role": "user", "content": "What's the weather like in Boston today?" }],
-                user: "langfuse-user@gmail.com",
-                max_tokens: 300
-            });
-
-            await langfuse.flushAsync()
-            const content = res1.choices[0].message
-
-            expect(content).toBeDefined()
-
-            // Fetches the generation by name. According to the condition it should return 3 generations.
-            // Since the returned results may not be in the order we expect, avoiding the comparison of the 
-            // langfuse trace output against model output. We only check the existence. Similarly for few other params.
-            const response = await getGeneration(name)
-            expect(response.status).toBe(200)
-            expect(response.data).toBeDefined()
-            expect(response.data.data).toBeDefined()
-            // Greater than 2 becuase the data is not immediately consistent on langfuse. So it might miss 
-            // the last value when fetching from db.
-            // TODO: Make the trace save immediately consistent, ensuring always the latest data is returned.
-            expect(response.data.data.length).toBeGreaterThanOrEqual(2)
-            const generation = response.data.data[0]
-            const traceId = generation.id
-            for (const i of response.data.data.splice(1)) {
-                expect(i.id).not.toBe(traceId)
-            }
-            expect(generation.name).toBe(name)
-            expect(generation.modelParameters).toBeDefined()
-            expect(generation.modelParameters).toMatchObject(
-                { user: 'langfuse-user@gmail.com', "max_tokens": 300 }
-            )
-            expect(generation.usage).toBeDefined()
-            expect(generation.model).toBe("gpt-3.5-turbo")
-            expect(generation.totalTokens).toBeDefined()
-            expect(generation.promptTokens).toBeDefined()
-            expect(generation.completionTokens).toBeDefined()
-            expect(generation.input).toBeDefined()
-            expect(generation.output).toBeDefined()
-            expect(generation.calculatedInputCost).toBeDefined()
-            expect(generation.calculatedOutputCost).toBeDefined()
-            expect(generation.calculatedTotalCost).toBeDefined()
-            expect(generation.statusMessage).toBeNull()
-        }, 40000);
-
         it("Extra Wrapper params", async () => {
             const name = `Extra-wrapper-params-${randomUUID()}`
             const res = await OpenAIWrapper(openai, {

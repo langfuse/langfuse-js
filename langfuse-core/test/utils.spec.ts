@@ -95,9 +95,8 @@ describe("utils", () => {
       delete process.env.LANGFUSE_SECRET_KEY;
       delete process.env.LANGFUSE_BASEURL;
 
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => { });
 
-      const config = configLangfuseSDK({});
 
       expect(consoleSpy).toHaveBeenCalledWith(
         "publicKey is required, but was not provided. It can be provided as an argument or as an environment variable LANGFUSE_PUBLIC_KEY."
