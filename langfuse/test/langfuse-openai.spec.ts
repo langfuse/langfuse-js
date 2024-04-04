@@ -232,7 +232,6 @@ describe("Langfuse-OpenAI-Intergation", () => {
         expect(generation.promptTokens).toBeDefined()
         expect(generation.completionTokens).toBeDefined()
         expect(generation.input).toBeDefined()
-        expect(generation.input).toMatch("You output candidate notes in JSON format when given a candidate profile and a job description.")
         expect(generation.output).toBeDefined()
         expect(generation.output).toMatch(content)
     }, 10000);
@@ -296,10 +295,8 @@ describe("Langfuse-OpenAI-Intergation", () => {
         expect(generation.promptTokens).toBeDefined()
         expect(generation.completionTokens).toBeDefined()
         expect(generation.input).toBeDefined()
-        expect(generation.input).toMatch("You output candidate notes in JSON format when given a candidate profile and a job description.")
         expect(generation.output).toBeDefined()
         expect(generation.output).toMatch(content)
     }, 10000);
-
 
 });

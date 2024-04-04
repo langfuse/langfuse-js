@@ -33,7 +33,7 @@ const parseInputArgs = (args: Record<string, any>): InputArgsData => {
     }
     let input;
     if ('messages' in args) {
-        input = args.messages[0].content
+        input = args.messages
     } else if ('prompt' in args) {
         input = args.prompt ?? ""
     }
