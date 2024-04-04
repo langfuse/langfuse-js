@@ -312,7 +312,6 @@ describe("Langfuse-OpenAI-Intergation", () => {
             expect(generation.output).toMatchObject(content)
         }, 10000);
 
-
         it("Function Calling on openai", async () => {
             const name = `FunctionCalling-NonStreaming-${randomUUID()}`
             const res = await OpenAIWrapper(openai, { trace_name: name }).chat.completions.create({
