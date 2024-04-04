@@ -41,7 +41,7 @@ interface TraceConfig {
     config?: WrapperConfig
 }
 
-const generateOutput = (res: any): string => {
+const generateOutput = (res: any): any => {
     return 'message' in res.choices[0] ? res.choices[0].message : res.choices[0].text ?? ""
 }
 
@@ -104,7 +104,7 @@ class TraceGenerator {
     }
 
     createGeneration(
-        output?: string,
+        output?: any,
         usage?: CompletionUsage,
         error?: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR" | undefined,
         statusMessage?: string,
@@ -116,11 +116,11 @@ class TraceGenerator {
             name: this.config?.trace_name,
             input: input.input,
             modelParameters: input.modelParams,
-            output: output,
             startTime: this.startTime,
             endTime: endTime,
             level: error,
             statusMessage,
+            output,
             usage
         })
         this.trace?.update({ output })
