@@ -2,13 +2,13 @@ import OpenAI from "openai";
 import { OpenAIWrapper } from "../index";
 import { randomUUID } from "crypto";
 import axios, { AxiosResponse } from "axios";
-import { getHeaders } from "../../integration-test/integration-utils";
+import { LANGFUSE_BASEURL, getHeaders } from "../../integration-test/integration-utils";
 import Langfuse from "../index";
 
 const openai = new OpenAI();
 
 const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => {
-    const url = `${process.env.LANGFUSE_HOST}/api/public/observations?name=${name}&type=GENERATION`
+    const url = `${LANGFUSE_BASEURL}/api/public/observations?name=${name}&type=GENERATION`
     const res = await axios.get(url, {
         headers: getHeaders(),
     });
@@ -357,7 +357,5 @@ describe("Langfuse-OpenAI-Intergation", () => {
             expect(generation.output).toBeDefined()
             expect(generation.output).toMatchObject(content)
         }, 10000);
-
-
     });
 });
