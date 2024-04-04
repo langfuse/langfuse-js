@@ -45,7 +45,9 @@ const generateOutput = (res: any): string => {
     return 'message' in res.choices[0] ? res.choices[0].message : res.choices[0].text ?? ""
 }
 
-const getUsageDetails = (res: any): Record<string, any> => {
+
+
+const getUsageDetails = (res: any): OpenAI.CompletionUsage => {
     return res.usage ?? {}
 }
 
@@ -94,7 +96,7 @@ class TraceGenerator {
 
     createGeneration(
         output?: string,
-        usage?: Record<string, any>,
+        usage?: OpenAI.CompletionUsage,
         error?: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR" | undefined,
         statusMessage?: string,
         endTime = new Date()
@@ -110,7 +112,11 @@ class TraceGenerator {
             endTime: endTime,
             level: error,
             statusMessage,
-            usage: usage,
+            usage: {
+                promptTokens: usage?.prompt_tokens,
+                completionTokens: usage?.completion_tokens,
+                totalTokens: usage?.total_tokens
+            },
         })
         this.trace?.update({ output })
     }
@@ -216,6 +222,8 @@ interface WrapperConfig {
  * @param {string} [config.user_id] - Optional user ID for tracing.
  * @param {string} [config.release] - Optional release version for tracing.
  * @param {string} [config.version] - Optional version for tracing.
+ * @param {string} [config.metadata] - Optional metadata for tracing.
+ * @param {string} [config.tags] - Optional tags for tracing.
  * @returns {T} - A proxy of the original SDK object with methods wrapped for tracing.
  *
  * @example

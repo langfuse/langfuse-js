@@ -27,6 +27,10 @@ describe("Langfuse-OpenAI-Intergation", () => {
         langfuse.debug(true);
     });
 
+    afterEach(async () => {
+        await langfuse.shutdownAsync();
+    });
+
     describe("Core Methods", () => {
 
         it("Chat-completion without streaming", async () => {
@@ -38,6 +42,7 @@ describe("Langfuse-OpenAI-Intergation", () => {
                 max_tokens: 300
             });
             expect(res).toBeDefined()
+            const usage = res.usage
             langfuse.flush()
             let response = await getGeneration(name)
             expect(response.status).toBe(200)
@@ -60,7 +65,17 @@ describe("Langfuse-OpenAI-Intergation", () => {
             expect(generation.completionTokens).toBeDefined()
             expect(generation.input).toBeDefined()
             expect(generation.output).toBeDefined()
-            expect(generation.output).toBeDefined()
+            expect(generation.output).toMatchObject(res.choices[0].message)
+            expect(generation.usage).toMatchObject({
+                unit: "TOKENS",
+                input: usage?.prompt_tokens,
+                output: usage?.completion_tokens,
+                total: usage?.total_tokens
+            })
+            expect(generation.calculatedInputCost).toBeDefined()
+            expect(generation.calculatedOutputCost).toBeDefined()
+            expect(generation.calculatedTotalCost).toBeDefined()
+            expect(generation.statusMessage).toBeNull()
 
         }, 10000);
 
@@ -102,7 +117,7 @@ describe("Langfuse-OpenAI-Intergation", () => {
             expect(generation.completionTokens).toBeDefined()
             expect(generation.input).toBeDefined()
             expect(generation.output).toBeDefined()
-            expect(generation.output).toBeDefined()
+            expect(generation.output).toMatch(content)
 
         }, 10000);
 
@@ -116,6 +131,7 @@ describe("Langfuse-OpenAI-Intergation", () => {
                 max_tokens: 300
             });
             expect(res).toBeDefined()
+            const usage = res.usage
             await langfuse.flushAsync()
 
             let response = await getGeneration(name)
@@ -140,6 +156,16 @@ describe("Langfuse-OpenAI-Intergation", () => {
             expect(generation.input).toBeDefined()
             expect(generation.output).toBeDefined()
             expect(generation.output).toMatch(res.choices[0].text)
+            expect(generation.usage).toMatchObject({
+                unit: "TOKENS",
+                input: usage?.prompt_tokens,
+                output: usage?.completion_tokens,
+                total: usage?.total_tokens
+            })
+            expect(generation.calculatedInputCost).toBeDefined()
+            expect(generation.calculatedOutputCost).toBeDefined()
+            expect(generation.calculatedTotalCost).toBeDefined()
+            expect(generation.statusMessage).toBeNull()
         }, 10000);
 
         it("Completion with streaming", async () => {
@@ -287,6 +313,7 @@ describe("Langfuse-OpenAI-Intergation", () => {
 
             expect(content).toBeDefined()
             await langfuse.flushAsync()
+            const usage = res.usage
 
             let response = await getGeneration(name)
             expect(response.status).toBe(200)
@@ -310,13 +337,23 @@ describe("Langfuse-OpenAI-Intergation", () => {
             expect(generation.input).toBeDefined()
             expect(generation.output).toBeDefined()
             expect(generation.output).toMatchObject(content)
+            expect(generation.usage).toMatchObject({
+                unit: "TOKENS",
+                input: usage?.prompt_tokens,
+                output: usage?.completion_tokens,
+                total: usage?.total_tokens
+            })
+            expect(generation.calculatedInputCost).toBeDefined()
+            expect(generation.calculatedOutputCost).toBeDefined()
+            expect(generation.calculatedTotalCost).toBeDefined()
+            expect(generation.statusMessage).toBeNull()
         }, 10000);
 
         it("Function Calling on openai", async () => {
             const name = `FunctionCalling-NonStreaming-${randomUUID()}`
             const res = await OpenAIWrapper(openai, { trace_name: name }).chat.completions.create({
                 model: "gpt-3.5-turbo",
-                messages: [{ "role": "user", "content": "What's the weather like in Boston today?" }],
+                messages: [{ "role": "user", "content": "Explain how to assemble a PC" }],
                 functions: [
                     {
                         "name": "get_answer_for_user_query",
@@ -329,6 +366,7 @@ describe("Langfuse-OpenAI-Intergation", () => {
                 max_tokens: 300
             });
             const content = res.choices[0].message
+            const usage = res.usage
 
             expect(content).toBeDefined()
             await langfuse.flushAsync()
@@ -355,6 +393,85 @@ describe("Langfuse-OpenAI-Intergation", () => {
             expect(generation.input).toBeDefined()
             expect(generation.output).toBeDefined()
             expect(generation.output).toMatchObject(content)
+            expect(generation.usage).toMatchObject({
+                unit: "TOKENS",
+                input: usage?.prompt_tokens,
+                output: usage?.completion_tokens,
+                total: usage?.total_tokens
+            })
+            expect(generation.calculatedInputCost).toBeDefined()
+            expect(generation.calculatedOutputCost).toBeDefined()
+            expect(generation.calculatedTotalCost).toBeDefined()
+            expect(generation.statusMessage).toBeNull()
+        }, 10000);
+
+        it("Tools and Toolchoice Calling on openai", async () => {
+            const name = `Tools-and-Toolchoice-NonStreaming-${randomUUID()}`
+            const res = await OpenAIWrapper(openai, { trace_name: name }).chat.completions.create({
+                model: "gpt-3.5-turbo",
+                messages: [{ "role": "user", "content": "What's the weather like in Boston today?" }],
+                tool_choice: "auto",
+                tools: [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_current_weather",
+                            "description": "Get the current weather in a given location",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "location": {
+                                        "type": "string",
+                                        "description": "The city and state, e.g. San Francisco, CA",
+                                    },
+                                    "unit": { "type": "string", "enum": ["celsius", "fahrenheit"] },
+                                },
+                                "required": ["location"],
+                            },
+                        },
+                    }
+                ],
+                user: "langfuse-user@gmail.com",
+                max_tokens: 300
+            });
+            const content = res.choices[0].message
+            const usage = res.usage
+
+            expect(content).toBeDefined()
+            await langfuse.flushAsync()
+
+            let response = await getGeneration(name)
+            expect(response.status).toBe(200)
+            expect(response.data).toBeDefined()
+            if (response.data.data.length == 0) {
+                response = await getGeneration(name)
+            }
+            expect(response.data.data).toBeDefined()
+            expect(response.data.data.length).toBeGreaterThan(0)
+            const generation = response.data.data[0]
+            expect(generation.name).toBe(name)
+            expect(generation.modelParameters).toBeDefined()
+            expect(generation.modelParameters).toMatchObject(
+                { user: 'langfuse-user@gmail.com', "max_tokens": 300 }
+            )
+            expect(generation.usage).toBeDefined()
+            expect(generation.model).toBe("gpt-3.5-turbo")
+            expect(generation.totalTokens).toBeDefined()
+            expect(generation.promptTokens).toBeDefined()
+            expect(generation.completionTokens).toBeDefined()
+            expect(generation.input).toBeDefined()
+            expect(generation.output).toBeDefined()
+            expect(generation.output).toMatchObject(content)
+            expect(generation.usage).toMatchObject({
+                unit: "TOKENS",
+                input: usage?.prompt_tokens,
+                output: usage?.completion_tokens,
+                total: usage?.total_tokens
+            })
+            expect(generation.calculatedInputCost).toBeDefined()
+            expect(generation.calculatedOutputCost).toBeDefined()
+            expect(generation.calculatedTotalCost).toBeDefined()
+            expect(generation.statusMessage).toBeNull()
         }, 10000);
     });
 });
