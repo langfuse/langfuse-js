@@ -46,9 +46,18 @@ const generateOutput = (res: any): string => {
 }
 
 
+interface CompletionUsage {
+    promptTokens: number,
+    completionTokens: number,
+    totalTokens: number
+}
 
-const getUsageDetails = (res: any): OpenAI.CompletionUsage => {
-    return res.usage ?? {}
+const getUsageDetails = (res: any): CompletionUsage => {
+    return {
+        promptTokens: res.usage?.prompt_tokens,
+        completionTokens: res.usage?.completion_tokens,
+        totalTokens: res.usage?.total_tokens
+    }
 }
 
 const processChunks = (chunk: unknown): string => {
@@ -96,7 +105,7 @@ class TraceGenerator {
 
     createGeneration(
         output?: string,
-        usage?: OpenAI.CompletionUsage,
+        usage?: CompletionUsage,
         error?: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR" | undefined,
         statusMessage?: string,
         endTime = new Date()
@@ -112,11 +121,7 @@ class TraceGenerator {
             endTime: endTime,
             level: error,
             statusMessage,
-            usage: {
-                promptTokens: usage?.prompt_tokens,
-                completionTokens: usage?.completion_tokens,
-                totalTokens: usage?.total_tokens
-            },
+            usage
         })
         this.trace?.update({ output })
     }
