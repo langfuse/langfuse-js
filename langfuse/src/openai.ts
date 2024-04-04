@@ -86,7 +86,9 @@ class TraceGenerator {
             tags: this.config?.tags,
             userId: this.config?.user_id,
             timestamp: this.startTime,
-
+            sessionId: this.config?.session_id,
+            version: this.config?.version,
+            release: this.config?.release
         })
     }
 
@@ -108,7 +110,7 @@ class TraceGenerator {
             endTime: endTime,
             level: error,
             statusMessage,
-            usage: usage
+            usage: usage,
         })
         this.trace?.update({ output })
     }
