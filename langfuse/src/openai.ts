@@ -1,11 +1,15 @@
 import OpenAI from "openai";
-import { Langfuse } from "./langfuse";
+import { Langfuse, LangfuseTraceClient } from "./langfuse";
+
 
 const client = new Langfuse();
+interface InputArgsData {
+    model: string
+    inputStr: string
+    modelParams: Record<string, any>
+}
 
-
-// TODO: Change this approach to accomodate all the openAI methods and their params..
-const getModelParams = (args: OpenAiArgs): Record<string, any> => {
+const parseInputArgs = (args: Record<string, any>): InputArgsData => {
     let params: Record<string, any> = {}
     params = {
         frequency_penalty: args.frequency_penalty,
@@ -20,6 +24,12 @@ const getModelParams = (args: OpenAiArgs): Record<string, any> => {
         temperature: args.temperature,
         top_p: args.top_p,
         user: args.user,
+        function_call: args.function_call,
+        functions: args.functions,
+        response_format: args.response_format,
+        tool_choice: args.tool_choice,
+        tools: args.tools,
+        top_logprobs: args.top_logprobs,
     }
     let input;
     if ('messages' in args) {
@@ -28,95 +38,134 @@ const getModelParams = (args: OpenAiArgs): Record<string, any> => {
         input = args.prompt ?? ""
     }
 
-
-    if ('function_call' in args) {
-        params.function_call = args.function_call;
-    }
-    if ('functions' in args) {
-        params.functions = args.functions;
-    }
-    if ('response_format' in args) {
-        params.response_format = args.response_format;
-    }
-    if ('tool_choice' in args) {
-        params.tool_choice = args.tool_choice;
-    }
-    if ('tools' in args) {
-        params.tools = args.tools;
-    }
-    if ('top_logprobs' in args) {
-        params.top_logprobs = args.top_logprobs;
-    }
-
     return {
         model: args.model,
-        input: input,
+        inputStr: input,
         modelParams: params
     }
 }
 
-type OpenAiArgs = OpenAI.ChatCompletionCreateParams | OpenAI.CompletionCreateParams
+interface TraceConfig {
+    name?: string
+    inputs?: Record<string, any>
+    config?: WrapperConfig
+}
+
+const generateOutput = (res: any): string => {
+    return 'message' in res.choices[0] ? res.choices[0].message.content : res.choices[0].text ?? ""
+}
+
+const getUsageDetails = (res: any): Record<string, any> => {
+    return res.usage ?? {}
+}
+
+class TraceGenerator {
+    name?: string
+    inputs?: Record<string, any>
+    startTime?: Date
+    endTime?: Date
+    outputs?: string
+    client?: Langfuse
+    level?: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR" | undefined
+    trace?: LangfuseTraceClient
+    config?: WrapperConfig
+    constructor(tracerConfig: TraceConfig) {
+        this.config = tracerConfig.config
+        this.name = tracerConfig.name
+        this.inputs = tracerConfig.inputs
+        this.client = client
+        this.startTime = new Date()
+    }
+
+    createTrace(): void {
+        const input = parseInputArgs(this.inputs ?? {})
+        this.trace = client.trace({
+            name: this.config?.trace_name,
+            input: input.inputStr,
+            metadata: this.config?.metadata,
+            tags: this.config?.tags,
+            userId: this.config?.user_id,
+            timestamp: this.startTime,
+
+        })
+    }
+
+    createGeneration(
+        output?: string,
+        usage?: Record<string, any>,
+        error?: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR" | undefined,
+        statusMessage?: string,
+        endTime = new Date()
+    ): void {
+        const input = parseInputArgs(this.inputs ?? {})
+        this.trace?.generation({
+            model: input.model,
+            name: this.config?.trace_name,
+            input: input.inputStr,
+            modelParameters: input.modelParams,
+            output: output,
+            startTime: this.startTime,
+            endTime: endTime,
+            level: error,
+            statusMessage,
+            usage: usage
+        })
+        this.trace?.update({ output })
+    }
+
+    async flush(): Promise<void> {
+        await client.flushAsync()
+    }
+}
 
 export const openaiTracer = async<T extends (...args: any[]) => any>(
     baseFunction: T,
     config?: WrapperConfig,
     ...args: Parameters<T>
-): Promise<ReturnType<T>> => {
-    const modelInput: OpenAiArgs = args[0]
+): Promise<ReturnType<T> | any> => {
+    const tracer = new TraceGenerator({
+        name: baseFunction.name,
+        inputs: args[0],
+        config
+    })
 
-    const inputParams = getModelParams(modelInput)
-    const res = await baseFunction(...args)
-    if (isAsyncIterable(res)) {
-        async function* tracedOutputGenerator(): AsyncGenerator<unknown, void, unknown> {
-            const response = res
-            const chunks: unknown[] = [];
-            // TypeScript thinks this is unsafe
-            for await (const chunk of response as AsyncIterable<unknown>) {
-                const _chunk = chunk as OpenAI.ChatCompletionChunk
-                chunks.push(_chunk.choices[0]?.delta?.content || "");
-                yield chunk;
+    tracer.createTrace()
+    let res: any;
+    try {
+        res = await baseFunction(...args)
+        if (isAsyncIterable(res)) {
+            async function* tracedOutputGenerator(): AsyncGenerator<unknown, void, unknown> {
+                const response = res
+                const chunks: unknown[] = [];
+                // TypeScript thinks this is unsafe
+                for await (const chunk of response as AsyncIterable<unknown>) {
+                    const _chunk = chunk as OpenAI.ChatCompletionChunk
+                    chunks.push(_chunk.choices[0]?.delta?.content || "");
+                    yield chunk;
+                }
+                tracer.createGeneration(chunks.join(""))
+                await tracer.flush()
             }
-            const trace = client.trace({
-                name: config?.trace_name,
-                input: inputParams.input,
-                output: chunks.join(""),
-                metadata: config?.metadata,
-                tags: config?.tags,
-                userId: config?.user_id
+            return tracedOutputGenerator() as ReturnType<T>
 
-            })
-            trace.generation({
-                model: inputParams.model,
-                input: inputParams.input,
-                output: chunks.join(""),
-                modelParameters: inputParams.modelParams
-            })
-            client.flush()
-
+        } else {
+            tracer.createGeneration(
+                generateOutput(res),
+                getUsageDetails(res)
+            )
+            await tracer.flush()
         }
-        return tracedOutputGenerator() as ReturnType<T>
-
-    } else {
-        const trace = client.trace({
-            name: config?.trace_name,
-            input: inputParams.input,
-            output: (await res).choices[0].message.content,
-            metadata: config?.metadata,
-            tags: config?.tags,
-            userId: config?.user_id
-
-        })
-        trace.generation({
-            model: inputParams.model,
-            input: inputParams.input,
-            modelParameters: inputParams.modelParams,
-            output: (await res).choices[0].message.content,
-        })
-
+    } catch (error) {
+        tracer.createGeneration(
+            undefined,
+            undefined,
+            "ERROR",
+            String(error)
+        )
+        await tracer.flush()
+        // console.log(error)
+        throw error
     }
-
-    client.flush()
-
     return res
 }
 
@@ -131,7 +180,13 @@ export const wrappedTracer = <T extends (...args: any[]) => any>(
     baseFuntion: T,
     config?: any
 ): (...args: Parameters<T>) => Promise<ReturnType<T>> => {
-    return (...args: Parameters<T>): Promise<ReturnType<T>> => openaiTracer(baseFuntion, config, ...args);
+    {
+        try {
+            return (...args: Parameters<T>): Promise<ReturnType<T>> => openaiTracer(baseFuntion, config, ...args);
+        } catch (error) {
+            throw error
+        }
+    }
 }
 
 interface WrapperConfig {
