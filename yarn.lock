@@ -1546,15 +1546,15 @@
     zod "^3.22.3"
 
 "@langchain/core@^0.1", "@langchain/core@~0.1.13", "@langchain/core@~0.1.16", "@langchain/core@~0.1.25":
-  version "0.1.29"
-  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.1.29.tgz#4337a9db35ee0281af3d50d6fbb9c84c5dd6be77"
-  integrity sha512-MVrrb2J1Y08Yy6JnRDy/C/yxZj2PvO6wNkMs8657Q345SHs8iCbRX7Dy7rC69isUrpMjR7PvADFxV9rGvdoMBg==
+  version "0.1.53"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.1.53.tgz#40bf273b6d5e1426c60ce9cc259562fe656573f1"
+  integrity sha512-khfRTu2DSCNMPUmnKx7iH0TpEaunW/4BgR6STTteRRDd0NFtXGfAwUuY9sm0+EKi/XKhdAmpGnfLwSfNg5F0Qw==
   dependencies:
     ansi-styles "^5.0.0"
     camelcase "6"
     decamelize "1.2.0"
     js-tiktoken "^1.0.8"
-    langsmith "~0.1.1"
+    langsmith "~0.1.7"
     ml-distance "^4.0.0"
     p-queue "^6.6.2"
     p-retry "4"
@@ -3203,10 +3203,10 @@ commander@^10.0.1:
   resolved "https://registry.npmjs.org/commander/-/commander-10.0.1.tgz"
   integrity sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==
 
-commander@^11.0.0:
-  version "11.1.0"
-  resolved "https://registry.npmjs.org/commander/-/commander-11.1.0.tgz"
-  integrity sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==
+commander@^12.0.0:
+  version "12.0.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-12.0.0.tgz#b929db6df8546080adfd004ab215ed48cf6f2592"
+  integrity sha512-MwVNWlYjDTtOjX5PiD7o5pK0UrFU/OYgcJfjjK4RaHZETNtjJqrZa9Y9ds88+A+f+d5lv+561eZ+yCKoS3gbAA==
 
 commander@^2.9.0:
   version "2.20.3"
@@ -5943,10 +5943,10 @@ langsmith@~0.0.48, langsmith@~0.0.59:
     p-retry "4"
     uuid "^9.0.0"
 
-langsmith@~0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/langsmith/-/langsmith-0.1.1.tgz#acc74e76e19b1efed656aeab9f7485e065016ac1"
-  integrity sha512-SY1J7Y/hfcRby4ik5b2djvsTTlbJ76Mtl4Q2EDPznSKn+qMPMY2JVb3CroOHpA6qhXK/dGNbRLUz3Kq+mLmMsw==
+langsmith@~0.1.7:
+  version "0.1.14"
+  resolved "https://registry.yarnpkg.com/langsmith/-/langsmith-0.1.14.tgz#2b889dbcfb49547614df276a4a5a063092a1585d"
+  integrity sha512-iEzQLLB7/0nRpAwNBAR7B7N64fyByg5UsNjSvLaCCkQ9AS68PSafjB8xQkyI8QXXrGjU1dEqDRoa8m4SUuRdUw==
   dependencies:
     "@types/uuid" "^9.0.1"
     commander "^10.0.1"
