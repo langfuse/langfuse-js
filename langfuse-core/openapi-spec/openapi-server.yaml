@@ -16,7 +16,7 @@ info:
 paths:
   /api/public/dataset-items:
     post:
-      description: Create a dataset item, upserts on id
+      description: Create a dataset item
       operationId: datasetItems_create
       tags:
         - DatasetItems
@@ -63,7 +63,7 @@ paths:
               $ref: '#/components/schemas/CreateDatasetItemRequest'
   /api/public/dataset-items/{id}:
     get:
-      description: Get a specific dataset item
+      description: Get a dataset item
       operationId: datasetItems_get
       tags:
         - DatasetItems
@@ -336,7 +336,7 @@ paths:
           description: ''
   /api/public/ingestion:
     post:
-      description: Ingest multiple events to Langfuse
+      description: Batched ingestion for Langfuse Tracing
       operationId: ingestion_batch
       tags:
         - Ingestion
@@ -387,9 +387,84 @@ paths:
                     $ref: '#/components/schemas/IngestionEvent'
               required:
                 - batch
+  /api/public/metrics/daily:
+    get:
+      description: Get daily metrics of the Langfuse project
+      operationId: metrics_daily
+      tags:
+        - Metrics
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: traceName
+          in: query
+          description: Optional filter by the name of the trace
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: userId
+          in: query
+          description: Optional filter by the userId associated with the trace
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: tags
+          in: query
+          description: Optional filter for metrics where traces include all of these tags
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              nullable: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyMetrics'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
   /api/public/observations/{observationId}:
     get:
-      description: Get a specific observation
+      description: Get a observation
       operationId: observations_get
       tags:
         - Observations
@@ -484,6 +559,16 @@ paths:
           schema:
             type: string
             nullable: true
+        - name: fromStartTime
+          in: query
+          description: >-
+            Retrieve only observations with a start_time greater than this
+            timestamp.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
       responses:
         '200':
           description: ''
@@ -519,6 +604,7 @@ paths:
       security: *ref_0
   /api/public/projects:
     get:
+      description: Get Project associated with API key
       operationId: projects_get
       tags:
         - Projects
@@ -558,7 +644,7 @@ paths:
       security: *ref_0
   /api/public/prompts:
     get:
-      description: Get a specific prompt
+      description: Get a prompt
       operationId: prompts_get
       tags:
         - Prompts
@@ -608,7 +694,7 @@ paths:
               schema: {}
       security: *ref_0
     post:
-      description: Create a specific prompt
+      description: Create a prompt
       operationId: prompts_create
       tags:
         - Prompts
@@ -654,7 +740,7 @@ paths:
               $ref: '#/components/schemas/CreatePromptRequest'
   /api/public/scores:
     post:
-      description: Add a score to the database, upserts on id
+      description: Create a score
       operationId: score_create
       tags:
         - Score
@@ -699,7 +785,7 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateScoreRequest'
     get:
-      description: Get scores
+      description: Get a list of scores
       operationId: score_get
       tags:
         - Score
@@ -728,6 +814,14 @@ paths:
           schema:
             type: string
             nullable: true
+        - name: fromTimestamp
+          in: query
+          description: Retrieve only scores newer than this timestamp.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
       responses:
         '200':
           description: ''
@@ -735,6 +829,93 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Scores'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
+  /api/public/scores/{scoreId}:
+    get:
+      description: Get a score
+      operationId: score_get-by-id
+      tags:
+        - Score
+      parameters:
+        - name: scoreId
+          in: path
+          description: The unique langfuse identifier of a score
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Score'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
+    delete:
+      description: Delete a score
+      operationId: score_delete
+      tags:
+        - Score
+      parameters:
+        - name: scoreId
+          in: path
+          description: The unique langfuse identifier of a score
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
         '400':
           description: ''
           content:
@@ -884,14 +1065,24 @@ paths:
           schema:
             type: string
             nullable: true
+        - name: fromTimestamp
+          in: query
+          description: Retrieve only traces newer than this timestamp.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
         - name: orderBy
           in: query
           description: >-
-            Format of the string sort_by=timestamp.asc (id, timestamp, name,
-            userId, release, version, public, bookmarked, sessionId)
-          required: true
+            Format of the string [field].[asc/desc]. Fields: id, timestamp,
+            name, userId, release, version, public, bookmarked, sessionId.
+            Example: timestamp.asc
+          required: false
           schema:
             type: string
+            nullable: true
         - name: tags
           in: query
           description: Only traces that include all of these tags will be returned.
@@ -983,6 +1174,17 @@ components:
       title: TraceWithDetails
       type: object
       properties:
+        htmlPath:
+          type: string
+          description: Path of trace in Langfuse UI
+        latency:
+          type: number
+          format: double
+          description: Latency of trace in seconds
+        totalCost:
+          type: number
+          format: double
+          description: Cost of trace in USD
         observations:
           type: array
           items:
@@ -994,6 +1196,9 @@ components:
             type: string
           description: List of score ids
       required:
+        - htmlPath
+        - latency
+        - totalCost
         - observations
         - scores
       allOf:
@@ -1002,6 +1207,13 @@ components:
       title: TraceWithFullDetails
       type: object
       properties:
+        htmlPath:
+          type: string
+          description: Path of trace in Langfuse UI
+        totalCost:
+          type: number
+          format: double
+          description: Cost of trace in USD
         observations:
           type: array
           items:
@@ -1011,6 +1223,8 @@ components:
           items:
             $ref: '#/components/schemas/Score'
       required:
+        - htmlPath
+        - totalCost
         - observations
         - scores
       allOf:
@@ -1143,16 +1357,20 @@ components:
     Usage:
       title: Usage
       type: object
+      description: Standard interface for usage and cost
       properties:
         input:
           type: integer
           nullable: true
+          description: Number of input units (e.g. tokens)
         output:
           type: integer
           nullable: true
+          description: Number of output units (e.g. tokens)
         total:
           type: integer
           nullable: true
+          description: Defaults to input+output if not set
         unit:
           $ref: '#/components/schemas/ModelUsageUnit'
           nullable: true
@@ -1160,14 +1378,17 @@ components:
           type: number
           format: double
           nullable: true
+          description: USD input cost
         outputCost:
           type: number
           format: double
           nullable: true
+          description: USD output cost
         totalCost:
           type: number
           format: double
           nullable: true
+          description: USD total cost, defaults to input+output
     Score:
       title: Score
       type: object
@@ -1181,6 +1402,8 @@ components:
         value:
           type: number
           format: double
+        source:
+          $ref: '#/components/schemas/ScoreSource'
         observationId:
           type: string
           nullable: true
@@ -1195,6 +1418,7 @@ components:
         - traceId
         - name
         - value
+        - source
         - timestamp
     Dataset:
       title: Dataset
@@ -1267,8 +1491,11 @@ components:
           type: string
         datasetItemId:
           type: string
+        traceId:
+          type: string
         observationId:
           type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -1279,7 +1506,7 @@ components:
         - id
         - datasetRunId
         - datasetItemId
-        - observationId
+        - traceId
         - createdAt
         - updatedAt
     DatasetRun:
@@ -1290,6 +1517,8 @@ components:
           type: string
         name:
           type: string
+        metadata:
+          nullable: true
         datasetId:
           type: string
         createdAt:
@@ -1318,6 +1547,7 @@ components:
         - MILLISECONDS
         - SECONDS
         - IMAGES
+      description: Unit of usage in Langfuse
     ObservationLevel:
       title: ObservationLevel
       type: string
@@ -1345,6 +1575,12 @@ components:
       enum:
         - ACTIVE
         - ARCHIVED
+    ScoreSource:
+      title: ScoreSource
+      type: string
+      enum:
+        - API
+        - REVIEW
     CreateDatasetItemRequest:
       title: CreateDatasetItemRequest
       type: object
@@ -1357,6 +1593,7 @@ components:
         id:
           type: string
           nullable: true
+          description: Dataset items are upserted on their id
       required:
         - datasetName
         - input
@@ -1366,14 +1603,23 @@ components:
       properties:
         runName:
           type: string
+        metadata:
+          nullable: true
+          description: Metadata of the dataset run, updates run if run already exists
         datasetItemId:
           type: string
         observationId:
           type: string
+          nullable: true
+        traceId:
+          type: string
+          nullable: true
+          description: >-
+            traceId should always be provided. For compatibility with older SDK
+            versions it can also be inferred from the provided observationId.
       required:
         - runName
         - datasetItemId
-        - observationId
     CreateDatasetRequest:
       title: CreateDatasetRequest
       type: object
@@ -1524,6 +1770,7 @@ components:
     OpenAIUsage:
       title: OpenAIUsage
       type: object
+      description: Usage interface of OpenAI for improved compatibility.
       properties:
         promptTokens:
           type: integer
@@ -1944,6 +2191,60 @@ components:
       required:
         - successes
         - errors
+    DailyMetrics:
+      title: DailyMetrics
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyMetricsDetails'
+          description: A list of daily metrics, only days with ingested data are included.
+        meta:
+          $ref: '#/components/schemas/utilsMetaResponse'
+      required:
+        - data
+        - meta
+    DailyMetricsDetails:
+      title: DailyMetricsDetails
+      type: object
+      properties:
+        date:
+          type: string
+        countTraces:
+          type: integer
+        totalCost:
+          type: number
+          format: double
+        usage:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsageByModel'
+      required:
+        - date
+        - countTraces
+        - totalCost
+        - usage
+    UsageByModel:
+      title: UsageByModel
+      type: object
+      description: >-
+        Daily usage of a given model. Usage corresponds to the unit set for the
+        specific model (e.g. tokens).
+      properties:
+        model:
+          type: string
+        inputUsage:
+          type: integer
+        outputUsage:
+          type: integer
+        totalUsage:
+          type: integer
+      required:
+        - model
+        - inputUsage
+        - outputUsage
+        - totalUsage
     Observations:
       title: Observations
       type: object
@@ -1993,12 +2294,57 @@ components:
         - name
     CreatePromptRequest:
       title: CreatePromptRequest
+      oneOf:
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - chat
+            - $ref: '#/components/schemas/CreateChatPromptRequest'
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - text
+            - $ref: '#/components/schemas/CreateTextPromptRequest'
+          required:
+            - type
+    CreateChatPromptRequest:
+      title: CreateChatPromptRequest
       type: object
       properties:
         name:
           type: string
         isActive:
           type: boolean
+          description: Should the prompt be promoted to production immediately?
+        prompt:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        config:
+          nullable: true
+      required:
+        - name
+        - isActive
+        - prompt
+    CreateTextPromptRequest:
+      title: CreateTextPromptRequest
+      type: object
+      properties:
+        name:
+          type: string
+        isActive:
+          type: boolean
+          description: Should the prompt be promoted to production immediately?
         prompt:
           type: string
         config:
@@ -2009,20 +2355,75 @@ components:
         - prompt
     Prompt:
       title: Prompt
+      oneOf:
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - chat
+            - $ref: '#/components/schemas/ChatPrompt'
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - text
+            - $ref: '#/components/schemas/TextPrompt'
+          required:
+            - type
+    BasePrompt:
+      title: BasePrompt
       type: object
       properties:
         name:
           type: string
         version:
           type: integer
-        prompt:
-          type: string
         config: {}
       required:
         - name
         - version
-        - prompt
         - config
+    ChatMessage:
+      title: ChatMessage
+      type: object
+      properties:
+        role:
+          type: string
+        content:
+          type: string
+      required:
+        - role
+        - content
+    TextPrompt:
+      title: TextPrompt
+      type: object
+      properties:
+        prompt:
+          type: string
+      required:
+        - prompt
+      allOf:
+        - $ref: '#/components/schemas/BasePrompt'
+    ChatPrompt:
+      title: ChatPrompt
+      type: object
+      properties:
+        prompt:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+      required:
+        - prompt
+      allOf:
+        - $ref: '#/components/schemas/BasePrompt'
     CreateScoreRequest:
       title: CreateScoreRequest
       type: object
