@@ -17,7 +17,6 @@ const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => 
 
 const getTrace = async (id: string): Promise<AxiosResponse<any, any>> => {
     const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`
-    console.log(url)
     const res = await axios.get(url, {
         headers: getHeaders(),
     });
@@ -676,6 +675,64 @@ describe("Langfuse-OpenAI-Integation", () => {
             expect(trace.sessionId).toBe("Langfuse")
             expect(trace.userId).toBeDefined()
             expect(trace.userId).toBe("LangfuseUser")
+
+        }, 40000);
+
+        it("Error Handling in openai", async () => {
+            const name = `Error-Handling-in-wrapper-${randomUUID()}`
+            try {
+                await OpenAIWrapper(openai, {
+                    trace_name: name,
+                    metadata: {
+                        hello: 'World'
+                    },
+                    tags: ["hello", "World"],
+                    session_id: "Langfuse",
+                    user_id: "LangfuseUser"
+                }).chat.completions.create({
+                    messages: [{ role: "system", content: "Tell me a story about a king." }],
+                    model: "gpt-3.5-turbo-instruct", // Purposely changed the model to completions.
+                    user: "langfuse-user@gmail.com",
+                    max_tokens: 300
+                });
+            } catch (error) {
+                await langfuse.flushAsync()
+                let response = await getGeneration(name)
+                expect(response.status).toBe(200)
+                expect(response.data).toBeDefined()
+                if (response.data.data.length == 0) {
+                    response = await getGeneration(name)
+                }
+                expect(response.data.data).toBeDefined()
+                expect(response.data.data.length).toBeGreaterThan(0)
+                const generation = response.data.data[0]
+                expect(generation.name).toBe(name)
+                expect(generation.modelParameters).toBeDefined()
+                expect(generation.modelParameters).toMatchObject(
+                    { user: 'langfuse-user@gmail.com', max_tokens: 300 }
+                )
+                expect(generation.model).toBe("gpt-3.5-turbo-instruct")
+                expect(generation.input).toBeDefined()
+                expect(generation.output).toBeNull()
+                expect(generation.statusMessage).toBeDefined()
+
+                const traceId = generation.traceId
+                const resp = await getTrace(traceId)
+                expect(resp.status).toBe(200)
+                expect(resp.data).toBeDefined()
+                const trace = resp.data
+                expect(trace.metada)
+                expect(trace.metadata).toBeDefined()
+                expect(trace.metadata).toMatchObject({
+                    hello: 'World'
+                })
+                expect(trace.tags).toBeDefined()
+                expect(trace.tags).toEqual(expect.arrayContaining(["hello", "World"]))
+                expect(trace.sessionId).toBeDefined()
+                expect(trace.sessionId).toBe("Langfuse")
+                expect(trace.userId).toBeDefined()
+                expect(trace.userId).toBe("LangfuseUser")
+            }
 
         }, 40000);
     });
