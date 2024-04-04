@@ -344,7 +344,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
       expect(generation.input).toBeDefined();
-      expect(generation.messages).toMatchObject([
+      expect(generation.input.messages).toMatchObject([
         { role: "user", content: "What's the weather like in Boston today?" },
       ]);
       expect(generation.tools).toMatchObject([
