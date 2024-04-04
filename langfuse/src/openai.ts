@@ -176,7 +176,6 @@ export const openaiTracer = async<T extends (...args: any[]) => any>(
             String(error)
         )
         await tracer.flush()
-        // console.log(error)
         throw error
     }
     return res
@@ -203,13 +202,13 @@ export const wrappedTracer = <T extends (...args: any[]) => any>(
 }
 
 interface WrapperConfig {
-    trace_name: string,
+    trace_name?: string,
     session_id?: string,
     user_id?: string,
     release?: string,
     version?: string,
-    metadata?: any // TODO: Add this to the doc
-    tags?: any
+    metadata?: any
+    tags?: string[]
 }
 
 
@@ -247,7 +246,13 @@ const OpenAIWrapper = <T extends object>(sdk: T, config?: WrapperConfig): T => {
             const originalValue = target[propKey as keyof T];
 
             if (typeof originalValue === "function") {
-                return wrappedTracer(originalValue.bind(target), { trace_name: config?.trace_name ?? `${sdk.constructor?.name}.${propKey.toString()}` })
+                return wrappedTracer(
+                    originalValue.bind(target),
+                    {
+                        ...config,
+                        trace_name: config?.trace_name ?? `${sdk.constructor?.name}.${propKey.toString()}`
+                    }
+                )
 
             } else if (
                 originalValue != null &&
@@ -257,7 +262,10 @@ const OpenAIWrapper = <T extends object>(sdk: T, config?: WrapperConfig): T => {
             ) {
                 return OpenAIWrapper(
                     originalValue,
-                    { trace_name: config?.trace_name ?? `${sdk.constructor?.name}.${propKey.toString()}` }
+                    {
+                        ...config,
+                        trace_name: config?.trace_name ?? `${sdk.constructor?.name}.${propKey.toString()}`
+                    }
                 );
             } else {
                 return Reflect.get(target, propKey, receiver);
