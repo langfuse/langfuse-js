@@ -1,4 +1,3 @@
-import { Langfuse } from "../index";
 import OpenAI from "openai";
 import { OpenAIWrapper } from "../index";
 import { randomUUID } from "crypto";
@@ -6,7 +5,6 @@ import axios, { AxiosResponse } from "axios";
 import { getHeaders } from "../../integration-test/integration-utils";
 
 const openai = new OpenAI();
-const langfuse = new Langfuse();
 
 const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => {
     const url = `${process.env.LANGFUSE_HOST}/api/public/observations?name=${name}&type=GENERATION`
