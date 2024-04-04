@@ -5,7 +5,7 @@ import { Langfuse, LangfuseTraceClient } from "./langfuse";
 const client = new Langfuse();
 interface InputArgsData {
     model: string
-    inputStr: string
+    input: Record<string, any>
     modelParams: Record<string, any>
 }
 
@@ -24,23 +24,13 @@ const parseInputArgs = (args: Record<string, any>): InputArgsData => {
         temperature: args.temperature,
         top_p: args.top_p,
         user: args.user,
-        function_call: args.function_call,
-        functions: args.functions,
         response_format: args.response_format,
-        tool_choice: args.tool_choice,
-        tools: args.tools,
         top_logprobs: args.top_logprobs,
-    }
-    let input;
-    if ('messages' in args) {
-        input = args.messages
-    } else if ('prompt' in args) {
-        input = args.prompt ?? ""
     }
 
     return {
         model: args.model,
-        inputStr: input,
+        input: args,
         modelParams: params
     }
 }
@@ -52,7 +42,7 @@ interface TraceConfig {
 }
 
 const generateOutput = (res: any): string => {
-    return 'message' in res.choices[0] ? res.choices[0].message.content : res.choices[0].text ?? ""
+    return 'message' in res.choices[0] ? res.choices[0].message : res.choices[0].text ?? ""
 }
 
 const getUsageDetails = (res: any): Record<string, any> => {
@@ -91,7 +81,7 @@ class TraceGenerator {
         const input = parseInputArgs(this.inputs ?? {})
         this.trace = client.trace({
             name: this.config?.trace_name,
-            input: input.inputStr,
+            input: input.input,
             metadata: this.config?.metadata,
             tags: this.config?.tags,
             userId: this.config?.user_id,
@@ -113,7 +103,7 @@ class TraceGenerator {
         this.trace?.generation({
             model: input.model,
             name: this.config?.trace_name,
-            input: input.inputStr,
+            input: input.input,
             modelParameters: input.modelParams,
             output: output,
             startTime: this.startTime,
@@ -126,7 +116,7 @@ class TraceGenerator {
     }
 
     async flush(): Promise<void> {
-        await client.flushAsync()
+        client.flush()
     }
 }
 
