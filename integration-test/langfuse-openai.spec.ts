@@ -1,9 +1,9 @@
 import OpenAI from "openai";
-import { OpenAIWrapper } from "../index";
+import { OpenAIWrapper } from "../langfuse/index";
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
-import { LANGFUSE_BASEURL, getHeaders } from "../../integration-test/integration-utils";
-import Langfuse from "../index";
+import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
+import Langfuse from "../langfuse/index";
 
 const openai = new OpenAI();
 
@@ -165,6 +165,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
       expect(generation.input).toBeDefined();
+      expect(generation.input.prompt).toBe("Say this is a test!");
       expect(generation.output).toBeDefined();
       expect(generation.output).toMatch(res.choices[0].text);
       expect(generation.usage).toMatchObject({
@@ -218,31 +219,34 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
       expect(generation.input).toBeDefined();
+      expect(generation.input.prompt).toBe("Say this is a test");
       expect(generation.output).toBeDefined();
       expect(generation.output).toMatch(content);
     }, 40000);
 
     it("Function Calling on openai", async () => {
       const name = `FunctionCalling-NonStreaming-${randomUUID()}`;
+      const functions = [
+        {
+          name: "get_answer_for_user_query",
+          description: "Get user answer in series of steps",
+          parameters: {
+            title: "StepByStepAIResponse",
+            type: "object",
+            properties: {
+              title: { title: "Title", type: "string" },
+              steps: { title: "Steps", type: "array", items: { type: "string" } },
+            },
+            required: ["title", "steps"],
+          },
+        },
+      ];
+      const functionCall = { name: "get_answer_for_user_query" };
       const res = await OpenAIWrapper(openai, { traceName: name }).chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "Explain how to assemble a PC" }],
-        functions: [
-          {
-            name: "get_answer_for_user_query",
-            description: "Get user answer in series of steps",
-            parameters: {
-              title: "StepByStepAIResponse",
-              type: "object",
-              properties: {
-                title: { title: "Title", type: "string" },
-                steps: { title: "Steps", type: "array", items: { type: "string" } },
-              },
-              required: ["title", "steps"],
-            },
-          },
-        ],
-        function_call: { name: "get_answer_for_user_query" },
+        functions,
+        function_call: functionCall,
         user: "langfuse-user@gmail.com",
         max_tokens: 300,
       });
@@ -270,6 +274,9 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
       expect(generation.input).toBeDefined();
+      expect(generation.input.messages).toMatchObject([{ role: "user", content: "Explain how to assemble a PC" }]);
+      expect(generation.input.functions).toMatchObject(functions);
+      expect(generation.input.function_call).toMatchObject(functionCall);
       expect(generation.output).toBeDefined();
       expect(generation.output).toMatchObject(content);
       expect(generation.usage).toMatchObject({
@@ -337,6 +344,31 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
       expect(generation.input).toBeDefined();
+      expect(generation.messages).toMatchObject([
+        { role: "user", content: "What's the weather like in Boston today?" },
+      ]);
+      expect(generation.tools).toMatchObject([
+        {
+          type: "function",
+          function: {
+            name: "get_current_weather",
+            description: "Get the current weather in a given location",
+            parameters: {
+              type: "object",
+              properties: {
+                location: {
+                  type: "string",
+                  description: "The city and state, e.g. San Francisco, CA",
+                },
+                unit: { type: "string", enum: ["celsius", "fahrenheit"] },
+              },
+              required: ["location"],
+            },
+          },
+        },
+      ]);
+      expect(generation.input).toBeDefined();
+
       expect(generation.output).toBeDefined();
       expect(generation.output).toMatchObject(content);
       expect(generation.usage).toMatchObject({
