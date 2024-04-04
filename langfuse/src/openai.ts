@@ -1,5 +1,5 @@
-import OpenAI from "openai";
-import { Langfuse, LangfuseTraceClient } from "./langfuse";
+import type OpenAI from "openai";
+import { Langfuse, type LangfuseTraceClient } from "./langfuse";
 
 
 const client = new Langfuse();

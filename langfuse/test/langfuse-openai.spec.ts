@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { OpenAIWrapper } from "../index";
 import { randomUUID } from "crypto";
-import axios, { AxiosResponse } from "axios";
+import axios, { type AxiosResponse } from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "../../integration-test/integration-utils";
 import Langfuse from "../index";
 
