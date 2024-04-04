@@ -59,6 +59,16 @@ const getUsageDetails = (res: any): Record<string, any> => {
     return res.usage ?? {}
 }
 
+const processChunks = (chunk: unknown): string => {
+    const _chunk = chunk as OpenAI.ChatCompletionChunk | OpenAI.Completions.Completion
+    if ('delta' in _chunk?.choices[0]) {
+        return _chunk.choices[0].delta?.content || ""
+    } else if ('text' in _chunk?.choices[0]) {
+        return _chunk?.choices[0].text || ""
+    }
+    return ""
+}
+
 class TraceGenerator {
     name?: string
     inputs?: Record<string, any>
@@ -141,8 +151,8 @@ export const openaiTracer = async<T extends (...args: any[]) => any>(
                 const chunks: unknown[] = [];
                 // TypeScript thinks this is unsafe
                 for await (const chunk of response as AsyncIterable<unknown>) {
-                    const _chunk = chunk as OpenAI.ChatCompletionChunk
-                    chunks.push(_chunk.choices[0]?.delta?.content || "");
+                    const _chunk = processChunks(chunk)
+                    chunks.push(_chunk);
                     yield chunk;
                 }
                 tracer.createGeneration(chunks.join(""))
