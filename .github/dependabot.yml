@@ -14,3 +14,11 @@ updates:
       prefix: chore
       prefix-development: chore
       include: scope
+  #this in combination makes dependabot to ignore all dependencies found in the examples folder
+  - package-ecosystem: "npm"
+    directory: "/examples"
+    schedule:
+      interval: "monthly"
+    labels: []
+    ignore:
+      - dependency-name: "*"
