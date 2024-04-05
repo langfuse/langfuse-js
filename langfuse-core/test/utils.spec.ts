@@ -97,6 +97,8 @@ describe("utils", () => {
 
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 
+      const config = configLangfuseSDK({});
+
       expect(consoleSpy).toHaveBeenCalledWith(
         "publicKey is required, but was not provided. It can be provided as an argument or as an environment variable LANGFUSE_PUBLIC_KEY."
       );
