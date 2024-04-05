@@ -3,7 +3,6 @@ import { OpenAIWrapper } from "../langfuse/index";
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
-import Langfuse from "../langfuse/index";
 
 const openai = new OpenAI();
 
@@ -23,25 +22,11 @@ const getTrace = async (id: string): Promise<AxiosResponse<any, any>> => {
   return res;
 };
 describe("Langfuse-OpenAI-Integation", () => {
-  let langfuse: Langfuse;
-
-  beforeEach(() => {
-    langfuse = new Langfuse({
-      flushAt: 100,
-      fetchRetryDelay: 100,
-      fetchRetryCount: 3,
-    });
-    langfuse.debug(true);
-  });
-
-  afterEach(async () => {
-    await langfuse.shutdownAsync();
-  });
-
   describe("Core Methods", () => {
     it("Chat-completion without streaming", async () => {
       const name = `ChatCompletion-Nonstreaming-${randomUUID()}`;
-      const res = await OpenAIWrapper(openai, { traceName: name }).chat.completions.create({
+      const client = OpenAIWrapper(openai, { traceName: name });
+      const res = await client.chat.completions.create({
         messages: [{ role: "system", content: "Tell me a story about a king." }],
         model: "gpt-3.5-turbo",
         user: "langfuse-user@gmail.com",
@@ -49,7 +34,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       });
       expect(res).toBeDefined();
       const usage = res.usage;
-      await langfuse.flushAsync();
+      await client.flushAsync();
       let response = await getGeneration(name);
       expect(response.status).toBe(200);
       expect(response.data).toBeDefined();
@@ -86,7 +71,8 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Chat-completion with streaming", async () => {
       const name = `ChatComplete-Streaming-${randomUUID()}`;
-      const stream = await OpenAIWrapper(openai, { traceName: name }).chat.completions.create({
+      const client = OpenAIWrapper(openai, { traceName: name });
+      const stream = await client.chat.completions.create({
         messages: [{ role: "system", content: "Who is the president of America ?" }],
         model: "gpt-3.5-turbo",
         stream: true,
@@ -99,7 +85,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       }
 
       expect(content).toBeDefined();
-      await langfuse.flushAsync();
+      await client.flushAsync();
 
       let response = await getGeneration(name);
       expect(response.status).toBe(200);
@@ -132,7 +118,8 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Completion without streaming", async () => {
       const name = `Completion-NonStreaming-${randomUUID()}`;
-      const res = await OpenAIWrapper(openai, { traceName: name }).completions.create({
+      const client = OpenAIWrapper(openai, { traceName: name });
+      const res = await client.completions.create({
         prompt: "Say this is a test!",
         model: "gpt-3.5-turbo-instruct",
         stream: false,
@@ -141,7 +128,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       });
       expect(res).toBeDefined();
       const usage = res.usage;
-      await langfuse.flushAsync();
+      await client.flushAsync();
 
       let response = await getGeneration(name);
       expect(response.status).toBe(200);
@@ -182,7 +169,8 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Completion with streaming", async () => {
       const name = `Completions-streaming-${randomUUID()}`;
-      const stream = await OpenAIWrapper(openai, { traceName: name }).completions.create({
+      const client = OpenAIWrapper(openai, { traceName: name });
+      const stream = await client.completions.create({
         prompt: "Say this is a test",
         model: "gpt-3.5-turbo-instruct",
         stream: true,
@@ -195,7 +183,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       }
 
       expect(content).toBeDefined();
-      await langfuse.flushAsync();
+      await client.flushAsync();
 
       let response = await getGeneration(name);
       expect(response.status).toBe(200);
@@ -242,7 +230,8 @@ describe("Langfuse-OpenAI-Integation", () => {
         },
       ];
       const functionCall = { name: "get_answer_for_user_query" };
-      const res = await OpenAIWrapper(openai, { traceName: name }).chat.completions.create({
+      const client = OpenAIWrapper(openai, { traceName: name });
+      const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "Explain how to assemble a PC" }],
         functions,
@@ -254,7 +243,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       const usage = res.usage;
 
       expect(content).toBeDefined();
-      await langfuse.flushAsync();
+      await client.flushAsync();
 
       let response = await getGeneration(name);
       expect(response.status).toBe(200);
@@ -293,7 +282,8 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Tools and Toolchoice Calling on openai", async () => {
       const name = `Tools-and-Toolchoice-NonStreaming-${randomUUID()}`;
-      const res = await OpenAIWrapper(openai, { traceName: name }).chat.completions.create({
+      const client = OpenAIWrapper(openai, { traceName: name });
+      const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
         tool_choice: "auto",
@@ -324,7 +314,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       const usage = res.usage;
 
       expect(content).toBeDefined();
-      await langfuse.flushAsync();
+      await client.flushAsync();
 
       let response = await getGeneration(name);
       expect(response.status).toBe(200);
@@ -407,11 +397,11 @@ describe("Langfuse-OpenAI-Integation", () => {
         max_tokens: 300,
       });
 
-      await langfuse.flushAsync();
       const content = res1.choices[0].message;
 
       expect(content).toBeDefined();
 
+      await client.flushAsync();
       // Fetches the generation by name. According to the condition it should return 3 generations.
       // Since the returned results may not be in the order we expect, avoiding the comparison of the
       // langfuse trace output against model output. We only check the existence. Similarly for few other params.
@@ -446,7 +436,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Extra Wrapper params", async () => {
       const name = `Extra-wrapper-params-${randomUUID()}`;
-      const res = await OpenAIWrapper(openai, {
+      const client = OpenAIWrapper(openai, {
         traceName: name,
         metadata: {
           hello: "World",
@@ -454,7 +444,8 @@ describe("Langfuse-OpenAI-Integation", () => {
         tags: ["hello", "World"],
         sessionId: "Langfuse",
         userId: "LangfuseUser",
-      }).chat.completions.create({
+      });
+      const res = await client.chat.completions.create({
         messages: [{ role: "system", content: "Tell me a story about a king." }],
         model: "gpt-3.5-turbo",
         user: "langfuse-user@gmail.com",
@@ -462,7 +453,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       });
       expect(res).toBeDefined();
       const usage = res.usage;
-      await langfuse.flushAsync();
+      await client.flushAsync();
       let response = await getGeneration(name);
       expect(response.status).toBe(200);
       expect(response.data).toBeDefined();
@@ -514,23 +505,24 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Error Handling in openai", async () => {
       const name = `Error-Handling-in-wrapper-${randomUUID()}`;
+      const client = OpenAIWrapper(openai, {
+        traceName: name,
+        metadata: {
+          hello: "World",
+        },
+        tags: ["hello", "World"],
+        sessionId: "Langfuse",
+        userId: "LangfuseUser",
+      });
       try {
-        await OpenAIWrapper(openai, {
-          traceName: name,
-          metadata: {
-            hello: "World",
-          },
-          tags: ["hello", "World"],
-          sessionId: "Langfuse",
-          userId: "LangfuseUser",
-        }).chat.completions.create({
+        await client.chat.completions.create({
           messages: [{ role: "system", content: "Tell me a story about a king." }],
           model: "gpt-3.5-turbo-instruct", // Purposely changed the model to completions.
           user: "langfuse-user@gmail.com",
           max_tokens: 300,
         });
       } catch (error) {
-        await langfuse.flushAsync();
+        await client.flushAsync();
         let response = await getGeneration(name);
         expect(response.status).toBe(200);
         expect(response.data).toBeDefined();

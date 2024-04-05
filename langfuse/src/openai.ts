@@ -176,16 +176,13 @@ export const openaiTracer = async <T extends (...args: any[]) => any>(
           yield chunk;
         }
         tracer.createGeneration(chunks.join(""));
-        await tracer.flush();
       }
       return tracedOutputGenerator() as ReturnType<T>;
     } else {
       tracer.createGeneration(generateOutput(res), getUsageDetails(res));
-      await tracer.flush();
     }
   } catch (error) {
     tracer.createGeneration(undefined, undefined, "ERROR", String(error));
-    await tracer.flush();
     throw error;
   }
   return res;
@@ -217,6 +214,10 @@ interface WrapperConfig {
   tags?: string[];
 }
 
+interface ExtendedOpenAI extends OpenAI {
+  flushAsync: () => Promise<void>;
+}
+
 /**
  * Wraps an OpenAI SDK object with tracing capabilities, allowing for detailed tracing of SDK method calls.
  * It wraps function calls with a tracer that logs detailed information about the call, including the method name,
@@ -244,12 +245,15 @@ interface WrapperConfig {
  * });
  * console.log(res); // This call will be traced.
  * */
-const OpenAIWrapper = <T extends object>(sdk: T, config?: WrapperConfig): T => {
+const OpenAIWrapper = <T extends object>(sdk: T, config?: WrapperConfig): T & ExtendedOpenAI => {
   return new Proxy(sdk, {
     get(target, propKey, receiver) {
       const originalValue = target[propKey as keyof T];
-
-      if (typeof originalValue === "function") {
+      if (propKey === "flushAsync") {
+        return async () => {
+          await client.flushAsync();
+        };
+      } else if (typeof originalValue === "function") {
         return wrappedTracer(originalValue.bind(target), {
           ...config,
           traceName: config?.traceName ?? `${sdk.constructor?.name}.${propKey.toString()}`,
@@ -268,7 +272,7 @@ const OpenAIWrapper = <T extends object>(sdk: T, config?: WrapperConfig): T => {
         return Reflect.get(target, propKey, receiver);
       }
     },
-  });
+  }) as T & ExtendedOpenAI;
 };
 
 export default OpenAIWrapper;
