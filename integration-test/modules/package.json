@@ -13,12 +13,12 @@
     "test:tsc-cjs": "tsc --noEmit -p ts-cjs/tsconfig.json"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.4.5",
     "langchain": "^0",
     "langfuse-langchain": "*"
   },
   "devDependencies": {
     "tsx": "^4.6.2",
-    "typescript": "^5.1.6"
+    "typescript": "^5.4.3"
   }
 }
