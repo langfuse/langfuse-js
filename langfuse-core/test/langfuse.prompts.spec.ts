@@ -367,5 +367,37 @@ describe("Langfuse Core", () => {
         expect(message).toBe(expected);
       }
     });
+
+    it("should not HTML escape characters in prompt compile inputs", async () => {
+      const promptClient = new TextPromptClient({
+        name: "test",
+        type: "text",
+        version: 1,
+        prompt: "This is a prompt with {{someJson}}",
+        config: {
+          model: "gpt-3.5-turbo-1106",
+          temperature: 0,
+        },
+      });
+
+      const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
+      expect(prompt).toBe('This is a prompt with {"foo":"bar"}');
+    });
+
+    it("should not HTML escape characters in chat prompt compile inputs", async () => {
+      const promptClient = new ChatPromptClient({
+        name: "test",
+        type: "chat",
+        version: 1,
+        prompt: [{ role: "system", content: "This is a prompt with {{someJson}}" }],
+        config: {
+          model: "gpt-3.5-turbo-1106",
+          temperature: 0,
+        },
+      });
+
+      const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
+      expect(prompt).toEqual([{ role: "system", content: 'This is a prompt with {"foo":"bar"}' }]);
+    });
   });
 });

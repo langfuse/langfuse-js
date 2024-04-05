@@ -2,6 +2,10 @@ import mustache from "mustache";
 
 import type { ChatMessage, ChatPrompt, CreateLangfusePromptResponse, TextPrompt } from "../types";
 
+mustache.escape = function (text) {
+  return text;
+};
+
 abstract class BasePromptClient {
   public readonly name: string;
   public readonly version: number;
