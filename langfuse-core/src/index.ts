@@ -29,6 +29,9 @@ import {
   type CreateLangfusePromptBody,
   type GetLangfusePromptResponse,
   type PromptInput,
+  type CreatePromptBody,
+  type CreateChatPromptBody,
+  type CreateTextPromptBody,
 } from "./types";
 import {
   assert,
@@ -40,16 +43,16 @@ import {
   getEnv,
   currentISOTime,
 } from "./utils";
-import mustache from "mustache";
 
 export * as utils from "./utils";
 import { SimpleEventEmitter } from "./eventemitter";
 import { getCommonReleaseEnvs } from "./release-env";
+import { ChatPromptClient, TextPromptClient, type LangfusePromptClient } from "./prompts/promptClients";
+import { LangfusePromptCache } from "./prompts/promptCache";
 export { LangfuseMemoryStorage } from "./storage-memory";
 
 export type IngestionBody = SingleIngestionEvent["body"];
-
-export const DEFAULT_PROMPT_CACHE_TTL_SECONDS = 60;
+export * from "./prompts/promptClients";
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -690,15 +693,32 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return returnDataset;
   }
 
-  async createPrompt(body: CreateLangfusePromptBody): Promise<LangfusePromptClient> {
-    const prompt = await this.createPromptStateless(body);
-    return new LangfusePromptClient(prompt);
+  async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
+  async createPrompt(body: CreateTextPromptBody): Promise<TextPromptClient>;
+  async createPrompt(body: CreatePromptBody): Promise<LangfusePromptClient> {
+    const promptResponse = await this.createPromptStateless({ ...body, type: body.type ?? "text" });
+
+    if (promptResponse.type === "chat") {
+      return new ChatPromptClient(promptResponse);
+    }
+
+    return new TextPromptClient(promptResponse);
   }
 
   async getPrompt(
     name: string,
     version?: number,
-    options?: { cacheTtlSeconds?: number }
+    options?: { cacheTtlSeconds?: number; type?: "text" }
+  ): Promise<TextPromptClient>;
+  async getPrompt(
+    name: string,
+    version?: number,
+    options?: { cacheTtlSeconds?: number; type: "chat" }
+  ): Promise<ChatPromptClient>;
+  async getPrompt(
+    name: string,
+    version?: number,
+    options?: { cacheTtlSeconds?: number; type?: "chat" | "text" }
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey(name, version);
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
@@ -733,7 +753,14 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         throw Error(data.message ?? "Internal error while fetching prompt");
       }
 
-      const prompt = new LangfusePromptClient(data);
+      let prompt: LangfusePromptClient;
+      if (data.type === "chat") {
+        prompt = new ChatPromptClient(data);
+      } else {
+        prompt = new TextPromptClient(data);
+      }
+
+      // const prompt = data.type === "chat" ? new ChatPromptClient(data) : new TextPromptClient(data);
       this._promptCache.set(this._getPromptCacheKey(name, version), prompt, cacheTtlSeconds);
 
       return prompt;
@@ -897,72 +924,6 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
 export class LangfuseEventClient extends LangfuseObservationClient {
   constructor(client: LangfuseCore, id: string, traceId: string) {
     super(client, id, traceId);
-  }
-}
-
-export class LangfusePromptClient {
-  private promptResponse: CreateLangfusePromptResponse;
-  public readonly name: string;
-  public readonly version: number;
-  public readonly prompt: string;
-  public readonly config: unknown;
-
-  constructor(prompt: CreateLangfusePromptResponse) {
-    this.promptResponse = prompt;
-    this.name = prompt.name;
-    this.version = prompt.version;
-    this.prompt = prompt.prompt;
-    this.config = prompt.config;
-  }
-
-  compile(variables?: { [key: string]: string }): string {
-    return mustache.render(this.promptResponse.prompt, variables ?? {});
-  }
-
-  public getLangchainPrompt(): string {
-    /**
-     * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
-     *
-     * It specifically adapts the mustache-style double curly braces {{variable}} used in Langfuse
-     * to the single curly brace {variable} format expected by Langchain.
-     *
-     * @returns {string} The string that can be plugged into Langchain's PromptTemplate.
-     */
-    return this.prompt.replace(/\{\{(.*?)\}\}/g, "{$1}");
-  }
-}
-
-class LangfusePromptCacheItem {
-  private _expiry: number;
-
-  constructor(
-    public value: LangfusePromptClient,
-    ttlSeconds: number
-  ) {
-    this._expiry = Date.now() + ttlSeconds * 1000;
-  }
-
-  get isExpired(): boolean {
-    return Date.now() > this._expiry;
-  }
-}
-
-class LangfusePromptCache {
-  private _cache: Map<string, LangfusePromptCacheItem>;
-  private _defaultTtlSeconds: number;
-
-  constructor() {
-    this._cache = new Map<string, LangfusePromptCacheItem>();
-    this._defaultTtlSeconds = DEFAULT_PROMPT_CACHE_TTL_SECONDS;
-  }
-
-  public getIncludingExpired(key: string): LangfusePromptCacheItem | null {
-    return this._cache.get(key) ?? null;
-  }
-
-  public set(key: string, value: LangfusePromptClient, ttlSeconds?: number): void {
-    const effectiveTtlSeconds = ttlSeconds ?? this._defaultTtlSeconds;
-    this._cache.set(key, new LangfusePromptCacheItem(value, effectiveTtlSeconds));
   }
 }
 

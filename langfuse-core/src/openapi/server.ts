@@ -6,13 +6,22 @@
 /** WithRequired type helpers */
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
+/** OneOf type helpers */
+type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
+type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
+type OneOf<T extends any[]> = T extends [infer Only]
+  ? Only
+  : T extends [infer A, infer B, ...infer Rest]
+    ? OneOf<[XOR<A, B>, ...Rest]>
+    : never;
+
 export interface paths {
   "/api/public/dataset-items": {
-    /** @description Create a dataset item, upserts on id */
+    /** @description Create a dataset item */
     post: operations["datasetItems_create"];
   };
   "/api/public/dataset-items/{id}": {
-    /** @description Get a specific dataset item */
+    /** @description Get a dataset item */
     get: operations["datasetItems_get"];
   };
   "/api/public/dataset-run-items": {
@@ -36,11 +45,15 @@ export interface paths {
     get: operations["health_health"];
   };
   "/api/public/ingestion": {
-    /** @description Ingest multiple events to Langfuse */
+    /** @description Batched ingestion for Langfuse Tracing */
     post: operations["ingestion_batch"];
   };
+  "/api/public/metrics/daily": {
+    /** @description Get daily metrics of the Langfuse project */
+    get: operations["metrics_daily"];
+  };
   "/api/public/observations/{observationId}": {
-    /** @description Get a specific observation */
+    /** @description Get a observation */
     get: operations["observations_get"];
   };
   "/api/public/observations": {
@@ -48,19 +61,26 @@ export interface paths {
     get: operations["observations_getMany"];
   };
   "/api/public/projects": {
+    /** @description Get Project associated with API key */
     get: operations["projects_get"];
   };
   "/api/public/prompts": {
-    /** @description Get a specific prompt */
+    /** @description Get a prompt */
     get: operations["prompts_get"];
-    /** @description Create a specific prompt */
+    /** @description Create a prompt */
     post: operations["prompts_create"];
   };
   "/api/public/scores": {
-    /** @description Get scores */
+    /** @description Get a list of scores */
     get: operations["score_get"];
-    /** @description Add a score to the database, upserts on id */
+    /** @description Create a score */
     post: operations["score_create"];
+  };
+  "/api/public/scores/{scoreId}": {
+    /** @description Get a score */
+    get: operations["score_get-by-id"];
+    /** @description Delete a score */
+    delete: operations["score_delete"];
   };
   "/api/public/sessions/{sessionId}": {
     /** @description Get a session */
@@ -101,20 +121,39 @@ export interface components {
     /** TraceWithDetails */
     TraceWithDetails: WithRequired<
       {
+        /** @description Path of trace in Langfuse UI */
+        htmlPath: string;
+        /**
+         * Format: double
+         * @description Latency of trace in seconds
+         */
+        latency: number;
+        /**
+         * Format: double
+         * @description Cost of trace in USD
+         */
+        totalCost: number;
         /** @description List of observation ids */
         observations: string[];
         /** @description List of score ids */
         scores: string[];
       } & components["schemas"]["Trace"],
-      "observations" | "scores"
+      "htmlPath" | "latency" | "totalCost" | "observations" | "scores"
     >;
     /** TraceWithFullDetails */
     TraceWithFullDetails: WithRequired<
       {
+        /** @description Path of trace in Langfuse UI */
+        htmlPath: string;
+        /**
+         * Format: double
+         * @description Cost of trace in USD
+         */
+        totalCost: number;
         observations: components["schemas"]["ObservationsView"][];
         scores: components["schemas"]["Score"][];
       } & components["schemas"]["Trace"],
-      "observations" | "scores"
+      "htmlPath" | "totalCost" | "observations" | "scores"
     >;
     /** Session */
     Session: {
@@ -174,17 +213,32 @@ export interface components {
       /** Format: double */
       latency?: number | null;
     } & components["schemas"]["Observation"];
-    /** Usage */
+    /**
+     * Usage
+     * @description Standard interface for usage and cost
+     */
     Usage: {
+      /** @description Number of input units (e.g. tokens) */
       input?: number | null;
+      /** @description Number of output units (e.g. tokens) */
       output?: number | null;
+      /** @description Defaults to input+output if not set */
       total?: number | null;
       unit?: components["schemas"]["ModelUsageUnit"];
-      /** Format: double */
+      /**
+       * Format: double
+       * @description USD input cost
+       */
       inputCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description USD output cost
+       */
       outputCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description USD total cost, defaults to input+output
+       */
       totalCost?: number | null;
     };
     /** Score */
@@ -194,6 +248,7 @@ export interface components {
       name: string;
       /** Format: double */
       value: number;
+      source: components["schemas"]["ScoreSource"];
       observationId?: string | null;
       /** Format: date-time */
       timestamp: string;
@@ -229,7 +284,8 @@ export interface components {
       id: string;
       datasetRunId: string;
       datasetItemId: string;
-      observationId: string;
+      traceId: string;
+      observationId?: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -239,6 +295,7 @@ export interface components {
     DatasetRun: {
       id: string;
       name: string;
+      metadata?: unknown;
       datasetId: string;
       /** Format: date-time */
       createdAt: string;
@@ -248,6 +305,7 @@ export interface components {
     };
     /**
      * ModelUsageUnit
+     * @description Unit of usage in Langfuse
      * @enum {string}
      */
     ModelUsageUnit: "CHARACTERS" | "TOKENS" | "MILLISECONDS" | "SECONDS" | "IMAGES";
@@ -263,18 +321,28 @@ export interface components {
      * @enum {string}
      */
     DatasetStatus: "ACTIVE" | "ARCHIVED";
+    /**
+     * ScoreSource
+     * @enum {string}
+     */
+    ScoreSource: "API" | "REVIEW";
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
       input: unknown;
       expectedOutput?: unknown;
+      /** @description Dataset items are upserted on their id */
       id?: string | null;
     };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
       runName: string;
+      /** @description Metadata of the dataset run, updates run if run already exists */
+      metadata?: unknown;
       datasetItemId: string;
-      observationId: string;
+      observationId?: string | null;
+      /** @description traceId should always be provided. For compatibility with older SDK versions it can also be inferred from the provided observationId. */
+      traceId?: string | null;
     };
     /** CreateDatasetRequest */
     CreateDatasetRequest: {
@@ -369,7 +437,10 @@ export interface components {
     ObservationType: "SPAN" | "GENERATION" | "EVENT";
     /** IngestionUsage */
     IngestionUsage: components["schemas"]["Usage"] | components["schemas"]["OpenAIUsage"];
-    /** OpenAIUsage */
+    /**
+     * OpenAIUsage
+     * @description Usage interface of OpenAI for improved compatibility.
+     */
     OpenAIUsage: {
       promptTokens?: number | null;
       completionTokens?: number | null;
@@ -583,6 +654,30 @@ export interface components {
       successes: components["schemas"]["IngestionSuccess"][];
       errors: components["schemas"]["IngestionError"][];
     };
+    /** DailyMetrics */
+    DailyMetrics: {
+      /** @description A list of daily metrics, only days with ingested data are included. */
+      data: components["schemas"]["DailyMetricsDetails"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** DailyMetricsDetails */
+    DailyMetricsDetails: {
+      date: string;
+      countTraces: number;
+      /** Format: double */
+      totalCost: number;
+      usage: components["schemas"]["UsageByModel"][];
+    };
+    /**
+     * UsageByModel
+     * @description Daily usage of a given model. Usage corresponds to the unit set for the specific model (e.g. tokens).
+     */
+    UsageByModel: {
+      model: string;
+      inputUsage: number;
+      outputUsage: number;
+      totalUsage: number;
+    };
     /** Observations */
     Observations: {
       data: components["schemas"]["Observation"][];
@@ -603,19 +698,84 @@ export interface components {
       name: string;
     };
     /** CreatePromptRequest */
-    CreatePromptRequest: {
+    CreatePromptRequest: OneOf<
+      [
+        WithRequired<
+          {
+            /** @enum {string} */
+            type?: "chat";
+          } & components["schemas"]["CreateChatPromptRequest"],
+          "type"
+        >,
+        WithRequired<
+          {
+            /** @enum {string} */
+            type?: "text";
+          } & components["schemas"]["CreateTextPromptRequest"],
+          "type"
+        >,
+      ]
+    >;
+    /** CreateChatPromptRequest */
+    CreateChatPromptRequest: {
       name: string;
+      /** @description Should the prompt be promoted to production immediately? */
+      isActive: boolean;
+      prompt: components["schemas"]["ChatMessage"][];
+      config?: unknown;
+    };
+    /** CreateTextPromptRequest */
+    CreateTextPromptRequest: {
+      name: string;
+      /** @description Should the prompt be promoted to production immediately? */
       isActive: boolean;
       prompt: string;
       config?: unknown;
     };
     /** Prompt */
-    Prompt: {
+    Prompt: OneOf<
+      [
+        WithRequired<
+          {
+            /** @enum {string} */
+            type?: "chat";
+          } & components["schemas"]["ChatPrompt"],
+          "type"
+        >,
+        WithRequired<
+          {
+            /** @enum {string} */
+            type?: "text";
+          } & components["schemas"]["TextPrompt"],
+          "type"
+        >,
+      ]
+    >;
+    /** BasePrompt */
+    BasePrompt: {
       name: string;
       version: number;
-      prompt: string;
       config: unknown;
     };
+    /** ChatMessage */
+    ChatMessage: {
+      role: string;
+      content: string;
+    };
+    /** TextPrompt */
+    TextPrompt: WithRequired<
+      {
+        prompt: string;
+      } & components["schemas"]["BasePrompt"],
+      "prompt"
+    >;
+    /** ChatPrompt */
+    ChatPrompt: WithRequired<
+      {
+        prompt: components["schemas"]["ChatMessage"][];
+      } & components["schemas"]["BasePrompt"],
+      "prompt"
+    >;
     /** CreateScoreRequest */
     CreateScoreRequest: {
       id?: string | null;
@@ -664,7 +824,7 @@ export type $defs = Record<string, never>;
 export type external = Record<string, never>;
 
 export interface operations {
-  /** @description Create a dataset item, upserts on id */
+  /** @description Create a dataset item */
   datasetItems_create: {
     requestBody: {
       content: {
@@ -704,7 +864,7 @@ export interface operations {
       };
     };
   };
-  /** @description Get a specific dataset item */
+  /** @description Get a dataset item */
   datasetItems_get: {
     parameters: {
       path: {
@@ -943,7 +1103,7 @@ export interface operations {
       };
     };
   };
-  /** @description Ingest multiple events to Langfuse */
+  /** @description Batched ingestion for Langfuse Tracing */
   ingestion_batch: {
     requestBody: {
       content: {
@@ -985,7 +1145,54 @@ export interface operations {
       };
     };
   };
-  /** @description Get a specific observation */
+  /** @description Get daily metrics of the Langfuse project */
+  metrics_daily: {
+    parameters: {
+      query?: {
+        page?: number | null;
+        limit?: number | null;
+        /** @description Optional filter by the name of the trace */
+        traceName?: string | null;
+        /** @description Optional filter by the userId associated with the trace */
+        userId?: string | null;
+        /** @description Optional filter for metrics where traces include all of these tags */
+        tags?: (string | null)[];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["DailyMetrics"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a observation */
   observations_get: {
     parameters: {
       path: {
@@ -1037,6 +1244,8 @@ export interface operations {
         type?: string | null;
         traceId?: string | null;
         parentObservationId?: string | null;
+        /** @description Retrieve only observations with a start_time greater than this timestamp. */
+        fromStartTime?: string | null;
       };
     };
     responses: {
@@ -1072,6 +1281,7 @@ export interface operations {
       };
     };
   };
+  /** @description Get Project associated with API key */
   projects_get: {
     responses: {
       200: {
@@ -1106,7 +1316,7 @@ export interface operations {
       };
     };
   };
-  /** @description Get a specific prompt */
+  /** @description Get a prompt */
   prompts_get: {
     parameters: {
       query: {
@@ -1147,7 +1357,7 @@ export interface operations {
       };
     };
   };
-  /** @description Create a specific prompt */
+  /** @description Create a prompt */
   prompts_create: {
     requestBody: {
       content: {
@@ -1187,7 +1397,7 @@ export interface operations {
       };
     };
   };
-  /** @description Get scores */
+  /** @description Get a list of scores */
   score_get: {
     parameters: {
       query?: {
@@ -1195,6 +1405,8 @@ export interface operations {
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
+        /** @description Retrieve only scores newer than this timestamp. */
+        fromTimestamp?: string | null;
       };
     };
     responses: {
@@ -1230,7 +1442,7 @@ export interface operations {
       };
     };
   };
-  /** @description Add a score to the database, upserts on id */
+  /** @description Create a score */
   score_create: {
     requestBody: {
       content: {
@@ -1242,6 +1454,86 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["Score"];
         };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a score */
+  "score_get-by-id": {
+    parameters: {
+      path: {
+        /** @description The unique langfuse identifier of a score */
+        scoreId: string;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Score"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Delete a score */
+  score_delete: {
+    parameters: {
+      path: {
+        /** @description The unique langfuse identifier of a score */
+        scoreId: string;
+      };
+    };
+    responses: {
+      204: {
+        content: never;
       };
       400: {
         content: {
@@ -1355,13 +1647,15 @@ export interface operations {
   /** @description Get list of traces */
   trace_list: {
     parameters: {
-      query: {
+      query?: {
         page?: number | null;
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
-        /** @description Format of the string sort_by=timestamp.asc (id, timestamp, name, userId, release, version, public, bookmarked, sessionId) */
-        orderBy: string;
+        /** @description Retrieve only traces newer than this timestamp. */
+        fromTimestamp?: string | null;
+        /** @description Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
+        orderBy?: string | null;
         /** @description Only traces that include all of these tags will be returned. */
         tags?: (string | null)[];
       };

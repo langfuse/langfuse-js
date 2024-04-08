@@ -348,6 +348,46 @@ describe("Langfuse (fetch)", () => {
         type: "EVENT",
       });
     });
+    it("create prompt", async () => {
+      const promptName = "test_text_prompt";
+      const createdPrompt = await langfuse.createPrompt({
+        name: promptName,
+        isActive: true,
+        prompt: "A {{animal}} usually has {{animal}} friends.",
+      });
+
+      expect(createdPrompt.constructor.name).toBe("TextPromptClient");
+
+      const fetchedPrompt = await langfuse.getPrompt(promptName);
+
+      expect(createdPrompt.constructor.name).toBe("TextPromptClient");
+      expect(fetchedPrompt.name).toEqual(promptName);
+      expect(fetchedPrompt.prompt).toEqual("A {{animal}} usually has {{animal}} friends.");
+      expect(fetchedPrompt.compile({ animal: "dog" })).toEqual("A dog usually has dog friends.");
+    });
+
+    it("create chat prompt", async () => {
+      const promptName = "test_chat_prompt";
+      const createdPrompt = await langfuse.createPrompt({
+        name: promptName,
+        type: "chat",
+        isActive: true,
+        prompt: [{ role: "system", content: "A {{animal}} usually has {{animal}} friends." }],
+      });
+
+      expect(createdPrompt.constructor.name).toBe("ChatPromptClient");
+
+      const fetchedPrompt = await langfuse.getPrompt(promptName, undefined, { type: "chat" });
+
+      expect(createdPrompt.constructor.name).toBe("ChatPromptClient");
+      expect(fetchedPrompt.name).toEqual(promptName);
+      expect(fetchedPrompt.prompt).toEqual([
+        { role: "system", content: "A {{animal}} usually has {{animal}} friends." },
+      ]);
+      expect(fetchedPrompt.compile({ animal: "dog" })).toEqual([
+        { role: "system", content: "A dog usually has dog friends." },
+      ]);
+    });
 
     it("create event without creating trace before", async () => {
       const event = langfuse.event({ name: "event-name" });

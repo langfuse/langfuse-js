@@ -1,4 +1,4 @@
-import { type LangfusePromptClient } from ".";
+import { type LangfusePromptClient } from "./prompts/promptClients";
 import { type components, type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {
@@ -107,12 +107,12 @@ export type GetLangfuseDatasetRunResponse = FixTypes<
 export type CreateLangfusePromptBody = FixTypes<
   paths["/api/public/prompts"]["post"]["requestBody"]["content"]["application/json"]
 >;
-export type CreateLangfusePromptResponse = FixTypes<
-  paths["/api/public/prompts"]["post"]["responses"]["200"]["content"]["application/json"]
->;
-export type GetLangfusePromptSuccessData = FixTypes<
-  paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+export type CreateLangfusePromptResponse =
+  paths["/api/public/prompts"]["post"]["responses"]["200"]["content"]["application/json"];
+
+export type GetLangfusePromptSuccessData =
+  paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"];
+
 export type GetLangfusePromptFailureData = { message?: string };
 export type GetLangfusePromptResponse =
   | {
@@ -120,6 +120,17 @@ export type GetLangfusePromptResponse =
       data: GetLangfusePromptSuccessData;
     }
   | { fetchResult: "failure"; data: GetLangfusePromptFailureData };
+
+export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
+export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
+export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
+
+type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
+type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
+export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type">;
+export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type">;
+
+export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 
 export type PromptInput = {
   prompt?: LangfusePromptClient;
@@ -133,7 +144,7 @@ type FixTypes<T> = Omit<
     [P in keyof T]: P extends "startTime" | "endTime" | "timestamp" | "completionStartTime" | "createdAt" | "updatedAt"
       ? // Dates instead of strings
         Date | OptionalTypes<T[P]>
-      : P extends "metadata" | "input" | "output" | "prompt" | "completion" | "expectedOutput"
+      : P extends "metadata" | "input" | "output" | "completion" | "expectedOutput"
         ? // JSON instead of strings
           any | OptionalTypes<T[P]>
         : T[P];
