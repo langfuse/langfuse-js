@@ -65,7 +65,7 @@
     "lerna": "^7.1.5",
     "openapi-typescript": "^6.4.5",
     "prettier": "^3.2.5",
-    "rollup": "^4.14.0",
+    "rollup": "^4.14.1",
     "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-typescript2": "^0.36.0",
