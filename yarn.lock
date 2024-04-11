@@ -1565,9 +1565,9 @@
     zod-to-json-schema "^3.22.5"
 
 "@langchain/core@^0.1", "@langchain/core@~0.1.44", "@langchain/core@~0.1.45":
-  version "0.1.54"
-  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.1.54.tgz#63dfbd5c116798f6d080fbe675a68a87d84a1be4"
-  integrity sha512-87pQ8dnWY8P1Kgnu/SgnRijLRNSEzTzkjBK6O/Z1klXf/eQTXAG5O5cKwe3lwM6Afn+4U2byzSMYjwViAYuR4g==
+  version "0.1.55"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.1.55.tgz#7d627ed1b19fc40da2e116400235d830248c5e1f"
+  integrity sha512-X08bvFp5/hVNR0xzcxT5MHKdJJZPr0IpfGSB/FPZK2dw77kaBKor0FKb80qe+pzVTgmfT9L29m/v0eph6P1deQ==
   dependencies:
     ansi-styles "^5.0.0"
     camelcase "6"
@@ -6329,9 +6329,9 @@ kleur@^3.0.3:
   integrity sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==
 
 langchain@^0, langchain@^0.1:
-  version "0.1.31"
-  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.1.31.tgz#4f3a0e84a00d77214b325156e661762f945f33ae"
-  integrity sha512-J2iZZL48Nwdo1XDU5cS5YYm91b2L6sL3a8hH1gBljvDzCY7jbtUOTuIoRVx5iHN3DXuuLnszS4lhqg0u9hQxBQ==
+  version "0.1.32"
+  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.1.32.tgz#c87d95450c0c353527256ac43b8ea4393d663e38"
+  integrity sha512-blc/6SR08XsOU01HdCGHpxAC0sH+MxM21rYY+KQVZv3QTH1mMd/u6SG3CV0mVv9iWOkgfKc1PK/Ud3OYfvOnww==
   dependencies:
     "@anthropic-ai/sdk" "^0.9.1"
     "@langchain/community" "~0.0.41"
