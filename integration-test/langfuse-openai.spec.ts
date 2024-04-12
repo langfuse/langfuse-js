@@ -1,8 +1,10 @@
 import OpenAI from "openai";
-import { OpenAIWrapper } from "../langfuse/index";
+import { withLangfuse } from "../langfuse/src/openai";
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
+
+jest.useFakeTimers({ doNotFake: ["Date"] });
 
 const openai = new OpenAI();
 
@@ -25,7 +27,7 @@ describe("Langfuse-OpenAI-Integation", () => {
   describe("Core Methods", () => {
     it("Chat-completion without streaming", async () => {
       const name = `ChatCompletion-Nonstreaming-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, { traceName: name });
+      const client = withLangfuse(openai, { traceName: name });
       const res = await client.chat.completions.create({
         messages: [{ role: "system", content: "Tell me a story about a king." }],
         model: "gpt-3.5-turbo",
@@ -35,14 +37,8 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(res).toBeDefined();
       const usage = res.usage;
       await client.flushAsync();
-      let response = await getGeneration(name);
+      const response = await getGeneration(name);
       expect(response.status).toBe(200);
-      expect(response.data).toBeDefined();
-      if (response.data.data.length == 0) {
-        response = await getGeneration(name);
-      }
-      expect(response.data.data).toBeDefined();
-      expect(response.data.data.length).toBeGreaterThan(0);
       const generation = response.data.data[0];
       expect(generation.name).toBe(name);
       expect(generation.modelParameters).toBeDefined();
@@ -67,11 +63,11 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
       expect(generation.statusMessage).toBeNull();
-    }, 40000);
+    }, 10000);
 
     it("Chat-completion with streaming", async () => {
       const name = `ChatComplete-Streaming-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, { traceName: name });
+      const client = withLangfuse(openai, { traceName: name });
       const stream = await client.chat.completions.create({
         messages: [{ role: "system", content: "Who is the president of America ?" }],
         model: "gpt-3.5-turbo",
@@ -87,14 +83,9 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(content).toBeDefined();
       await client.flushAsync();
 
-      let response = await getGeneration(name);
+      const response = await getGeneration(name);
       expect(response.status).toBe(200);
-      expect(response.data).toBeDefined();
-      if (response.data.data.length == 0) {
-        response = await getGeneration(name);
-      }
-      expect(response.data.data).toBeDefined();
-      expect(response.data.data.length).toBeGreaterThan(0);
+
       const generation = response.data.data[0];
       expect(generation.name).toBe(name);
       expect(generation.modelParameters).toBeDefined();
@@ -114,11 +105,17 @@ describe("Langfuse-OpenAI-Integation", () => {
       ]);
       expect(generation.output).toBeDefined();
       expect(generation.output).toMatch(content);
-    }, 40000);
+      expect(new Date(generation.completionStartTime).getTime()).toBeGreaterThanOrEqual(
+        new Date(generation.startTime).getTime()
+      );
+      expect(new Date(generation.completionStartTime).getTime()).toBeLessThanOrEqual(
+        new Date(generation.endTime).getTime()
+      );
+    }, 10000);
 
     it("Completion without streaming", async () => {
       const name = `Completion-NonStreaming-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, { traceName: name });
+      const client = withLangfuse(openai, { traceName: name });
       const res = await client.completions.create({
         prompt: "Say this is a test!",
         model: "gpt-3.5-turbo-instruct",
@@ -130,14 +127,9 @@ describe("Langfuse-OpenAI-Integation", () => {
       const usage = res.usage;
       await client.flushAsync();
 
-      let response = await getGeneration(name);
+      const response = await getGeneration(name);
       expect(response.status).toBe(200);
-      expect(response.data).toBeDefined();
-      if (response.data.data.length == 0) {
-        response = await getGeneration(name);
-      }
-      expect(response.data.data).toBeDefined();
-      expect(response.data.data.length).toBeGreaterThan(0);
+
       const generation = response.data.data[0];
       expect(generation.name).toBe(name);
       expect(generation.modelParameters).toBeDefined();
@@ -165,11 +157,11 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
       expect(generation.statusMessage).toBeNull();
-    }, 40000);
+    }, 10000);
 
     it("Completion with streaming", async () => {
       const name = `Completions-streaming-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, { traceName: name });
+      const client = withLangfuse(openai, { traceName: name });
       const stream = await client.completions.create({
         prompt: "Say this is a test",
         model: "gpt-3.5-turbo-instruct",
@@ -185,14 +177,9 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(content).toBeDefined();
       await client.flushAsync();
 
-      let response = await getGeneration(name);
+      const response = await getGeneration(name);
       expect(response.status).toBe(200);
-      expect(response.data).toBeDefined();
-      if (response.data.data.length == 0) {
-        response = await getGeneration(name);
-      }
-      expect(response.data.data).toBeDefined();
-      expect(response.data.data.length).toBeGreaterThan(0);
+
       const generation = response.data.data[0];
       expect(generation.name).toBe(name);
       expect(generation.modelParameters).toBeDefined();
@@ -210,7 +197,13 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.input).toBe("Say this is a test");
       expect(generation.output).toBeDefined();
       expect(generation.output).toMatch(content);
-    }, 40000);
+      expect(new Date(generation.completionStartTime).getTime()).toBeGreaterThanOrEqual(
+        new Date(generation.startTime).getTime()
+      );
+      expect(new Date(generation.completionStartTime).getTime()).toBeLessThanOrEqual(
+        new Date(generation.endTime).getTime()
+      );
+    }, 10000);
 
     it("Function Calling on openai", async () => {
       const name = `FunctionCalling-NonStreaming-${randomUUID()}`;
@@ -230,7 +223,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         },
       ];
       const functionCall = { name: "get_answer_for_user_query" };
-      const client = OpenAIWrapper(openai, { traceName: name });
+      const client = withLangfuse(openai, { traceName: name });
       const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "Explain how to assemble a PC" }],
@@ -245,14 +238,8 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(content).toBeDefined();
       await client.flushAsync();
 
-      let response = await getGeneration(name);
+      const response = await getGeneration(name);
       expect(response.status).toBe(200);
-      expect(response.data).toBeDefined();
-      if (response.data.data.length == 0) {
-        response = await getGeneration(name);
-      }
-      expect(response.data.data).toBeDefined();
-      expect(response.data.data.length).toBeGreaterThan(0);
       const generation = response.data.data[0];
       expect(generation.name).toBe(name);
       expect(generation.modelParameters).toBeDefined();
@@ -278,11 +265,11 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
       expect(generation.statusMessage).toBeNull();
-    }, 40000);
+    }, 10000);
 
     it("Tools and Toolchoice Calling on openai", async () => {
       const name = `Tools-and-Toolchoice-NonStreaming-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, { traceName: name });
+      const client = withLangfuse(openai, { traceName: name });
       const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
@@ -316,14 +303,8 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(content).toBeDefined();
       await client.flushAsync();
 
-      let response = await getGeneration(name);
+      const response = await getGeneration(name);
       expect(response.status).toBe(200);
-      expect(response.data).toBeDefined();
-      if (response.data.data.length == 0) {
-        response = await getGeneration(name);
-      }
-      expect(response.data.data).toBeDefined();
-      expect(response.data.data.length).toBeGreaterThan(0);
       const generation = response.data.data[0];
       expect(generation.name).toBe(name);
       expect(generation.modelParameters).toBeDefined();
@@ -371,11 +352,11 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
       expect(generation.statusMessage).toBeNull();
-    }, 40000);
+    }, 10000);
 
     it("Using a common OpenAI client for multiple requests", async () => {
       const name = `Common-client-initialisation-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, { traceName: name });
+      const client = withLangfuse(openai, { traceName: name });
       const res1 = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
@@ -432,11 +413,11 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
       expect(generation.statusMessage).toBeNull();
-    }, 40000);
+    }, 10000);
 
     it("Extra Wrapper params", async () => {
       const name = `Extra-wrapper-params-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, {
+      const client = withLangfuse(openai, {
         traceName: name,
         metadata: {
           hello: "World",
@@ -454,14 +435,8 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(res).toBeDefined();
       const usage = res.usage;
       await client.flushAsync();
-      let response = await getGeneration(name);
+      const response = await getGeneration(name);
       expect(response.status).toBe(200);
-      expect(response.data).toBeDefined();
-      if (response.data.data.length == 0) {
-        response = await getGeneration(name);
-      }
-      expect(response.data.data).toBeDefined();
-      expect(response.data.data.length).toBeGreaterThan(0);
       const generation = response.data.data[0];
       expect(generation.name).toBe(name);
       expect(generation.modelParameters).toBeDefined();
@@ -501,11 +476,11 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(trace.sessionId).toBe("Langfuse");
       expect(trace.userId).toBeDefined();
       expect(trace.userId).toBe("LangfuseUser");
-    }, 40000);
+    }, 10000);
 
     it("Error Handling in openai", async () => {
       const name = `Error-Handling-in-wrapper-${randomUUID()}`;
-      const client = OpenAIWrapper(openai, {
+      const client = withLangfuse(openai, {
         traceName: name,
         metadata: {
           hello: "World",
@@ -523,14 +498,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         });
       } catch (error) {
         await client.flushAsync();
-        let response = await getGeneration(name);
-        expect(response.status).toBe(200);
-        expect(response.data).toBeDefined();
-        if (response.data.data.length == 0) {
-          response = await getGeneration(name);
-        }
-        expect(response.data.data).toBeDefined();
-        expect(response.data.data.length).toBeGreaterThan(0);
+        const response = await getGeneration(name);
         const generation = response.data.data[0];
         expect(generation.name).toBe(name);
         expect(generation.modelParameters).toBeDefined();
@@ -557,6 +525,6 @@ describe("Langfuse-OpenAI-Integation", () => {
         expect(trace.userId).toBeDefined();
         expect(trace.userId).toBe("LangfuseUser");
       }
-    }, 40000);
+    }, 10000);
   });
 });
