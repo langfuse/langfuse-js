@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { withLangfuse } from "../langfuse/src/openai";
+import { observeOpenAI } from "../langfuse/src/openai";
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
@@ -27,7 +27,7 @@ describe("Langfuse-OpenAI-Integation", () => {
   describe("Core Methods", () => {
     it("Chat-completion without streaming", async () => {
       const name = `ChatCompletion-Nonstreaming-${randomUUID()}`;
-      const client = withLangfuse(openai, { traceName: name });
+      const client = observeOpenAI(openai, { traceName: name });
       const res = await client.chat.completions.create({
         messages: [{ role: "system", content: "Tell me a story about a king." }],
         model: "gpt-3.5-turbo",
@@ -67,7 +67,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Chat-completion with streaming", async () => {
       const name = `ChatComplete-Streaming-${randomUUID()}`;
-      const client = withLangfuse(openai, { traceName: name });
+      const client = observeOpenAI(openai, { traceName: name });
       const stream = await client.chat.completions.create({
         messages: [{ role: "system", content: "Who is the president of America ?" }],
         model: "gpt-3.5-turbo",
@@ -115,7 +115,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Completion without streaming", async () => {
       const name = `Completion-NonStreaming-${randomUUID()}`;
-      const client = withLangfuse(openai, { traceName: name });
+      const client = observeOpenAI(openai, { traceName: name });
       const res = await client.completions.create({
         prompt: "Say this is a test!",
         model: "gpt-3.5-turbo-instruct",
@@ -161,7 +161,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Completion with streaming", async () => {
       const name = `Completions-streaming-${randomUUID()}`;
-      const client = withLangfuse(openai, { traceName: name });
+      const client = observeOpenAI(openai, { traceName: name });
       const stream = await client.completions.create({
         prompt: "Say this is a test",
         model: "gpt-3.5-turbo-instruct",
@@ -223,7 +223,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         },
       ];
       const functionCall = { name: "get_answer_for_user_query" };
-      const client = withLangfuse(openai, { traceName: name });
+      const client = observeOpenAI(openai, { traceName: name });
       const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "Explain how to assemble a PC" }],
@@ -269,7 +269,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Tools and Toolchoice Calling on openai", async () => {
       const name = `Tools-and-Toolchoice-NonStreaming-${randomUUID()}`;
-      const client = withLangfuse(openai, { traceName: name });
+      const client = observeOpenAI(openai, { traceName: name });
       const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
@@ -356,7 +356,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Using a common OpenAI client for multiple requests", async () => {
       const name = `Common-client-initialisation-${randomUUID()}`;
-      const client = withLangfuse(openai, { traceName: name });
+      const client = observeOpenAI(openai, { traceName: name });
       const res1 = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
@@ -417,7 +417,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Extra Wrapper params", async () => {
       const name = `Extra-wrapper-params-${randomUUID()}`;
-      const client = withLangfuse(openai, {
+      const client = observeOpenAI(openai, {
         traceName: name,
         metadata: {
           hello: "World",
@@ -480,7 +480,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Error Handling in openai", async () => {
       const name = `Error-Handling-in-wrapper-${randomUUID()}`;
-      const client = withLangfuse(openai, {
+      const client = observeOpenAI(openai, {
         traceName: name,
         metadata: {
           hello: "World",

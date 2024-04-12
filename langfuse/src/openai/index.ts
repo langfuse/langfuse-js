@@ -1,1 +1,1 @@
-export { withLangfuse, type LangfuseConfig } from "./withLangfuse";
+export { observeOpenAI, type LangfuseConfig } from "./observeOpenAI";

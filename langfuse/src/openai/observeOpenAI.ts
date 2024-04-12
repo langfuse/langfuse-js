@@ -28,14 +28,14 @@ type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getIn
  *
  * @example
  * const client = new OpenAI();
- * const res = withLangfuse(client, { traceName: "My.OpenAI.Chat.Trace" }).chat.completions.create({
+ * const res = observeOpenAI(client, { traceName: "My.OpenAI.Chat.Trace" }).chat.completions.create({
  *      messages: [{ role: "system", content: "Say this is a test!" }],
         model: "gpt-3.5-turbo",
         user: "langfuse",
         max_tokens: 300
  * });
  * */
-export const withLangfuse = <SDKType extends object>(
+export const observeOpenAI = <SDKType extends object>(
   sdk: SDKType,
   langfuseConfig?: LangfuseConfig
 ): SDKType & LangfuseExtension => {
@@ -64,7 +64,7 @@ export const withLangfuse = <SDKType extends object>(
 
       // Recursively wrap nested objects to ensure all nested properties or methods are also traced
       if (isNestedOpenAIObject) {
-        return withLangfuse(requestedSdkProperty, config);
+        return observeOpenAI(requestedSdkProperty, config);
       }
 
       // Fallback to returning the original value

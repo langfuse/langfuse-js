@@ -1,7 +1,7 @@
 import { LangfuseSingleton } from "./LangfuseSingleton";
 import { parseChunk, parseCompletionOutput, parseInputArgs, parseUsage } from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
-import type { LangfuseConfig } from "./withLangfuse";
+import type { LangfuseConfig } from "./observeOpenAI";
 
 type GenericMethod = (...args: unknown[]) => unknown;
 

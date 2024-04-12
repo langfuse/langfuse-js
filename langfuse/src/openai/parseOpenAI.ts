@@ -1,5 +1,5 @@
 import type OpenAI from "openai";
-import type { Usage } from "langfuse-core/lib";
+import type { Usage } from "langfuse-core";
 
 type ParsedOpenAIArguments = {
   model: string;
