@@ -8,6 +8,7 @@ export type LangfuseConfig = Pick<
   "sessionId" | "userId" | "release" | "version" | "metadata" | "tags"
 > & {
   traceName?: string;
+  traceId?: string;
 };
 type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync">;
 

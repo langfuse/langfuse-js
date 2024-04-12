@@ -1,3 +1,5 @@
+import { LangfuseTraceClient } from "langfuse-core";
+
 import { LangfuseSingleton } from "./LangfuseSingleton";
 import { parseChunk, parseCompletionOutput, parseInputArgs, parseUsage } from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
@@ -18,12 +20,26 @@ const wrapMethod = async <T extends GenericMethod>(
   ...args: Parameters<T>
 ): Promise<ReturnType<T> | any> => {
   const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
-  const data = { model, input, modelParameters, name: config?.traceName, startTime: new Date() };
-  const langfuseTrace = LangfuseSingleton.getInstance().trace({
-    ...config,
-    ...data,
-    timestamp: data.startTime,
-  });
+  const data = {
+    model,
+    input,
+    modelParameters,
+    name: config?.traceName,
+    startTime: new Date(),
+  };
+  const langfuse = LangfuseSingleton.getInstance();
+  const traceId = config?.traceId;
+
+  let langfuseTrace: LangfuseTraceClient;
+  if (!traceId) {
+    langfuseTrace = langfuse.trace({
+      ...config,
+      ...data,
+      timestamp: data.startTime,
+    });
+  } else {
+    langfuseTrace = new LangfuseTraceClient(langfuse, traceId);
+  }
 
   try {
     const res = await tracedMethod(...args);

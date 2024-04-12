@@ -1,5 +1,6 @@
 import OpenAI from "openai";
-import { observeOpenAI } from "../langfuse/src/openai";
+import Langfuse, { observeOpenAI } from "../langfuse";
+
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
@@ -10,6 +11,14 @@ const openai = new OpenAI();
 
 const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => {
   const url = `${LANGFUSE_BASEURL}/api/public/observations?name=${name}&type=GENERATION`;
+  const res = await axios.get(url, {
+    headers: getHeaders(),
+  });
+  return res;
+};
+
+const getTraceById = async (id: string): Promise<AxiosResponse<any, any>> => {
+  const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
   const res = await axios.get(url, {
     headers: getHeaders(),
   });
@@ -527,4 +536,58 @@ describe("Langfuse-OpenAI-Integation", () => {
       }
     }, 10000);
   });
+  it("allows passing an existing trace via ID", async () => {
+    const traceId = randomUUID();
+    const name = "parent-trace";
+    const langfuse = new Langfuse();
+    const trace = langfuse.trace({ id: traceId, name: "parent-trace" });
+    expect(trace.id).toBe(traceId);
+
+    const client = observeOpenAI(openai, { traceId });
+    const res = await client.chat.completions.create({
+      messages: [{ role: "system", content: "Tell me a story about a king." }],
+      model: "gpt-3.5-turbo",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+    expect(res).toBeDefined();
+    const usage = res.usage;
+
+    await Promise.all([client.flushAsync(), langfuse.flushAsync()]);
+
+    const response = await getTraceById(traceId);
+
+    expect(response.status).toBe(200);
+    const trace_data = response.data;
+    expect(trace_data.name).toBe(name);
+    expect(trace_data.observations).toBeDefined();
+
+    const observations = trace_data.observations;
+    const generation = observations[0];
+
+    expect(generation.name).toBe("OpenAI.chat"); // Use the default name
+    expect(generation.modelParameters).toBeDefined();
+    expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
+    expect(generation.usage).toBeDefined();
+    expect(generation.model).toBe("gpt-3.5-turbo");
+    expect(generation.totalTokens).toBeDefined();
+    expect(generation.promptTokens).toBeDefined();
+    expect(generation.completionTokens).toBeDefined();
+    expect(generation.input).toBeDefined();
+    expect(generation.input.messages).toMatchObject([{ role: "system", content: "Tell me a story about a king." }]);
+
+    expect(generation.output).toBeDefined();
+    expect(generation.output).toMatchObject(res.choices[0].message);
+    expect(generation.output).toMatchObject(trace_data.output);
+    expect(generation.usage).toMatchObject({
+      unit: "TOKENS",
+      input: usage?.prompt_tokens,
+      output: usage?.completion_tokens,
+      total: usage?.total_tokens,
+    });
+    expect(generation.calculatedInputCost).toBeDefined();
+    expect(generation.calculatedOutputCost).toBeDefined();
+    expect(generation.calculatedTotalCost).toBeDefined();
+    expect(generation.statusMessage).toBeNull();
+  }, 10000);
 });
