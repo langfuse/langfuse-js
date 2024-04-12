@@ -578,7 +578,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     expect(generation.output).toBeDefined();
     expect(generation.output).toMatchObject(res.choices[0].message);
-    expect(generation.output).toMatchObject(trace_data.output);
+    expect(trace_data.output).toBeNull(); // Do not update trace if traceId is passed
     expect(generation.usage).toMatchObject({
       unit: "TOKENS",
       input: usage?.prompt_tokens,

@@ -28,17 +28,17 @@ const wrapMethod = async <T extends GenericMethod>(
     startTime: new Date(),
   };
   const langfuse = LangfuseSingleton.getInstance();
-  const traceId = config?.traceId;
+  const requestedTraceId = config?.traceId;
 
   let langfuseTrace: LangfuseTraceClient;
-  if (!traceId) {
+  if (!requestedTraceId) {
     langfuseTrace = langfuse.trace({
       ...config,
       ...data,
       timestamp: data.startTime,
     });
   } else {
-    langfuseTrace = new LangfuseTraceClient(langfuse, traceId);
+    langfuseTrace = new LangfuseTraceClient(langfuse, requestedTraceId);
   }
 
   try {
@@ -68,7 +68,10 @@ const wrapMethod = async <T extends GenericMethod>(
           endTime: new Date(),
           completionStartTime,
         });
-        langfuseTrace.update({ output });
+
+        if (!requestedTraceId) {
+          langfuseTrace.update({ output });
+        }
       }
 
       return tracedOutputGenerator() as ReturnType<T>;
@@ -83,8 +86,9 @@ const wrapMethod = async <T extends GenericMethod>(
       endTime: new Date(),
       usage,
     });
-    langfuseTrace.update({ output });
-
+    if (!requestedTraceId) {
+      langfuseTrace.update({ output });
+    }
     return res;
   } catch (error) {
     langfuseTrace.generation({
