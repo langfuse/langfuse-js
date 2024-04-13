@@ -63,6 +63,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   tags?: string[];
   rootProvided: boolean = false;
   debugEnabled: boolean = false;
+  completionStartTimes: Record<string, Date> = {};
 
   constructor(params?: ConstructorParams) {
     super();
@@ -104,8 +105,24 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  async handleNewToken(token: string, runId: string): Promise<void> {
-    this._log(`New token: ${token} with ID: ${runId}`);
+  async handleNewToken(_token: string, _runId: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async handleLLMNewToken(
+    token: string,
+    _idx: any,
+    runId: string,
+    _parentRunId?: string,
+    _tags?: string[],
+    _fields?: any
+  ): Promise<void> {
+    // if this is the first token, add it to completionStartTimes
+    if (runId && !(runId in this.completionStartTimes)) {
+      this._log(`LLM first streaming token: ${runId}`);
+      this.completionStartTimes[runId] = new Date();
+    }
+    return Promise.resolve();
   }
 
   /**
@@ -494,9 +511,15 @@ export class CallbackHandler extends BaseCallbackHandler {
         traceId: this.traceId,
         output: extractedOutput,
         endTime: new Date(),
+        completionStartTime: runId in this.completionStartTimes ? this.completionStartTimes[runId] : undefined,
         usage: llmUsage,
         version: this.version,
       });
+
+      if (runId in this.completionStartTimes) {
+        delete this.completionStartTimes[runId];
+      }
+
       this.updateTrace(runId, parentRunId, extractedOutput);
     } catch (e) {
       this._log(e);

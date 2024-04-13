@@ -17,7 +17,7 @@ export type TraceAndObservations = components["schemas"]["Trace"] & {
   observations: components["schemas"]["Observation"][];
 };
 
-export async function getTraces(traceId: string): Promise<TraceAndObservations> {
+export async function getTrace(traceId: string): Promise<TraceAndObservations> {
   const res = await axios.get<TraceAndObservations>(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
     headers: getHeaders(),
   });
