@@ -105,7 +105,12 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  async handleNewToken(_token: string, _runId: string): Promise<void> {
+  async handleNewToken(_token: string, runId: string): Promise<void> {
+    // if this is the first token, add it to completionStartTimes
+    if (runId && !(runId in this.completionStartTimes)) {
+      this._log(`LLM first streaming token: ${runId}`);
+      this.completionStartTimes[runId] = new Date();
+    }
     return Promise.resolve();
   }
 

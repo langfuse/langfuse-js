@@ -138,13 +138,13 @@ describe("Langchain", () => {
 
     it("should execute simple non chat streaming llm call", async () => {
       const handler = new CallbackHandler({});
-      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20 });
+      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20, streaming: true });
       const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
+      const traceId = handler.traceId;
       await handler.flushAsync();
 
       expect(res).toBeDefined();
-
-      expect(handler.traceId).toBeDefined();
+      expect(traceId).toBeDefined();
       const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
@@ -156,6 +156,7 @@ describe("Langchain", () => {
       expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
 
       const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+
       expect(generation?.length).toBe(1);
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const singleGeneration = generation![0];
