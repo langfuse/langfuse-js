@@ -562,7 +562,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     metadata2?: Record<string, unknown> | undefined
   ): Record<string, unknown> {
     const finalDict: Record<string, unknown> = {};
-    if (tags) {
+    if (tags && tags.length > 0) {
       finalDict.tags = tags;
     }
     if (metadata1) {
