@@ -1,3 +1,5 @@
+![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+
 # Langfuse Core
 
 [![npm package](https://img.shields.io/npm/v/langfuse-core?style=flat-square)](https://www.npmjs.com/package/langfuse-core)
