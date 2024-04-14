@@ -136,7 +136,7 @@ describe("Langchain", () => {
       expect(generation?.[0].usage?.total).toBeDefined();
     });
 
-    it("should execute simple non chat streaming llm call", async () => {
+    it("should execute simple non chat llm call", async () => {
       const handler = new CallbackHandler({});
       const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20 });
       const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
