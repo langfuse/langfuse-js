@@ -138,7 +138,7 @@ describe("Langchain", () => {
 
     it("should execute simple non chat streaming llm call", async () => {
       const handler = new CallbackHandler({});
-      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20, streaming: true });
+      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20 });
       const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
       const traceId = handler.traceId;
       await handler.flushAsync();
@@ -168,30 +168,24 @@ describe("Langchain", () => {
       expect(singleGeneration.usage?.total).toBeDefined();
       expect(singleGeneration.startTime).toBeDefined();
       expect(singleGeneration.endTime).toBeDefined();
-      expect(singleGeneration.completionStartTime).toBeDefined();
 
       const startTime = new Date(singleGeneration.startTime);
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const endTime = new Date(singleGeneration.endTime!);
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const completionStartTime = new Date(singleGeneration.completionStartTime!);
 
       expect(startTime).toBeInstanceOf(Date);
       expect(endTime).toBeInstanceOf(Date);
-      expect(completionStartTime).toBeInstanceOf(Date);
 
       expect(startTime.getTime()).toBeLessThanOrEqual(endTime.getTime());
-      expect(startTime.getTime()).toBeLessThanOrEqual(completionStartTime.getTime());
-      expect(completionStartTime.getTime()).toBeLessThanOrEqual(endTime.getTime());
     });
 
-    it("should execute simple llm call (debug)", async () => {
+    it("should execute simple streaming llm call (debug)", async () => {
       const handler = new CallbackHandler({
         sessionId: "test-session",
       });
       handler.debug(true);
       const llm = new ChatOpenAI({ streaming: true });
-      const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
+      const res = await llm.invoke("Tell me a streaming chat joke", { callbacks: [handler] });
       await handler.flushAsync();
 
       expect(res).toBeDefined();
@@ -210,11 +204,40 @@ describe("Langchain", () => {
 
       const generation = trace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
-      expect(generation?.[0].name).toBe("ChatOpenAI");
-      expect(generation?.[0].usage?.input).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const singleGeneration = generation![0];
 
-      expect(generation?.[0].usage?.output).toBeDefined();
-      expect(generation?.[0].usage?.total).toBeDefined();
+      expect(singleGeneration.name).toBe("ChatOpenAI");
+      expect(singleGeneration.input).toMatchObject([
+        {
+          content: "Tell me a streaming chat joke",
+          role: "user",
+        },
+      ]);
+      console.warn(singleGeneration.output);
+      expect(singleGeneration.output).toMatchObject({
+        content: expect.any(String),
+      });
+      expect(singleGeneration.usage?.input).toBeDefined();
+      expect(singleGeneration.usage?.output).toBeDefined();
+      expect(singleGeneration.usage?.total).toBeDefined();
+      expect(singleGeneration.startTime).toBeDefined();
+      expect(singleGeneration.endTime).toBeDefined();
+      expect(singleGeneration.completionStartTime).toBeDefined();
+
+      const startTime = new Date(singleGeneration.startTime);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const endTime = new Date(singleGeneration.endTime!);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const completionStartTime = new Date(singleGeneration.completionStartTime!);
+
+      expect(startTime).toBeInstanceOf(Date);
+      expect(endTime).toBeInstanceOf(Date);
+      expect(completionStartTime).toBeInstanceOf(Date);
+
+      expect(startTime.getTime()).toBeLessThanOrEqual(endTime.getTime());
+      expect(startTime.getTime()).toBeLessThanOrEqual(completionStartTime.getTime());
+      expect(completionStartTime.getTime()).toBeLessThanOrEqual(endTime.getTime());
     });
 
     it("should execute tool call", async () => {
