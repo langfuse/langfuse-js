@@ -9,7 +9,7 @@ import { ChatOpenAI, OpenAI } from "@langchain/openai";
 import { CallbackHandler, Langfuse, type LlmMessage } from "../langfuse-langchain";
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 
-import { getHeaders, getTraces, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
+import { getHeaders, getTrace, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
@@ -91,7 +91,7 @@ describe("Langchain", () => {
       expect(res).toBeDefined();
 
       expect(handler.traceId).toBeDefined();
-      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
       expect(trace?.sessionId).toBe("test-session");
@@ -138,14 +138,14 @@ describe("Langchain", () => {
 
     it("should execute simple non chat llm call", async () => {
       const handler = new CallbackHandler({});
-      const llm = new OpenAI({ modelName: "gpt-4-1106-preview" });
+      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20 });
       const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
+      const traceId = handler.traceId;
       await handler.flushAsync();
 
       expect(res).toBeDefined();
-
-      expect(handler.traceId).toBeDefined();
-      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      expect(traceId).toBeDefined();
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
       expect(trace?.observations.length).toBe(1);
@@ -156,33 +156,42 @@ describe("Langchain", () => {
       expect(trace?.output).toStrictEqual(rootLevelObservation?.output);
 
       const generation = trace?.observations.filter((o) => o.type === "GENERATION");
+
       expect(generation?.length).toBe(1);
-      expect(generation?.[0].name).toBe("OpenAIChat");
-      expect(generation?.[0].usage?.input).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const singleGeneration = generation![0];
 
-      const input = generation?.[0].input;
-      expect(input).toBeDefined();
+      expect(singleGeneration.name).toBe("OpenAIChat");
+      expect(singleGeneration.input).toMatchObject(["Tell me a joke on a non chat api"]);
+      expect(singleGeneration.usage?.input).toBeDefined();
+      expect(singleGeneration.usage?.output).toBeDefined();
+      expect(singleGeneration.usage?.total).toBeDefined();
+      expect(singleGeneration.startTime).toBeDefined();
+      expect(singleGeneration.endTime).toBeDefined();
 
-      const output = generation?.[0].output;
-      expect(output).toBeDefined();
+      const startTime = new Date(singleGeneration.startTime);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const endTime = new Date(singleGeneration.endTime!);
 
-      expect(generation?.[0].usage?.output).toBeDefined();
-      expect(generation?.[0].usage?.total).toBeDefined();
+      expect(startTime).toBeInstanceOf(Date);
+      expect(endTime).toBeInstanceOf(Date);
+
+      expect(startTime.getTime()).toBeLessThanOrEqual(endTime.getTime());
     });
 
-    it("should execute simple llm call (debug)", async () => {
+    it("should execute simple streaming llm call (debug)", async () => {
       const handler = new CallbackHandler({
         sessionId: "test-session",
       });
       handler.debug(true);
       const llm = new ChatOpenAI({ streaming: true });
-      const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
+      const res = await llm.invoke("Tell me a streaming chat joke", { callbacks: [handler] });
       await handler.flushAsync();
 
       expect(res).toBeDefined();
 
       expect(handler.traceId).toBeDefined();
-      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
       expect(trace?.sessionId).toBe("test-session");
@@ -195,11 +204,40 @@ describe("Langchain", () => {
 
       const generation = trace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
-      expect(generation?.[0].name).toBe("ChatOpenAI");
-      expect(generation?.[0].usage?.input).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const singleGeneration = generation![0];
 
-      expect(generation?.[0].usage?.output).toBeDefined();
-      expect(generation?.[0].usage?.total).toBeDefined();
+      expect(singleGeneration.name).toBe("ChatOpenAI");
+      expect(singleGeneration.input).toMatchObject([
+        {
+          content: "Tell me a streaming chat joke",
+          role: "user",
+        },
+      ]);
+      console.warn(singleGeneration.output);
+      expect(singleGeneration.output).toMatchObject({
+        content: expect.any(String),
+      });
+      expect(singleGeneration.usage?.input).toBeDefined();
+      expect(singleGeneration.usage?.output).toBeDefined();
+      expect(singleGeneration.usage?.total).toBeDefined();
+      expect(singleGeneration.startTime).toBeDefined();
+      expect(singleGeneration.endTime).toBeDefined();
+      expect(singleGeneration.completionStartTime).toBeDefined();
+
+      const startTime = new Date(singleGeneration.startTime);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const endTime = new Date(singleGeneration.endTime!);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const completionStartTime = new Date(singleGeneration.completionStartTime!);
+
+      expect(startTime).toBeInstanceOf(Date);
+      expect(endTime).toBeInstanceOf(Date);
+      expect(completionStartTime).toBeInstanceOf(Date);
+
+      expect(startTime.getTime()).toBeLessThanOrEqual(endTime.getTime());
+      expect(startTime.getTime()).toBeLessThanOrEqual(completionStartTime.getTime());
+      expect(completionStartTime.getTime()).toBeLessThanOrEqual(endTime.getTime());
     });
 
     it("should execute tool call", async () => {
@@ -222,7 +260,7 @@ describe("Langchain", () => {
 
       expect(handler.traceId).toBeDefined();
 
-      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
       expect(trace?.observations.length).toBe(1);
@@ -251,8 +289,8 @@ describe("Langchain", () => {
       expect(handler.traceId).toBeDefined();
       expect(traceIdOne).toBeDefined();
       expect(traceIdTwo).toBeDefined();
-      const traceOne = traceIdOne ? await getTraces(traceIdOne) : undefined;
-      const traceTwo = traceIdTwo ? await getTraces(traceIdTwo) : undefined;
+      const traceOne = traceIdOne ? await getTrace(traceIdOne) : undefined;
+      const traceTwo = traceIdTwo ? await getTrace(traceIdTwo) : undefined;
 
       expect(traceOne).toBeDefined();
       expect(traceTwo).toBeDefined();
@@ -294,7 +332,7 @@ describe("Langchain", () => {
       await handler.flushAsync();
 
       expect(handler.traceId).toBeDefined();
-      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
       expect(trace?.observations.length).toBe(3);
@@ -336,7 +374,7 @@ describe("Langchain", () => {
       await handler.shutdownAsync();
 
       expect(handler.traceId).toBeDefined();
-      const trace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
       expect(trace?.sessionId).toBe("test-session");
@@ -379,7 +417,7 @@ describe("Langchain", () => {
       );
       await callback.flushAsync();
       expect(callback.traceId).toBeDefined();
-      const trace = callback.traceId ? await getTraces(callback.traceId) : undefined;
+      const trace = callback.traceId ? await getTrace(callback.traceId) : undefined;
 
       expect(trace).toBeDefined();
       expect(trace?.observations.length).toBe(1);
@@ -401,7 +439,7 @@ describe("Langchain", () => {
       expect(res).toBeDefined();
 
       expect(handler.traceId).toBeDefined();
-      const returnedTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const returnedTrace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-123");
@@ -436,7 +474,7 @@ describe("Langchain", () => {
       expect(res).toBeDefined();
 
       expect(handler.traceId).toBeDefined();
-      const returnedTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const returnedTrace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-123");
@@ -463,7 +501,7 @@ describe("Langchain", () => {
       expect(res).toBeDefined();
 
       expect(handler.traceId).toBeDefined();
-      const returnedTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const returnedTrace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(returnedTrace).toBeDefined();
       expect(returnedTrace?.name).toBe("test-trace");
@@ -485,7 +523,7 @@ describe("Langchain", () => {
       await llm.invoke("Tell me a better", { callbacks: [handler] });
       await handler.flushAsync();
 
-      const newTrace = handler.traceId ? await getTraces(handler.traceId) : undefined;
+      const newTrace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(newTrace).toBeDefined();
       expect(handler.getTraceId()).toBe(returnedTrace?.id);
