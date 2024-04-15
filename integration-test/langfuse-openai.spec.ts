@@ -1,6 +1,7 @@
+import "dotenv/config";
+
 import OpenAI from "openai";
 import Langfuse, { observeOpenAI } from "../langfuse";
-
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
@@ -36,7 +37,7 @@ describe("Langfuse-OpenAI-Integation", () => {
   describe("Core Methods", () => {
     it("Chat-completion without streaming", async () => {
       const name = `ChatCompletion-Nonstreaming-${randomUUID()}`;
-      const client = observeOpenAI(openai, { traceName: name });
+      const client = observeOpenAI(openai, { generationName: name });
       const res = await client.chat.completions.create({
         messages: [{ role: "system", content: "Tell me a story about a king." }],
         model: "gpt-3.5-turbo",
@@ -76,7 +77,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Chat-completion with streaming", async () => {
       const name = `ChatComplete-Streaming-${randomUUID()}`;
-      const client = observeOpenAI(openai, { traceName: name });
+      const client = observeOpenAI(openai, { generationName: name });
       const stream = await client.chat.completions.create({
         messages: [{ role: "system", content: "Who is the president of America ?" }],
         model: "gpt-3.5-turbo",
@@ -124,7 +125,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Completion without streaming", async () => {
       const name = `Completion-NonStreaming-${randomUUID()}`;
-      const client = observeOpenAI(openai, { traceName: name });
+      const client = observeOpenAI(openai, { generationName: name });
       const res = await client.completions.create({
         prompt: "Say this is a test!",
         model: "gpt-3.5-turbo-instruct",
@@ -170,7 +171,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Completion with streaming", async () => {
       const name = `Completions-streaming-${randomUUID()}`;
-      const client = observeOpenAI(openai, { traceName: name });
+      const client = observeOpenAI(openai, { generationName: name });
       const stream = await client.completions.create({
         prompt: "Say this is a test",
         model: "gpt-3.5-turbo-instruct",
@@ -232,7 +233,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         },
       ];
       const functionCall = { name: "get_answer_for_user_query" };
-      const client = observeOpenAI(openai, { traceName: name });
+      const client = observeOpenAI(openai, { generationName: name });
       const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "Explain how to assemble a PC" }],
@@ -278,7 +279,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Tools and Toolchoice Calling on openai", async () => {
       const name = `Tools-and-Toolchoice-NonStreaming-${randomUUID()}`;
-      const client = observeOpenAI(openai, { traceName: name });
+      const client = observeOpenAI(openai, { generationName: name });
       const res = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
@@ -365,7 +366,7 @@ describe("Langfuse-OpenAI-Integation", () => {
 
     it("Using a common OpenAI client for multiple requests", async () => {
       const name = `Common-client-initialisation-${randomUUID()}`;
-      const client = observeOpenAI(openai, { traceName: name });
+      const client = observeOpenAI(openai, { generationName: name });
       const res1 = await client.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
@@ -427,7 +428,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     it("Extra Wrapper params", async () => {
       const name = `Extra-wrapper-params-${randomUUID()}`;
       const client = observeOpenAI(openai, {
-        traceName: name,
+        generationName: name,
         metadata: {
           hello: "World",
         },
@@ -490,7 +491,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     it("Error Handling in openai", async () => {
       const name = `Error-Handling-in-wrapper-${randomUUID()}`;
       const client = observeOpenAI(openai, {
-        traceName: name,
+        generationName: name,
         metadata: {
           hello: "World",
         },
@@ -536,14 +537,15 @@ describe("Langfuse-OpenAI-Integation", () => {
       }
     }, 10000);
   });
-  it("allows passing an existing trace via ID", async () => {
+
+  it("allows passing a parent trace", async () => {
     const traceId = randomUUID();
     const name = "parent-trace";
     const langfuse = new Langfuse();
-    const trace = langfuse.trace({ id: traceId, name: "parent-trace" });
+    const trace = langfuse.trace({ id: traceId, name, metadata: { parent: true }, version: "trace-1" });
     expect(trace.id).toBe(traceId);
 
-    const client = observeOpenAI(openai, { traceId });
+    const client = observeOpenAI(openai, { parent: trace, metadata: { child: true }, version: "generation-1" });
     const res = await client.chat.completions.create({
       messages: [{ role: "system", content: "Tell me a story about a king." }],
       model: "gpt-3.5-turbo",
@@ -553,19 +555,97 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(res).toBeDefined();
     const usage = res.usage;
 
-    await Promise.all([client.flushAsync(), langfuse.flushAsync()]);
+    // Flushes the correct client
+    await client.flushAsync();
 
     const response = await getTraceById(traceId);
 
     expect(response.status).toBe(200);
     const trace_data = response.data;
     expect(trace_data.name).toBe(name);
+    expect(trace_data.metadata).toEqual({ parent: true });
+    expect(trace_data.version).toBe("trace-1");
     expect(trace_data.observations).toBeDefined();
 
     const observations = trace_data.observations;
     const generation = observations[0];
 
     expect(generation.name).toBe("OpenAI.chat"); // Use the default name
+    expect(generation.metadata).toEqual({ child: true });
+    expect(generation.version).toBe("generation-1");
+    expect(generation.modelParameters).toBeDefined();
+    expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
+    expect(generation.usage).toBeDefined();
+    expect(generation.model).toBe("gpt-3.5-turbo");
+    expect(generation.totalTokens).toBeDefined();
+    expect(generation.promptTokens).toBeDefined();
+    expect(generation.completionTokens).toBeDefined();
+    expect(generation.input).toBeDefined();
+    expect(generation.input.messages).toMatchObject([{ role: "system", content: "Tell me a story about a king." }]);
+
+    expect(generation.output).toBeDefined();
+    expect(generation.output).toMatchObject(res.choices[0].message);
+    expect(trace_data.output).toBeNull(); // Do not update trace if traceId is passed
+    expect(generation.usage).toMatchObject({
+      unit: "TOKENS",
+      input: usage?.prompt_tokens,
+      output: usage?.completion_tokens,
+      total: usage?.total_tokens,
+    });
+    expect(generation.calculatedInputCost).toBeDefined();
+    expect(generation.calculatedOutputCost).toBeDefined();
+    expect(generation.calculatedTotalCost).toBeDefined();
+    expect(generation.statusMessage).toBeNull();
+  }, 10000);
+  it("allows passing a parent observation", async () => {
+    // Parent trace
+    const traceId = randomUUID();
+    const name = "parent-trace";
+    const langfuse = new Langfuse();
+    const trace = langfuse.trace({ id: traceId, name });
+    expect(trace.id).toBe(traceId);
+
+    // Parent observation
+    const parentSpanId = randomUUID();
+    const parentSpanName = "parent-observation";
+    const parentSpan = trace.span({
+      id: parentSpanId,
+      name: parentSpanName,
+    });
+    expect(parentSpan.id).toBe(parentSpanId);
+
+    const client = observeOpenAI(openai, { parent: parentSpan, metadata: { child: true }, version: "generation-1" });
+    const res = await client.chat.completions.create({
+      messages: [{ role: "system", content: "Tell me a story about a king." }],
+      model: "gpt-3.5-turbo",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+    expect(res).toBeDefined();
+    const usage = res.usage;
+
+    // Flushes the correct client
+    await client.flushAsync();
+
+    const response = await getTraceById(traceId);
+    expect(response.status).toBe(200);
+
+    const trace_data = response.data;
+    expect(trace_data.name).toBe(name);
+
+    expect(trace_data.observations).toBeDefined();
+    const observations = trace_data.observations;
+    expect(observations.length).toBe(2);
+    const generation = observations.filter((o: any) => o.type === "GENERATION")[0];
+    const parentSpanData = observations.filter((o: any) => o.type === "SPAN")[0];
+
+    expect(parentSpanData.name).toBe(parentSpanName);
+    expect(parentSpanData.id).toBe(parentSpanId);
+    expect(generation.parentObservationId).toBe(parentSpanId);
+
+    expect(generation.name).toBe("OpenAI.chat"); // Use the default name
+    expect(generation.metadata).toEqual({ child: true });
+    expect(generation.version).toBe("generation-1");
     expect(generation.modelParameters).toBeDefined();
     expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
     expect(generation.usage).toBeDefined();

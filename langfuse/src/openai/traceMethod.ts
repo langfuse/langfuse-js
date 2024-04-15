@@ -1,15 +1,15 @@
-import { LangfuseTraceClient } from "langfuse-core";
+import type { LangfuseParent } from "./types";
 
 import { LangfuseSingleton } from "./LangfuseSingleton";
 import { parseChunk, parseCompletionOutput, parseInputArgs, parseUsage } from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
-import type { LangfuseConfig } from "./observeOpenAI";
+import type { LangfuseConfig } from "./types";
 
 type GenericMethod = (...args: unknown[]) => unknown;
 
 export const withTracing = <T extends GenericMethod>(
   tracedMethod: T,
-  config?: LangfuseConfig
+  config?: LangfuseConfig & Required<{ generationName: string }>
 ): ((...args: Parameters<T>) => Promise<ReturnType<T>>) => {
   return (...args) => wrapMethod(tracedMethod, config, ...args);
 };
@@ -20,25 +20,27 @@ const wrapMethod = async <T extends GenericMethod>(
   ...args: Parameters<T>
 ): Promise<ReturnType<T> | any> => {
   const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
-  const data = {
+  let observationData = {
     model,
     input,
     modelParameters,
-    name: config?.traceName,
+    name: config?.generationName,
     startTime: new Date(),
   };
-  const langfuse = LangfuseSingleton.getInstance();
-  const requestedTraceId = config?.traceId;
 
-  let langfuseTrace: LangfuseTraceClient;
-  if (!requestedTraceId) {
-    langfuseTrace = langfuse.trace({
-      ...config,
-      ...data,
-      timestamp: data.startTime,
-    });
+  let langfuseParent: LangfuseParent;
+  const hasUserProvidedParent = config && "parent" in config;
+
+  if (hasUserProvidedParent) {
+    langfuseParent = config.parent;
+    observationData = { ...config, ...observationData };
   } else {
-    langfuseTrace = new LangfuseTraceClient(langfuse, requestedTraceId);
+    const langfuse = LangfuseSingleton.getInstance();
+    langfuseParent = langfuse.trace({
+      ...config,
+      ...observationData,
+      timestamp: observationData.startTime,
+    });
   }
 
   try {
@@ -62,15 +64,15 @@ const wrapMethod = async <T extends GenericMethod>(
 
         const output = processedChunks.join("");
 
-        langfuseTrace.generation({
-          ...data,
+        langfuseParent.generation({
+          ...observationData,
           output,
           endTime: new Date(),
           completionStartTime,
         });
 
-        if (!requestedTraceId) {
-          langfuseTrace.update({ output });
+        if (!hasUserProvidedParent) {
+          langfuseParent.update({ output });
         }
       }
 
@@ -80,19 +82,21 @@ const wrapMethod = async <T extends GenericMethod>(
     const output = parseCompletionOutput(res);
     const usage = parseUsage(res);
 
-    langfuseTrace.generation({
-      ...data,
+    langfuseParent.generation({
+      ...observationData,
       output,
       endTime: new Date(),
       usage,
     });
-    if (!requestedTraceId) {
-      langfuseTrace.update({ output });
+
+    if (!hasUserProvidedParent) {
+      langfuseParent.update({ output });
     }
+
     return res;
   } catch (error) {
-    langfuseTrace.generation({
-      ...data,
+    langfuseParent.generation({
+      ...observationData,
       endTime: new Date(),
       statusMessage: String(error),
       level: "ERROR",

@@ -1,1 +1,2 @@
-export { observeOpenAI, type LangfuseConfig } from "./observeOpenAI";
+export { observeOpenAI } from "./observeOpenAI";
+export type { LangfuseConfig, LangfuseParent } from "./types";

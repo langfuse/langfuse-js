@@ -1,16 +1,8 @@
-import type OpenAI from "openai";
+import type { LangfuseCore } from "langfuse-core";
+
 import { LangfuseSingleton } from "./LangfuseSingleton";
 import { withTracing } from "./traceMethod";
-import type { CreateLangfuseTraceBody } from "langfuse-core";
-
-export type LangfuseConfig = Pick<
-  CreateLangfuseTraceBody,
-  "sessionId" | "userId" | "release" | "version" | "metadata" | "tags"
-> & {
-  traceName?: string;
-  traceId?: string;
-};
-type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync">;
+import type { LangfuseConfig, LangfuseExtension } from "./types";
 
 /**
  * Wraps an OpenAI SDK object with Langfuse tracing. Function calls are extended with a tracer that logs detailed information about the call, including the method name,
@@ -42,30 +34,40 @@ export const observeOpenAI = <SDKType extends object>(
 ): SDKType & LangfuseExtension => {
   return new Proxy(sdk, {
     get(wrappedSdk, propKey, proxy) {
-      const langfuse = LangfuseSingleton.getInstance();
-      const requestedSdkProperty = wrappedSdk[propKey as keyof SDKType];
-      const traceName = langfuseConfig?.traceName ?? `${sdk.constructor?.name}.${propKey.toString()}`;
-      const config = { ...langfuseConfig, traceName };
+      const originalProperty = wrappedSdk[propKey as keyof SDKType];
+
+      const defaultGenerationName = `${sdk.constructor?.name}.${propKey.toString()}`;
+      const generationName = langfuseConfig?.generationName ?? defaultGenerationName;
+      const config = { ...langfuseConfig, generationName };
 
       // Add a flushAsync method to the OpenAI SDK that flushes the Langfuse client
       if (propKey === "flushAsync") {
-        return langfuse.flushAsync.bind(langfuse); // Bind the flushAsync method to the Langfuse client for correct 'this' context
+        let langfuseClient: LangfuseCore;
+
+        // Flush the correct client depending on whether a parent client is provided
+        if (langfuseConfig && "parent" in langfuseConfig) {
+          langfuseClient = langfuseConfig.parent.client;
+        } else {
+          langfuseClient = LangfuseSingleton.getInstance();
+        }
+
+        return langfuseClient.flushAsync.bind(langfuseClient);
       }
 
       // Trace methods of the OpenAI SDK
-      if (typeof requestedSdkProperty === "function") {
-        return withTracing(requestedSdkProperty.bind(wrappedSdk), config);
+      if (typeof originalProperty === "function") {
+        return withTracing(originalProperty.bind(wrappedSdk), config);
       }
 
       const isNestedOpenAIObject =
-        requestedSdkProperty &&
-        !Array.isArray(requestedSdkProperty) &&
-        !(requestedSdkProperty instanceof Date) &&
-        typeof requestedSdkProperty === "object";
+        originalProperty &&
+        !Array.isArray(originalProperty) &&
+        !(originalProperty instanceof Date) &&
+        typeof originalProperty === "object";
 
       // Recursively wrap nested objects to ensure all nested properties or methods are also traced
       if (isNestedOpenAIObject) {
-        return observeOpenAI(requestedSdkProperty, config);
+        return observeOpenAI(originalProperty, config);
       }
 
       // Fallback to returning the original value
