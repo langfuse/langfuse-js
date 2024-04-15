@@ -77,15 +77,18 @@ export const parseUsage = (res: unknown): Usage | undefined => {
 export const parseChunk = (rawChunk: unknown): string => {
   const _chunk = rawChunk as OpenAI.ChatCompletionChunk | OpenAI.Completions.Completion;
 
-  if ("delta" in _chunk?.choices[0]) {
-    return _chunk.choices[0].delta?.content || "";
-  }
+  try {
+    if ("delta" in _chunk?.choices[0]) {
+      return _chunk.choices[0].delta?.content || "";
+    }
 
-  if ("text" in _chunk?.choices[0]) {
-    return _chunk?.choices[0].text || "";
+    if ("text" in _chunk?.choices[0]) {
+      return _chunk?.choices[0].text || "";
+    }
+  } catch (e) {
+  } finally {
+    return "";
   }
-
-  return "";
 };
 
 // Type guard to check if an unknown object is a UsageResponse

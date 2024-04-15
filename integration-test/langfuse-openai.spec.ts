@@ -670,4 +670,52 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(generation.calculatedTotalCost).toBeDefined();
     expect(generation.statusMessage).toBeNull();
   }, 10000);
+
+  it("allows initializing Langfuse with custom params", async () => {
+    // Get original env variables and set them to empty
+    const envVars = ["LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASEURL"] as const;
+    const originalValues = {} as Record<(typeof envVars)[number], string | undefined>;
+
+    for (const varName of envVars) {
+      originalValues[varName] = process.env[varName];
+      process.env[varName] = "";
+
+      expect(process.env[varName]).toBe("");
+    }
+
+    // Set the custom init variables
+    const publicKey = originalValues["LANGFUSE_PUBLIC_KEY"];
+    const secretKey = originalValues["LANGFUSE_SECRET_KEY"];
+    const baseUrl = originalValues["LANGFUSE_BASEURL"];
+
+    const traceId = randomUUID();
+    const name = "from-custom-init-params";
+
+    const client = observeOpenAI(openai, {
+      id: traceId,
+      generationName: name,
+      clientInitParams: { publicKey, secretKey, baseUrl },
+    });
+
+    const res = await client.chat.completions.create({
+      messages: [{ role: "system", content: "Tell me a story about a king." }],
+      model: "gpt-3.5-turbo",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getTraceById(traceId);
+    expect(response.status).toBe(200);
+
+    const trace_data = response.data;
+    expect(trace_data.name).toBe(name);
+
+    // Reset env variables
+    for (const varName of envVars) {
+      process.env[varName] = originalValues[varName];
+    }
+  }, 10000);
 });

@@ -35,7 +35,7 @@ const wrapMethod = async <T extends GenericMethod>(
     langfuseParent = config.parent;
     observationData = { ...config, ...observationData };
   } else {
-    const langfuse = LangfuseSingleton.getInstance();
+    const langfuse = LangfuseSingleton.getInstance(config?.clientInitParams);
     langfuseParent = langfuse.trace({
       ...config,
       ...observationData,
