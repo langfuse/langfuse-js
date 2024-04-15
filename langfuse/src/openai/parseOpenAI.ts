@@ -85,10 +85,9 @@ export const parseChunk = (rawChunk: unknown): string => {
     if ("text" in _chunk?.choices[0]) {
       return _chunk?.choices[0].text || "";
     }
-  } catch (e) {
-  } finally {
-    return "";
-  }
+  } catch (e) {}
+
+  return "";
 };
 
 // Type guard to check if an unknown object is a UsageResponse
