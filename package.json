@@ -32,6 +32,7 @@
     "test:node": "jest langfuse-node/*",
     "test:fetch": "jest langfuse/*",
     "test:integration": "dotenv -- jest integration-test/* --verbose --runInBand",
+    "test:langchain": "dotenv -- jest integration-test/langfuse-integration-langchain --verbose --runInBand",
     "test:datasets": "jest integration-test/langfuse-integration-datasets*",
     "test:modules": "jest integration-test/langfuse-integration-modules*",
     "test:examples": "jest integration-test/langfuse-integration-examples*",
@@ -48,9 +49,9 @@
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.1.0",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.12.4",
+    "@types/node": "^20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^6.3.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "axios": "^1.6.8",
     "babel-jest": "^29.7.0",
     "dotenv-cli": "^7.4.1",
@@ -72,7 +73,7 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.1",
     "tslib": "^2.6.1",
-    "typescript": "^5.4.3",
+    "typescript": "^5.4.5",
     "yalc": "^1.0.0-pre.53"
   },
   "resolutions": {
