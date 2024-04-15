@@ -16,14 +16,14 @@ export type LangfuseInitParams = {
 
 type LangfuseTraceConfig = Pick<
   CreateLangfuseTraceBody,
-  "sessionId" | "userId" | "release" | "version" | "metadata" | "tags" | "id"
+  "sessionId" | "userId" | "release" | "version" | "metadata" | "tags"
 >;
 type LangfuseGenerationConfig = Pick<
   CreateLangfuseGenerationBody,
   "metadata" | "version" | "promptName" | "promptVersion"
 >;
 
-export type LangfuseNewTraceConfig = LangfuseTraceConfig & { clientInitParams?: LangfuseInitParams };
+export type LangfuseNewTraceConfig = LangfuseTraceConfig & { traceId?: string; clientInitParams?: LangfuseInitParams };
 export type LangfuseParent = LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient;
 export type LangfuseWithParentConfig = LangfuseGenerationConfig & { parent: LangfuseParent };
 

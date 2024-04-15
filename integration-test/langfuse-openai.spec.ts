@@ -692,7 +692,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     const name = "from-custom-init-params";
 
     const client = observeOpenAI(openai, {
-      id: traceId,
+      traceId,
       generationName: name,
       clientInitParams: { publicKey, secretKey, baseUrl },
     });

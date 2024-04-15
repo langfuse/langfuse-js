@@ -39,6 +39,7 @@ const wrapMethod = async <T extends GenericMethod>(
     langfuseParent = langfuse.trace({
       ...config,
       ...observationData,
+      id: config?.traceId,
       timestamp: observationData.startTime,
     });
   }
