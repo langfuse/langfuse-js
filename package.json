@@ -33,7 +33,7 @@
     "test:fetch": "jest langfuse/*",
     "test:integration": "dotenv -- jest integration-test/* --verbose --runInBand",
     "test:langchain": "dotenv -- jest integration-test/langfuse-integration-langchain --verbose --runInBand",
-    "test:datasets": "jest integration-test/langfuse-integration-datasets*",
+    "test:datasets": "dotenv -- jest integration-test/langfuse-integration-datasets*",
     "test:modules": "jest integration-test/langfuse-integration-modules*",
     "test:examples": "jest integration-test/langfuse-integration-examples*",
     "compile": "rollup -c --bundleConfigAsCjs",

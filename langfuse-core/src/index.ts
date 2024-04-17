@@ -268,8 +268,22 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
-  async createDataset(name: string): Promise<CreateLangfuseDatasetResponse> {
-    const body: CreateLangfuseDatasetBody = { name };
+  /**
+   * Creates a dataset. Upserts the dataset if it already exists.
+   *
+   * @param dataset Can be either a string (name) or an object with name, description and metadata
+   * @returns A promise that resolves to the response of the create operation.
+   */
+  async createDataset(
+    dataset:
+      | string // name
+      | {
+          name: string;
+          description?: string;
+          metadata?: any;
+        }
+  ): Promise<CreateLangfuseDatasetResponse> {
+    const body: CreateLangfuseDatasetBody = typeof dataset === "string" ? { name: dataset } : dataset;
     return this.fetch(
       `${this.baseUrl}/api/public/datasets`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
@@ -663,27 +677,49 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async getDataset(name: string): Promise<{
     id: string;
     name: string;
+    description?: string;
+    metadata?: any;
     projectId: string;
     items: Array<{
       id: string;
-      input: any;
+      input?: any;
       expectedOutput?: any;
+      metadata?: any;
       sourceObservationId?: string | null;
-      link: (obj: LangfuseObservationClient, runName: string) => Promise<{ id: string }>;
+      link: (
+        obj: LangfuseObjectClient,
+        runName: string,
+        runArgs?: {
+          description?: string;
+          metadata?: any;
+        }
+      ) => Promise<{ id: string }>;
     }>;
   }> {
     const { items, ...dataset } = await this._getDataset(name);
 
     const returnDataset = {
       ...dataset,
+      description: dataset.description ?? undefined,
+      metadata: dataset.metadata ?? undefined,
       items: items.map((item) => ({
         ...item,
-        link: async (obj: LangfuseObservationClient, runName: string) => {
+        link: async (
+          obj: LangfuseObjectClient,
+          runName: string,
+          runArgs?: {
+            description?: string;
+            metadata?: any;
+          }
+        ) => {
           await this.awaitAllQueuedAndPendingRequests();
           const data = await this.createDatasetRunItem({
             runName,
             datasetItemId: item.id,
-            observationId: obj.id,
+            observationId: obj.observationId,
+            traceId: obj.traceId,
+            runDescription: runArgs?.description,
+            metadata: runArgs?.metadata,
           });
           return data;
         },
@@ -784,9 +820,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
 export abstract class LangfuseObjectClient {
   public readonly client: LangfuseCore;
-  public readonly id: string;
-  public readonly traceId: string;
-  public readonly observationId: string | null;
+  public readonly id: string; // id of item itself
+  public readonly traceId: string; // id of trace, if traceClient this is the same as id
+  public readonly observationId: string | null; // id of observation, if observationClient this is the same as id, if traceClient this is null
 
   constructor({
     client,
