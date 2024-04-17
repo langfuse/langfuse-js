@@ -26,6 +26,15 @@ describe("Langfuse Node.js", () => {
       });
     });
 
+    it("create and get dataset, name only, special character", async () => {
+      const projectNameRandom = Math.random().toString(36).substring(7) + "+ 7/";
+      await langfuse.createDataset(projectNameRandom);
+      const getDataset = await langfuse.getDataset(projectNameRandom);
+      expect(getDataset).toMatchObject({
+        name: projectNameRandom,
+      });
+    });
+
     it("create and get dataset, object", async () => {
       const projectNameRandom = Math.random().toString(36).substring(7);
       await langfuse.createDataset({

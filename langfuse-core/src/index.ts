@@ -249,14 +249,18 @@ abstract class LangfuseCoreStateless {
   }
 
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
-    return this.fetch(`${this.baseUrl}/api/public/datasets/${name}`, this._getFetchOptions({ method: "GET" })).then(
-      (res) => res.json()
-    );
+    const encodedName = encodeURIComponent(name);
+    return this.fetch(
+      `${this.baseUrl}/api/public/datasets/${encodedName}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
   }
 
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
+    const encodedDatasetName = encodeURIComponent(params.datasetName);
+    const encodedRunName = encodeURIComponent(params.runName);
     return this.fetch(
-      `${this.baseUrl}/api/public/datasets/${params.datasetName}/runs/${params.runName}`,
+      `${this.baseUrl}/api/public/datasets/${encodedDatasetName}/runs/${encodedRunName}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
