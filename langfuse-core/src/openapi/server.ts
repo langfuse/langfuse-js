@@ -28,13 +28,15 @@ export interface paths {
     /** @description Create a dataset run item */
     post: operations["datasetRunItems_create"];
   };
+  "/api/public/datasets": {
+    /** @description Get all datasets */
+    get: operations["datasets_list"];
+    /** @description Create a dataset */
+    post: operations["datasets_create"];
+  };
   "/api/public/datasets/{datasetName}": {
     /** @description Get a dataset and its items */
     get: operations["datasets_get"];
-  };
-  "/api/public/datasets": {
-    /** @description Create a dataset */
-    post: operations["datasets_create"];
   };
   "/api/public/datasets/{datasetName}/runs/{runName}": {
     /** @description Get a dataset run and its items */
@@ -254,26 +256,50 @@ export interface components {
       timestamp: string;
       comment?: string | null;
     };
-    /** Dataset */
-    Dataset: {
+    /** DatasetCore */
+    DatasetCore: {
       id: string;
       name: string;
+      description?: string | null;
+      metadata?: unknown;
       projectId: string;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
-      items: components["schemas"]["DatasetItem"][];
-      runs: string[];
     };
+    /** DatasetWithReferences */
+    DatasetWithReferences: WithRequired<
+      {
+        /** @description list of dataset item ids */
+        items: string[];
+        /** @description list of dataset run names */
+        runs: string[];
+      } & components["schemas"]["DatasetCore"],
+      "items" | "runs"
+    >;
+    /**
+     * Dataset
+     * @description Dataset including all items
+     */
+    Dataset: WithRequired<
+      {
+        items: components["schemas"]["DatasetItem"][];
+        runs: string[];
+      } & components["schemas"]["DatasetCore"],
+      "items" | "runs"
+    >;
     /** DatasetItem */
     DatasetItem: {
       id: string;
       status: components["schemas"]["DatasetStatus"];
-      input: unknown;
+      input?: unknown;
       expectedOutput?: unknown;
+      metadata?: unknown;
+      sourceTraceId?: string | null;
       sourceObservationId?: string | null;
       datasetId: string;
+      datasetName: string;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -283,6 +309,7 @@ export interface components {
     DatasetRunItem: {
       id: string;
       datasetRunId: string;
+      datasetRunName: string;
       datasetItemId: string;
       traceId: string;
       observationId?: string | null;
@@ -295,8 +322,10 @@ export interface components {
     DatasetRun: {
       id: string;
       name: string;
+      description?: string | null;
       metadata?: unknown;
       datasetId: string;
+      datasetName: string;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -325,18 +354,23 @@ export interface components {
      * ScoreSource
      * @enum {string}
      */
-    ScoreSource: "API" | "REVIEW";
+    ScoreSource: "API" | "REVIEW" | "EVAL";
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
-      input: unknown;
+      input?: unknown;
       expectedOutput?: unknown;
+      metadata?: unknown;
+      sourceTraceId?: string | null;
+      sourceObservationId?: string | null;
       /** @description Dataset items are upserted on their id */
       id?: string | null;
     };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
       runName: string;
+      /** @description Description of the run. If run exists, description will be updated. */
+      runDescription?: string | null;
       /** @description Metadata of the dataset run, updates run if run already exists */
       metadata?: unknown;
       datasetItemId: string;
@@ -344,9 +378,16 @@ export interface components {
       /** @description traceId should always be provided. For compatibility with older SDK versions it can also be inferred from the provided observationId. */
       traceId?: string | null;
     };
+    /** PaginatedDatasets */
+    PaginatedDatasets: {
+      data: components["schemas"]["DatasetWithReferences"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
     /** CreateDatasetRequest */
     CreateDatasetRequest: {
       name: string;
+      description?: string | null;
+      metadata?: unknown;
     };
     /** HealthResponse */
     HealthResponse: {
@@ -944,11 +985,52 @@ export interface operations {
       };
     };
   };
-  /** @description Get a dataset and its items */
-  datasets_get: {
+  /** @description Get all datasets */
+  datasets_list: {
     parameters: {
-      path: {
-        datasetName: string;
+      query?: {
+        page?: number | null;
+        limit?: number | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["PaginatedDatasets"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Create a dataset */
+  datasets_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDatasetRequest"];
       };
     };
     responses: {
@@ -984,11 +1066,11 @@ export interface operations {
       };
     };
   };
-  /** @description Create a dataset */
-  datasets_create: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateDatasetRequest"];
+  /** @description Get a dataset and its items */
+  datasets_get: {
+    parameters: {
+      path: {
+        datasetName: string;
       };
     };
     responses: {
@@ -1149,7 +1231,9 @@ export interface operations {
   metrics_daily: {
     parameters: {
       query?: {
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
         /** @description Optional filter by the name of the trace */
         traceName?: string | null;
@@ -1157,6 +1241,10 @@ export interface operations {
         userId?: string | null;
         /** @description Optional filter for metrics where traces include all of these tags */
         tags?: (string | null)[];
+        /** @description Optional filter to only include traces on or after a certain timestamp */
+        fromTimestamp?: string | null;
+        /** @description Optional filter to only include traces before a certain timestamp */
+        toTimestamp?: string | null;
       };
     };
     responses: {
@@ -1237,7 +1325,9 @@ export interface operations {
   observations_getMany: {
     parameters: {
       query?: {
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
         name?: string | null;
         userId?: string | null;
@@ -1400,13 +1490,21 @@ export interface operations {
   /** @description Get a list of scores */
   score_get: {
     parameters: {
-      query?: {
+      query: {
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
         /** @description Retrieve only scores newer than this timestamp. */
         fromTimestamp?: string | null;
+        /** @description Retrieve only scores from a specific source. */
+        source: components["schemas"]["ScoreSource"];
+        /** @description Retrieve only scores with <operator> value. */
+        operator?: string | null;
+        /** @description Retrieve only scores with <operator> value. */
+        value?: number | null;
       };
     };
     responses: {
@@ -1648,7 +1746,9 @@ export interface operations {
   trace_list: {
     parameters: {
       query?: {
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
