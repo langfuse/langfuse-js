@@ -17,24 +17,50 @@ describe("Langfuse Node.js", () => {
   });
 
   describe("dataset and items", () => {
-    it("create and get dataset", async () => {
+    it("create and get dataset, name only", async () => {
       const projectNameRandom = Math.random().toString(36).substring(7);
-      const dataset = await langfuse.createDataset(projectNameRandom);
+      await langfuse.createDataset(projectNameRandom);
       const getDataset = await langfuse.getDataset(projectNameRandom);
-      expect(getDataset).toEqual(dataset);
+      expect(getDataset).toMatchObject({
+        name: projectNameRandom,
+      });
+    });
+
+    it("create and get dataset, name only, special character", async () => {
+      const projectNameRandom = Math.random().toString(36).substring(7) + "+ 7/";
+      await langfuse.createDataset(projectNameRandom);
+      const getDataset = await langfuse.getDataset(projectNameRandom);
+      expect(getDataset).toMatchObject({
+        name: projectNameRandom,
+      });
+    });
+
+    it("create and get dataset, object", async () => {
+      const projectNameRandom = Math.random().toString(36).substring(7);
+      await langfuse.createDataset({
+        name: projectNameRandom,
+        description: "test",
+        metadata: { test: "test" },
+      });
+      const getDataset = await langfuse.getDataset(projectNameRandom);
+      expect(getDataset).toMatchObject({
+        name: projectNameRandom,
+        description: "test",
+        metadata: { test: "test" },
+      });
     });
 
     it("create and get dataset item", async () => {
-      const projectNameRandom = Math.random().toString(36).substring(7);
-      const dataset = await langfuse.createDataset(projectNameRandom);
+      const datasetNameRandom = Math.random().toString(36).substring(7);
+      await langfuse.createDataset({ name: datasetNameRandom, metadata: { test: "test" } });
+      const generation = langfuse.generation({ name: "test-observation" });
+      await langfuse.flushAsync();
       const item1 = await langfuse.createDatasetItem({
-        datasetName: projectNameRandom,
-        input: {
-          text: "hello world",
-        },
+        datasetName: datasetNameRandom,
+        metadata: { test: "test" },
       });
       const item2 = await langfuse.createDatasetItem({
-        datasetName: projectNameRandom,
+        datasetName: datasetNameRandom,
         input: [
           {
             role: "text",
@@ -48,15 +74,20 @@ describe("Langfuse Node.js", () => {
         expectedOutput: {
           text: "hello world",
         },
+        metadata: { test: "test" },
+        sourceObservationId: generation.id,
+        sourceTraceId: generation.traceId,
       });
       const item3 = await langfuse.createDatasetItem({
-        datasetName: projectNameRandom,
+        datasetName: datasetNameRandom,
         input: "prompt",
         expectedOutput: "completion",
       });
-      const getDataset = await langfuse.getDataset(projectNameRandom);
+      const getDataset = await langfuse.getDataset(datasetNameRandom);
       expect(getDataset).toMatchObject({
-        ...dataset,
+        name: datasetNameRandom,
+        description: undefined,
+        metadata: { test: "test" },
         items: expect.arrayContaining([
           expect.objectContaining({ ...item1, link: expect.any(Function) }),
           expect.objectContaining({ ...item2, link: expect.any(Function) }),
@@ -93,6 +124,9 @@ describe("Langfuse Node.js", () => {
         expectedOutput: {
           text: "hello world2",
         },
+        metadata: {
+          test: "test",
+        },
       });
       const getUpdateRes = await langfuse.getDatasetItem(createRes.id);
       expect(getUpdateRes).toEqual(UpdateRes);
@@ -104,6 +138,9 @@ describe("Langfuse Node.js", () => {
         expectedOutput: {
           text: "hello world2",
         },
+        metadata: {
+          test: "test",
+        },
       });
     }, 10000);
 
@@ -112,22 +149,47 @@ describe("Langfuse Node.js", () => {
       await langfuse.createDataset(projectNameRandom);
       await langfuse.createDatasetItem({
         datasetName: projectNameRandom,
-        input: "Hello world",
-        expectedOutput: "Hello world" as any,
+        input: "Hello trace",
+        expectedOutput: "Hello world",
       });
+      await langfuse.createDatasetItem({
+        datasetName: projectNameRandom,
+        input: "Hello generation",
+        expectedOutput: "Hello world",
+      });
+
+      const trace = langfuse.trace({
+        id: "test-trace-id-" + projectNameRandom,
+        input: "input",
+        output: "Hello world traced",
+      });
+
+      const generation = langfuse.generation({
+        id: "test-generation-id-" + projectNameRandom,
+        input: "input",
+        output: "Hello world generated",
+      });
+
+      await langfuse.flushAsync();
 
       const dataset = await langfuse.getDataset(projectNameRandom);
       for (const item of dataset.items) {
-        const generation = langfuse.generation({
-          id: "test-generation-id-" + projectNameRandom,
-          input: item.input,
-          output: "Hello world generated",
-        });
-        await item.link(generation, "test-run-" + projectNameRandom);
-        generation.score({
-          name: "test-score",
-          value: 0.5,
-        });
+        if (item.input === "Hello trace") {
+          await item.link(trace, "test-run-" + projectNameRandom);
+          trace.score({
+            name: "test-score-trace",
+            value: 0.5,
+          });
+        } else if (item.input === "Hello generation") {
+          await item.link(generation, "test-run-" + projectNameRandom, {
+            description: "test-run-description",
+            metadata: { test: "test" },
+          });
+          generation.score({
+            name: "test-score-generation",
+            value: 0.5,
+          });
+        }
       }
 
       const getRuns = await langfuse.getDatasetRun({
@@ -137,11 +199,17 @@ describe("Langfuse Node.js", () => {
 
       expect(getRuns).toMatchObject({
         name: "test-run-" + projectNameRandom,
+        description: "test-run-description", // from second link
+        metadata: { test: "test" }, // from second link
         datasetId: dataset.id,
         // array needs to be length 2
         datasetRunItems: expect.arrayContaining([
           expect.objectContaining({
-            observationId: "test-generation-id-" + projectNameRandom,
+            observationId: generation.id,
+            traceId: generation.traceId,
+          }),
+          expect.objectContaining({
+            traceId: trace.id,
           }),
         ]),
       });
