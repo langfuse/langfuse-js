@@ -1565,9 +1565,9 @@
     zod-to-json-schema "^3.22.5"
 
 "@langchain/core@^0.1", "@langchain/core@~0.1.56":
-  version "0.1.57"
-  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.1.57.tgz#c592ad6715e373e4203f590f20b8b999e64cfb16"
-  integrity sha512-6wOwidPkkRcANrOKl88+YYpm3jHfpg6W8EqZHQCImSAlxdEhyDSq2eeQKHOPCFCrfNWkClaNn+Wlzzz4Qwf9Tg==
+  version "0.1.58"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.1.58.tgz#a1708ddadb12cbbbb77d24a36a35d1802c2eeeaa"
+  integrity sha512-a3b2wQbseLLnoRfQY3W6cnbSreHlPfrCoi41kznzzXTgToPK7cSeCn1wOK4CmLdWu9HCk8cm3x5yM5FXPNEP+Q==
   dependencies:
     ansi-styles "^5.0.0"
     camelcase "6"
@@ -1575,6 +1575,7 @@
     js-tiktoken "^1.0.8"
     langsmith "~0.1.7"
     ml-distance "^4.0.0"
+    mustache "^4.2.0"
     p-queue "^6.6.2"
     p-retry "4"
     uuid "^9.0.0"
@@ -6334,9 +6335,9 @@ kleur@^3.0.3:
   integrity sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==
 
 langchain@^0, langchain@^0.1:
-  version "0.1.33"
-  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.1.33.tgz#959f0f023975092569b49f1f07fe60c11c643530"
-  integrity sha512-IrRd839x8eAmDutHNDMHGzIjufyWt/ckJrnRB2WifIJmtLWNRNQo5jZd7toeBU0UOVOQxoPtQGYf8lR0ar7vIQ==
+  version "0.1.34"
+  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.1.34.tgz#3c28a6bde69c5f4ac3931376d34187de0e44e43a"
+  integrity sha512-4TVH2mzhITrLPOeyfGucfqo1+360DJMl4+ItG56ApxVY1krO4hV0EkqcRLAxW06W6sIue8mIU70WbyhBYH68Ug==
   dependencies:
     "@anthropic-ai/sdk" "^0.9.1"
     "@langchain/community" "~0.0.47"
