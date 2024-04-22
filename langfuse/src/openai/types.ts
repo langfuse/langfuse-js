@@ -6,6 +6,7 @@ import type {
   LangfuseTraceClient,
   LangfuseSpanClient,
   LangfuseGenerationClient,
+  LangfusePromptClient,
 } from "langfuse-core";
 import type { LangfuseSingleton } from "./LangfuseSingleton";
 
@@ -27,5 +28,8 @@ export type LangfuseNewTraceConfig = LangfuseTraceConfig & { traceId?: string; c
 export type LangfuseParent = LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient;
 export type LangfuseWithParentConfig = LangfuseGenerationConfig & { parent: LangfuseParent };
 
-export type LangfuseConfig = (LangfuseNewTraceConfig | LangfuseWithParentConfig) & { generationName?: string };
+export type LangfuseConfig = (LangfuseNewTraceConfig | LangfuseWithParentConfig) & {
+  generationName?: string;
+  langfusePrompt?: LangfusePromptClient;
+};
 export type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync">;

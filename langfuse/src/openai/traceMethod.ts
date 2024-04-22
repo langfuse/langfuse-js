@@ -26,6 +26,8 @@ const wrapMethod = async <T extends GenericMethod>(
     modelParameters,
     name: config?.generationName,
     startTime: new Date(),
+    promptName: config?.langfusePrompt?.name,
+    promptVersion: config?.langfusePrompt?.version,
   };
 
   let langfuseParent: LangfuseParent;
@@ -33,7 +35,12 @@ const wrapMethod = async <T extends GenericMethod>(
 
   if (hasUserProvidedParent) {
     langfuseParent = config.parent;
-    observationData = { ...config, ...observationData };
+    observationData = {
+      ...config,
+      ...observationData,
+      promptName: config?.promptName ?? config?.langfusePrompt?.name, // Maintain backward compatibility for users who use promptName
+      promptVersion: config?.promptVersion ?? config?.langfusePrompt?.version, // Maintain backward compatibility for users who use promptVersion
+    };
   } else {
     const langfuse = LangfuseSingleton.getInstance(config?.clientInitParams);
     langfuseParent = langfuse.trace({

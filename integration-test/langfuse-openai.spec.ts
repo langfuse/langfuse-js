@@ -718,4 +718,69 @@ describe("Langfuse-OpenAI-Integation", () => {
       process.env[varName] = originalValues[varName];
     }
   }, 10000);
+  it("tracks the used prompt by passing langfusePrompt", async () => {
+    // Create prompt
+    const promptName = "fun-fact-prompt";
+    const langfuse = new Langfuse();
+    const prompt = await langfuse.createPrompt({
+      prompt: "Tell me a fun fact",
+      name: "fun-fact-prompt",
+      isActive: true,
+    });
+
+    // Use prompt for completion
+    const client = observeOpenAI(openai, { generationName: promptName, langfusePrompt: prompt });
+    const res = await client.completions.create({
+      prompt: prompt.prompt,
+      model: "gpt-3.5-turbo-instruct",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getGeneration(promptName);
+    expect(response.status).toBe(200);
+
+    const generation = response.data.data[0];
+    expect(generation.name).toBe(promptName);
+    expect(generation.metadata).toBeDefined();
+    // @ts-expect-error: promptResponse.id is not defined in the type
+    expect(generation.promptId).toBe(prompt.promptResponse.id);
+  }, 10000);
+
+  it("tracks the used prompt by passing a parent and setting promptName and promptVersion (backward compat)", async () => {
+    // Create prompt
+    const promptName = "fun-fact-prompt";
+    const langfuse = new Langfuse();
+    const prompt = await langfuse.createPrompt({
+      prompt: "Tell me a fun fact",
+      name: "fun-fact-prompt",
+      isActive: true,
+    });
+
+    const traceId = randomUUID();
+    const parent = langfuse.trace({ name: promptName, id: traceId });
+
+    // Use prompt for completion via parent
+    const client = observeOpenAI(openai, { parent, promptName: promptName, promptVersion: prompt.version });
+    const res = await client.completions.create({
+      prompt: prompt.prompt,
+      model: "gpt-3.5-turbo-instruct",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getTraceById(traceId);
+    expect(response.status).toBe(200);
+
+    const generation = response.data.observations[0];
+    expect(generation.metadata).toBeDefined();
+    // @ts-expect-error: promptResponse.id is not defined in the type
+    expect(generation.promptId).toBe(prompt.promptResponse.id);
+  }, 10000);
 });
