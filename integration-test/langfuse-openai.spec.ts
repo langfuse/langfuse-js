@@ -718,4 +718,166 @@ describe("Langfuse-OpenAI-Integation", () => {
       process.env[varName] = originalValues[varName];
     }
   }, 10000);
+  it("tracks a created text prompt by passing it as langfusePrompt", async () => {
+    // Create prompt
+    const promptName = "fun-fact-prompt-" + randomUUID();
+    const langfuse = new Langfuse();
+    const prompt = await langfuse.createPrompt({
+      prompt: "Tell me a fun fact",
+      name: promptName,
+      isActive: true,
+    });
+
+    // Use prompt for completion
+    const client = observeOpenAI(openai, { generationName: promptName, langfusePrompt: prompt });
+    const res = await client.completions.create({
+      prompt: prompt.prompt,
+      model: "gpt-3.5-turbo-instruct",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getGeneration(promptName);
+    expect(response.status).toBe(200);
+
+    const generation = response.data.data[0];
+    expect(generation.name).toBe(promptName);
+    expect(generation.metadata).toBeDefined();
+    // @ts-expect-error: promptResponse.id is not defined in the type
+    expect(generation.promptId).toBe(prompt.promptResponse.id);
+  }, 10000);
+
+  it("tracks a fetched text prompt by passing it as langfusePrompt", async () => {
+    // Create prompt
+    const promptName = "fun-fact-prompt-" + randomUUID();
+    const langfuse = new Langfuse();
+    await langfuse.createPrompt({
+      prompt: "Tell me a fun fact",
+      name: promptName,
+      isActive: true,
+    });
+
+    const prompt = await langfuse.getPrompt(promptName);
+
+    // Use prompt for completion
+    const client = observeOpenAI(openai, { generationName: promptName, langfusePrompt: prompt });
+    const res = await client.completions.create({
+      prompt: prompt.prompt,
+      model: "gpt-3.5-turbo-instruct",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getGeneration(promptName);
+    expect(response.status).toBe(200);
+
+    const generation = response.data.data[0];
+    expect(generation.name).toBe(promptName);
+    // @ts-expect-error: promptResponse.id is not defined in the type
+    expect(generation.promptId).toBe(prompt.promptResponse.id);
+  }, 10000);
+  it("tracks a created chat prompt by passing it as langfusePrompt", async () => {
+    // Create prompt
+    const promptName = "fun-fact-prompt-" + randomUUID();
+    const langfuse = new Langfuse();
+    const chatPrompt = await langfuse.createPrompt({
+      type: "chat",
+      prompt: [{ role: "system", content: "Tell me a fun fact" }],
+      name: promptName,
+      isActive: true,
+    });
+
+    // Use prompt for completion
+    const client = observeOpenAI(openai, { generationName: promptName, langfusePrompt: chatPrompt });
+    const res = await client.chat.completions.create({
+      messages: chatPrompt.prompt as OpenAI.ChatCompletionMessageParam[], // type-cast as role can be any string in Langfuse whereas in OpenAI it is narrowed down
+      model: "gpt-3.5-turbo",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getGeneration(promptName);
+    expect(response.status).toBe(200);
+
+    const generation = response.data.data[0];
+    expect(generation.name).toBe(promptName);
+    // @ts-expect-error: promptResponse.id is not defined in the type
+    expect(generation.promptId).toBe(chatPrompt.promptResponse.id);
+  }, 10000);
+
+  it("tracks a fetched chat prompt by passing it as langfusePrompt", async () => {
+    // Create prompt
+    const promptName = "fun-fact-prompt-" + randomUUID();
+    const langfuse = new Langfuse();
+    await langfuse.createPrompt({
+      type: "chat",
+      prompt: [{ role: "system", content: "Tell me a fun fact" }],
+      name: promptName,
+      isActive: true,
+    });
+
+    const chatPrompt = await langfuse.getPrompt(promptName, undefined, { type: "chat" });
+
+    // Use prompt for completion
+    const client = observeOpenAI(openai, { generationName: promptName, langfusePrompt: chatPrompt });
+    const res = await client.chat.completions.create({
+      messages: chatPrompt.prompt as OpenAI.ChatCompletionMessageParam[], // type-cast as role can be any string in Langfuse whereas in OpenAI it is narrowed down
+      model: "gpt-3.5-turbo",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getGeneration(promptName);
+    expect(response.status).toBe(200);
+
+    const generation = response.data.data[0];
+    expect(generation.name).toBe(promptName);
+    // @ts-expect-error: promptResponse.id is not defined in the type
+    expect(generation.promptId).toBe(chatPrompt.promptResponse.id);
+  }, 10000);
+
+  it("tracks the used prompt by passing a parent and setting promptName and promptVersion (backward compat)", async () => {
+    // Create prompt
+    const promptName = "fun-fact-prompt-" + randomUUID();
+    const langfuse = new Langfuse();
+    const prompt = await langfuse.createPrompt({
+      prompt: "Tell me a fun fact",
+      name: promptName,
+      isActive: true,
+    });
+
+    const traceId = randomUUID();
+    const parent = langfuse.trace({ name: promptName, id: traceId });
+
+    // Use prompt for completion via parent
+    const client = observeOpenAI(openai, { parent, promptName, promptVersion: prompt.version });
+    const res = await client.completions.create({
+      prompt: prompt.prompt,
+      model: "gpt-3.5-turbo-instruct",
+      user: "langfuse-user@gmail.com",
+      max_tokens: 300,
+    });
+
+    expect(res).toBeDefined();
+    await client.flushAsync();
+
+    const response = await getTraceById(traceId);
+    expect(response.status).toBe(200);
+
+    const generation = response.data.observations[0];
+    // @ts-expect-error: promptResponse.id is not defined in the type
+    expect(generation.promptId).toBe(prompt.promptResponse.id);
+  }, 10000);
 });
