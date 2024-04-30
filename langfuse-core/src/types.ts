@@ -105,13 +105,13 @@ export type GetLangfuseDatasetRunResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type CreateLangfusePromptBody = FixTypes<
-  paths["/api/public/prompts"]["post"]["requestBody"]["content"]["application/json"]
+  paths["/api/public/v2/prompts"]["post"]["requestBody"]["content"]["application/json"]
 >;
 export type CreateLangfusePromptResponse =
-  paths["/api/public/prompts"]["post"]["responses"]["200"]["content"]["application/json"];
+  paths["/api/public/v2/prompts"]["post"]["responses"]["200"]["content"]["application/json"];
 
 export type GetLangfusePromptSuccessData =
-  paths["/api/public/prompts"]["get"]["responses"]["200"]["content"]["application/json"];
+  paths["/api/public/v2/prompts/{promptName}"]["get"]["responses"]["200"]["content"]["application/json"];
 
 export type GetLangfusePromptFailureData = { message?: string };
 export type GetLangfusePromptResponse =
@@ -127,8 +127,8 @@ export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type:
 
 type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
 type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
-export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type">;
-export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type">;
+export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
+export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
 
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 

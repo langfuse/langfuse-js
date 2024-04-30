@@ -366,6 +366,55 @@ describe("Langfuse (fetch)", () => {
       expect(fetchedPrompt.compile({ animal: "dog" })).toEqual("A dog usually has dog friends.");
     });
 
+    it("create prompt with special characters in the name", async () => {
+      const promptName = "test-prompt-" + "special character !@#$%^&*()_+";
+      const createdPrompt = await langfuse.createPrompt({
+        name: promptName,
+        labels: ["production"],
+        prompt: "A {{animal}} usually has {{animal}} friends.",
+      });
+
+      expect(createdPrompt.constructor.name).toBe("TextPromptClient");
+
+      const fetchedPrompt = await langfuse.getPrompt(promptName);
+
+      expect(createdPrompt.constructor.name).toBe("TextPromptClient");
+      expect(fetchedPrompt.name).toEqual(promptName);
+      expect(fetchedPrompt.prompt).toEqual("A {{animal}} usually has {{animal}} friends.");
+      expect(fetchedPrompt.compile({ animal: "dog" })).toEqual("A dog usually has dog friends.");
+    });
+
+    it("should fetch prompt by version and label", async () => {
+      const promptName = "test-prompt-" + Date.now();
+      await langfuse.createPrompt({
+        name: promptName,
+        labels: ["production", "dev"],
+        prompt: "A {{animal}} usually has {{animal}} friends.",
+      });
+
+      await langfuse.createPrompt({
+        name: promptName,
+        labels: ["dev"],
+        prompt: "A {{animal}} usually has {{animal}} friends.",
+      });
+
+      const defaultFetchedPrompt = await langfuse.getPrompt(promptName);
+      expect(defaultFetchedPrompt.name).toEqual(promptName);
+      expect(defaultFetchedPrompt.labels).toEqual(["production"]);
+      expect(defaultFetchedPrompt.version).toEqual(1);
+
+      const fetchedPrompt1 = await langfuse.getPrompt(promptName, 1);
+
+      expect(fetchedPrompt1.name).toEqual(promptName);
+      expect(fetchedPrompt1.labels).toEqual(["production"]);
+      expect(fetchedPrompt1.version).toEqual(1);
+
+      const fetchedPrompt2 = await langfuse.getPrompt(promptName, undefined, { label: "dev" });
+      expect(fetchedPrompt2.labels).toEqual(["dev", "latest"]);
+      expect(fetchedPrompt2.name).toEqual(promptName);
+      expect(fetchedPrompt2.version).toEqual(2);
+    });
+
     it("create chat prompt", async () => {
       const promptName = "test_chat_prompt";
       const createdPrompt = await langfuse.createPrompt({
