@@ -10,11 +10,13 @@ abstract class BasePromptClient {
   public readonly name: string;
   public readonly version: number;
   public readonly config: unknown;
+  public readonly labels: string[];
 
   constructor(prompt: CreateLangfusePromptResponse) {
     this.name = prompt.name;
     this.version = prompt.version;
     this.config = prompt.config;
+    this.labels = prompt.labels;
   }
 
   abstract compile(variables?: Record<string, string>): string | ChatMessage[];

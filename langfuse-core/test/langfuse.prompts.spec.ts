@@ -24,6 +24,7 @@ describe("Langfuse Core", () => {
       config: {
         temperature: 0.5,
       },
+      labels: ["production"] as string[],
     } as const,
   };
 
@@ -57,6 +58,31 @@ describe("Langfuse Core", () => {
       await langfuse.createPrompt({
         name: "test-prompt",
         prompt: "This is a prompt with a {{variable}}",
+        labels: ["production"],
+        config: {
+          temperature: 0.5,
+        },
+      });
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      const [url, options] = mocks.fetch.mock.calls[0];
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/v2\/prompts/);
+      expect(options.method).toBe("POST");
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        prompt: "This is a prompt with a {{variable}}",
+        name: "test-prompt",
+        type: "text",
+        config: { temperature: 0.5 },
+        labels: ["production"],
+      });
+    });
+
+    it("should create a prompt with isActive for backward compat", async () => {
+      await langfuse.createPrompt({
+        name: "test-prompt",
+        prompt: "This is a prompt with a {{variable}}",
         isActive: true,
         config: {
           temperature: 0.5,
@@ -65,18 +91,19 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
-      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/prompts/);
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/v2\/prompts/);
       expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
       expect(body).toMatchObject({
-        isActive: true,
         prompt: "This is a prompt with a {{variable}}",
         name: "test-prompt",
         type: "text",
         config: { temperature: 0.5 },
+        labels: ["production"],
       });
     });
+
     it("should create a chat prompt", async () => {
       await langfuse.createPrompt({
         name: "test-prompt",
@@ -90,7 +117,7 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
-      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/prompts/);
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/v2\/prompts/);
       expect(options.method).toBe("POST");
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -100,6 +127,7 @@ describe("Langfuse Core", () => {
         name: "test-prompt",
         type: "chat",
         config: { temperature: 0.5 },
+        labels: ["production"],
       });
     });
 
@@ -108,7 +136,7 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
-      expect(url).toEqual("https://cloud.langfuse.com/api/public/prompts?name=test-prompt");
+      expect(url).toEqual("https://cloud.langfuse.com/api/public/v2/prompts/test-prompt");
       expect(options.method).toBe("GET");
     });
 
@@ -117,7 +145,7 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
-      expect(url).toEqual("https://cloud.langfuse.com/api/public/prompts?name=test-prompt&version=2");
+      expect(url).toEqual("https://cloud.langfuse.com/api/public/v2/prompts/test-prompt?version=2");
       expect(options.method).toBe("GET");
     });
 
@@ -296,6 +324,7 @@ describe("Langfuse Core", () => {
             model: "gpt-3.5-turbo-1106",
             temperature: 0,
           },
+          labels: [],
         });
 
         // Convert to Langchain prompt
@@ -355,6 +384,7 @@ describe("Langfuse Core", () => {
             model: "gpt-3.5-turbo-1106",
             temperature: 0,
           },
+          labels: [],
         });
 
         // Convert to Langchain prompt
@@ -378,6 +408,7 @@ describe("Langfuse Core", () => {
           model: "gpt-3.5-turbo-1106",
           temperature: 0,
         },
+        labels: [],
       });
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
@@ -394,6 +425,7 @@ describe("Langfuse Core", () => {
           model: "gpt-3.5-turbo-1106",
           temperature: 0,
         },
+        labels: [],
       });
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });

@@ -66,9 +66,13 @@ export interface paths {
     /** @description Get Project associated with API key */
     get: operations["projects_get"];
   };
-  "/api/public/prompts": {
+  "/api/public/v2/prompts/{promptName}": {
     /** @description Get a prompt */
     get: operations["prompts_get"];
+  };
+  "/api/public/v2/prompts": {
+    /** @description Get a list of prompt names with versions and labels */
+    get: operations["prompts_list"];
     /** @description Create a prompt */
     post: operations["prompts_create"];
   };
@@ -93,7 +97,7 @@ export interface paths {
     get: operations["trace_get"];
   };
   "/api/public/traces": {
-    /** @description Get list of traces */
+    /** @description Get list of traces. */
     get: operations["trace_list"];
   };
 }
@@ -705,6 +709,7 @@ export interface components {
     DailyMetricsDetails: {
       date: string;
       countTraces: number;
+      countObservations: number;
       /** Format: double */
       totalCost: number;
       usage: components["schemas"]["UsageByModel"][];
@@ -714,7 +719,7 @@ export interface components {
      * @description Daily usage of a given model. Usage corresponds to the unit set for the specific model (e.g. tokens).
      */
     UsageByModel: {
-      model: string;
+      model?: string | null;
       inputUsage: number;
       outputUsage: number;
       totalUsage: number;
@@ -738,6 +743,18 @@ export interface components {
       id: string;
       name: string;
     };
+    /** PromptMetaListResponse */
+    PromptMetaListResponse: {
+      data: components["schemas"]["PromptMeta"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** PromptMeta */
+    PromptMeta: {
+      name: string;
+      versions: number[];
+      labels: string[];
+      tags: string[];
+    };
     /** CreatePromptRequest */
     CreatePromptRequest: OneOf<
       [
@@ -760,18 +777,16 @@ export interface components {
     /** CreateChatPromptRequest */
     CreateChatPromptRequest: {
       name: string;
-      /** @description Should the prompt be promoted to production immediately? */
-      isActive: boolean;
       prompt: components["schemas"]["ChatMessage"][];
       config?: unknown;
+      labels?: string[] | null;
     };
     /** CreateTextPromptRequest */
     CreateTextPromptRequest: {
       name: string;
-      /** @description Should the prompt be promoted to production immediately? */
-      isActive: boolean;
       prompt: string;
       config?: unknown;
+      labels?: string[] | null;
     };
     /** Prompt */
     Prompt: OneOf<
@@ -797,6 +812,7 @@ export interface components {
       name: string;
       version: number;
       config: unknown;
+      labels: string[];
     };
     /** ChatMessage */
     ChatMessage: {
@@ -1325,9 +1341,9 @@ export interface operations {
   observations_getMany: {
     parameters: {
       query?: {
-        /** @description page number, starts at 1 */
+        /** @description Page number, starts at 1. */
         page?: number | null;
-        /** @description limit of items per page */
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
         limit?: number | null;
         name?: string | null;
         userId?: string | null;
@@ -1409,15 +1425,65 @@ export interface operations {
   /** @description Get a prompt */
   prompts_get: {
     parameters: {
-      query: {
-        name: string;
+      query?: {
+        /** @description Version of the prompt to be retrieved. */
         version?: number | null;
+        /** @description Label of the prompt to be retrieved. Defaults to "production" if no label or version is set. */
+        label?: string | null;
+      };
+      path: {
+        /** @description The name of the prompt */
+        promptName: string;
       };
     };
     responses: {
       200: {
         content: {
           "application/json": components["schemas"]["Prompt"];
+        };
+      };
+      400: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  /** @description Get a list of prompt names with versions and labels */
+  prompts_list: {
+    parameters: {
+      query?: {
+        name?: string | null;
+        label?: string | null;
+        tag?: string | null;
+        page?: number | null;
+        limit?: number | null;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["PromptMetaListResponse"];
         };
       };
       400: {
@@ -1491,9 +1557,9 @@ export interface operations {
   score_get: {
     parameters: {
       query: {
-        /** @description page number, starts at 1 */
+        /** @description Page number, starts at 1. */
         page?: number | null;
-        /** @description limit of items per page */
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
@@ -1742,13 +1808,13 @@ export interface operations {
       };
     };
   };
-  /** @description Get list of traces */
+  /** @description Get list of traces. */
   trace_list: {
     parameters: {
       query?: {
-        /** @description page number, starts at 1 */
+        /** @description Page number, starts at 1 */
         page?: number | null;
-        /** @description limit of items per page */
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
         limit?: number | null;
         userId?: string | null;
         name?: string | null;

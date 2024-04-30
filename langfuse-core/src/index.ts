@@ -322,13 +322,30 @@ abstract class LangfuseCoreStateless {
 
   async createPromptStateless(body: CreateLangfusePromptBody): Promise<CreateLangfusePromptResponse> {
     return this.fetch(
-      `${this.baseUrl}/api/public/prompts`,
+      `${this.baseUrl}/api/public/v2/prompts`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
-  async getPromptStateless(name: string, version?: number): Promise<GetLangfusePromptResponse> {
-    const url = `${this.baseUrl}/api/public/prompts?name=${name}` + (version ? `&version=${version}` : "");
+  async getPromptStateless(name: string, version?: number, label?: string): Promise<GetLangfusePromptResponse> {
+    const encodedName = encodeURIComponent(name);
+    const params = new URLSearchParams();
+
+    // Add parameters only if they are provided
+    if (version && label) {
+      throw new Error("Provide either version or label, not both.");
+    }
+
+    if (version) {
+      params.append("version", version.toString());
+    }
+
+    if (label) {
+      params.append("label", label);
+    }
+
+    const url = `${this.baseUrl}/api/public/v2/prompts/${encodedName}${params.size ? "?" + params : ""}`;
+
     return this.fetch(url, this._getFetchOptions({ method: "GET" })).then(async (res) => {
       const data = await res.json();
 
@@ -736,7 +753,13 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
   async createPrompt(body: CreateTextPromptBody): Promise<TextPromptClient>;
   async createPrompt(body: CreatePromptBody): Promise<LangfusePromptClient> {
-    const promptResponse = await this.createPromptStateless({ ...body, type: body.type ?? "text" });
+    const labels = body.labels ?? [];
+
+    const promptResponse = await this.createPromptStateless({
+      ...body,
+      type: body.type ?? "text",
+      labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
+    });
 
     if (promptResponse.type === "chat") {
       return new ChatPromptClient(promptResponse);
@@ -748,27 +771,37 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async getPrompt(
     name: string,
     version?: number,
-    options?: { cacheTtlSeconds?: number; type?: "text" }
+    options?: { label?: string; cacheTtlSeconds?: number; type?: "text" }
   ): Promise<TextPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { cacheTtlSeconds?: number; type: "chat" }
+    options?: { label?: string; cacheTtlSeconds?: number; type: "chat" }
   ): Promise<ChatPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { cacheTtlSeconds?: number; type?: "chat" | "text" }
+    options?: { label?: string; cacheTtlSeconds?: number; type?: "chat" | "text" }
   ): Promise<LangfusePromptClient> {
-    const cacheKey = this._getPromptCacheKey(name, version);
+    const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
 
     if (!cachedPrompt) {
-      return await this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds);
+      return await this._fetchPromptAndUpdateCache({
+        name,
+        version,
+        label: options?.label,
+        cacheTtlSeconds: options?.cacheTtlSeconds,
+      });
     }
 
     if (cachedPrompt.isExpired) {
-      return await this._fetchPromptAndUpdateCache(name, version, options?.cacheTtlSeconds).catch(() => {
+      return await this._fetchPromptAndUpdateCache({
+        name,
+        version,
+        label: options?.label,
+        cacheTtlSeconds: options?.cacheTtlSeconds,
+      }).catch(() => {
         console.warn(`Returning expired prompt cache for '${name}-${version ?? "latest"}' due to fetch error`);
 
         return cachedPrompt.value;
@@ -778,17 +811,33 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return cachedPrompt.value;
   }
 
-  private _getPromptCacheKey(name: string, version?: number): string {
-    return `${name}-${version ?? "latest"}`;
+  private _getPromptCacheKey(params: { name: string; version?: number; label?: string }): string {
+    const { name, version, label } = params;
+    const parts = [name];
+
+    if (version !== undefined) {
+      parts.push("version:" + version.toString());
+    } else if (label !== undefined) {
+      parts.push("label:" + label);
+    } else {
+      parts.push("label:production");
+    }
+
+    return parts.join("-");
   }
 
-  private async _fetchPromptAndUpdateCache(
-    name: string,
-    version?: number,
-    cacheTtlSeconds?: number
-  ): Promise<LangfusePromptClient> {
+  private async _fetchPromptAndUpdateCache(params: {
+    name: string;
+    version?: number;
+    cacheTtlSeconds?: number;
+    label?: string;
+  }): Promise<LangfusePromptClient> {
+    const cacheKey = this._getPromptCacheKey(params);
+
     try {
-      const { data, fetchResult } = await this.getPromptStateless(name, version);
+      const { name, version, cacheTtlSeconds, label } = params;
+
+      const { data, fetchResult } = await this.getPromptStateless(name, version, label);
       if (fetchResult === "failure") {
         throw Error(data.message ?? "Internal error while fetching prompt");
       }
@@ -800,12 +849,11 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         prompt = new TextPromptClient(data);
       }
 
-      // const prompt = data.type === "chat" ? new ChatPromptClient(data) : new TextPromptClient(data);
-      this._promptCache.set(this._getPromptCacheKey(name, version), prompt, cacheTtlSeconds);
+      this._promptCache.set(cacheKey, prompt, cacheTtlSeconds);
 
       return prompt;
     } catch (error) {
-      console.error(`Error while fetching prompt '${name}-${version ?? "latest"}':`, error);
+      console.error(`Error while fetching prompt '${cacheKey}':`, error);
 
       throw error;
     }
