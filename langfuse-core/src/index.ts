@@ -802,7 +802,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         label: options?.label,
         cacheTtlSeconds: options?.cacheTtlSeconds,
       }).catch(() => {
-        console.warn(`Returning expired prompt cache for '${name}-${version ?? "latest"}' due to fetch error`);
+        console.warn(
+          `Returning expired prompt cache for '${this._getPromptCacheKey({ name, version, label: options?.label })}' due to fetch error`
+        );
 
         return cachedPrompt.value;
       });
