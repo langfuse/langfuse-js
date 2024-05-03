@@ -1,5 +1,5 @@
 import { ConversationChain } from "langchain/chains";
-
+import "dotenv/config";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
@@ -449,6 +449,66 @@ describe("Langchain", () => {
       const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
       expect(generation?.length).toBe(1);
       expect(generation?.[0].name).toBe("ChatOpenAI");
+    });
+
+    it("create trace for callback with trace update", async () => {
+      const langfuse = new Langfuse();
+      const trace = langfuse.trace();
+      const handler = new CallbackHandler({ root: trace, updateRoot: true });
+
+      const llm = new ChatOpenAI({ streaming: true });
+      const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
+      await handler.flushAsync();
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const returnedTrace = handler.traceId ? await getTrace(handler.traceId) : undefined;
+
+      expect(returnedTrace).toBeDefined();
+      expect(returnedTrace?.name).toBe("ChatOpenAI");
+      expect(returnedTrace?.input).toBeTruthy();
+      expect(returnedTrace?.output).toBeTruthy();
+      expect(returnedTrace?.observations.length).toBe(1);
+      const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generation?.length).toBe(1);
+      expect(generation?.[0].name).toBe("ChatOpenAI");
+    });
+
+    it("create span for callback with span update", async () => {
+      const langfuse = new Langfuse();
+
+      const trace = langfuse.trace({ name: "test-trace" });
+      const span = trace.span({});
+
+      const handler = new CallbackHandler({ root: span, updateRoot: true });
+
+      const llm = new ChatOpenAI({});
+      const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
+      await handler.flushAsync();
+
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const returnedTrace = handler.traceId ? await getTrace(handler.traceId) : undefined;
+
+      expect(returnedTrace).toBeDefined();
+      expect(returnedTrace?.name).toBe("test-trace");
+      expect(returnedTrace?.input).toBeNull();
+      expect(returnedTrace?.output).toBeNull();
+      expect(returnedTrace?.observations.length).toBe(2);
+
+      const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generation?.length).toBe(1);
+      expect(generation?.[0].name).toBe("ChatOpenAI");
+      expect(handler.getLangchainRunId()).toBe(generation?.[0].id);
+
+      const returnedSpan = returnedTrace?.observations.filter((o) => o.type === "SPAN");
+      expect(returnedSpan?.length).toBe(1);
+      expect(returnedSpan?.[0].name).toBe("ChatOpenAI");
+      expect(returnedSpan?.[0].input).toBeTruthy();
+      expect(returnedSpan?.[0].output).toBeTruthy();
+
+      expect(handler.getTraceId()).toBe(returnedTrace?.id);
     });
 
     it("create trace for callback and sets the correct name if specified", async () => {
