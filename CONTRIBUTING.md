@@ -59,5 +59,3 @@ Run `npx lerna publish --force-publish --no-private`
 - Confirm with npmjs OTP
 
 Alpha: `npx lerna publish prerelease --force-publish --no-private --dist-tag alpha --preid alpha`
-
-Write release notes in GitHub releases.
