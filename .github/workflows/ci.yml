@@ -66,9 +66,8 @@ jobs:
           node-version: 18
 
       - name: Run langfuse server
+        working-directory: ./langfuse-server
         run: |
-          cd ./langfuse-server
-
           echo "::group::Run langfuse server"
           TELEMETRY_ENABLED=false docker compose up -d db
           echo "::endgroup::"
