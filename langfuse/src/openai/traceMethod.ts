@@ -108,6 +108,11 @@ const wrapMethod = async <T extends GenericMethod>(
       endTime: new Date(),
       statusMessage: String(error),
       level: "ERROR",
+      usage: {
+        inputCost: 0,
+        outputCost: 0,
+        totalCost: 0,
+      },
     });
 
     throw error;
