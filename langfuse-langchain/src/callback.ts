@@ -47,6 +47,7 @@ type ConstructorParams = (RootParams | KeyParams) & {
   sessionId?: string; // added to all traces
   metadata?: Record<string, unknown>; // added to all traces
   tags?: string[]; // added to all traces
+  updateRoot?: boolean;
 };
 
 export class CallbackHandler extends BaseCallbackHandler {
@@ -62,6 +63,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   metadata?: Record<string, unknown>;
   tags?: string[];
   rootProvided: boolean = false;
+  updateRoot: boolean = false;
   debugEnabled: boolean = false;
   completionStartTimes: Record<string, Date> = {};
 
@@ -72,6 +74,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.rootObservationId = params.root.observationId ?? undefined;
       this.traceId = params.root.traceId;
       this.rootProvided = true;
+      this.updateRoot = params.updateRoot ?? false;
     } else {
       this.langfuse = new Langfuse({
         ...params,
@@ -260,19 +263,32 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.topLevelObservationId = undefined;
     }
 
+    const params = {
+      name: serialized.id.at(-1)?.toString(),
+      metadata: this.joinTagsAndMetaData(tags, metadata, this.metadata),
+      userId: this.userId,
+      version: this.version,
+      sessionId: this.sessionId,
+      input: input,
+      tags: this.tags,
+    };
+
     if (!this.traceId) {
       this.langfuse.trace({
         id: runId,
-        name: serialized.id.at(-1)?.toString(),
-        metadata: this.joinTagsAndMetaData(tags, metadata, this.metadata),
-        userId: this.userId,
-        version: this.version,
-        sessionId: this.sessionId,
-        input: input,
-        tags: this.tags,
+        ...params,
       });
       this.traceId = runId;
     }
+
+    if (this.rootProvided && this.updateRoot) {
+      if (this.rootObservationId) {
+        this.langfuse._updateSpan({ id: this.rootObservationId, ...params });
+      } else {
+        this.langfuse.trace({ id: this.traceId, ...params });
+      }
+    }
+
     this.topLevelObservationId = parentRunId ? this.topLevelObservationId : runId;
   }
 
@@ -581,6 +597,14 @@ export class CallbackHandler extends BaseCallbackHandler {
   updateTrace(runId: string, parentRunId: string | undefined, output: any): void {
     if (!parentRunId && this.traceId && this.traceId === runId) {
       this.langfuse.trace({ id: this.traceId, output: output });
+    }
+
+    if (!parentRunId && this.traceId && this.rootProvided && this.updateRoot) {
+      if (this.rootObservationId) {
+        this.langfuse._updateSpan({ id: this.rootObservationId, output });
+      } else {
+        this.langfuse.trace({ id: this.traceId, output });
+      }
     }
   }
 
