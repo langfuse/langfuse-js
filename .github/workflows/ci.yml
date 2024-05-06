@@ -85,6 +85,7 @@ jobs:
           cp .env.dev.example .env
           pnpm run db:migrate          
           pnpm run db:seed
+          rm -rf node_modules
           echo "::endgroup::"
 
           echo "::group::Run server"
