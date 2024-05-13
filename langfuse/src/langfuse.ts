@@ -24,21 +24,16 @@ export class Langfuse extends LangfuseCore {
   private _storageKey: string;
 
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
-    const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
-    if (!secretKey) {
-      throw new Error("[Langfuse] secretKey is required for instantiation");
-    }
-    if (!publicKey) {
-      throw new Error("[Langfuse] publicKey is required for instantiation");
-    }
-
-    super({ publicKey, secretKey, ...options });
+    const langfuseConfig = utils.configLangfuseSDK(params);
+    super(langfuseConfig);
 
     if (typeof window !== "undefined" && "Deno" in window === false) {
-      this._storageKey = params?.persistence_name ? `lf_${params.persistence_name}` : `lf_${publicKey}_langfuse`;
+      this._storageKey = params?.persistence_name
+        ? `lf_${params.persistence_name}`
+        : `lf_${langfuseConfig.publicKey}_langfuse`;
       this._storage = getStorage(params?.persistence || "localStorage", window);
     } else {
-      this._storageKey = `lf_${publicKey}_langfuse`;
+      this._storageKey = `lf_${langfuseConfig.publicKey}_langfuse`;
       this._storage = getStorage("memory", undefined);
     }
   }

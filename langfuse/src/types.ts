@@ -4,4 +4,5 @@ export type LangfuseOptions = {
   // autocapture?: boolean
   persistence?: "localStorage" | "sessionStorage" | "cookie" | "memory";
   persistence_name?: string;
+  enabled?: boolean;
 } & LangfuseCoreOptions;

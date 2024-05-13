@@ -34,7 +34,6 @@ import {
   type CreateTextPromptBody,
 } from "./types";
 import {
-  assert,
   generateUUID,
   removeTrailingSlash,
   retriable,
@@ -91,6 +90,7 @@ abstract class LangfuseCoreStateless {
   private pendingPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
   private sdkIntegration: string;
+  private enabled: boolean;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -106,11 +106,11 @@ abstract class LangfuseCoreStateless {
   abstract getPersistedProperty<T>(key: LangfusePersistedProperty): T | undefined;
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
-  constructor(params: { publicKey: string; secretKey?: string } & LangfuseCoreOptions) {
-    const { publicKey, secretKey, ...options } = params;
-    assert(publicKey, "You must pass your Langfuse project's api public key.");
+  constructor(params: LangfuseCoreOptions) {
+    const { publicKey, secretKey, enabled, ...options } = params;
 
-    this.publicKey = publicKey;
+    this.enabled = enabled === false ? false : true;
+    this.publicKey = publicKey ?? "";
     this.secretKey = secretKey;
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 15;
@@ -358,6 +358,9 @@ abstract class LangfuseCoreStateless {
    ***/
   protected enqueue(type: LangfuseObject, body: any): void {
     try {
+      if (!this.enabled) {
+        return;
+      }
       const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
 
       queue.push({
@@ -624,12 +627,25 @@ abstract class LangfuseCoreStateless {
 }
 
 export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
-  constructor(params: { publicKey: string } & LangfuseCoreOptions) {
-    const { flushAt, flushInterval, ...rest } = params;
+  constructor(params: LangfuseCoreOptions) {
+    const { flushAt, flushInterval, publicKey, enabled, ...rest } = params;
+    let isObservabilityEnabled = enabled === false ? false : true;
+
+    if (!isObservabilityEnabled) {
+      console.warn("Langfuse is disabled. No observability data will be sent to Langfuse.");
+    } else if (!publicKey) {
+      isObservabilityEnabled = false;
+      console.warn(
+        "Langfuse public key not passed to constructor and not set as 'LANGFUSE_PUBLIC_KEY' environment variable. No observability data will be sent to Langfuse."
+      );
+    }
+
     super({
       ...rest,
+      publicKey,
       flushAt: flushAt ?? 1,
       flushInterval: flushInterval ?? 0,
+      enabled: isObservabilityEnabled,
     });
   }
 
@@ -643,10 +659,25 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
 export abstract class LangfuseCore extends LangfuseCoreStateless {
   private _promptCache: LangfusePromptCache;
 
-  constructor(params: { publicKey: string; secretKey: string } & LangfuseCoreOptions) {
-    assert(params.publicKey, "You must pass your Langfuse project's api public key.");
-    assert(params.secretKey, "You must pass your Langfuse project's api secret key.");
-    super(params);
+  constructor(params: LangfuseCoreOptions) {
+    const { publicKey, secretKey, enabled } = params;
+    let isObservabilityEnabled = enabled === false ? false : true;
+
+    if (!isObservabilityEnabled) {
+      console.warn("Langfuse is disabled. No observability data will be sent to Langfuse.");
+    } else if (!secretKey) {
+      isObservabilityEnabled = false;
+      console.warn(
+        "Langfuse secret key was not passed to constructor or not set as 'LANGFUSE_SECRET_KEY' environment variable. No observability data will be sent to Langfuse."
+      );
+    } else if (!publicKey) {
+      isObservabilityEnabled = false;
+      console.warn(
+        "Langfuse public key was not passed to constructor or not set as 'LANGFUSE_PUBLIC_KEY' environment variable. No observability data will be sent to Langfuse."
+      );
+    }
+
+    super({ ...params, enabled: isObservabilityEnabled });
     this._promptCache = new LangfusePromptCache();
   }
 
