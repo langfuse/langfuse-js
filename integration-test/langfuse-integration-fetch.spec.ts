@@ -101,7 +101,9 @@ describe("Langfuse (fetch)", () => {
       trace.span({
         name: "span-name",
       });
-      trace.generation;
+      trace.generation({
+        name: "generation-name",
+      });
       trace.score({ name: "score-name", value: 1 });
 
       await langfuse.flushAsync();
