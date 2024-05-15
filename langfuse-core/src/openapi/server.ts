@@ -369,6 +369,8 @@ export interface components {
       sourceObservationId?: string | null;
       /** @description Dataset items are upserted on their id */
       id?: string | null;
+      /** @description Defaults to ACTIVE for newly created items */
+      status?: components["schemas"]["DatasetStatus"];
     };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
@@ -1257,9 +1259,9 @@ export interface operations {
         userId?: string | null;
         /** @description Optional filter for metrics where traces include all of these tags */
         tags?: (string | null)[];
-        /** @description Optional filter to only include traces on or after a certain timestamp */
+        /** @description Optional filter to only include traces on or after a certain datetime (ISO 8601) */
         fromTimestamp?: string | null;
-        /** @description Optional filter to only include traces before a certain timestamp */
+        /** @description Optional filter to only include traces before a certain datetime (ISO 8601) */
         toTimestamp?: string | null;
       };
     };
@@ -1350,7 +1352,7 @@ export interface operations {
         type?: string | null;
         traceId?: string | null;
         parentObservationId?: string | null;
-        /** @description Retrieve only observations with a start_time greater than this timestamp. */
+        /** @description Retrieve only observations with a start_time greater than this datetime (ISO 8601). */
         fromStartTime?: string | null;
       };
     };
@@ -1563,7 +1565,7 @@ export interface operations {
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
-        /** @description Retrieve only scores newer than this timestamp. */
+        /** @description Retrieve only scores newer than this datetime (ISO 8601). */
         fromTimestamp?: string | null;
         /** @description Retrieve only scores from a specific source. */
         source: components["schemas"]["ScoreSource"];
@@ -1818,7 +1820,7 @@ export interface operations {
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
-        /** @description Retrieve only traces newer than this timestamp. */
+        /** @description Retrieve only traces newer than this datetime (ISO 8601). */
         fromTimestamp?: string | null;
         /** @description Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
         orderBy?: string | null;
