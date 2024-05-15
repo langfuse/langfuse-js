@@ -627,7 +627,7 @@ abstract class LangfuseCoreStateless {
 }
 
 export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
-  constructor(params: LangfuseCoreOptions) {
+  constructor(params: Omit<LangfuseCoreOptions, "secretKey">) {
     const { flushAt, flushInterval, publicKey, enabled, ...rest } = params;
     let isObservabilityEnabled = enabled === false ? false : true;
 

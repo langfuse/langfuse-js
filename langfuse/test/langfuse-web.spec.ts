@@ -83,7 +83,43 @@ describe("langfuseWeb", () => {
       delete process.env.LANGFUSE_SECRET_KEY;
       delete process.env.LANGFUSE_BASEURL;
 
-      expect(() => new LangfuseWeb()).toThrow();
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+      const langfuseWeb = new LangfuseWeb();
+
+      expect((langfuseWeb as any).enabled).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Langfuse public key not passed to constructor and not set as 'LANGFUSE_PUBLIC_KEY' environment variable. No observability data will be sent to Langfuse."
+      );
+
+      process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
+      process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
+      process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
+    });
+
+    it("instantiates with public key only", async () => {
+      const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
+      const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
+      const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
+
+      delete process.env.LANGFUSE_PUBLIC_KEY;
+      delete process.env.LANGFUSE_SECRET_KEY;
+      delete process.env.LANGFUSE_BASEURL;
+
+      const langfuse = new LangfuseWeb({ publicKey: "test", baseUrl: "http://example.com" });
+      const options = langfuse._getFetchOptions({ method: "POST", body: "test" });
+
+      expect(langfuse.baseUrl).toEqual("http://example.com");
+      expect(options).toMatchObject({
+        headers: {
+          "Content-Type": "application/json",
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Variant": "langfuse-frontend",
+          "X-Langfuse-Public-Key": "test",
+          Authorization: "Bearer test",
+        },
+        body: "test",
+      });
 
       process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
       process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
