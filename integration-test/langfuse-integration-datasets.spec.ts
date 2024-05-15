@@ -127,6 +127,7 @@ describe("Langfuse Node.js", () => {
         metadata: {
           test: "test",
         },
+        status: "ARCHIVED",
       });
       const getUpdateRes = await langfuse.getDatasetItem(createRes.id);
       expect(getUpdateRes).toEqual(UpdateRes);
@@ -141,6 +142,7 @@ describe("Langfuse Node.js", () => {
         metadata: {
           test: "test",
         },
+        status: "ARCHIVED",
       });
     }, 10000);
 
