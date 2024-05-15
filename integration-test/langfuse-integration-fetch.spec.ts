@@ -67,22 +67,6 @@ describe("Langfuse (fetch)", () => {
       });
     });
 
-    it("instantiates with without mandatory variables", async () => {
-      const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
-      const LANGFUSE_SECRET_KEY = String(process.env.LANGFUSE_SECRET_KEY);
-      const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
-
-      delete process.env.LANGFUSE_PUBLIC_KEY;
-      delete process.env.LANGFUSE_SECRET_KEY;
-      delete process.env.LANGFUSE_BASEURL;
-
-      expect(() => new Langfuse()).toThrow();
-
-      process.env.LANGFUSE_PUBLIC_KEY = LANGFUSE_PUBLIC_KEY;
-      process.env.LANGFUSE_SECRET_KEY = LANGFUSE_SECRET_KEY;
-      process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
-    });
-
     it("create trace", async () => {
       const trace = langfuse.trace({
         name: "trace-name",
@@ -102,6 +86,29 @@ describe("Langfuse (fetch)", () => {
         input: { hello: "world" },
         output: "hi there",
       });
+    });
+
+    it("silently skips creating observations if Langfuse is disabled", async () => {
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+      const langfuse = new Langfuse({ enabled: false });
+      const fetchSpy = jest.spyOn(langfuse, "fetch");
+
+      expect(consoleSpy).toHaveBeenCalledWith("Langfuse is disabled. No observability data will be sent to Langfuse.");
+
+      const trace = langfuse.trace({
+        name: "trace-name",
+      });
+      trace.span({
+        name: "span-name",
+      });
+      trace.generation({
+        name: "generation-name",
+      });
+      trace.score({ name: "score-name", value: 1 });
+
+      await langfuse.flushAsync();
+
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("create trace with timestamp", async () => {

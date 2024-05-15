@@ -2,6 +2,10 @@ import { type LangfusePromptClient } from "./prompts/promptClients";
 import { type components, type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {
+  // Langfuse API publicKey obtained from the Langfuse UI project settings
+  publicKey?: string;
+  // Langfuse API secretKey obtained from the Langfuse UI project settings
+  secretKey?: string;
   // Langfuse API baseUrl (https://cloud.langfuse.com by default)
   baseUrl?: string;
   // The number of events to queue before sending to Langfuse (flushing)
@@ -18,6 +22,8 @@ export type LangfuseCoreOptions = {
   release?: string;
   // integration type of the SDK.
   sdkIntegration?: string; // DEFAULT, LANGCHAIN, or any other custom value
+  // Enabled switch for the SDK. If disabled, no observability data will be sent to Langfuse. Defaults to true.
+  enabled?: boolean;
 };
 
 export enum LangfusePersistedProperty {
