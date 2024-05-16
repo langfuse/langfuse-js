@@ -6198,14 +6198,7 @@ jest@^29.6.2:
     import-local "^3.0.2"
     jest-cli "^29.7.0"
 
-js-tiktoken@^1.0.11, js-tiktoken@^1.0.7:
-  version "1.0.11"
-  resolved "https://registry.yarnpkg.com/js-tiktoken/-/js-tiktoken-1.0.11.tgz#d7d707b849f703841112660d9d55169424a35344"
-  integrity sha512-PajXFLq2vx7/8jllQZ43vzNpAai/0MOVdJjW/UrNyJorNQRTjHrqdGJG/mjHVy7h9M6dW6CaG43eNLMYFkTh6w==
-  dependencies:
-    base64-js "^1.5.1"
-
-js-tiktoken@^1.0.12:
+js-tiktoken@^1.0.11, js-tiktoken@^1.0.12, js-tiktoken@^1.0.7:
   version "1.0.12"
   resolved "https://registry.yarnpkg.com/js-tiktoken/-/js-tiktoken-1.0.12.tgz#af0f5cf58e5e7318240d050c8413234019424211"
   integrity sha512-L7wURW1fH9Qaext0VzaUDpFGVQgjkdE3Dgsy9/+yXyGEpBKnylTd0mU0bfbNkKDlXRb6TEsZkwuflu1B8uQbJQ==
@@ -6383,9 +6376,9 @@ kleur@^3.0.3:
   integrity sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==
 
 langchain@^0, langchain@^0.1:
-  version "0.1.36"
-  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.1.36.tgz#2f201f681d83fb265716e28e7dfcfe61fbeef2c2"
-  integrity sha512-NTbnCL/jKWIeEI//Nm1oG8nhW3vkYWvEMr1MPotmTThTfeKfO87eV/OAzAyh6Ruy6GFs/qofRgQZGIe6XvXTNQ==
+  version "0.1.37"
+  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.1.37.tgz#15db8ca5c24afc39e61773cab69e216dfb38e1bb"
+  integrity sha512-rpaLEJtRrLYhAViEp7/aHfSkxbgSqHJ5n10tXv3o4kHP/wOin85RpTgewwvGjEaKc3797jOg+sLSk6a7e0UlMg==
   dependencies:
     "@anthropic-ai/sdk" "^0.9.1"
     "@langchain/community" "~0.0.47"
