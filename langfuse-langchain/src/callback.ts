@@ -557,7 +557,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     } else if (message instanceof AIMessage) {
       response = { content: message.content, role: "assistant" };
     } else if (message instanceof SystemMessage) {
-      response = { content: message.content };
+      response = { content: message.content, role: "system" };
     } else if (message instanceof FunctionMessage) {
       response = { content: message.content, additional_kwargs: message.additional_kwargs, role: message.name };
     } else if (message instanceof ToolMessage) {
