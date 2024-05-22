@@ -9,6 +9,7 @@ import { CallbackHandler, Langfuse, type LlmMessage } from "../langfuse-langchai
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 
 import { getHeaders, getTrace, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
+import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
@@ -83,8 +84,11 @@ describe("Langchain", () => {
         version: "1.0.0",
       });
       handler.debug(true);
+      const messges = [new SystemMessage("You are an excellent Comedian"), new HumanMessage("Tell me a joke")];
+
       const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
-      const res = await llm.invoke("Tell me a joke", { callbacks: [handler] });
+      const res = await llm.invoke(messges, { callbacks: [handler] });
+
       await handler.flushAsync();
 
       expect(res).toBeDefined();
@@ -114,6 +118,10 @@ describe("Langchain", () => {
       expect(generation?.[0].name).toBe("ChatOpenAI");
       expect(generation?.[0].usage?.input).toBeDefined();
       expect(generation?.[0].version).toBe("1.0.0");
+      expect(generation?.[0].input).toEqual([
+        { role: "system", content: "You are an excellent Comedian" },
+        { role: "user", content: "Tell me a joke" },
+      ]);
 
       const input = generation?.[0].input;
       expect(input).toBeDefined();
