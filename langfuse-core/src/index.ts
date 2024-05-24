@@ -40,7 +40,7 @@ import {
   type RetriableOptions,
   safeSetTimeout,
   getEnv,
-  currentISOTime,
+  currentHighResTime,
 } from "./utils";
 
 export * as utils from "./utils";
@@ -366,7 +366,7 @@ abstract class LangfuseCoreStateless {
       queue.push({
         id: generateUUID(),
         type,
-        timestamp: currentISOTime(),
+        timestamp: currentHighResTime(),
         body,
         metadata: undefined,
       });
