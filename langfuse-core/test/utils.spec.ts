@@ -1,11 +1,12 @@
+import { assert, removeTrailingSlash, generateUUID, configLangfuseSDK, convertHrTimeToTimestamp } from "../src/utils";
 import {
-  assert,
-  removeTrailingSlash,
-  generateUUID,
-  currentISOTime,
-  currentTimestamp,
-  configLangfuseSDK,
-} from "../src/utils";
+  getCurrentIsoTimestamp,
+  millisToHrTime,
+  hrTimeToTimeStamp,
+  timeInputToHrTime,
+  HrTime,
+  hrTime,
+} from "../src/time";
 
 describe("utils", () => {
   describe("assert", () => {
@@ -37,15 +38,23 @@ describe("utils", () => {
       }
     });
   });
-  describe("currentTimestamp", () => {
-    it("should get the timestamp", () => {
-      expect(currentTimestamp()).toEqual(Date.now());
+  describe("high resolution timestamps", () => {
+    it("creates hrtime", async () => {
+      // jest.spyOn(performance, "timeOrigin").mockImplementation(() => 11.5);
+      Object.defineProperty(performance, "timeOrigin", { value: 113.5, configurable: true });
+      jest.spyOn(performance, "now").mockImplementation(() => 11.3);
+      jest.setSystemTime(new Date(1716741267943));
+
+      const output = getCurrentIsoTimestamp();
+      console.log("hrTime", output);
+      expect(output).toEqual("2024-05-26T16:34:28.181300000Z");
     });
-  });
-  describe("currentISOTime", () => {
-    it("should get the iso time", () => {
-      jest.setSystemTime(new Date("2022-01-01"));
-      expect(currentISOTime()).toEqual("2022-01-01T00:00:00.000Z");
+
+    it("create iso timestamp", () => {
+      const time = [1573513121, 123456] as HrTime;
+
+      const output = hrTimeToTimeStamp(time);
+      expect(output).toEqual("2019-11-11T22:58:41.000123456Z");
     });
   });
 

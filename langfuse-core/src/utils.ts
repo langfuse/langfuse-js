@@ -77,6 +77,19 @@ export function currentHighResTime(): string {
   );
 }
 
+// converts hrtime to timestamp.
+// resulting in e.g. "2024-05-01T00:00:00.000000Z"
+// YYYY-MM-DDTHH:MM:SS.mmmmmm -> 6 decimals of microseconds
+// https://docs.python.org/2/library/datetime.html#datetime.datetime.isoformat
+export function convertHrTimeToTimestamp(date: Date, hrTime: number): string {
+  const tmp = `${"0".repeat(6)}${hrTime}Z`;
+  const nanoString = tmp.substr(tmp.length - 7);
+  const isoDate = new Date((date.getDate() / 1000) * 1000).toISOString(); // remove milliseconds
+
+  console.log(`Date: ${tmp} - ${nanoString} -  ${isoDate}`);
+  return isoDate.replace("000Z", nanoString); // add nanoseconds
+}
+
 function defaultIsoString(): string {
   console.error("defaultIsoString is deprecated. Use currentTimestamp instead.");
   return new Date().toISOString();
