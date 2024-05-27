@@ -358,7 +358,7 @@ export interface components {
      * ScoreSource
      * @enum {string}
      */
-    ScoreSource: "API" | "REVIEW" | "EVAL";
+    ScoreSource: "ANNOTATION" | "API" | "EVAL";
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
