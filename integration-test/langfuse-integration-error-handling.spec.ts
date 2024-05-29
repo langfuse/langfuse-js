@@ -2,7 +2,7 @@
 import Langfuse from "../langfuse";
 import { CallbackHandler } from "../langfuse-langchain";
 
-import { FakeListLLM } from "langchain/llms/fake";
+import { FakeListChatModel } from "@langchain/core/utils/testing";
 
 import { LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY } from "./integration-utils";
 
@@ -63,7 +63,7 @@ describe("No errors should be thrown by SDKs", () => {
   describe("langchain", () => {
     it("incorrect host", async () => {
       global.console.error = jest.fn();
-      const fakeListLLM = new FakeListLLM({
+      const fakeListLLM = new FakeListChatModel({
         responses: ["I'll callback later.", "You 'console' them!"],
         sleep: 100,
       });
@@ -89,7 +89,7 @@ describe("No errors should be thrown by SDKs", () => {
 
     it("incorrect keys", async () => {
       global.console.error = jest.fn();
-      const fakeListLLM = new FakeListLLM({
+      const fakeListLLM = new FakeListChatModel({
         responses: ["I'll callback later.", "You 'console' them!"],
       });
       const handler = new CallbackHandler({
@@ -156,7 +156,7 @@ describe("shutdown async behavior", () => {
   });
 
   it("langchain - no events after shutdownAync is awaited", async () => {
-    const fakeListLLM = new FakeListLLM({
+    const fakeListLLM = new FakeListChatModel({
       responses: ["I'll callback later.", "You 'console' them!"],
       sleep: 100,
     });

@@ -38,7 +38,7 @@
     "langfuse-core": "^3.11.1"
   },
   "peerDependencies": {
-    "langchain": ">=0.0.157 <0.2.0"
+    "langchain": ">=0.0.157 <0.3.0"
   },
   "devDependencies": {
     "cheerio": "^1.0.0-rc.12",
