@@ -94,11 +94,10 @@ export function hrTimeToTimeStamp(time: HrTime): string {
   return date.replace("000Z", nanoString);
 }
 
-export const getCurrentIsoTimestamp = (): string => {
+export const getCurrentIsoTimestamp = (performanceNow: number): string => {
   // https://dev.to/noamr/when-a-millisecond-is-not-a-millisecond-3h6
-  const now = Date.now();
-  const performanceNow = performance.now();
-  const time = addHrTimes(hrTime(performanceNow), hrTime(Date.now()));
+
+  const time = hrTime(performanceNow);
 
   return hrTimeToTimeStamp(time);
 };

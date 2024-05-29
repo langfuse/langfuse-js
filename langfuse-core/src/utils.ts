@@ -1,3 +1,4 @@
+import { getCurrentIsoTimestamp } from "./time";
 import { type LangfuseCoreOptions } from "./types";
 
 export function assert(truthyValue: any, message: string): void {
@@ -98,25 +99,7 @@ function defaultIsoString(): string {
 function constructHighResIsoString(highResTime: number): string {
   console.error("constructHighResIsoString is deprecated. Use currentHighResTime instead.");
 
-  const preciseDateTime = new Date(highResTime); // this removes the milliseconds from high res
-
-  // Extract the components of the Date object
-  const year = preciseDateTime.getUTCFullYear();
-  const month = String(preciseDateTime.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(preciseDateTime.getUTCDate()).padStart(2, "0");
-  const hours = String(preciseDateTime.getUTCHours()).padStart(2, "0");
-  const minutes = String(preciseDateTime.getUTCMinutes()).padStart(2, "0");
-  const seconds = String(preciseDateTime.getUTCSeconds()).padStart(2, "0");
-  // const milliseconds = String(preciseDateTime.getUTCMilliseconds()).padStart(3, "0");
-
-  // Extract the fractional part of the high resolution time
-  const fractionalSeconds = (highResTime % 1000).toFixed(6); // 6 decimal places
-  console.log(fractionalSeconds);
-
-  console.log(`Final timestamp: ${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${fractionalSeconds}Z`);
-
-  // Construct the ISO string with extended precision
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${fractionalSeconds}Z`;
+  return getCurrentIsoTimestamp(highResTime);
 }
 
 export function safeSetTimeout(fn: () => void, timeout: number): any {
