@@ -62,7 +62,7 @@
     "husky": "^9.0.11",
     "jest": "^29.6.2",
     "jest-environment-jsdom": "^29.6.2",
-    "langchain": "^0.1",
+    "langchain": "^0.2",
     "lerna": "^8.1.2",
     "openapi-typescript": "^6.7.5",
     "prettier": "^3.2.5",
@@ -75,9 +75,6 @@
     "tslib": "^2.6.1",
     "typescript": "^5.4.5",
     "yalc": "^1.0.0-pre.53"
-  },
-  "resolutions": {
-    "@langchain/core": "^0.1"
   },
   "husky": {
     "hooks": {
