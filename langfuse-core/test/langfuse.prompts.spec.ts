@@ -9,6 +9,7 @@ import {
   type LangfuseCoreTestClientMocks,
 } from "./test-utils/LangfuseCoreTestClient";
 import { parseBody } from "./test-utils/test-utils";
+import { tags } from "mustache";
 
 describe("Langfuse Core", () => {
   let langfuse: LangfuseCoreTestClient;
@@ -76,6 +77,7 @@ describe("Langfuse Core", () => {
         type: "text",
         config: { temperature: 0.5 },
         labels: ["production"],
+        tags: undefined,
       });
     });
 
@@ -128,6 +130,27 @@ describe("Langfuse Core", () => {
         type: "chat",
         config: { temperature: 0.5 },
         labels: ["production"],
+        tags: undefined,
+      });
+    });
+
+    it("should create prompt with tags", async () => {
+      await langfuse.createPrompt({
+        name: "test-prompt",
+        prompt: "This is a prompt with a {{variable}}",
+        tags: ["tag1", "tag2"],
+      });
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      const [url, options] = mocks.fetch.mock.calls[0];
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/v2\/prompts/);
+      expect(options.method).toBe("POST");
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        name: "test-prompt",
+        type: "text",
+        tags: ["tag1", "tag2"],
       });
     });
 
