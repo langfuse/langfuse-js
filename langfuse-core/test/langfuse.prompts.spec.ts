@@ -9,7 +9,6 @@ import {
   type LangfuseCoreTestClientMocks,
 } from "./test-utils/LangfuseCoreTestClient";
 import { parseBody } from "./test-utils/test-utils";
-import { tags } from "mustache";
 
 describe("Langfuse Core", () => {
   let langfuse: LangfuseCoreTestClient;
