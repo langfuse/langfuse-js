@@ -781,14 +781,20 @@ export interface components {
       name: string;
       prompt: components["schemas"]["ChatMessage"][];
       config?: unknown;
+      /** @description List of deployment labels of this prompt version. */
       labels?: string[] | null;
+      /** @description List of tags to apply to all versions of this prompt. */
+      tags?: string[] | null;
     };
     /** CreateTextPromptRequest */
     CreateTextPromptRequest: {
       name: string;
       prompt: string;
       config?: unknown;
+      /** @description List of deployment labels of this prompt version. */
       labels?: string[] | null;
+      /** @description List of tags to apply to all versions of this prompt. */
+      tags?: string[] | null;
     };
     /** Prompt */
     Prompt: OneOf<
@@ -814,7 +820,10 @@ export interface components {
       name: string;
       version: number;
       config: unknown;
+      /** @description List of deployment labels of this prompt version. */
       labels: string[];
+      /** @description List of tags. Used to filter via UI and API. The same across versions of a prompt. */
+      tags: string[];
     };
     /** ChatMessage */
     ChatMessage: {

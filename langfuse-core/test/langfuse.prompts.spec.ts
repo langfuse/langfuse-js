@@ -25,6 +25,7 @@ describe("Langfuse Core", () => {
         temperature: 0.5,
       },
       labels: ["production"] as string[],
+      tags: ["tag1", "tag2"] as string[],
     } as const,
   };
 
@@ -128,6 +129,26 @@ describe("Langfuse Core", () => {
         type: "chat",
         config: { temperature: 0.5 },
         labels: ["production"],
+      });
+    });
+
+    it("should create prompt with tags", async () => {
+      await langfuse.createPrompt({
+        name: "test-prompt",
+        prompt: "This is a prompt with a {{variable}}",
+        tags: ["tag1", "tag2"],
+      });
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      const [url, options] = mocks.fetch.mock.calls[0];
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/v2\/prompts/);
+      expect(options.method).toBe("POST");
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        name: "test-prompt",
+        type: "text",
+        tags: ["tag1", "tag2"],
       });
     });
 
@@ -325,6 +346,7 @@ describe("Langfuse Core", () => {
             temperature: 0,
           },
           labels: [],
+          tags: [],
         });
 
         // Convert to Langchain prompt
@@ -385,6 +407,7 @@ describe("Langfuse Core", () => {
             temperature: 0,
           },
           labels: [],
+          tags: [],
         });
 
         // Convert to Langchain prompt
@@ -409,6 +432,7 @@ describe("Langfuse Core", () => {
           temperature: 0,
         },
         labels: [],
+        tags: [],
       });
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
@@ -426,6 +450,7 @@ describe("Langfuse Core", () => {
           temperature: 0,
         },
         labels: [],
+        tags: [],
       });
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
