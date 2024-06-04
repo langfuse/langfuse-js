@@ -1262,6 +1262,12 @@ paths:
           schema:
             type: string
             nullable: true
+        - name: sessionId
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
         - name: fromTimestamp
           in: query
           description: Retrieve only traces newer than this datetime (ISO 8601).
@@ -2499,6 +2505,7 @@ components:
         totalCost:
           type: number
           format: double
+          description: Total model cost in USD
         usage:
           type: array
           items:
@@ -2521,14 +2528,28 @@ components:
           nullable: true
         inputUsage:
           type: integer
+          description: Total number of generation input units (e.g. tokens)
         outputUsage:
           type: integer
+          description: Total number of generation output units (e.g. tokens)
         totalUsage:
           type: integer
+          description: Total number of generation total units (e.g. tokens)
+        countTraces:
+          type: integer
+        countObservations:
+          type: integer
+        totalCost:
+          type: number
+          format: double
+          description: Total model cost in USD
       required:
         - inputUsage
         - outputUsage
         - totalUsage
+        - countTraces
+        - countObservations
+        - totalCost
     Observations:
       title: Observations
       type: object
