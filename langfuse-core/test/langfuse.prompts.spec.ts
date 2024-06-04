@@ -77,7 +77,6 @@ describe("Langfuse Core", () => {
         type: "text",
         config: { temperature: 0.5 },
         labels: ["production"],
-        tags: undefined,
       });
     });
 
@@ -130,7 +129,6 @@ describe("Langfuse Core", () => {
         type: "chat",
         config: { temperature: 0.5 },
         labels: ["production"],
-        tags: undefined,
       });
     });
 
