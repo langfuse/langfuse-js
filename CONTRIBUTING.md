@@ -41,7 +41,7 @@ yarn test:integration
 
 ## Update OpenAPI spec
 
-1. Generate Fern JavaScript SDK in [langfuse](https://github.com/langfuse/langfuse) and copy the files generated in `generated/open-api-server/openapi.yml` and `generated/open-api-client/openapi.yml` into the `langfuse-core/openapi-spec` folder in this repo.
+1. Generate Fern JavaScript SDK in [langfuse](https://github.com/langfuse/langfuse) and copy the files generated in `web/public/generated/api/openapi.yml` and `web/public/generated/api-client/openapi.yml` into the `langfuse-core/openapi-spec` folder in this repo.
 2. Execute the following command: `yarn run generateAPI`
 
 ## Publishing a new version
