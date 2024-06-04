@@ -712,7 +712,10 @@ export interface components {
       date: string;
       countTraces: number;
       countObservations: number;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description Total model cost in USD
+       */
       totalCost: number;
       usage: components["schemas"]["UsageByModel"][];
     };
@@ -722,9 +725,19 @@ export interface components {
      */
     UsageByModel: {
       model?: string | null;
+      /** @description Total number of generation input units (e.g. tokens) */
       inputUsage: number;
+      /** @description Total number of generation output units (e.g. tokens) */
       outputUsage: number;
+      /** @description Total number of generation total units (e.g. tokens) */
       totalUsage: number;
+      countTraces: number;
+      countObservations: number;
+      /**
+       * Format: double
+       * @description Total model cost in USD
+       */
+      totalCost: number;
     };
     /** Observations */
     Observations: {
@@ -1829,6 +1842,7 @@ export interface operations {
         limit?: number | null;
         userId?: string | null;
         name?: string | null;
+        sessionId?: string | null;
         /** @description Retrieve only traces newer than this datetime (ISO 8601). */
         fromTimestamp?: string | null;
         /** @description Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
