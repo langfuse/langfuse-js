@@ -25,6 +25,7 @@ describe("Langfuse Core", () => {
         temperature: 0.5,
       },
       labels: ["production"] as string[],
+      tags: ["tag1", "tag2"] as string[],
     } as const,
   };
 
@@ -347,6 +348,7 @@ describe("Langfuse Core", () => {
             temperature: 0,
           },
           labels: [],
+          tags: [],
         });
 
         // Convert to Langchain prompt
@@ -407,6 +409,7 @@ describe("Langfuse Core", () => {
             temperature: 0,
           },
           labels: [],
+          tags: [],
         });
 
         // Convert to Langchain prompt
@@ -431,6 +434,7 @@ describe("Langfuse Core", () => {
           temperature: 0,
         },
         labels: [],
+        tags: [],
       });
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
@@ -448,6 +452,7 @@ describe("Langfuse Core", () => {
           temperature: 0,
         },
         labels: [],
+        tags: [],
       });
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
