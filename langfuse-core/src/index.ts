@@ -702,7 +702,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   }
 
   /**
-   * Creates a new span wrapped in a new trace.
+   * Creates a new span. This span will be wrapped in a new trace if no traceId is provided.
    *
    * @param body The body of the span to be created.
    * @returns {LangfuseSpanClient} The span client used to manipulate the span.
