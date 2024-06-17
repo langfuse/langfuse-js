@@ -984,10 +984,36 @@ export abstract class LangfuseObjectClient {
   }
 
   /**
-   * Updates the object with the given body.
+   * Creates an event.
    *
-   * @param {Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">} body - The body of the object to be updated.
-   * @returns {LangfuseEventClient} The object client.
+   * An event represents a discrete event in a trace. Usually, you want to add a event nested within a trace by passing a traceId.
+   * Optionally you can nest it within another observation by providing a parentObservationId.
+   *
+   * @param {Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">} body - The body of the event to be created.
+   * @returns {LangfuseEventClient} The created event.
+   *
+   * @example
+   * ```typescript
+   * const event = trace.event({
+   *  name: "get-user-profile",
+   *  metadata: {
+   *    attempt: 2,
+   *    httpRoute: "/api/retrieve-person",
+   *    input: {
+   *      userId: "user__935d7d1d-8625-4ef4-8651-544613e7bd22",
+   *    },
+   *  },
+   *  input: {
+   *    userId: "user__935d7d1d-8625-4ef4-8651-544613e7bd22",
+   *  },
+   *  output: {
+   *    firstName: "Maxine",
+   *    lastName: "Simons",
+   *    email: "maxine.simons@langfuse.com",
+   *  },
+   * });
+   * ```
+   *
    */
   event(body: Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">): LangfuseEventClient {
     return this.client.event({
@@ -998,10 +1024,15 @@ export abstract class LangfuseObjectClient {
   }
 
   /**
-   * Updates the object with the given body.
+   * Creates a span.
    *
-   * @param {Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">} body - The body of the object to be updated.
-   * @returns {LangfuseSpanClient} The object client.
+   * A span represents durations of units of work in a trace. Usually, you want to add a span nested within a trace by passing a traceId.
+   * Optionally you can nest it within another observation by providing a parentObservationId.
+   *
+   * If no traceId is provided, a new trace is created just for this span.
+   *
+   * @param {Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">} body - The body of the span to be created.
+   * @returns {LangfuseSpanClient} The created span.
    */
   span(body: Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">): LangfuseSpanClient {
     return this.client.span({
@@ -1012,10 +1043,15 @@ export abstract class LangfuseObjectClient {
   }
 
   /**
-   * Updates the object with the given body.
+   * Creates a generation.
    *
-   * @param {Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> & PromptInput} body - The body of the object to be updated.
-   * @returns {LangfuseGenerationClient} The object client.
+   * A generation is a span that is used to log generations of AI models. They contain additional metadata about the model, the prompt/completion, the cost of executing the model and are specifically rendered in the langfuse UI.
+   * Usually, you want to add a generation nested within a trace. Optionally you can nest it within another observation by providing a parentObservationId.
+   *
+   * If no traceId is provided, a new trace is created just for this generation.
+   *
+   * @param {Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be created.
+   * @returns {LangfuseGenerationClient} The created generation
    */
   generation(
     body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> &
@@ -1029,10 +1065,12 @@ export abstract class LangfuseObjectClient {
   }
 
   /**
-   * Updates the object with the given body.
+   * Create a score attached to a trace (and optionally an observation).
    *
-   * @param {Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">} body - The body of the object to be updated.
-   * @returns {LangfuseCore} The LangfuseCore instance.
+   * Scores store evaluation metrics in Langfuse. They are always related to a trace and can be attached to specific observations within a trace.
+   *
+   * @param {Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">} body - The body of the score to be created.
+   * @returns {LangfuseObjectClient} Either the associated observation (if parentObservationId is provided) or the trace (if parentObservationId is not provided).
    */
   score(body: Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">): this {
     this.client.score({
