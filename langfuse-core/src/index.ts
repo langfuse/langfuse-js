@@ -405,7 +405,14 @@ abstract class LangfuseCoreStateless {
     });
   }
 
-  // Flushes all events that are not yet sent to the server
+  /**
+   * Flush the internal event queue to the Langfuse API. It blocks until the queue is empty. It should be called when the application shuts down.
+   *
+   * @param {Function} [callback] - A callback that is called when the flushing is completed.
+   * @returns {void}
+   *
+   */
+
   flush(callback?: (err?: any, data?: any) => void): void {
     if (this._flushTimer) {
       clearTimeout(this._flushTimer);
@@ -588,6 +595,11 @@ abstract class LangfuseCoreStateless {
     );
   }
 
+  /**
+   * Initiate a graceful shutdown of the Langfuse SDK, ensuring all events are sent to Langfuse API and all consumer Threads are terminated.
+   *
+   * @returns {Promise<void>} A promise that resolves when the shutdown is completed.
+   */
   async shutdownAsync(): Promise<void> {
     clearTimeout(this._flushTimer);
     try {
@@ -606,6 +618,11 @@ abstract class LangfuseCoreStateless {
     }
   }
 
+  /**
+   * Initiate a graceful shutdown of the Langfuse SDK, ensuring all events are sent to Langfuse API and all consumer Threads are terminated.
+   *
+   * @deprecated Please use shutdownAsync() instead.
+   */
   shutdown(): void {
     console.warn(
       "shutdown() is deprecated. It does not wait for all events to be processed. Please use shutdownAsync() instead."
@@ -755,7 +772,26 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * Gets a dataset.
    *
    * @param {string} name - The name of the dataset.
-   * @returns {Promise<{id: string, name: string, description?: string, metadata?: any, projectId: string, items: Array<{id: string, input?: any, expectedOutput?: any, metadata?: any, sourceObservationId?: string | null, link: (obj: LangfuseObjectClient, runName: string, runArgs?: {description?: string, metadata?: any}) => Promise<{id: string}>}>}>} A promise that resolves to the response of the get operation.
+   * @returns {Promise<{
+   *  id: string,
+   *  name: string,
+   *  description?: string,
+   *  metadata?: any,
+   *  projectId: string,
+   *  items: Array<{
+   *    id: string,
+   *    input?: any,
+   *    expectedOutput?: any,
+   *    metadata?: any,
+   *    sourceObservationId?: string | null,
+   *    link: (
+   *      obj: LangfuseObjectClient,
+   *      runName: string,
+   *      runArgs?: {description?: string, metadata?: any}
+   *    ) => Promise<{id: string}>,
+   *  }>
+   * }>
+   * } A promise that resolves to the response of the get operation.
    */
   async getDataset(name: string): Promise<{
     id: string;
