@@ -272,12 +272,6 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
-  /**
-   * Creates a dataset. Upserts the dataset if it already exists.
-   *
-   * @param dataset Can be either a string (name) or an object with name, description and metadata
-   * @returns A promise that resolves to the response of the create operation.
-   */
   async createDataset(
     dataset:
       | string // name
@@ -681,6 +675,13 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     this._promptCache = new LangfusePromptCache();
   }
 
+  /**
+   * Creates a new trace. This trace will be used to group all subsequent events, spans, and generations.
+   * If no traceId is provided, a new traceId will be generated.
+   *
+   * @param {CreateLangfuseTraceBody} [body] The body of the trace to be created.
+   * @returns {LangfuseTraceClient} The trace client used to manipulate the trace.
+   */
   trace(body?: CreateLangfuseTraceBody): LangfuseTraceClient {
     const id = this.traceStateless(body ?? {});
     const t = new LangfuseTraceClient(this, id);
@@ -704,7 +705,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   /**
    * Creates a new span. This span will be wrapped in a new trace if no traceId is provided.
    *
-   * @param body The body of the span to be created.
+   * @param {CreateLangfuseSpanBody} body The body of the span to be created.
    * @returns {LangfuseSpanClient} The span client used to manipulate the span.
    */
   span(body: CreateLangfuseSpanBody): LangfuseSpanClient {
@@ -713,6 +714,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return new LangfuseSpanClient(this, id, traceId);
   }
 
+  /**
+   * Creates a new generation. This generation will be wrapped in a new trace if no traceId is provided.
+   *
+   * @param {Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be created. The promptName and promptVersion are required.
+   * @returns {LangfuseGenerationClient} The generation client used to manipulate the generation.
+   */
   generation(
     body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
   ): LangfuseGenerationClient {
@@ -721,17 +728,35 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return new LangfuseGenerationClient(this, id, traceId);
   }
 
+  /**
+   * Creates a new event. This event will be wrapped in a new trace if no traceId is provided.
+   *
+   * @param {CreateLangfuseEventBody} body - The body of the event to be created.
+   * @returns {LangfuseEventClient} The event client used to manipulate the event.
+   */
   event(body: CreateLangfuseEventBody): LangfuseEventClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
     const id = this.eventStateless({ ...body, traceId });
     return new LangfuseEventClient(this, id, traceId);
   }
 
+  /**
+   * Creates a new score. This score will be wrapped in a new trace if no traceId is provided.
+   *
+   * @param {CreateLangfuseScoreBody} body - The body of the score to be created.
+   * @returns {LangfuseCore} The LangfuseCore instance.
+   */
   score(body: CreateLangfuseScoreBody): this {
     this.scoreStateless(body);
     return this;
   }
 
+  /**
+   * Gets a dataset.
+   *
+   * @param {string} name - The name of the dataset.
+   * @returns {Promise<{id: string, name: string, description?: string, metadata?: any, projectId: string, items: Array<{id: string, input?: any, expectedOutput?: any, metadata?: any, sourceObservationId?: string | null, link: (obj: LangfuseObjectClient, runName: string, runArgs?: {description?: string, metadata?: any}) => Promise<{id: string}>}>}>} A promise that resolves to the response of the get operation.
+   */
   async getDataset(name: string): Promise<{
     id: string;
     name: string;
@@ -787,6 +812,17 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return returnDataset;
   }
 
+  /**
+   * Creates a prompt. Upserts the prompt if it already exists.
+   * The type of the prompt is determined by the body.
+   * If the body has a type of "chat", a ChatPromptClient is returned.
+   * If the body has a type of "text", a TextPromptClient is returned.
+   * If the body has no type, a LangfusePromptClient is returned.
+   * The prompt is also cached for future use.
+   *
+   * @param {CreateChatPromptBody | CreateTextPromptBody | CreatePromptBody} body - The body of the prompt to be created.
+   * @returns {Promise<ChatPromptClient | TextPromptClient | LangfusePromptClient>} A promise that resolves to the response of the create operation.
+   */
   async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
   async createPrompt(body: CreateTextPromptBody): Promise<TextPromptClient>;
   async createPrompt(body: CreatePromptBody): Promise<LangfusePromptClient> {
@@ -805,6 +841,17 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return new TextPromptClient(promptResponse);
   }
 
+  /**
+   * Gets a prompt. The prompt is also cached for future use.
+   * If the prompt is not found, a 404 error is returned.
+   * If the prompt is found, a 200 success is returned.
+   * If the prompt is found but has no data, a 204 success is returned.
+   *
+   * @param {string} name - The name of the prompt.
+   * @param {number} [version] - The version of the prompt.
+   * @param {{label?: string, cacheTtlSeconds?: number, type?: "chat" | "text"}} [options] - The options for the prompt.
+   * @returns {Promise<TextPromptClient | ChatPromptClient | LangfusePromptClient>}  A promise that resolves to the response of the get operation.
+   */
   async getPrompt(
     name: string,
     version?: number,
@@ -936,6 +983,12 @@ export abstract class LangfuseObjectClient {
     this.observationId = observationId;
   }
 
+  /**
+   * Updates the object with the given body.
+   *
+   * @param {Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">} body - The body of the object to be updated.
+   * @returns {LangfuseEventClient} The object client.
+   */
   event(body: Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">): LangfuseEventClient {
     return this.client.event({
       ...body,
@@ -944,6 +997,12 @@ export abstract class LangfuseObjectClient {
     });
   }
 
+  /**
+   * Updates the object with the given body.
+   *
+   * @param {Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">} body - The body of the object to be updated.
+   * @returns {LangfuseSpanClient} The object client.
+   */
   span(body: Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">): LangfuseSpanClient {
     return this.client.span({
       ...body,
@@ -952,6 +1011,12 @@ export abstract class LangfuseObjectClient {
     });
   }
 
+  /**
+   * Updates the object with the given body.
+   *
+   * @param {Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> & PromptInput} body - The body of the object to be updated.
+   * @returns {LangfuseGenerationClient} The object client.
+   */
   generation(
     body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> &
       PromptInput
@@ -963,6 +1028,12 @@ export abstract class LangfuseObjectClient {
     });
   }
 
+  /**
+   * Updates the object with the given body.
+   *
+   * @param {Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">} body - The body of the object to be updated.
+   * @returns {LangfuseCore} The LangfuseCore instance.
+   */
   score(body: Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">): this {
     this.client.score({
       ...body,
@@ -972,6 +1043,11 @@ export abstract class LangfuseObjectClient {
     return this;
   }
 
+  /**
+   * Gets the URL of the object.
+   *
+   * @returns {string} The URL of the object.
+   */
   getTraceUrl(): string {
     return `${this.client.baseUrl}/trace/${this.traceId}`;
   }
@@ -982,6 +1058,12 @@ export class LangfuseTraceClient extends LangfuseObjectClient {
     super({ client, id: traceId, traceId, observationId: null });
   }
 
+  /**
+   * Updates the trace with the given body.
+   *
+   * @param {Omit<CreateLangfuseTraceBody, "id">} body - The body of the trace to be updated.
+   * @returns {LangfuseTraceClient} The trace client.
+   */
   update(body: Omit<CreateLangfuseTraceBody, "id">): this {
     this.client.trace({
       ...body,
@@ -1002,6 +1084,12 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
+  /**
+   * Updates the span with the given body.
+   *
+   * @param {Omit<UpdateLangfuseSpanBody, "id" | "traceId">} body - The body of the span to be updated.
+   * @returns {LangfuseSpanClient} The span client.
+   */
   update(body: Omit<UpdateLangfuseSpanBody, "id" | "traceId">): this {
     this.client._updateSpan({
       ...body,
@@ -1011,6 +1099,12 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
     return this;
   }
 
+  /**
+   * Ends the span with the given body.
+   *
+   * @param {Omit<UpdateLangfuseSpanBody, "id" | "endTime" | "traceId">} body - The body of the span to be ended.
+   * @returns {LangfuseSpanClient} The span client.
+   */
   end(body?: Omit<UpdateLangfuseSpanBody, "id" | "endTime" | "traceId">): this {
     this.client._updateSpan({
       ...body,
@@ -1027,6 +1121,12 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     super(client, id, traceId);
   }
 
+  /**
+   * Updates the generation with the given body.
+   *
+   * @param {Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be updated.
+   * @returns {LangfuseGenerationClient} The generation client.
+   */
   update(
     body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "promptName" | "promptVersion"> & PromptInput
   ): this {
@@ -1038,6 +1138,12 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
     return this;
   }
 
+  /**
+   * Ends the generation with the given body.
+   *
+   * @param {Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime" | "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be ended.
+   * @returns {LangfuseGenerationClient} The generation client.
+   */
   end(
     body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime" | "promptName" | "promptVersion"> &
       PromptInput
