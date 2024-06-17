@@ -960,12 +960,26 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   }
 }
 
+/**
+ * A client for interacting with Langfuse objects.
+ *
+ * @class
+ */
 export abstract class LangfuseObjectClient {
   public readonly client: LangfuseCore;
   public readonly id: string; // id of item itself
   public readonly traceId: string; // id of trace, if traceClient this is the same as id
   public readonly observationId: string | null; // id of observation, if observationClient this is the same as id, if traceClient this is null
 
+  /**
+   * Creates an instance of LangfuseObjectClient.
+   *
+   * @param {Object} params - The parameters for creating a LangfuseObjectClient.
+   * @param {LangfuseCore} params.client - The LangfuseCore instance.
+   * @param {string} params.id - The ID of the item.
+   * @param {string} params.traceId - The ID of the trace.
+   * @param {string | null} params.observationId - The ID of the observation.
+   */
   constructor({
     client,
     id,
@@ -994,6 +1008,7 @@ export abstract class LangfuseObjectClient {
    *
    * @example
    * ```typescript
+   * // Example event
    * const event = trace.event({
    *  name: "get-user-profile",
    *  metadata: {
@@ -1012,6 +1027,18 @@ export abstract class LangfuseObjectClient {
    *    email: "maxine.simons@langfuse.com",
    *  },
    * });
+   * // Properties
+   * event.id; // string
+   * event.traceId; // string
+   * event.parentObservationId; // string | undefined
+   *
+   * // Create children
+   * event.event({});
+   * event.span({});
+   * event.generation({});
+   *
+   * // Add scores
+   * event.score({});
    * ```
    *
    */
@@ -1091,7 +1118,19 @@ export abstract class LangfuseObjectClient {
   }
 }
 
+/**
+ * A client for interacting with Langfuse traces.
+ *
+ * @class
+ * @extends LangfuseObjectClient
+ */
 export class LangfuseTraceClient extends LangfuseObjectClient {
+  /**
+   * Creates an instance of LangfuseTraceClient.
+   *
+   * @param {LangfuseCore} client - The LangfuseCore instance.
+   * @param {string} traceId - The ID of the trace.
+   */
   constructor(client: LangfuseCore, traceId: string) {
     super({ client, id: traceId, traceId, observationId: null });
   }
@@ -1111,13 +1150,39 @@ export class LangfuseTraceClient extends LangfuseObjectClient {
   }
 }
 
+/**
+ * A client for interacting with Langfuse observations.
+ *
+ * @class
+ * @extends LangfuseObjectClient
+ */
 abstract class LangfuseObservationClient extends LangfuseObjectClient {
+  /**
+   * Creates an instance of LangfuseObservationClient.
+   *
+   * @param {LangfuseCore} client - The LangfuseCore instance.
+   * @param {string} id - The ID of the observation.
+   * @param {string} traceId - The ID of the trace.
+   */
   constructor(client: LangfuseCore, id: string, traceId: string) {
     super({ client, id, traceId, observationId: id });
   }
 }
 
+/**
+ * A client for interacting with Langfuse spans.
+ *
+ * @class
+ * @extends LangfuseObservationClient
+ */
 export class LangfuseSpanClient extends LangfuseObservationClient {
+  /**
+   * Creates an instance of LangfuseSpanClient.
+   *
+   * @param {LangfuseCore} client - The LangfuseCore instance.
+   * @param {string} id - The ID of the span.
+   * @param {string} traceId - The ID of the trace.
+   */
   constructor(client: LangfuseCore, id: string, traceId: string) {
     super(client, id, traceId);
   }
@@ -1154,7 +1219,20 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
   }
 }
 
+/**
+ * A client for interacting with Langfuse generations.
+ *
+ * @class
+ * @extends LangfuseObservationClient
+ */
 export class LangfuseGenerationClient extends LangfuseObservationClient {
+  /**
+   * Creates an instance of LangfuseGenerationClient.
+   *
+   * @param {LangfuseCore} client - The LangfuseCore instance.
+   * @param {string} id - The ID of the generation.
+   * @param {string} traceId - The ID of the trace.
+   */
   constructor(client: LangfuseCore, id: string, traceId: string) {
     super(client, id, traceId);
   }
@@ -1196,7 +1274,20 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
   }
 }
 
+/**
+ * A client for interacting with Langfuse events.
+ *
+ * @class
+ * @extends LangfuseObservationClient
+ */
 export class LangfuseEventClient extends LangfuseObservationClient {
+  /**
+   * Creates an instance of LangfuseEventClient.
+   *
+   * @param {LangfuseCore} client - The LangfuseCore instance.
+   * @param {string} id - The ID of the event.
+   * @param {string} traceId - The ID of the trace.
+   */
   constructor(client: LangfuseCore, id: string, traceId: string) {
     super(client, id, traceId);
   }
