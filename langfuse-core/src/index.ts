@@ -701,6 +701,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return t;
   }
 
+  /**
+   * Creates a new span wrapped in a new trace.
+   *
+   * @param body The body of the span to be created.
+   * @returns {LangfuseSpanClient} The span client used to manipulate the span.
+   */
   span(body: CreateLangfuseSpanBody): LangfuseSpanClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
     const id = this.spanStateless({ ...body, traceId });
@@ -834,7 +840,11 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         cacheTtlSeconds: options?.cacheTtlSeconds,
       }).catch(() => {
         console.warn(
-          `Returning expired prompt cache for '${this._getPromptCacheKey({ name, version, label: options?.label })}' due to fetch error`
+          `Returning expired prompt cache for '${this._getPromptCacheKey({
+            name,
+            version,
+            label: options?.label,
+          })}' due to fetch error`
         );
 
         return cachedPrompt.value;
