@@ -70,7 +70,7 @@ export type LangfuseMetadataProperties = {
 
 /**
  * CreateLangfuseTraceBody
- * @property userId - The id of the trace can be set, defaults to a random id. Set it to link traces to external systems or when grouping multiple runs into a single trace (e.g. messages in a chat thread).
+ * @property id - The id of the trace can be set, defaults to a random id. Set it to link traces to external systems or when grouping multiple runs into a single trace (e.g. messages in a chat thread).
  * @property name - Identifier of the trace. Useful for sorting/filtering in the UI.
  * @property input - The input of the trace. Can be any JSON object.
  * @property output - The output of the trace. Can be any JSON object.
@@ -85,15 +85,70 @@ export type LangfuseMetadataProperties = {
 
 export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"]>;
 
+/**
+ * CreateLangfuseEventBody
+ * @property id - The id of the event can be set, defaults to a random id.
+ * @property startTime - The time at which the event started, defaults to the current time.
+ * @property name - Identifier of the event. Useful for sorting/filtering in the UI.
+ * @property metadata - Additional metadata of the event. Can be any JSON object. Metadata is merged when being updated via the API.
+ * @property level - The level of the event. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the event. Additional field for context of the event. E.g. the error message of an error event.
+ * @property input - The input to the event. Can be any JSON object.
+ * @property output - The output to the event. Can be any JSON object.
+ * @property version - The version of the event type. Used to understand how changes to the event type affect metrics. Useful in debugging.
+ * @interface
+ */
 export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEventBody"]>;
 
+/**
+ * CreateLangfuseSpanBody
+ * @property id - The id of the span can be set, otherwise a random id is generated.
+ * @property startTime - The time at which the span started, defaults to the current time.
+ * @property endTime - The time at which the span ended.
+ * @property name - Identifier of the span. Useful for sorting/filtering in the UI.
+ * @property metadata - Additional metadata of the span. Can be any JSON object. Metadata is merged when being updated via the API.
+ * @property level - The level of the span. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the span. Additional field for context of the event. E.g. the error message of an error event.
+ * @property input - The input to the span. Can be any JSON object.
+ * @property output - The output to the span. Can be any JSON object.
+ * @property version - The version of the span type. Used to understand how changes to the span type affect metrics. Useful in debugging.
+ * @interface
+ */
 export type CreateLangfuseSpanBody = FixTypes<components["schemas"]["CreateSpanBody"]>;
 export type UpdateLangfuseSpanBody = FixTypes<components["schemas"]["UpdateSpanBody"]>;
 
 export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
+
+/**
+ * CreateLangfuseGenerationBody
+ * @property id - The id of the generation can be set, defaults to random id.
+ * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
+ * @property startTime - The time at which the generation started, defaults to the current time.
+ * @property completionStartTime - The time at which the completion started (streaming). Set it to get latency analytics broken down into time until completion started and completion duration.
+ * @property endTime - The time at which the generation ended.
+ * @property model - The name of the model used for the generation.
+ * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
+ * @property input - 	The input to the generation - the prompt. Can be any JSON object or string.
+ * @property output - The output to the generation - the completion. Can be any JSON object or string.
+ * @property usage - The usage object supports the OpenAi structure with (promptTokens, completionTokens, totalTokens) and a more generic version (input, output, total, unit, inputCost, outputCost, totalCost) where unit can be of value "TOKENS", "CHARACTERS", "MILLISECONDS", "SECONDS", "IMAGES". Refer to the docs on how to automatically calculate tokens and costs by Langfuse.
+ * @property metadata - Additional metadata of the generation. Can be any JSON object. Metadata is merged when being updated via the API.
+ * @property level - The level of the generation. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the generation. Additional field for context of the event. E.g. the error message of an error event.
+ * @property version - The version of the generation type. Used to understand how changes to the generation type affect metrics. Reflects e.g. the version of a prompt.
+ * @interface
+ */
 export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
 export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
 
+/**
+ * CreateLangfuseScoreBody
+ * @property traceId - The id of the trace to which the score should be attached. Automatically set if you use {trace,generation,span,event}.score({})
+ * @property observationId - The id of the observation to which the score should be attached. Automatically set if you use {generation,span,event}.score({})
+ * @property name - Identifier of the score.
+ * @property value - The value of the score. Can be any number, often standardized to 0..1
+ * @property comment - Additional context/explanation of the score.
+ * @interface
+ */
 export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
 
 // SYNC
