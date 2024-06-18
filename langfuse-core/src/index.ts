@@ -769,20 +769,36 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
  * The core class for interacting with the Langfuse SDK.
  * This class provides methods to create traces, spans, events, generations, and scores.
  * It also handles the configuration and initialization of the SDK.
+ * You can initialize the SDK via the constructor or by setting the environment variables.
  *
  * @example
  * ```typescript
+ * // Initialize the SDK via the constructor
  * import { Langfuse } from "langfuse";
  *
- * // without additional options
- * const langfuse = new Langfuse();
- *
- * // with additional options
  * const langfuse = new Langfuse({
+ *  secretKey: "sk-lf-...",
+ *  publicKey: "pk-lf-...",
+ *  baseUrl: "https://cloud.langfuse.com", // 🇪🇺 EU region
  *  release: "v1.0.0",
  *  requestTimeout: 10000,
  * });
  * ```
+ *
+ * @example
+ * ```.env
+ * LANGFUSE_SECRET_KEY="sk-lf-...";
+ * LANGFUSE_PUBLIC_KEY="pk-lf-...";
+ * LANGFUSE_BASEURL="https://cloud.langfuse.com"; # 🇪🇺 EU region
+ * # LANGFUSE_BASEURL="https://us.cloud.langfuse.com"; # 🇺🇸 US region
+ * ```
+ * @example
+ * ```typescript
+ * // Initialize the SDK via the environment variables
+ * import { Langfuse } from "langfuse";
+ * const langfuse = new Langfuse();
+ * ```
+ *
  * @class
  * @extends LangfuseCoreStateless
  */
