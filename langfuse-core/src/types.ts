@@ -337,8 +337,6 @@ export type PromptInput = {
  * @property version - The version of the generation type. Used to understand how changes to the generation type affect metrics. Reflects e.g. the version of a prompt.
  * @property traceId - The id of the trace to which the generation should be attached.
  * @property parentObservationId - The id of the observation to which the generation should be attached.
- * @property promptName - The name of the prompt to be used for the generation.
- * @property promptVersion - The version of the prompt to be used for the generation.
  * @property prompt - The prompt client to be used for the generation.
  * @interface
  */
