@@ -36,12 +36,7 @@ type RootParams = {
   root: LangfuseTraceClient | LangfuseSpanClient;
 };
 
-type KeyParams = {
-  publicKey?: string;
-  secretKey?: string;
-} & LangfuseOptions;
-
-type ConstructorParams = (RootParams | KeyParams) & {
+type ConstructorParams = (RootParams | LangfuseOptions) & {
   userId?: string; // added to all traces
   version?: string; // added to all traces and observations
   sessionId?: string; // added to all traces
