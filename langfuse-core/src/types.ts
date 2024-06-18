@@ -193,6 +193,20 @@ export type CreateLangfuseDatasetRunItemResponse = FixTypes<
 >;
 export type CreateLangfuseDatasetBody =
   paths["/api/public/datasets"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
+ * CreateLangfuseDatasetResponse
+ * @property id - Id of the dataset.
+ * @property name - Name of the dataset.
+ * @property metadata - Additional metadata.
+ * @property items - List of dataset items.
+ * @property description - Description of the dataset.
+ * @property createdAt - Creation time of the dataset.
+ * @property runs - List of dataset runs.
+ * @property projectId - Id of the project.
+ * @property updatedAt - Last update time of the dataset.
+ * @interface
+ */
 export type CreateLangfuseDatasetResponse = FixTypes<
   paths["/api/public/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
