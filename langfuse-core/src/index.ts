@@ -299,6 +299,25 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
+  /**
+   * Creates a dataset.
+   * @param {string | {name: string, description?: string, metadata?: any}} dataset
+   * @returns {Promise<CreateLangfuseDatasetResponse>}
+   * @example
+   * ```typescript
+   * langfuse.createDataset({
+   *  name: "<dataset_name>",
+   *  // optional description
+   *  description: "My first dataset",
+   *  // optional metadata
+   *  metadata: {
+   *    author: "Alice",
+   *    date: "2022-01-01",
+   *    type: "benchmark",
+   *  },
+   * });
+   * ```
+   */
   async createDataset(
     dataset:
       | string // name
