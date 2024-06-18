@@ -185,6 +185,20 @@ export type CreateLangfuseDatasetBody =
 export type CreateLangfuseDatasetResponse = FixTypes<
   paths["/api/public/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
+
+/**
+ * CreateLangfuseDatasetItemBody
+ * @property datasetName - Name of the dataset in which the dataset item should be created.
+ * @property id - Id of the dataset item. Defaults to None.
+ * @property input - Input data. Defaults to None. Can contain any dict, list or scalar.
+ * @property expected_output - Expected output data. Defaults to None. Can contain any dict, list or scalar.
+ * @property metadata - Additional metadata. Defaults to None. Can contain any dict, list or scalar.
+ * @property sourceTraceId - Id of the source trace. Defaults to None.
+ * @property sourceObservationId - Id of the source observation. Defaults to None.
+ * @property status - Status of the dataset item. Defaults to ACTIVE for newly created items.
+ *
+ * @interface
+ */
 export type CreateLangfuseDatasetItemBody = FixTypes<
   paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"]
 >;

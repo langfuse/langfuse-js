@@ -335,9 +335,27 @@ abstract class LangfuseCoreStateless {
   }
 
   /**
-   * Creates a dataset item. Upserts the item if it already exists.
-   * @param body The body of the dataset item to be created.
+   * Creates a dataset item. If the item already exists, it updates the item.
+   * @param {CreateLangfuseDatasetItemBody} body The body of the dataset item to be created.
    * @returns A promise that resolves to the response of the create operation.
+   * @example
+   * ```typescript
+   * langfuse.createDatasetItem({
+   *  datasetName: "<dataset_name>",
+   *  // any JS object or value
+   *  input: {
+   *    text: "hello world",
+   *  },
+   *  // any JS object or value, optional
+   *  expectedOutput: {
+   *    text: "hello world",
+   *  },
+   *  // metadata, optional
+   *  metadata: {
+   *    model: "llama3",
+   *  },
+   * });
+   * ```
    */
   async createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
     return this.fetch(
@@ -728,8 +746,6 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
  * This class provides methods to create traces, spans, events, generations, and scores.
  * It also handles the configuration and initialization of the SDK.
  *
- * @param {LangfuseCoreOptions} params - The configuration options for the Langfuse SDK.
- * @returns {LangfuseCore} The LangfuseCore instance.
  * @example
  * ```typescript
  * import { Langfuse } from "langfuse";
