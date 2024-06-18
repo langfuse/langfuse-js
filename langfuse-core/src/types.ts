@@ -70,7 +70,16 @@ export type LangfuseMetadataProperties = {
 
 /**
  * CreateLangfuseTraceBody
- * @property userId - The user ID
+ * @property userId - The id of the trace can be set, defaults to a random id. Set it to link traces to external systems or when grouping multiple runs into a single trace (e.g. messages in a chat thread).
+ * @property name - Identifier of the trace. Useful for sorting/filtering in the UI.
+ * @property input - The input of the trace. Can be any JSON object.
+ * @property output - The output of the trace. Can be any JSON object.
+ * @property metadata - Additional metadata of the trace. Can be any JSON object. Metadata is merged when being updated via the API.object.
+ * @property sessionId - Used to group multiple traces into a session in Langfuse. Use your own session/thread identifier.
+ * @property userId - The id of the user that triggered the execution. Used to provide user-level analytics.
+ * @property version - The version of the trace type. Used to understand how changes to the trace type affect metrics. Useful in debugging.
+ * @property tags - Tags are used to categorize or label traces. Traces can be filtered by tags in the UI and GET API. Tags can also be changed in the UI. Tags are merged and never deleted via the API.
+ * @property public - You can make a trace public to share it via a public link. This allows others to view the trace without needing to log in or be members of your Langfuse project.
  * @interface
  */
 
