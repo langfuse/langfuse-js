@@ -213,12 +213,49 @@ export type CreateLangfuseDatasetResponse = FixTypes<
 export type CreateLangfuseDatasetItemBody = FixTypes<
   paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"]
 >;
+
+/**
+ * CreateLangfuseDatasetItemResponse
+ * @property id - Id of the dataset item.
+ * @property input - Input data.
+ * @property metadata - Additional metadata.
+ * @property datasetName - Name of the dataset.
+ * @property createdAt - Creation time of the dataset item.
+ * @property updatedAt - Last update time of the dataset item.
+ * @property expectedOutput - Expected output data.
+ * @property sourceTraceId - Id of the source trace.
+ * @property sourceObservationId - Id of the source observation.
+ * @property status - Status of the dataset item.
+ * @property datasetId - Id of the dataset.
+ * @interface
+ */
 export type CreateLangfuseDatasetItemResponse = FixTypes<
   paths["/api/public/dataset-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
+
+/**
+ * GetLangfuseDatasetRunParams
+ * @property datasetName - Name of the dataset.
+ * @property runName - Name of the dataset run.
+ * @interface
+ */
 export type GetLangfuseDatasetRunParams = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["parameters"]["path"]
 >;
+
+/**
+ * GetLangfuseDatasetRunResponse
+ * @property name - Name of the dataset run.
+ * @property id - Id of the dataset run.
+ * @property metadata - Additional metadata.
+ * @property datasetName - Name of the dataset.
+ * @property description - Description of the dataset run.
+ * @property createdAt - Creation time of the dataset run.
+ * @property updatedAt - Last update time of the dataset run.
+ * @property datasetId - Id of the dataset.
+ * @property datasetRunItems - List of dataset run items.
+ * @interface
+ */
 export type GetLangfuseDatasetRunResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;

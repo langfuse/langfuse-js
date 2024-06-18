@@ -283,6 +283,20 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
+  /**
+   * Get a dataset run by name.
+   * @param {GetLangfuseDatasetRunParams} params - The parameters to get the dataset run.
+   * @returns {Promise<GetLangfuseDatasetRunResponse>} A promise that resolves to the response of the get operation.
+   *
+   * @example
+   * ```typescript
+   * const datasetRun = await langfuse.getDatasetRun({
+   *  datasetName: "<dataset_name>",
+   *  runName: "<run_name>",
+   * });
+   *
+   */
+
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
     const encodedDatasetName = encodeURIComponent(params.datasetName);
     const encodedRunName = encodeURIComponent(params.runName);
@@ -370,9 +384,14 @@ abstract class LangfuseCoreStateless {
   }
 
   /**
-   * Gets a dataset item.
+   * Get the dataset item with the given id.
    * @param {string} id The id of the dataset item.
    * @returns {Promise<CreateLangfuseDatesetItemResponse>} A promise that resolves to the response of the get operation.
+   *
+   * @example
+   * ```typescript
+   * const dataset = await langfuse.getDatasetItem("<datasetItemId>");
+   * ```
    */
   async getDatasetItem(id: string): Promise<CreateLangfuseDatasetItemResponse> {
     return this.fetch(`${this.baseUrl}/api/public/dataset-items/${id}`, this._getFetchOptions({ method: "GET" })).then(
@@ -1026,7 +1045,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   }
 
   /**
-   * Gets a dataset.
+   * Fetch a dataset by its name.
    *
    * @param {string} name - The name of the dataset.
    * @returns {Promise<{
@@ -1051,6 +1070,10 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    *    ) => Promise<{id: string}>,
    *  }>
    * }>} A promise that resolves to the response of the get operation.
+   * @example
+   * ```typescript
+   * const dataset = await langfuse.getDataset("<dataset_name>");
+   * ```
    */
   async getDataset(name: string): Promise<{
     id: string;
