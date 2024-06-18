@@ -292,6 +292,11 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
+  /**
+   * Creates a dataset run item.
+   * @param {CreateLangfuseDatasetRunItemBody} body - The body of the dataset run item to be created.
+   * @returns {Promise<CreateLangfuseDatasetRunItemResponse>} A promise that resolves to the response of the create operation.
+   */
   async createDatasetRunItem(body: CreateLangfuseDatasetRunItemBody): Promise<CreateLangfuseDatasetRunItemResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-run-items`,
