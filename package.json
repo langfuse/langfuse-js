@@ -73,6 +73,8 @@
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.1",
     "tslib": "^2.6.3",
+    "typedoc": "^0.25.13",
+    "typedoc-plugin-missing-exports": "^2.3.0",
     "typescript": "^5.4.5",
     "yalc": "^1.0.0-pre.53"
   },

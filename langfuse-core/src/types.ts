@@ -67,6 +67,12 @@ export type LangfuseMetadataProperties = {
 };
 
 // ASYNC
+
+/**
+ * CreateLangfuseTraceBody
+ * @interface
+ */
+
 export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"]>;
 
 export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEventBody"]>;
@@ -133,8 +139,25 @@ export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type:
 
 type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
 type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
+
+/**
+ * CreateTextPromptBody
+ * @interface
+ */
+
 export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
+
+/**
+ * CreateChatPromptBody
+ * @interface
+ */
+
 export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
+
+/**
+ * CreatePromptBody
+ * @interface
+ */
 
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 
