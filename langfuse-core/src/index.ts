@@ -163,7 +163,7 @@ abstract class LangfuseCoreStateless {
    * @returns {void}
    * @example
    * ```typescript
-   *  langfuse.debug();
+   * langfuse.debug();
    *
    * // Explicitly disable debugging
    * langfuse.debug(false);
