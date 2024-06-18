@@ -981,9 +981,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * generation.score({});
    * ```
    */
-  generation(
-    body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
-  ): LangfuseGenerationClient {
+  generation(body: CreateLangfuseGeneration): LangfuseGenerationClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
     const id = this.generationStateless({ ...body, traceId });
     return new LangfuseGenerationClient(this, id, traceId);
