@@ -70,6 +70,7 @@ export type LangfuseMetadataProperties = {
 
 /**
  * CreateLangfuseTraceBody
+ * @property userId - The user ID
  * @interface
  */
 
