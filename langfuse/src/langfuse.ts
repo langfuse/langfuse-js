@@ -23,6 +23,11 @@ export class Langfuse extends LangfuseCore {
   private _storageCache: any;
   private _storageKey: string;
 
+  /**
+   * Creates a new Langfuse SDK instance.
+   * @param {LangfuseOptions} params - The configuration options for the Langfuse SDK.
+   * @returns {Langfuse} - The Langfuse SDK instance.
+   */
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
     const langfuseConfig = utils.configLangfuseSDK(params);
     super(langfuseConfig);
