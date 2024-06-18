@@ -723,9 +723,35 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
   }
 }
 
+/**
+ * The core class for interacting with the Langfuse SDK.
+ * This class provides methods to create traces, spans, events, generations, and scores.
+ * It also handles the configuration and initialization of the SDK.
+ *
+ * @class
+ * @extends LangfuseCoreStateless
+ */
 export abstract class LangfuseCore extends LangfuseCoreStateless {
   private _promptCache: LangfusePromptCache;
 
+  /**
+   * Creates an instance of LangfuseCore.
+   *
+   * @param {LangfuseCoreOptions} params - The configuration options for the Langfuse SDK.
+   * @example
+   * ```typescript
+   * import { Langfuse } from "langfuse";
+   *
+   * // without additional options
+   * const langfuse = new Langfuse();
+   *
+   * // with additional options
+   * const langfuse = new Langfuse({
+   *  release: "v1.0.0",
+   *  requestTimeout: 10000,
+   * });
+   * ```
+   */
   constructor(params: LangfuseCoreOptions) {
     const { publicKey, secretKey, enabled } = params;
     let isObservabilityEnabled = enabled === false ? false : true;
