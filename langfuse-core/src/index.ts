@@ -138,10 +138,37 @@ abstract class LangfuseCoreStateless {
     };
   }
 
+  /**
+   * Listen to error events.
+   * The SDK does not throw errors to protect your application process.
+   * @param {string} event - The event to listen to.
+   * @param {Function} cb - The callback to be called when the event is emitted.
+   * @returns {Function} A function to remove the listener.
+   * @example
+   * ```typescript
+   * langfuse.on("error", (error) => {
+   *  // Whatever you want to do with the error
+   *  console.error(error);
+   * });
+   * ```
+   **/
   on(event: string, cb: (...args: any[]) => void): () => void {
     return this._events.on(event, cb);
   }
 
+  /**
+   * Enable debugging to get detailed logs of what's happening in the SDK.
+   * The SDK does not throw errors to protect your application process
+   * @param {boolean} [enabled] - Whether to enable debugging or not. Defaults to true.
+   * @returns {void}
+   * @example
+   * ```typescript
+   *  langfuse.debug();
+   *
+   * // Explicitly disable debugging
+   * langfuse.debug(false);
+   * ```
+   */
   debug(enabled: boolean = true): void {
     this.removeDebugCallback?.();
 
@@ -300,6 +327,11 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
+  /**
+   * Gets a dataset item.
+   * @param {string} id The id of the dataset item.
+   * @returns {Promise<CreateLangfuseDatesetItemResponse>} A promise that resolves to the response of the get operation.
+   */
   async getDatasetItem(id: string): Promise<CreateLangfuseDatasetItemResponse> {
     return this.fetch(`${this.baseUrl}/api/public/dataset-items/${id}`, this._getFetchOptions({ method: "GET" })).then(
       (res) => res.json()
@@ -382,11 +414,13 @@ abstract class LangfuseCoreStateless {
   }
 
   /**
-   * Asynchronously flushes all events that are not yet sent to the server.
-   * This function always resolves, even if there were errors when flushing.
-   * Errors are emitted as "error" events and the promise resolves.
-   *
+   * Flush the internal event queue to the Langfuse API. It blocks until the queue is empty.
+   * It should be called when the application shuts down.
    * @returns {Promise<void>} A promise that resolves when the flushing is completed.
+   * @example
+   * ```typescript
+   * await langfuse.flushAsync();
+   * ```
    */
   flushAsync(): Promise<void> {
     return new Promise((resolve, _reject) => {
@@ -406,11 +440,14 @@ abstract class LangfuseCoreStateless {
   }
 
   /**
-   * Flush the internal event queue to the Langfuse API. It blocks until the queue is empty. It should be called when the application shuts down.
-   *
+   * Flush the internal event queue to the Langfuse API. It blocks until the queue is empty.
+   * It should be called when the application shuts down.
    * @param {Function} [callback] - A callback that is called when the flushing is completed.
    * @returns {void}
-   *
+   * @example
+   * ```typescript
+   * langfuse.flush();
+   * ```
    */
 
   flush(callback?: (err?: any, data?: any) => void): void {
@@ -695,9 +732,35 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   /**
    * Creates a new trace. This trace will be used to group all subsequent events, spans, and generations.
    * If no traceId is provided, a new traceId will be generated.
-   *
    * @param {CreateLangfuseTraceBody} [body] The body of the trace to be created.
-   * @returns {LangfuseTraceClient} The trace client used to manipulate the trace.
+   * @returns {LangfuseTraceClient} The created trace.
+   * @example
+   * ```typescript
+   * // Example trace creation
+   * const trace = langfuse.trace({
+   *  name: "chat-app-session",
+   *  userId: "user__935d7d1d-8625-4ef4-8651-544613e7bd22",
+   *  metadata: { user: "user@langfuse.com" },
+   *  tags: ["production"],
+   * });
+   *
+   * // Example update, same params as create, cannot change id
+   * trace.update({
+   *  metadata: {
+   *    tag: "long-running",
+   *  },
+   * });
+   *
+   * // Properties
+   * trace.id; // string
+   * // Create observations
+   * trace.event({});
+   * trace.span({});
+   * trace.generation({});
+   *
+   * // Add scores
+   * trace.score({});
+   * ```
    */
   trace(body?: CreateLangfuseTraceBody): LangfuseTraceClient {
     const id = this.traceStateless(body ?? {});
@@ -720,10 +783,51 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   }
 
   /**
-   * Creates a new span. This span will be wrapped in a new trace if no traceId is provided.
-   *
+   * Creates a span.
+   * A span represents durations of units of work in a trace. Usually, you want to add a span nested within a trace. Optionally you can nest it within another observation by providing a parentObservationId.
+   * If no traceId is provided, a new trace is created just for this span.
    * @param {CreateLangfuseSpanBody} body The body of the span to be created.
    * @returns {LangfuseSpanClient} The span client used to manipulate the span.
+   * @example
+   * ```typescript
+   * // Example span creation
+   * const span = trace.span({
+   *  name: "embedding-retrieval",
+   *  input: {
+   *    userInput: "How does Langfuse work?",
+   *  },
+   * });
+   *
+   * // Example update
+   * span.update({
+   *  metadata: {
+   *    httpRoute: "/api/retrieve-doc",
+   *    embeddingModel: "bert-base-uncased",
+   *  },
+   * });
+   *
+   * // Application code
+   * const retrievedDocs = await retrieveDoc("How does Langfuse work?");
+   *
+   * // Example end - sets endTime, optionally pass a body
+   * span.end({
+   *  output: {retrievedDocs,
+   * },
+   * });
+   *
+   * // Properties
+   * span.id; // string
+   * span.traceId; // string
+   * span.parentObservationId; // string | undefined
+   *
+   * // Create children
+   * span.event({});
+   * span.span({});
+   * span.generation({});
+   *
+   * // Add scores
+   * span.score({});
+   *```
    */
   span(body: CreateLangfuseSpanBody): LangfuseSpanClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
@@ -732,10 +836,51 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   }
 
   /**
-   * Creates a new generation. This generation will be wrapped in a new trace if no traceId is provided.
-   *
+   * Create a generation.
+   * A generation is a span that is used to log generations of AI models. They contain additional metadata about the model, the prompt/completion, the cost of executing the model and are specifically rendered in the langfuse UI.
+   * Usually, you want to add a generation nested within a trace. Optionally you can nest it within another observation by providing a parentObservationId.
+   * If no traceId is provided, a new trace is created just for this generation.
    * @param {Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be created. The promptName and promptVersion are required.
-   * @returns {LangfuseGenerationClient} The generation client used to manipulate the generation.
+   * @returns {LangfuseGenerationClient} The created generation.
+   * @example
+   * ```typescript
+   * // Example generation creation
+   * const generation = trace.generation({
+   *  name: "chat-completion",
+   *  model: "gpt-3.5-turbo",
+   *  modelParameters: {
+   *    temperature: 0.9,
+   *    maxTokens: 2000,
+   *  },
+   *  input: messages,
+   * });
+   *
+   * // Application code
+   * const chatCompletion = await llm.respond(prompt);
+   *
+   * // Example update
+   * generation.update({
+   *  completionStartTime: new Date(),
+   * });
+   *
+   * // Example end - sets endTime, optionally pass a body
+   * generation.end({
+   *  output: chatCompletion,
+   * });
+   *
+   * // Properties
+   * generation.id; // string
+   * generation.traceId; // string
+   * generation.parentObservationId; // string | undefined
+   *
+   * // Create children
+   * generation.event({});
+   * generation.span({});
+   * generation.generation({});
+   *
+   * // Add scores
+   * generation.score({});
+   * ```
    */
   generation(
     body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
@@ -746,10 +891,43 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   }
 
   /**
-   * Creates a new event. This event will be wrapped in a new trace if no traceId is provided.
-   *
+   * Create an event.
+   * An event represents a discrete event in a trace. Usually, you want to add an event nested within a trace. Optionally, you can nest it within another observation by providing a parentObservationId.
+   * If no traceId is provided, a new trace is created just for this event.
    * @param {CreateLangfuseEventBody} body - The body of the event to be created.
-   * @returns {LangfuseEventClient} The event client used to manipulate the event.
+   * @returns {LangfuseEventClient} The created event.
+   * @example
+   * ```typescript
+   * // Example event
+   * const event = trace.event({
+   *  name: "get-user-profile",
+   *  metadata: {
+   *    attempt: 2,
+   *    httpRoute: "/api/retrieve-person",
+   *  },
+   *  input: {
+   *    userId: "user__935d7d1d-8625-4ef4-8651-544613e7bd22",
+   *  },
+   *  output: {
+   *    firstName: "Maxine",
+   *    lastName: "Simons",
+   *    email: "maxine.simons@langfuse.com",
+   *  },
+   * });
+   *
+   * // Properties
+   * event.id; // string
+   * event.traceId; // string
+   * event.parentObservationId; // string | undefined
+   *
+   * // Create children
+   * event.event({});
+   * event.span({});
+   * event.generation({});
+   *
+   * // Add scores
+   * event.score({});
+   * ```
    */
   event(body: CreateLangfuseEventBody): LangfuseEventClient {
     const traceId = body.traceId || this.traceStateless({ name: body.name });
@@ -758,10 +936,26 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   }
 
   /**
-   * Creates a new score. This score will be wrapped in a new trace if no traceId is provided.
-   *
+   * Create a score. Scores are used to evaluate executions/traces.
+   * They are attached to a single trace. If the score relates to a specific step of the trace, the score can optionally also be attached to the observation to enable evaluating it specifically.
    * @param {CreateLangfuseScoreBody} body - The body of the score to be created.
-   * @returns {LangfuseCore} The LangfuseCore instance.
+   * @returns {LangfuseCore} Either the associated observation (if observationId is provided) or the trace (if observationId is not provided).
+   * @example
+   * ```typescript
+   * await langfuse.score({
+   *  traceId: message.traceId,
+   *  observationId: message.generationId,
+   *  name: "quality",
+   *  value: 1,
+   *  comment: "Factually correct",
+   * });
+   *
+   * // alternatively
+   * trace.score({});
+   * span.score({});
+   * event.score({});
+   * generation.score({});
+   * ```
    */
   score(body: CreateLangfuseScoreBody): this {
     this.scoreStateless(body);
@@ -787,11 +981,13 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    *    link: (
    *      obj: LangfuseObjectClient,
    *      runName: string,
-   *      runArgs?: {description?: string, metadata?: any}
+   *      runArgs?: {
+   *        description?: string,
+   *        metadata?: any
+   *      }
    *    ) => Promise<{id: string}>,
    *  }>
-   * }>
-   * } A promise that resolves to the response of the get operation.
+   * }>} A promise that resolves to the response of the get operation.
    */
   async getDataset(name: string): Promise<{
     id: string;
