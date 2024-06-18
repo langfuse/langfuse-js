@@ -188,6 +188,19 @@ export type GetLangfuseDatasetResponse = FixTypes<
 export type CreateLangfuseDatasetRunItemBody = FixTypes<
   paths["/api/public/dataset-run-items"]["post"]["requestBody"]["content"]["application/json"]
 >;
+
+/**
+ * CreateLangfuseDatasetRunItemResponse
+ * @property id - Id of the dataset run item.
+ * @property traceId - The id of the trace to which the dataset run item is attached.
+ * @property observationId - The id of the observation to which the dataset run item is attached.
+ * @property createdAt - Creation time of the dataset run item.
+ * @property updatedAt - Last update time of the dataset run item.
+ * @property datasetItemId - Id of the dataset item.
+ * @property datasetRunId - Id of the dataset run.
+ * @property datasetRunName - Name of the dataset run.
+ * @interface
+ */
 export type CreateLangfuseDatasetRunItemResponse = FixTypes<
   paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
