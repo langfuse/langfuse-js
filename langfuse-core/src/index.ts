@@ -32,6 +32,7 @@ import {
   type CreatePromptBody,
   type CreateChatPromptBody,
   type CreateTextPromptBody,
+  type CreateLangfuseGeneration,
 } from "./types";
 import {
   generateUUID,
@@ -938,7 +939,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * A generation is a span that is used to log generations of AI models. They contain additional metadata about the model, the prompt/completion, the cost of executing the model and are specifically rendered in the langfuse UI.
    * Usually, you want to add a generation nested within a trace. Optionally you can nest it within another observation by providing a parentObservationId.
    * If no traceId is provided, a new trace is created just for this generation.
-   * @param {Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be created. The promptName and promptVersion are required.
+   * @param {CreateLangfuseGeneration} body - The body of the generation to be created. The promptName and promptVersion are required.
    * @returns {LangfuseGenerationClient} The created generation.
    * @example
    * ```typescript

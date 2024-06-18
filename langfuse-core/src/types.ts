@@ -1,22 +1,6 @@
 import { type LangfusePromptClient } from "./prompts/promptClients";
 import { type components, type paths } from "./openapi/server";
 
-/**
- * LangfuseCoreOptions
- * @property publicKey - Public API key of Langfuse project. Can be set via LANGFUSE_PUBLIC_KEY environment variable.
- * @property secretKey - Secret API key of Langfuse project. Can be set via LANGFUSE_SECRET_KEY environment variable.
- * @property baseUrl - Langfuse API baseUrl (https://cloud.langfuse.com by default). Can be set via LANGFUSE_BASEURL environment variable.
- * @property flushAt - Max batch size that's sent to the API. Defaults to 15. Can be set via LANGFUSE_FLUSH_AT environment variable.
- * @property flushInterval - The maximum time to wait before sending a batch. Defaults to 10000ms. Can be set via LANGFUSE_FLUSH_INTERVAL environment variable.
- * @property fetchRetryCount - Max number of retries in case of API/network errors. Defaults to 3.
- * @property fetchRetryDelay - The delay between HTTP request retries. Defaults to 3000ms.
- * @property requestTimeout - Timeout of API requests in seconds. Defaults to 10000ms.
- * @property release -  Release number/hash of the application to provide analytics grouped by release. Can be set via LANGFUSE_RELEASE environment variable.
- * @property sdkIntegration - Used by intgerations that wrap the Langfuse SDK to add context for debugging and support. Not to be used directly.
- * @property enabled - Enables or disables the Langfuse client. If disabled, all observability calls to the backend will be no-ops. Defaults to true.
- * @interface
- */
-
 export type LangfuseCoreOptions = {
   // Langfuse API publicKey obtained from the Langfuse UI project settings
   publicKey?: string;
@@ -334,6 +318,31 @@ export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 export type PromptInput = {
   prompt?: LangfusePromptClient;
 };
+
+/**
+ * CreateLangfuseGeneration
+ * @property id - The id of the generation can be set, defaults to random id.
+ * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
+ * @property startTime - The time at which the generation started, defaults to the current time.
+ * @property completionStartTime - The time at which the completion started (streaming). Set it to get latency analytics broken down into time until completion started and completion duration.
+ * @property endTime - The time at which the generation ended.
+ * @property model - The name of the model used for the generation.
+ * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
+ * @property input - 	The input to the generation - the prompt. Can be any JSON object or string.
+ * @property output - The output to the generation - the completion. Can be any JSON object or string.
+ * @property usage - The usage object supports the OpenAi structure with (promptTokens, completionTokens, totalTokens) and a more generic version (input, output, total, unit, inputCost, outputCost, totalCost) where unit can be of value "TOKENS", "CHARACTERS", "MILLISECONDS", "SECONDS", "IMAGES". Refer to the docs on how to automatically calculate tokens and costs by Langfuse.
+ * @property metadata - Additional metadata of the generation. Can be any JSON object. Metadata is merged when being updated via the API.
+ * @property level - The level of the generation. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the generation. Additional field for context of the event. E.g. the error message of an error event.
+ * @property version - The version of the generation type. Used to understand how changes to the generation type affect metrics. Reflects e.g. the version of a prompt.
+ * @property traceId - The id of the trace to which the generation should be attached.
+ * @property parentObservationId - The id of the observation to which the generation should be attached.
+ * @property promptName - The name of the prompt to be used for the generation.
+ * @property promptVersion - The version of the prompt to be used for the generation.
+ * @property prompt - The prompt client to be used for the generation.
+ * @interface
+ */
+export type CreateLangfuseGeneration = Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput;
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
