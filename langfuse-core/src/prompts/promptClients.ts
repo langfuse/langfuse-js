@@ -14,6 +14,8 @@ mustache.escape = function (text) {
  * @property {number} version - The version of the prompt.
  * @property {unknown} config - The config of the prompt.
  * @property {string[]} labels - The labels of the prompt.
+ * @method compile - Compiles the prompt content.
+ * @method getLangchainPrompt - Converts the prompt content to a Langchain-compatible format.
  */
 abstract class BasePromptClient {
   public readonly name: string;
@@ -42,7 +44,7 @@ abstract class BasePromptClient {
  * @class
  * @extends BasePromptClient
  * @property {TextPrompt} promptResponse - The prompt response object.
- * @property {string} prompt - The prompt string.
+ * @property {string} prompt - The prompt content.
  */
 export class TextPromptClient extends BasePromptClient {
   public readonly promptResponse: TextPrompt;
@@ -71,6 +73,14 @@ export class TextPromptClient extends BasePromptClient {
   }
 }
 
+/**
+ * ChatPromptClient - A client for handling chat-based prompts.
+ *
+ * @class
+ * @extends BasePromptClient
+ * @property {ChatPrompt} promptResponse - The prompt response object.
+ * @property {ChatMessage[]} prompt - The prompt content.
+ */
 export class ChatPromptClient extends BasePromptClient {
   public readonly promptResponse: ChatPrompt;
   public readonly prompt: ChatMessage[];
