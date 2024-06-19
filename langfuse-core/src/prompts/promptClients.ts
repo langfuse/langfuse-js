@@ -6,6 +6,15 @@ mustache.escape = function (text) {
   return text;
 };
 
+/**
+ * BasePromptClient - A base class for handling prompts.
+ *
+ * @class
+ * @property {string} name - The name of the prompt.
+ * @property {number} version - The version of the prompt.
+ * @property {unknown} config - The config of the prompt.
+ * @property {string[]} labels - The labels of the prompt.
+ */
 abstract class BasePromptClient {
   public readonly name: string;
   public readonly version: number;
@@ -28,8 +37,7 @@ abstract class BasePromptClient {
   }
 }
 /**
- * TextPromptClient
- * A client for handling text-based prompts.
+ * TextPromptClient - A client for handling text-based prompts.
  *
  * @class
  * @extends BasePromptClient
