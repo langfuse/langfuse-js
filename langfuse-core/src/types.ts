@@ -388,8 +388,125 @@ export type CreateLangfuseGenerationWithoutParentObservation = Omit<
  */
 export type CreateLangfuseEvent = Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">;
 
+/**
+ * CreateLangfuseSpan
+ * @property id - The id of the span can be set, otherwise a random id is generated.
+ * @property name - Identifier of the span. Useful for sorting/filtering in the UI.
+ * @property input - The input to the span. Can be any JSON object.
+ * @property output - The output to the span. Can be any JSON object.
+ * @property version - The version of the span type. Used to understand how changes to the span type affect metrics. Useful in debugging.
+ * @property startTime - The time at which the span started, defaults to the current time.
+ * @property level - The level of the span. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the span. Additional field for context of the event. E.g. the error message of an error event.
+ * @property endTime - The time at which the span ended.
+ * @interface
+ */
 export type CreateLangfuseSpan = Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">;
 
+/**
+ * CreateLangfuseScore
+ * @property id - The id of the score can be set, defaults to a random id.
+ * @property name - Identifier of the score.
+ * @property value - The value of the score. Can be any number, often standardized to 0..1
+ * @property observationId - The id of the observation to which the score should be attached. Automatically set if you use {generation,span,event}.score({})
+ * @property comment - Additional context/explanation of the score.
+ * @interface
+ */
+export type CreateLangfuseScore = Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">;
+
+/**
+ * UpdateLangfuseGeneration
+ * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
+ * @property input - 	The input to the generation.
+ * @property output - The output to the generation.
+ * @property version - The version of the generation.
+ * @property metadata - Additional metadata of the generation. Can be any JSON object.
+ * @property startTime - The time at which the generation started, defaults to the current time.
+ * @property completionStartTime - The time at which the completion started (streaming).
+ * @property endTime - The time at which the generation ended.
+ * @property model - The name of the model used for the generation.
+ * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
+ * @property usage - The usage object supports the OpenAi structure with (promptTokens, completionTokens, totalTokens) and a more generic version (input, output, total, unit, inputCost, outputCost, totalCost) where unit can be of value "TOKENS", "CHARACTERS", "MILLISECONDS", "SECONDS", "IMAGES". Refer to the docs on how to automatically calculate tokens and costs by Langfuse.
+ * @property level - The level of the generation. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the generation. Additional field for context of the event. E.g. the error message of an error event.
+ *
+ * @interface
+ */
+export type UpdateLangfuseGeneration = Omit<
+  UpdateLangfuseGenerationBody,
+  "id" | "traceId" | "promptName" | "promptVersion"
+> &
+  PromptInput;
+/**
+ * EndLangfuseGeneration
+ * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
+ * @property input - 	The input to the generation.
+ * @property output - The output to the generation.
+ * @property version - The version of the generation.
+ * @property metadata - Additional metadata of the generation. Can be any JSON object.
+ * @property startTime - The time at which the generation started, defaults to the current time.
+ * @property completionStartTime - The time at which the completion started (streaming).
+ * @property endTime - The time at which the generation ended.
+ * @property model - The name of the model used for the generation.
+ * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
+ * @property usage - The usage object supports the OpenAi structure with (promptTokens, completionTokens, totalTokens) and a more generic version (input, output, total, unit, inputCost, outputCost, totalCost) where unit can be of value "TOKENS", "CHARACTERS", "MILLISECONDS", "SECONDS", "IMAGES". Refer to the docs on how to automatically calculate tokens and costs by Langfuse.
+ * @property level - The level of the generation. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the generation. Additional field for context of the event. E.g. the error message of an error event.
+ *
+ * @interface
+ */
+export type EndLangfuseGeneration = Omit<
+  UpdateLangfuseGenerationBody,
+  "id" | "traceId" | "endTime" | "promptName" | "promptVersion"
+> &
+  PromptInput;
+
+/**
+ * UpdateLangfuseSpan
+ * @property name - Identifier of the span. Useful for sorting/filtering in the UI.
+ * @property input - The input to the span.
+ * @property output - The output to the span.
+ * @property version - The version of the span.
+ * @property metadata - Additional metadata of the span. Can be any JSON object.
+ * @property startTime - The time at which the span started.
+ * @property level - The level of the span. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the span. Additional field for context of the event. E.g. the error message of an error event.
+ * @property parentObservationId - The id of the observation to which the span should be attached.
+ * @property endTime - The time at which the span ended.
+ * @interface
+ */
+export type UpdateLangfuseSpan = Omit<UpdateLangfuseSpanBody, "id" | "traceId">;
+
+/**
+ * EndLangfuseSpan
+ * @property name - Identifier of the span. Useful for sorting/filtering in the UI.
+ * @property input - The input to the span.
+ * @property output - The output to the span.
+ * @property version - The version of the span.
+ * @property metadata - Additional metadata of the span. Can be any JSON object.
+ * @property startTime - The time at which the span started.
+ * @property level - The level of the span. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the span. Additional field for context of the event. E.g. the error message of an error event.
+ * @property parentObservationId - The id of the observation to which the span should be attached.
+ * @interface
+ */
+export type EndLangfuseSpan = Omit<UpdateLangfuseSpanBody, "id" | "endTime" | "traceId">;
+
+/**
+ * UpdateLangfuseTrace
+ * @property name - Identifier of the trace. Useful for sorting/filtering in the UI.
+ * @property timestamp - The time at which the trace was created. Defaults to the current time.
+ * @property input - The input of the trace.
+ * @property output - The output of the trace.
+ * @property metadata - Additional metadata of the trace. Can be any JSON object.
+ * @property sessionId - Used to group multiple traces into a session in Langfuse.
+ * @property userId - The id of the user that triggered the execution.
+ * @property version - The version of the trace type.
+ * @property tags - Tags are used to categorize or label traces.
+ * @property public - You can make a trace public to share it via a public link.
+ * @interface
+ */
+export type UpdateLangfuseTrace = Omit<CreateLangfuseTraceBody, "id">;
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
 type OptionalTypes<T> = T extends null | undefined ? T : never;
