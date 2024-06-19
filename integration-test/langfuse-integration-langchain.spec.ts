@@ -334,7 +334,8 @@ describe("Langchain", () => {
       // create a chain that takes the user input, format it and then sends to LLM
       const chain = prompt.pipe(model());
       // run the chain by passing the input
-      await chain.invoke({ country: "France" }, { callbacks: [handler] });
+      const runName = "my langchain run";
+      await chain.invoke({ country: "France" }, { callbacks: [handler], runName });
 
       await handler.flushAsync();
 
@@ -342,6 +343,7 @@ describe("Langchain", () => {
       const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
 
       expect(trace).toBeDefined();
+      expect(trace?.name).toBe(runName);
       expect(trace?.observations.length).toBe(3);
 
       const rootLevelObservation = trace?.observations.filter((o) => !o.parentObservationId)[0];
@@ -365,7 +367,7 @@ describe("Langchain", () => {
       const spans = trace?.observations.filter((o) => o.type === "SPAN");
       expect(spans?.length).toBe(2);
       if (spans) {
-        expect(handler.getLangchainRunId()).toBe(spans.find((s) => s.name === "RunnableSequence")?.id);
+        expect(handler.getLangchainRunId()).toBe(spans.find((s) => s.name === runName)?.id);
       }
       expect(handler.getTraceId()).toBe(handler.traceId);
     });
