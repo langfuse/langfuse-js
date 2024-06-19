@@ -33,6 +33,9 @@ import {
   type CreateChatPromptBody,
   type CreateTextPromptBody,
   type CreateLangfuseGeneration,
+  type CreateLangfuseEvent,
+  type CreateLangfuseGenerationWithoutParentObservation,
+  type CreateLangfuseSpan,
 } from "./types";
 import {
   generateUUID,
@@ -1336,7 +1339,7 @@ export abstract class LangfuseObjectClient {
    * An event represents a discrete event in a trace. Usually, you want to add a event nested within a trace by passing a traceId.
    * Optionally you can nest it within another observation by providing a parentObservationId.
    *
-   * @param {Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">} body - The body of the event to be created.
+   * @param {CreateLangfuseEvent} body - The body of the event to be created.
    * @returns {LangfuseEventClient} The created event.
    *
    * @example
@@ -1375,7 +1378,7 @@ export abstract class LangfuseObjectClient {
    * ```
    *
    */
-  event(body: Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">): LangfuseEventClient {
+  event(body: CreateLangfuseEvent): LangfuseEventClient {
     return this.client.event({
       ...body,
       traceId: this.traceId,
@@ -1391,10 +1394,10 @@ export abstract class LangfuseObjectClient {
    *
    * If no traceId is provided, a new trace is created just for this span.
    *
-   * @param {Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">} body - The body of the span to be created.
+   * @param {CreateLangfuseSpan} body - The body of the span to be created.
    * @returns {LangfuseSpanClient} The created span.
    */
-  span(body: Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">): LangfuseSpanClient {
+  span(body: CreateLangfuseSpan): LangfuseSpanClient {
     return this.client.span({
       ...body,
       traceId: this.traceId,
@@ -1410,13 +1413,10 @@ export abstract class LangfuseObjectClient {
    *
    * If no traceId is provided, a new trace is created just for this generation.
    *
-   * @param {Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be created.
+   * @param {CreateLangfuseGenerationWithoutParentObservation} body - The body of the generation to be created.
    * @returns {LangfuseGenerationClient} The created generation
    */
-  generation(
-    body: Omit<CreateLangfuseGenerationBody, "traceId" | "parentObservationId" | "promptName" | "promptVersion"> &
-      PromptInput
-  ): LangfuseGenerationClient {
+  generation(body: CreateLangfuseGenerationWithoutParentObservation): LangfuseGenerationClient {
     return this.client.generation({
       ...body,
       traceId: this.traceId,

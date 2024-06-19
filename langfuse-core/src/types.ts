@@ -287,6 +287,11 @@ export type GetLangfusePromptResponse =
     }
   | { fetchResult: "failure"; data: GetLangfusePromptFailureData };
 
+/**
+ * ChatMessage
+ * @property role - The role of the message, e.g. USER or SYSTEM.
+ * @property content - The content of the message.
+ */
 export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
@@ -341,6 +346,49 @@ export type PromptInput = {
  * @interface
  */
 export type CreateLangfuseGeneration = Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput;
+
+/**
+ * CreateLangfuseGenerationWithoutParentObservation
+ * @property id - The id of the generation can be set, defaults to random id.
+ * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
+ * @property startTime - The time at which the generation started, defaults to the current time.
+ * @property completionStartTime - The time at which the completion started (streaming). Set it to get latency analytics broken down into time until completion started and completion duration.
+ * @property endTime - The time at which the generation ended.
+ * @property model - The name of the model used for the generation.
+ * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
+ * @property input - 	The input to the generation - the prompt. Can be any JSON object or string.
+ * @property output - The output to the generation - the completion. Can be any JSON object or string.
+ * @property usage - The usage object supports the OpenAi structure with (promptTokens, completionTokens, totalTokens) and a more generic version (input, output, total, unit, inputCost, outputCost, totalCost) where unit can be of value "TOKENS", "CHARACTERS", "MILLISECONDS", "SECONDS", "IMAGES". Refer to the docs on how to automatically calculate tokens and costs by Langfuse.
+ * @property metadata - Additional metadata of the generation. Can be any JSON object. Metadata is merged when being updated via the API.
+ * @property level - The level of the generation. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the generation. Additional field for context of the event. E.g. the error message of an error event.
+ * @property version - The version of the generation type. Used to understand how changes to the generation type affect metrics. Reflects e.g. the version of a prompt.
+ * @property prompt - The prompt client to be used for the generation.
+ * @interface
+ */
+export type CreateLangfuseGenerationWithoutParentObservation = Omit<
+  CreateLangfuseGenerationBody,
+  "traceId" | "parentObservationId" | "promptName" | "promptVersion"
+> &
+  PromptInput;
+/**
+ * CreateLangfuseEvent
+ *
+ * @property id - The id of the event can be set, defaults to a random id.
+ * @property name - Identifier of the event. Useful for sorting/filtering in the UI.
+ * @property input - The input of the event. Can be any JSON object.
+ * @property output - The output of the event. Can be any JSON object.
+ * @property version - The version of the event type. Used to understand how changes to the event type affect metrics. Useful in debugging.
+ * @property metadata - Additional metadata of the event. Can be any JSON object.
+ * @property startTime - The time at which the event started, defaults to the current time.
+ * @property level - The level of the event. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
+ * @property statusMessage - The status message of the event. Additional field for context of the event. E.g. the error message of an error event.
+ *
+ * @interface
+ */
+export type CreateLangfuseEvent = Omit<CreateLangfuseEventBody, "traceId" | "parentObservationId">;
+
+export type CreateLangfuseSpan = Omit<CreateLangfuseSpanBody, "traceId" | "parentObservationId">;
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
