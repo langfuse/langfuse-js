@@ -27,7 +27,15 @@ abstract class BasePromptClient {
     return content.replace(/\{\{(.*?)\}\}/g, "{$1}");
   }
 }
-
+/**
+ * TextPromptClient
+ * A client for handling text-based prompts.
+ *
+ * @class
+ * @extends BasePromptClient
+ * @property {TextPrompt} promptResponse - The prompt response object.
+ * @property {string} prompt - The prompt string.
+ */
 export class TextPromptClient extends BasePromptClient {
   public readonly promptResponse: TextPrompt;
   public readonly prompt: string;
