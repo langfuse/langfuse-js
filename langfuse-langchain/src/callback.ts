@@ -183,12 +183,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chain start with Id: ${runId}`);
 
-      this.generateTrace(chain, runId, parentRunId, tags, metadata, inputs);
+      const runName = name ?? chain.id.at(-1)?.toString() ?? "Langchain Run";
+
+      this.generateTrace(runName, runId, parentRunId, tags, metadata, inputs);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
         parentObservationId: parentRunId ?? this.rootObservationId,
-        name: name ?? chain.id.at(-1)?.toString(),
+        name: runName,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         input: inputs,
         version: this.version,
@@ -251,7 +253,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   generateTrace(
-    serialized: Serialized,
+    runName: string,
     runId: string,
     parentRunId: string | undefined,
     tags?: string[] | undefined,
@@ -264,7 +266,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
 
     const params = {
-      name: serialized.id.at(-1)?.toString(),
+      name: runName,
       metadata: this.joinTagsAndMetaData(tags, metadata, this.metadata),
       userId: this.userId,
       version: this.version,
@@ -304,7 +306,9 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): Promise<void> {
     this._log(`Generation start with ID: ${runId}`);
 
-    this.generateTrace(llm, runId, parentRunId, tags, metadata, messages);
+    const runName = name ?? llm.id.at(-1)?.toString() ?? "Langchain Generation";
+
+    this.generateTrace(runName, runId, parentRunId, tags, metadata, messages);
 
     const modelParameters: Record<string, any> = {};
     const invocationParams = extraParams?.["invocation_params"];
