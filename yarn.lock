@@ -1551,26 +1551,26 @@
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
 "@langchain/community@^0.2":
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/@langchain/community/-/community-0.2.4.tgz#fb5feb4f4a01a1b33adfd28ce7126d0dedb3e6d1"
-  integrity sha512-rwrPNQLyIe84TPqPYbYOfDA4G/ba1rdj7OtZg63dQmxIvNDOmUCh4xIQac2iuRUnM3o4Ben0Faa9qz+V5oPgIA==
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/@langchain/community/-/community-0.2.12.tgz#f8141c59e3dcbebd360382f0c7f95a890e3b04b8"
+  integrity sha512-bFhWNyPXqd/V2fduJ6BWipEkAQQHLnGs6IqKmxJMf7FvhN16DfhWK/PpPrNUltE/b5cl5gDuTzdpEsyvuw7fHg==
   dependencies:
-    "@langchain/core" "~0.2.0"
-    "@langchain/openai" "~0.0.28"
+    "@langchain/core" "~0.2.6"
+    "@langchain/openai" "~0.1.0"
     binary-extensions "^2.2.0"
     expr-eval "^2.0.2"
     flat "^5.0.2"
     js-yaml "^4.1.0"
     langchain "0.2.3"
-    langsmith "~0.1.1"
+    langsmith "~0.1.30"
     uuid "^9.0.0"
     zod "^3.22.3"
     zod-to-json-schema "^3.22.5"
 
-"@langchain/core@>0.1.0  <0.3.0", "@langchain/core@>0.1.56 <0.3.0", "@langchain/core@>=0.2.5 <0.3.0", "@langchain/core@~0.2.0":
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.2.6.tgz#7b57ff88d4b5ae75bafbe689cd8878e9fbad7de6"
-  integrity sha512-YB9F0vdi/PcgBLSKtDwQ3gV6w4xVfk4ph0U43Okz2dAapKfBkVVB0rzr/afYUt/WHs864MuaO8uLN64egSDtIA==
+"@langchain/core@>0.1.0  <0.3.0", "@langchain/core@>0.1.56 <0.3.0", "@langchain/core@>=0.2.5 <0.3.0", "@langchain/core@~0.2.0", "@langchain/core@~0.2.6":
+  version "0.2.7"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.2.7.tgz#6a7c4a3a8f4cf884a4012c530e8d68c919186b77"
+  integrity sha512-FdFiNWhszFuUyAhYdY+l5DtPnAnWCAjXMnkLmUJ1J54NeUiUm7gy26Hnd4bkvaOQJ8ddHH/EX03ZwdoYfLv1jw==
   dependencies:
     ansi-styles "^5.0.0"
     camelcase "6"
@@ -6374,7 +6374,7 @@ langchainhub@~0.0.8:
   resolved "https://registry.yarnpkg.com/langchainhub/-/langchainhub-0.0.11.tgz#2ce22def9c84699dcbd4fd4b78270d34bd2a9ae9"
   integrity sha512-WnKI4g9kU2bHQP136orXr2bcRdgz9iiTBpTN0jWt9IlScUKnJBoD0aa2HOzHURQKeQDnt2JwqVmQ6Depf5uDLQ==
 
-langsmith@~0.1.1, langsmith@~0.1.30, langsmith@~0.1.7:
+langsmith@~0.1.30, langsmith@~0.1.7:
   version "0.1.31"
   resolved "https://registry.yarnpkg.com/langsmith/-/langsmith-0.1.31.tgz#a3518ea340e85191c0252d47a347d7295fd9b511"
   integrity sha512-G9zi+84RvUZ7UP/ZC0dx/9SYHk8Bhe9GywUeVBzEyt8M4QeU6FPWT7TEjDSqp/XuPJf5o59Z2QlmNJgMnpUd8Q==
