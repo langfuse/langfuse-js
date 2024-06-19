@@ -36,6 +36,12 @@ import {
   type CreateLangfuseEvent,
   type CreateLangfuseGenerationWithoutParentObservation,
   type CreateLangfuseSpan,
+  type CreateLangfuseScore,
+  type UpdateLangfuseGeneration,
+  type UpdateLangfuseSpan,
+  type EndLangfuseSpan,
+  type EndLangfuseGeneration,
+  type UpdateLangfuseTrace,
 } from "./types";
 import {
   generateUUID,
@@ -1429,10 +1435,10 @@ export abstract class LangfuseObjectClient {
    *
    * Scores store evaluation metrics in Langfuse. They are always related to a trace and can be attached to specific observations within a trace.
    *
-   * @param {Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">} body - The body of the score to be created.
+   * @param {CreateLangfuseScore} body - The body of the score to be created.
    * @returns {LangfuseObjectClient} Either the associated observation (if parentObservationId is provided) or the trace (if parentObservationId is not provided).
    */
-  score(body: Omit<CreateLangfuseScoreBody, "traceId" | "parentObservationId">): this {
+  score(body: CreateLangfuseScore): this {
     this.client.score({
       ...body,
       traceId: this.traceId,
@@ -1471,10 +1477,10 @@ export class LangfuseTraceClient extends LangfuseObjectClient {
   /**
    * Updates the trace with the given body.
    *
-   * @param {Omit<CreateLangfuseTraceBody, "id">} body - The body of the trace to be updated.
+   * @param {UpdateLangfuseTrace} body - The body of the trace to be updated.
    * @returns {LangfuseTraceClient} The trace client.
    */
-  update(body: Omit<CreateLangfuseTraceBody, "id">): this {
+  update(body: UpdateLangfuseTrace): this {
     this.client.trace({
       ...body,
       id: this.id,
@@ -1523,10 +1529,10 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
   /**
    * Updates the span with the given body.
    *
-   * @param {Omit<UpdateLangfuseSpanBody, "id" | "traceId">} body - The body of the span to be updated.
+   * @param {UpdateLangfuseSpan} body - The body of the span to be updated.
    * @returns {LangfuseSpanClient} The span client.
    */
-  update(body: Omit<UpdateLangfuseSpanBody, "id" | "traceId">): this {
+  update(body: UpdateLangfuseSpan): this {
     this.client._updateSpan({
       ...body,
       id: this.id,
@@ -1538,10 +1544,10 @@ export class LangfuseSpanClient extends LangfuseObservationClient {
   /**
    * Ends the span with the given body.
    *
-   * @param {Omit<UpdateLangfuseSpanBody, "id" | "endTime" | "traceId">} body - The body of the span to be ended.
+   * @param {EndLangfuseSpan} body - The body of the span to be ended.
    * @returns {LangfuseSpanClient} The span client.
    */
-  end(body?: Omit<UpdateLangfuseSpanBody, "id" | "endTime" | "traceId">): this {
+  end(body?: EndLangfuseSpan): this {
     this.client._updateSpan({
       ...body,
       id: this.id,
@@ -1573,12 +1579,10 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
   /**
    * Updates the generation with the given body.
    *
-   * @param {Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be updated.
+   * @param {UpdateLangfuseGeneration} body - The body of the generation to be updated.
    * @returns {LangfuseGenerationClient} The generation client.
    */
-  update(
-    body: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "promptName" | "promptVersion"> & PromptInput
-  ): this {
+  update(body: UpdateLangfuseGeneration): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
@@ -1590,13 +1594,10 @@ export class LangfuseGenerationClient extends LangfuseObservationClient {
   /**
    * Ends the generation with the given body.
    *
-   * @param {Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime" | "promptName" | "promptVersion"> & PromptInput} body - The body of the generation to be ended.
+   * @param {EndLangfuseGeneration} body - The body of the generation to be ended.
    * @returns {LangfuseGenerationClient} The generation client.
    */
-  end(
-    body?: Omit<UpdateLangfuseGenerationBody, "id" | "traceId" | "endTime" | "promptName" | "promptVersion"> &
-      PromptInput
-  ): this {
+  end(body?: EndLangfuseGeneration): this {
     this.client._updateGeneration({
       ...body,
       id: this.id,
