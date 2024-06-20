@@ -125,4 +125,10 @@ export class ChatPromptClient extends BasePromptClient {
   }
 }
 
+/**
+ * LangfusePromptClient - A client for handling prompts.
+ * It can be either a TextPromptClient or a ChatPromptClient.
+ *
+ * @type {TextPromptClient | ChatPromptClient}
+ */
 export type LangfusePromptClient = TextPromptClient | ChatPromptClient;
