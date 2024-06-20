@@ -30,7 +30,7 @@ export class Langfuse extends LangfuseCore {
    * @returns {Langfuse} - Langfuse client instance.
    */
   constructor(params?: LangfuseOptions) {
-    const langfuseConfig = utils.configLangfuseSDK({ publicKey: params?.publicKey, secretKey: params?.secretKey });
+    const langfuseConfig = utils.configLangfuseSDK(params);
     super(langfuseConfig);
 
     if (typeof window !== "undefined" && "Deno" in window === false) {
