@@ -1,7 +1,8 @@
+import type OpenAI from "openai";
 import type { LangfuseParent } from "./types";
 
 import { LangfuseSingleton } from "./LangfuseSingleton";
-import { parseChunk, parseCompletionOutput, parseInputArgs, parseUsage } from "./parseOpenAI";
+import { getToolCallOutput, parseChunk, parseCompletionOutput, parseInputArgs, parseUsage } from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
 import type { LangfuseConfig } from "./types";
 
@@ -58,19 +59,25 @@ const wrapMethod = async <T extends GenericMethod>(
     if (isAsyncIterable(res)) {
       async function* tracedOutputGenerator(): AsyncGenerator<unknown, void, unknown> {
         const response = res;
-        const processedChunks: string[] = [];
+        const textChunks: string[] = [];
+        const toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] = [];
         let completionStartTime: Date | null = null;
 
         for await (const rawChunk of response as AsyncIterable<unknown>) {
           completionStartTime = completionStartTime ?? new Date();
 
           const processedChunk = parseChunk(rawChunk);
-          processedChunks.push(processedChunk);
+
+          if (!processedChunk.isToolCall) {
+            textChunks.push(processedChunk.data);
+          } else {
+            toolCallChunks.push(processedChunk.data);
+          }
 
           yield rawChunk;
         }
 
-        const output = processedChunks.join("");
+        const output = toolCallChunks.length > 0 ? getToolCallOutput(toolCallChunks) : textChunks.join("");
 
         langfuseParent.generation({
           ...observationData,
