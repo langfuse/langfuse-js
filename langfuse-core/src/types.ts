@@ -124,7 +124,7 @@ export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
  * @property id - The id of the generation can be set, defaults to random id.
  * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
  * @property startTime - The time at which the generation started, defaults to the current time.
- * @property completionStartTime - The time at which the completion started (streaming). Set it to get latency analytics broken down into time until completion started and completion duration.
+ * @property completionStartTime - The timestamp indicating when the completion process began (streaming). Setting this property helps in obtaining more accurate latency analytics, such as TimeToFirstToken.
  * @property endTime - The time at which the generation ended.
  * @property model - The name of the model used for the generation.
  * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
@@ -329,7 +329,7 @@ export type PromptInput = {
  * @property id - The id of the generation can be set, defaults to random id.
  * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
  * @property startTime - The time at which the generation started, defaults to the current time.
- * @property completionStartTime - The time at which the completion started (streaming). Set it to get latency analytics broken down into time until completion started and completion duration.
+ * @property completionStartTime - The timestamp indicating when the completion process began (streaming). Setting this property helps in obtaining more accurate latency analytics, such as TimeToFirstToken.
  * @property endTime - The time at which the generation ended.
  * @property model - The name of the model used for the generation.
  * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
@@ -352,7 +352,7 @@ export type CreateLangfuseGeneration = Omit<CreateLangfuseGenerationBody, "promp
  * @property id - The id of the generation can be set, defaults to random id.
  * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
  * @property startTime - The time at which the generation started, defaults to the current time.
- * @property completionStartTime - The time at which the completion started (streaming). Set it to get latency analytics broken down into time until completion started and completion duration.
+ * @property completionStartTime - The timestamp indicating when the completion process began (streaming). Setting this property helps in obtaining more accurate latency analytics, such as TimeToFirstToken.
  * @property endTime - The time at which the generation ended.
  * @property model - The name of the model used for the generation.
  * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
@@ -422,7 +422,7 @@ export type CreateLangfuseScore = Omit<CreateLangfuseScoreBody, "traceId" | "par
  * @property version - The version of the generation.
  * @property metadata - Additional metadata of the generation. Can be any JSON object.
  * @property startTime - The time at which the generation started, defaults to the current time.
- * @property completionStartTime - The time at which the completion started (streaming).
+ * @property completionStartTime - The timestamp indicating when the completion process began (streaming). Setting this property helps in obtaining more accurate latency analytics, such as TimeToFirstToken.
  * @property endTime - The time at which the generation ended.
  * @property model - The name of the model used for the generation.
  * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
@@ -445,7 +445,7 @@ export type UpdateLangfuseGeneration = Omit<
  * @property version - The version of the generation.
  * @property metadata - Additional metadata of the generation. Can be any JSON object.
  * @property startTime - The time at which the generation started, defaults to the current time.
- * @property completionStartTime - The time at which the completion started (streaming).
+ * @property completionStartTime - The timestamp indicating when the completion process began (streaming). Setting this property helps in obtaining more accurate latency analytics, such as TimeToFirstToken.
  * @property endTime - The time at which the generation ended.
  * @property model - The name of the model used for the generation.
  * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
