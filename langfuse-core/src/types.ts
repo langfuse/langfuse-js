@@ -76,6 +76,8 @@ export type LangfuseMetadataProperties = {
  * @property output - The output of the trace. Can be any JSON object.
  * @property metadata - Additional metadata of the trace. Can be any JSON object. Metadata is merged when being updated via the API.object.
  * @property sessionId - Used to group multiple traces into a session in Langfuse. Use your own session/thread identifier.
+ * @property release - Release number/hash of the application to provide analytics grouped by release.
+ * @property timestamp - The time at which the trace was created, defaults to the current time.
  * @property userId - The id of the user that triggered the execution. Used to provide user-level analytics.
  * @property version - The version of the trace type. Used to understand how changes to the trace type affect metrics. Useful in debugging.
  * @property tags - Tags are used to categorize or label traces. Traces can be filtered by tags in the UI and GET API. Tags can also be changed in the UI. Tags are merged and never deleted via the API.
@@ -90,6 +92,8 @@ export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"
  * @property id - The id of the event can be set, defaults to a random id.
  * @property startTime - The time at which the event started, defaults to the current time.
  * @property name - Identifier of the event. Useful for sorting/filtering in the UI.
+ * @property parentObservationId - The id of the observation to which the event should be attached. Automatically set if you use {generation,span,event}.score({})
+ * @property traceId - The id of the trace to which the event should be attached. Automatically set if you use {trace,generation,span,event}.score({})
  * @property metadata - Additional metadata of the event. Can be any JSON object. Metadata is merged when being updated via the API.
  * @property level - The level of the event. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
  * @property statusMessage - The status message of the event. Additional field for context of the event. E.g. the error message of an error event.
@@ -106,6 +110,8 @@ export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEven
  * @property startTime - The time at which the span started, defaults to the current time.
  * @property endTime - The time at which the span ended.
  * @property name - Identifier of the span. Useful for sorting/filtering in the UI.
+ * @property parentObservationId - The id of the observation to which the span should be attached. Automatically set if you use {generation,span,event}.score({})
+ * @property traceId - The id of the trace to which the span should be attached. Automatically set if you use {trace,generation,span,event}.score({})
  * @property metadata - Additional metadata of the span. Can be any JSON object. Metadata is merged when being updated via the API.
  * @property level - The level of the span. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
  * @property statusMessage - The status message of the span. Additional field for context of the event. E.g. the error message of an error event.
@@ -125,6 +131,8 @@ export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
  * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
  * @property startTime - The time at which the generation started, defaults to the current time.
  * @property completionStartTime - The timestamp indicating when the completion process began (streaming). Setting this property helps in obtaining more accurate latency analytics, such as TimeToFirstToken.
+ * @property traceId - The id of the trace to which the generation should be attached. Automatically set if you use {trace,generation
+ * @property parentObservationId - The id of the observation to which the generation should be attached. Automatically set if you use {generation,span,event}.score({})
  * @property endTime - The time at which the generation ended.
  * @property model - The name of the model used for the generation.
  * @property modelParameters - The parameters of the model used for the generation; can be any key-value pairs.
@@ -135,6 +143,8 @@ export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
  * @property level - The level of the generation. Can be DEBUG, DEFAULT, WARNING or ERROR. Used for sorting/filtering of traces with elevated error levels and for highlighting in the UI.
  * @property statusMessage - The status message of the generation. Additional field for context of the event. E.g. the error message of an error event.
  * @property version - The version of the generation type. Used to understand how changes to the generation type affect metrics. Reflects e.g. the version of a prompt.
+ * @property promptName - The name of the prompt.
+ * @property promptVersion - The version of the prompt.
  * @interface
  */
 export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
@@ -142,6 +152,7 @@ export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["Updat
 
 /**
  * CreateLangfuseScoreBody
+ * @property id - The id of the score can be set, defaults to a random id.
  * @property traceId - The id of the trace to which the score should be attached. Automatically set if you use {trace,generation,span,event}.score({})
  * @property observationId - The id of the observation to which the score should be attached. Automatically set if you use {generation,span,event}.score({})
  * @property name - Identifier of the score.
