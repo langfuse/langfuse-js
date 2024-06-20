@@ -65,6 +65,21 @@ type ConstructorParams = (RootParams | LangfuseOptions) & {
  * @property {boolean} updateRoot - Indicates if the root should be updated.
  * @property {boolean} debugEnabled - Indicates if debugging is enabled.
  * @property {Record<string, Date>} completionStartTimes - Records the start times of completions.
+ *
+ * @example
+ * ```typescript
+ * const langfuseHandler = new CallbackHandler({
+ *   secretKey: "sk-lf-...",
+ *   publicKey: "pk-lf-...",
+ *   baseUrl: "https://cloud.langfuse.com", // 🇪🇺 EU region
+ *   // baseUrl: "https://us.cloud.langfuse.com", // 🇺🇸 US region
+ * });
+ *
+ * // Your Langchain code
+ *
+ * // Add Langfuse handler as callback to `run` or `invoke`
+ * await chain.invoke({ input: "<user_input>" }, { callbacks: [langfuseHandler] });
+ * ```
  */
 export class CallbackHandler extends BaseCallbackHandler {
   name = "CallbackHandler";
@@ -209,10 +224,22 @@ export class CallbackHandler extends BaseCallbackHandler {
     return this.traceId ? `${this.langfuse.baseUrl}/trace/${this.traceId}` : undefined;
   }
 
+  /**
+   * Gets the Langchain run ID.
+   *
+   * @returns {string | undefined}
+   */
   getLangchainRunId(): string | undefined {
     return this.topLevelObservationId;
   }
 
+  /**
+   * Handles errors during the retrieval of documents.
+   *
+   * @param {any} err - The error that occurred.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   */
   async handleRetrieverError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`Retriever error: ${err} with ID: ${runId}`);
@@ -239,6 +266,8 @@ export class CallbackHandler extends BaseCallbackHandler {
    * @param {string} [parentRunId] - The parent run ID.
    * @param {string[]} [tags] - The tags associated with the run.
    * @param {Record<string, any>} [metadata] - Additional metadata for the run.
+   * @param {string} [runType] - The type of the run.
+   * @param {string} [name] - The name of the chain.
    * @returns {Promise<void>}
    */
   async handleChainStart(
@@ -322,7 +351,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   /**
    * Handles an error during a chain run.
    *
-   * @param {Error} error - The error that occurred.
+   * @param {any} error - The error that occurred.
    * @param {string} runId - The run ID.
    * @param {string} [parentRunId] - The parent run ID.
    * @returns {Promise<void>}
