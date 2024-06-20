@@ -74,20 +74,31 @@ export const parseUsage = (res: unknown): Usage | undefined => {
   }
 };
 
-export const parseChunk = (rawChunk: unknown): string => {
+export const parseChunk = (
+  rawChunk: unknown
+):
+  | { isToolCall: false; data: string }
+  | { isToolCall: true; data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall } => {
+  let isToolCall = false;
   const _chunk = rawChunk as OpenAI.ChatCompletionChunk | OpenAI.Completions.Completion;
+  const chunkData = _chunk?.choices[0];
 
   try {
-    if ("delta" in _chunk?.choices[0]) {
-      return _chunk.choices[0].delta?.content || "";
+    if ("delta" in chunkData && "tool_calls" in chunkData.delta && Array.isArray(chunkData.delta.tool_calls)) {
+      isToolCall = true;
+
+      return { isToolCall, data: chunkData.delta.tool_calls[0] };
+    }
+    if ("delta" in chunkData) {
+      return { isToolCall, data: chunkData.delta?.content || "" };
     }
 
-    if ("text" in _chunk?.choices[0]) {
-      return _chunk?.choices[0].text || "";
+    if ("text" in chunkData) {
+      return { isToolCall, data: chunkData.text || "" };
     }
   } catch (e) {}
 
-  return "";
+  return { isToolCall: false, data: "" };
 };
 
 // Type guard to check if an unknown object is a UsageResponse
@@ -101,3 +112,33 @@ function hasCompletionUsage(obj: any): obj is { usage: OpenAI.CompletionUsage } 
     typeof obj.usage.total_tokens === "number"
   );
 }
+
+export const getToolCallOutput = (
+  toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[]
+): {
+  tool_calls: {
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }[];
+} => {
+  let name = "";
+  let toolArguments = "";
+
+  for (const toolCall of toolCallChunks) {
+    name = toolCall.function?.name || name;
+    toolArguments += toolCall.function?.arguments || "";
+  }
+
+  return {
+    tool_calls: [
+      {
+        function: {
+          name,
+          arguments: toolArguments,
+        },
+      },
+    ],
+  };
+};

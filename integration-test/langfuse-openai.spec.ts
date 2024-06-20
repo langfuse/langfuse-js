@@ -177,6 +177,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         model: "gpt-3.5-turbo-instruct",
         stream: true,
         user: "langfuse-user@gmail.com",
+        temperature: 0,
         max_tokens: 300,
       });
       let content = "";
@@ -358,6 +359,87 @@ describe("Langfuse-OpenAI-Integation", () => {
         output: usage?.completion_tokens,
         total: usage?.total_tokens,
       });
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+      expect(generation.statusMessage).toBeNull();
+    }, 10000);
+
+    it("Streamed Tools and Toolchoice Calling on openai", async () => {
+      const name = `Tools-and-Toolchoice-Streaming-${randomUUID()}`;
+      const client = observeOpenAI(openai, { generationName: name });
+      const stream = await client.chat.completions.create({
+        stream: true,
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: "What's the weather like in Boston today?" }],
+        tool_choice: "auto",
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "get_current_weather",
+              description: "Get the current weather in a given location",
+              parameters: {
+                type: "object",
+                properties: {
+                  location: {
+                    type: "string",
+                    description: "The city and state, e.g. San Francisco, CA",
+                  },
+                  unit: { type: "string", enum: ["celsius", "fahrenheit"] },
+                },
+                required: ["location"],
+              },
+            },
+          },
+        ],
+        user: "langfuse-user@gmail.com",
+        max_tokens: 300,
+      });
+
+      for await (const _ of stream) {
+      }
+
+      await client.flushAsync();
+
+      const response = await getGeneration(name);
+      expect(response.status).toBe(200);
+      const generation = response.data.data[0];
+      expect(generation.name).toBe(name);
+      expect(generation.modelParameters).toBeDefined();
+      expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
+      expect(generation.usage).toBeDefined();
+      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.totalTokens).toBeDefined();
+      expect(generation.promptTokens).toBeDefined();
+      expect(generation.completionTokens).toBeDefined();
+      expect(generation.input).toBeDefined();
+      expect(generation.input.messages).toMatchObject([
+        { role: "user", content: "What's the weather like in Boston today?" },
+      ]);
+      expect(generation.input.tools).toMatchObject([
+        {
+          type: "function",
+          function: {
+            name: "get_current_weather",
+            description: "Get the current weather in a given location",
+            parameters: {
+              type: "object",
+              properties: {
+                location: {
+                  type: "string",
+                  description: "The city and state, e.g. San Francisco, CA",
+                },
+                unit: { type: "string", enum: ["celsius", "fahrenheit"] },
+              },
+              required: ["location"],
+            },
+          },
+        },
+      ]);
+      expect(generation.input.tool_choice).toBe("auto");
+
+      expect(generation.output).toBeDefined();
       expect(generation.calculatedInputCost).toBeDefined();
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
