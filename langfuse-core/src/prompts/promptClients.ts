@@ -56,10 +56,20 @@ export class TextPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
+  /**
+   * Compiles the prompt content.
+   * @param {Record<string, string>} variables - The variables to be used in the prompt.
+   * @returns {string} The compiled prompt content.
+   */
   compile(variables?: Record<string, string>): string {
     return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
 
+  /**
+   * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
+   *
+   * @returns {string} The string that can be plugged into Langchain's PromptTemplate.
+   */
   public getLangchainPrompt(): string {
     /**
      * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
@@ -91,6 +101,11 @@ export class ChatPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
+  /**
+   * Compiles the prompt content.
+   * @param {Record<string, string>} variables - The variables to be used in the prompt.
+   * @returns {ChatMessage[]} The compiled prompt content.
+   */
   compile(variables?: Record<string, string>): ChatMessage[] {
     return this.prompt.map<ChatMessage>((chatMessage) => ({
       ...chatMessage,
@@ -98,6 +113,11 @@ export class ChatPromptClient extends BasePromptClient {
     }));
   }
 
+  /**
+   * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
+   *
+   * @returns {ChatMessage[]} Chat messages with variables that can be plugged into Langchain's ChatPromptTemplate.
+   */
   public getLangchainPrompt(): ChatMessage[] {
     /**
      * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
