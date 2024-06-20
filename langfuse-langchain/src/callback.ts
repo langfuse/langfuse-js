@@ -36,12 +36,7 @@ type RootParams = {
   root: LangfuseTraceClient | LangfuseSpanClient;
 };
 
-type KeyParams = {
-  publicKey?: string;
-  secretKey?: string;
-} & LangfuseOptions;
-
-type ConstructorParams = (RootParams | KeyParams) & {
+type ConstructorParams = (RootParams | LangfuseOptions) & {
   userId?: string; // added to all traces
   version?: string; // added to all traces and observations
   sessionId?: string; // added to all traces
@@ -50,6 +45,42 @@ type ConstructorParams = (RootParams | KeyParams) & {
   updateRoot?: boolean;
 };
 
+/**
+ * CallbackHandler
+ * Handles various callbacks and interactions with the Langfuse SDK.
+ *
+ * @class
+ * @extends BaseCallbackHandler
+ * @property {Langfuse} langfuse - The Langfuse SDK instance.
+ * @property {string} [traceId] - The trace ID for the current session.
+ * @property {string} [observationId] - The observation ID for the current session.
+ * @property {string} [rootObservationId] - The root observation ID for the current session.
+ * @property {string} [topLevelObservationId] - The top-level observation ID for the current session.
+ * @property {string} [userId] - The user ID associated with the session.
+ * @property {string} [version] - The version of the application.
+ * @property {string} [sessionId] - The session ID for the current session.
+ * @property {Record<string, unknown>} [metadata] - Additional metadata for the session.
+ * @property {string[]} [tags] - Tags associated with the session.
+ * @property {boolean} rootProvided - Indicates if the root was provided.
+ * @property {boolean} updateRoot - Indicates if the root should be updated.
+ * @property {boolean} debugEnabled - Indicates if debugging is enabled.
+ * @property {Record<string, Date>} completionStartTimes - Records the start times of completions.
+ *
+ * @example
+ * ```typescript
+ * const langfuseHandler = new CallbackHandler({
+ *   secretKey: "sk-lf-...",
+ *   publicKey: "pk-lf-...",
+ *   baseUrl: "https://cloud.langfuse.com", // 🇪🇺 EU region
+ *   // baseUrl: "https://us.cloud.langfuse.com", // 🇺🇸 US region
+ * });
+ *
+ * // Your Langchain code
+ *
+ * // Add Langfuse handler as callback to `run` or `invoke`
+ * await chain.invoke({ input: "<user_input>" }, { callbacks: [langfuseHandler] });
+ * ```
+ */
 export class CallbackHandler extends BaseCallbackHandler {
   name = "CallbackHandler";
   langfuse: Langfuse;
@@ -67,6 +98,11 @@ export class CallbackHandler extends BaseCallbackHandler {
   debugEnabled: boolean = false;
   completionStartTimes: Record<string, Date> = {};
 
+  /**
+   * Creates an instance of CallbackHandler.
+   *
+   * @param {ConstructorParams} [params] - The configuration options for the CallbackHandler.
+   */
   constructor(params?: ConstructorParams) {
     super();
     if (params && "root" in params) {
@@ -89,14 +125,35 @@ export class CallbackHandler extends BaseCallbackHandler {
     this.version = params?.version;
   }
 
+  /**
+   * Flushes any pending data asynchronously.
+   *
+   * @returns {Promise<any>} A promise that resolves when the flush is complete.
+   */
   async flushAsync(): Promise<any> {
     return this.langfuse.flushAsync();
   }
 
+  /**
+   * Shuts down the Langfuse SDK asynchronously.
+   *
+   * @returns {Promise<any>} A promise that resolves when the shutdown is complete.
+   */
   async shutdownAsync(): Promise<any> {
     return this.langfuse.shutdownAsync();
   }
 
+  /**
+   * Enables or disables debugging.
+   *
+   * @param {boolean} [enabled=true] - Whether to enable debugging or not. Defaults to true.
+   * @returns {void}
+   *
+   * @example
+   * ```typescript
+   * langfuse.debug();
+   * ```
+   */
   debug(enabled: boolean = true): void {
     this.langfuse.debug(enabled);
     this.debugEnabled = enabled;
@@ -108,6 +165,13 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles a new token event.
+   *
+   * @param {string} _token - The token.
+   * @param {string} runId - The run ID.
+   * @returns {Promise<void>}
+   */
   async handleNewToken(_token: string, runId: string): Promise<void> {
     // if this is the first token, add it to completionStartTimes
     if (runId && !(runId in this.completionStartTimes)) {
@@ -117,6 +181,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     return Promise.resolve();
   }
 
+  /**
+   * Handles a new token event for LLM.
+   *
+   * @param {string} token - The token.
+   * @param {any} _idx - The index.
+   * @param {string} runId - The run ID.
+   * @param {string} [_parentRunId] - The parent run ID.
+   * @param {string[]} [_tags] - The tags.
+   * @param {any} [_fields] - The fields.
+   * @returns {Promise<void>}
+   */
   async handleLLMNewToken(
     token: string,
     _idx: any,
@@ -149,10 +224,22 @@ export class CallbackHandler extends BaseCallbackHandler {
     return this.traceId ? `${this.langfuse.baseUrl}/trace/${this.traceId}` : undefined;
   }
 
+  /**
+   * Gets the Langchain run ID.
+   *
+   * @returns {string | undefined}
+   */
   getLangchainRunId(): string | undefined {
     return this.topLevelObservationId;
   }
 
+  /**
+   * Handles errors during the retrieval of documents.
+   *
+   * @param {any} err - The error that occurred.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   */
   async handleRetrieverError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`Retriever error: ${err} with ID: ${runId}`);
@@ -170,6 +257,19 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the start of a chain run.
+   *
+   * @param {Serialized} serialized - The serialized chain.
+   * @param {ChainValues} inputs - The inputs to the chain.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @param {string[]} [tags] - The tags associated with the run.
+   * @param {Record<string, any>} [metadata] - Additional metadata for the run.
+   * @param {string} [runType] - The type of the run.
+   * @param {string} [name] - The name of the chain.
+   * @returns {Promise<void>}
+   */
   async handleChainStart(
     chain: Serialized,
     inputs: ChainValues,
@@ -200,6 +300,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the start of an agent action.
+   *
+   * @param {AgentAction} action - The agent action.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
     try {
       this._log(`Agent action with ID: ${runId}`);
@@ -217,6 +325,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the end of an agent run.
+   *
+   * @param {AgentFinish} finish - The agent end details.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleAgentEnd?(action: AgentFinish, runId: string, parentRunId?: string): Promise<void> {
     try {
       this._log(`Agent finish with ID: ${runId}`);
@@ -234,6 +350,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles an error during a chain run.
+   *
+   * @param {any} error - The error that occurred.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleChainError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`Chain error: ${err} with ID: ${runId}`);
@@ -252,6 +376,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Generates a trace for the current session.
+   *
+   * @param {Serialized} serialized - The serialized object.
+   * @param {string} runId - The run ID.
+   * @param {string | undefined} parentRunId - The parent run ID.
+   * @param {string[] | undefined} [tags] - The tags associated with the trace.
+   * @param {Record<string, unknown> | undefined} [metadata] - Additional metadata for the trace.
+   * @param {string | BaseMessage[][] | ChainValues | undefined} [input] - The input to the trace.
+   * @returns {void}
+   */
   generateTrace(
     runName: string,
     runId: string,
@@ -294,6 +429,18 @@ export class CallbackHandler extends BaseCallbackHandler {
     this.topLevelObservationId = parentRunId ? this.topLevelObservationId : runId;
   }
 
+  /**
+   * Handles the start of a generation run.
+   * @param {Serialized} llm - The serialized LLM.
+   * @param {(LlmMessage | MessageContent | AnonymousLlmMessage)[]} messages - The messages for the LLM.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @param {Record<string, any>} [extraParams] - Additional parameters for the run.
+   * @param {string[]} [tags] - The tags associated with the run.
+   * @param {Record<string, any>} [metadata] - Additional metadata for the run.
+   * @param {string} [name] - The name of the LLM.
+   * @returns {Promise<void>}
+   */
   async handleGenerationStart(
     llm: Serialized,
     messages: (LlmMessage | MessageContent | AnonymousLlmMessage)[],
@@ -352,6 +499,18 @@ export class CallbackHandler extends BaseCallbackHandler {
     });
   }
 
+  /**
+   * Handles the start of a chat model run.
+   * @param {Serialized} llm - The serialized LLM.
+   * @param {BaseMessage[][]} messages - The messages for the LLM.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @param {Record<string, unknown>} [extraParams] - Additional parameters for the run.
+   * @param {string[]} [tags] - The tags associated with the run.
+   * @param {Record<string, unknown>} [metadata] - Additional metadata for the run.
+   * @param {string} [name] - The name of the LLM.
+   * @returns {Promise<void>}
+   */
   async handleChatModelStart(
     llm: Serialized,
     messages: BaseMessage[][],
@@ -373,6 +532,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the end of a chain run.
+   *
+   * @param {ChainValues} outputs - The outputs of the chain.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleChainEnd(outputs: ChainValues, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`Chain end with ID: ${runId}`);
@@ -390,6 +557,19 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the start of an LLM run.
+   *
+   * @param {Serialized} serialized - The serialized LLM.
+   * @param {BaseMessage[]} messages - The messages for the LLM.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @param {Record<string, any>} [extraParams] - Additional parameters for the run.
+   * @param {string[]} [tags] - The tags associated with the run.
+   * @param {Record<string, any>} [metadata] - Additional metadata for the run.
+   * @param {string} [name] - The name of the LLM.
+   * @returns {Promise<void>}
+   */
   async handleLLMStart(
     llm: Serialized,
     prompts: string[],
@@ -409,6 +589,18 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the start of a tool run.
+   *
+   * @param {Serialized} tool - The serialized tool.
+   * @param {string} input - The input to the tool.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @param {string[]} [tags] - The tags associated with the run.
+   * @param {Record<string, unknown>} [metadata] - Additional metadata for the run.
+   * @param {string} [name] - The name of the tool.
+   * @returns {Promise<void>}
+   */
   async handleToolStart(
     tool: Serialized,
     input: string,
@@ -435,6 +627,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the start of a retriever run.
+   * @param {Serialized} retriever - The serialized retriever.
+   * @param {string} query - The query for the retriever.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @param {string[]} [tags] - The tags associated with the run.
+   * @param {Record<string, unknown>} [metadata] - Additional metadata for the run.
+   * @param {string} [name] - The name of the retriever.
+   * @returns {Promise<void>}
+   */
   async handleRetrieverStart(
     retriever: Serialized,
     query: string,
@@ -461,6 +664,13 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the end of a retriever run.
+   * @param {Document<Record<string, any>>[]} documents - The documents retrieved by the retriever.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleRetrieverEnd(
     documents: Document<Record<string, any>>[],
     runId: string,
@@ -482,6 +692,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the end of a tool run.
+   *
+   * @param {string} output - The output of the tool.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleToolEnd(output: string, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`Tool end with ID: ${runId}`);
@@ -499,6 +717,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles an error during a tool run.
+   *
+   * @param {any} error - The error that occurred.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleToolError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`Tool error ${err} with ID: ${runId}`);
@@ -517,6 +743,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Handles the end of an LLM run.
+   *
+   * @param {LLMResult} output - The output of the LLM.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleLLMEnd(output: LLMResult, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`LLM end with ID: ${runId}`);
@@ -580,6 +814,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     return response;
   }
 
+  /**
+   * Handles an error during an LLM run.
+   *
+   * @param {any} error - The error that occurred.
+   * @param {string} runId - The run ID.
+   * @param {string} [parentRunId] - The parent run ID.
+   * @returns {Promise<void>}
+   */
   async handleLLMError(err: any, runId: string, parentRunId?: string | undefined): Promise<void> {
     try {
       this._log(`LLM error ${err} with ID: ${runId}`);
@@ -598,6 +840,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Updates the trace with the output.
+   *
+   * @param {string} runId - The run ID.
+   * @param {string | undefined} parentRunId - The parent run ID.
+   * @param {string | Record<string, any>} output - The output to update the trace with.
+   * @returns {void}
+   */
   updateTrace(runId: string, parentRunId: string | undefined, output: any): void {
     if (!parentRunId && this.traceId && this.traceId === runId) {
       this.langfuse.trace({ id: this.traceId, output: output });
@@ -612,6 +862,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * Joins tags and metadata into a single object.
+   *
+   * @param {string[] | undefined} [tags] - The tags.
+   * @param {Record<string, unknown> | undefined} [metadata1] - The first metadata object.
+   * @param {Record<string, unknown> | undefined} [metadata2] - The second metadata object.
+   * @returns {Record<string, unknown>} - The combined tags and metadata.
+   */
   joinTagsAndMetaData(
     tags?: string[] | undefined,
     metadata1?: Record<string, unknown> | undefined,
