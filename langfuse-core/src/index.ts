@@ -86,7 +86,11 @@ class LangfuseFetchNetworkError extends Error {
 function isLangfuseFetchError(err: any): boolean {
   return typeof err === "object" && (err.name === "LangfuseFetchHttpError" || err.name === "LangfuseFetchNetworkError");
 }
-
+/**
+ * The core stateless class for interacting with the Langfuse SDK.
+ *
+ * @property {string} baseUrl - Langfuse API baseUrl (https://cloud.langfuse.com by default). Can be set via LANGFUSE_BASEURL environment variable.
+ */
 abstract class LangfuseCoreStateless {
   // options
   private secretKey: string | undefined;
@@ -296,7 +300,7 @@ abstract class LangfuseCoreStateless {
   /**
    * Get a dataset run by name.
    * @param {GetLangfuseDatasetRunParams} params - The parameters to get the dataset run.
-   * @returns {Promise<GetLangfuseDatasetRunResponse>} A promise that resolves to the response of the get operation.
+   * @returns {Promise<GetLangfuseDatasetRunResponse>} A promise that resolves to the response containing the dataset run.
    *
    * @example
    * ```typescript
@@ -319,7 +323,17 @@ abstract class LangfuseCoreStateless {
   /**
    * Creates a dataset run item.
    * @param {CreateLangfuseDatasetRunItemBody} body - The body of the dataset run item to be created.
-   * @returns {Promise<CreateLangfuseDatasetRunItemResponse>} A promise that resolves to the response of the create operation.
+   * @returns {Promise<CreateLangfuseDatasetRunItemResponse>} A promise that resolves to the response containing the newly created dataset run item.
+   * @example
+   * ```typescript
+   * const newRuntItem = langfuse.createDatasetRunItem({
+   *  dataseItemId: "<dataset_item_id>",
+   *  runName: "<run_name>",
+   *  runDescription: "My first run",
+   *  metadata: {
+   *    model: "llama3",
+   *  },
+   * });
    */
   async createDatasetRunItem(body: CreateLangfuseDatasetRunItemBody): Promise<CreateLangfuseDatasetRunItemResponse> {
     return this.fetch(
@@ -331,7 +345,7 @@ abstract class LangfuseCoreStateless {
   /**
    * Creates a dataset.
    * @param {string | {name: string, description?: string, metadata?: any}} dataset
-   * @returns {Promise<CreateLangfuseDatasetResponse>}
+   * @returns {Promise<CreateLangfuseDatasetResponse>} A promise that resolves to the response containing the newly created dataset.
    * @example
    * ```typescript
    * langfuse.createDataset({
@@ -366,7 +380,7 @@ abstract class LangfuseCoreStateless {
   /**
    * Creates a dataset item. If the item already exists, it updates the item.
    * @param {CreateLangfuseDatasetItemBody} body The body of the dataset item to be created.
-   * @returns A promise that resolves to the response of the create operation.
+   * @returns A promise that resolves to the response containing the newly created dataset item.
    * @example
    * ```typescript
    * langfuse.createDatasetItem({
@@ -396,7 +410,7 @@ abstract class LangfuseCoreStateless {
   /**
    * Get the dataset item with the given id.
    * @param {string} id The id of the dataset item.
-   * @returns {Promise<CreateLangfuseDatesetItemResponse>} A promise that resolves to the response of the get operation.
+   * @returns {Promise<CreateLangfuseDatesetItemResponse>} A promise that resolves to the response containing the dataset item.
    *
    * @example
    * ```typescript
@@ -485,7 +499,7 @@ abstract class LangfuseCoreStateless {
   }
 
   /**
-   * Flush the internal event queue to the Langfuse API. It blocks until the queue is empty.
+   * Flush the internal event queue to the Langfuse API. It returns a promise that resolves when the queue is empty.
    * It should be called when the application shuts down.
    * @returns {Promise<void>} A promise that resolves when the flushing is completed.
    * @example
@@ -511,16 +525,21 @@ abstract class LangfuseCoreStateless {
   }
 
   /**
-   * Flush the internal event queue to the Langfuse API. It blocks until the queue is empty.
+   * Flush the internal event queue to the Langfuse API. Optionally uses a callback to notify when the queue is empty.
    * It should be called when the application shuts down.
    * @param {Function} [callback] - A callback that is called when the flushing is completed.
    * @returns {void}
    * @example
    * ```typescript
-   * langfuse.flush();
+   * langfuse.flush((err, data) => {
+   *   if (err) {
+   *     console.error("Error while flushing Langfuse", err);
+   *   } else {
+   *     console.log("Flushing completed", data);
+   *   }
+   * });
    * ```
    */
-
   flush(callback?: (err?: any, data?: any) => void): void {
     if (this._flushTimer) {
       clearTimeout(this._flushTimer);
@@ -796,7 +815,8 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
  * ```
  *
  * @example
- * ```.env
+ * ```bash
+ * # Alternatively, set the SDK's environment variables
  * LANGFUSE_SECRET_KEY="sk-lf-...";
  * LANGFUSE_PUBLIC_KEY="pk-lf-...";
  * LANGFUSE_BASEURL="https://cloud.langfuse.com"; # 🇪🇺 EU region
@@ -1093,7 +1113,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    *      }
    *    ) => Promise<{id: string}>,
    *  }>
-   * }>} A promise that resolves to the response of the get operation.
+   * }>} A promise that resolves to the response containing the dataset.
    * @example
    * ```typescript
    * const dataset = await langfuse.getDataset("<dataset_name>");
@@ -1163,7 +1183,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * The prompt is also cached for future use.
    *
    * @param {CreateChatPromptBody | CreateTextPromptBody | CreatePromptBody} body - The body of the prompt to be created.
-   * @returns {Promise<ChatPromptClient | TextPromptClient | LangfusePromptClient>} A promise that resolves to the response of the create operation.
+   * @returns {Promise<ChatPromptClient | TextPromptClient | LangfusePromptClient>} A promise that resolves to a ChatPromptClient, TextPromptClient, or LangfusePromptClient depending on the type of the prompt created.
    */
   async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
   async createPrompt(body: CreateTextPromptBody): Promise<TextPromptClient>;
@@ -1192,7 +1212,11 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * @param {string} name - The name of the prompt.
    * @param {number} [version] - The version of the prompt.
    * @param {{label?: string, cacheTtlSeconds?: number, type?: "chat" | "text"}} [options] - The options for the prompt.
-   * @returns {Promise<TextPromptClient | ChatPromptClient | LangfusePromptClient>}  A promise that resolves to the response of the get operation.
+   * @returns {Promise<TextPromptClient | ChatPromptClient | LangfusePromptClient>}  A promise that resolves to a TextPromptClient, ChatPromptClient, or LangfusePromptClient depending on the type of the prompt.
+   *  * @example
+   * ```typescript
+   * const prompt = await langfuse.getPrompt("example-prompt", 1, { label: "production", type: "text" });
+   * ```
    */
   async getPrompt(
     name: string,
@@ -1304,6 +1328,11 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
 /**
  * A client for interacting with Langfuse objects.
+ *
+ * @property {LangfuseCore} client - The LangfuseCore instance.
+ * @property {string} id - The ID of the item.
+ * @property {string} traceId - The ID of the trace.
+ * @property {string | null} observationId - The ID of the observation.
  *
  * @class
  */
@@ -1459,7 +1488,13 @@ export abstract class LangfuseObjectClient {
 
 /**
  * A client for interacting with Langfuse traces.
+ * A trace is a collection of spans, events, generations, and scores.
  *
+ * @property {string} id - The ID of the trace.
+ * @property {LangfuseCore} client - The LangfuseCore instance.
+ * @property {string} traceId - The ID of the trace.
+ * @property {string | null} observationId - The ID of the observation.
+ * @returns {LangfuseTraceClient} The trace client.
  * @class
  * @extends LangfuseObjectClient
  */
@@ -1469,6 +1504,7 @@ export class LangfuseTraceClient extends LangfuseObjectClient {
    *
    * @param {LangfuseCore} client - The LangfuseCore instance.
    * @param {string} traceId - The ID of the trace.
+   * @returns {LangfuseTraceClient} The trace client.
    */
   constructor(client: LangfuseCore, traceId: string) {
     super({ client, id: traceId, traceId, observationId: null });
