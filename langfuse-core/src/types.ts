@@ -293,7 +293,19 @@ export type GetLangfusePromptResponse =
  * @property content - The content of the message.
  */
 export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
+
+/**
+ * ChatPrompt
+ * @property prompt - The prompt content.
+ * @property type - The type of the prompt, always "chat" for ChatPrompt.
+ */
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
+/**
+ * TextPrompt
+ * @property prompt - The prompt content.
+ * @property type - The type of the prompt, always "text" for TextPrompt.
+ * @interface
+ */
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
 
 type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
@@ -348,7 +360,7 @@ export type PromptInput = {
 export type CreateLangfuseGeneration = Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput;
 
 /**
- * CreateLangfuseGenerationWithoutParentObservation
+ * CreateLangfuseGenerationWithoutParent
  * @property id - The id of the generation can be set, defaults to random id.
  * @property name - Identifier of the generation. Useful for sorting/filtering in the UI.
  * @property startTime - The time at which the generation started, defaults to the current time.
@@ -366,7 +378,7 @@ export type CreateLangfuseGeneration = Omit<CreateLangfuseGenerationBody, "promp
  * @property prompt - The prompt client to be used for the generation.
  * @interface
  */
-export type CreateLangfuseGenerationWithoutParentObservation = Omit<
+export type CreateLangfuseGenerationWithoutParent = Omit<
   CreateLangfuseGenerationBody,
   "traceId" | "parentObservationId" | "promptName" | "promptVersion"
 > &

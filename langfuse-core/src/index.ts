@@ -34,7 +34,7 @@ import {
   type CreateTextPromptBody,
   type CreateLangfuseGeneration,
   type CreateLangfuseEvent,
-  type CreateLangfuseGenerationWithoutParentObservation,
+  type CreateLangfuseGenerationWithoutParent,
   type CreateLangfuseSpan,
   type CreateLangfuseScore,
   type UpdateLangfuseGeneration,
@@ -1212,10 +1212,14 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * @param {string} name - The name of the prompt.
    * @param {number} [version] - The version of the prompt.
    * @param {{label?: string, cacheTtlSeconds?: number, type?: "chat" | "text"}} [options] - The options for the prompt.
-   * @returns {Promise<TextPromptClient | ChatPromptClient | LangfusePromptClient>}  A promise that resolves to a TextPromptClient, ChatPromptClient, or LangfusePromptClient depending on the type of the prompt.
-   *  * @example
+   * @returns {Promise<TextPromptClient | ChatPromptClient | LangfusePromptClient>} A promise that resolves to a TextPromptClient, ChatPromptClient, or LangfusePromptClient depending on the type of the prompt.
+   * @example
    * ```typescript
-   * const prompt = await langfuse.getPrompt("example-prompt", 1, { label: "production", type: "text" });
+   * const prompt = await langfuse.getPrompt(
+   *   "example-prompt",
+   *   1,
+   *   { label: "production", type: "text" }
+   * );
    * ```
    */
   async getPrompt(
@@ -1448,10 +1452,10 @@ export abstract class LangfuseObjectClient {
    *
    * If no traceId is provided, a new trace is created just for this generation.
    *
-   * @param {CreateLangfuseGenerationWithoutParentObservation} body - The body of the generation to be created.
+   * @param {CreateLangfuseGenerationWithoutParent} body - The body of the generation to be created.
    * @returns {LangfuseGenerationClient} The created generation
    */
-  generation(body: CreateLangfuseGenerationWithoutParentObservation): LangfuseGenerationClient {
+  generation(body: CreateLangfuseGenerationWithoutParent): LangfuseGenerationClient {
     return this.client.generation({
       ...body,
       traceId: this.traceId,
