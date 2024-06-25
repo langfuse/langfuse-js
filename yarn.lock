@@ -1562,7 +1562,7 @@
     zod "^3.22.3"
     zod-to-json-schema "^3.22.5"
 
-"@langchain/core@>0.1.0  <0.3.0", "@langchain/core@>0.1.56 <0.3.0", "@langchain/core@>=0.2.5 <0.3.0", "@langchain/core@~0.2.0", "@langchain/core@~0.2.9":
+"@langchain/core@>0.1.0  <0.3.0", "@langchain/core@>0.1.56 <0.3.0", "@langchain/core@>=0.2.5 <0.3.0", "@langchain/core@>=0.2.8 <0.3.0", "@langchain/core@~0.2.0", "@langchain/core@~0.2.9":
   version "0.2.9"
   resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.2.9.tgz#8a22585ef11d2ca8742a8bbfe77dd25baedc7779"
   integrity sha512-pJshopBZqMNF020q0OrrO+vfApWTZUlZecRYMM7TWA5M8/zvEyU/mgA9DlzeRjjDmG6pwF6dIKVjpl6fIGVXlQ==
@@ -1577,6 +1577,17 @@
     p-queue "^6.6.2"
     p-retry "4"
     uuid "^9.0.0"
+    zod "^3.22.4"
+    zod-to-json-schema "^3.22.3"
+
+"@langchain/openai@>=0.1.0 <0.3.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@langchain/openai/-/openai-0.2.0.tgz#342e49d15b946fa01128d1bb81357e688e7cf567"
+  integrity sha512-gZd+0IOxpiKuh1m6KTT5vtUoOO72GEYyoU4+c6qAUucOEqQS0Vvz3lMGyNWLjK4x4Xpd+r8GAF5mj/jvghwP1A==
+  dependencies:
+    "@langchain/core" ">=0.2.8 <0.3.0"
+    js-tiktoken "^1.0.12"
+    openai "^4.49.1"
     zod "^3.22.4"
     zod-to-json-schema "^3.22.3"
 
@@ -6395,12 +6406,12 @@ langchain@0.2.3:
     zod-to-json-schema "^3.22.3"
 
 langchain@^0.2:
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.2.5.tgz#fc23848c20244a1d0a3dd5dd4663af9a41017ccb"
-  integrity sha512-H5WL0NanCdQ+tzoeEt7Fyz9YGdR3wbfDvfQrJvxAO95istKo5JraRh24dzyvqxM9439xwRMNaMIpMwsyqtWDtQ==
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.2.6.tgz#22249707ba800c38ec9a6cca36e383a881227393"
+  integrity sha512-vDAJHGu/lA4pn3hkyzSC6RiaZhtj0ozfRyG8L6J2vCnXyJV/lgk9uGMP2x645EBrSozBMHJBng1UYeaUR/1fQQ==
   dependencies:
     "@langchain/core" "~0.2.0"
-    "@langchain/openai" "~0.1.0"
+    "@langchain/openai" ">=0.1.0 <0.3.0"
     "@langchain/textsplitters" "~0.0.0"
     binary-extensions "^2.2.0"
     js-tiktoken "^1.0.12"
