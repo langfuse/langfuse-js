@@ -1632,7 +1632,6 @@ components:
         - value
         - source
         - timestamp
-        - dataType
     DatasetCore:
       title: DatasetCore
       type: object
