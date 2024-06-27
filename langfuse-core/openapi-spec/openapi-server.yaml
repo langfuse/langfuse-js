@@ -2339,7 +2339,7 @@ components:
           type: string
           nullable: true
         dataType:
-          type: string
+          $ref: "#/components/schemas/ScoreDataType"
           nullable: true
         configId:
           type: string
