@@ -39,6 +39,7 @@ describe("Langfuse Core", () => {
       event.score({
         name: "test-score-1",
         value: 0.5,
+        dataType: "NUMERIC",
       });
 
       await langfuse.shutdownAsync();
