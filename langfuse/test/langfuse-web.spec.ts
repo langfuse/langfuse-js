@@ -176,7 +176,6 @@ describe("langfuseWeb", () => {
       );
     });
 
-
     it("should log error if score was not created", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
