@@ -141,6 +141,60 @@ describe("langfuseWeb", () => {
         value: 200,
         comment: "test comment",
         observationId: "test-observation-id",
+        dataType: "NUMERIC",
+        configId: "test-config-id",
+      });
+
+      expect(score).toBeInstanceOf(Promise);
+
+      await score;
+
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${LANGFUSE_BASEURL}/api/public/ingestion`,
+        expect.objectContaining({
+          body: expect.stringContaining(
+            JSON.stringify({
+              id,
+              name: "test",
+              traceId: "test-trace-1",
+              value: 200,
+              comment: "test comment",
+              observationId: "test-observation-id",
+            })
+          ),
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            "X-Langfuse-Public-Key": "pk",
+            Authorization: "Bearer pk",
+            "X-Langfuse-Sdk-Name": "langfuse-js",
+            "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
+            "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
+          }),
+          signal: expect.anything(),
+        })
+      );
+    });
+
+    it("should initialise categorical score", async () => {
+      const langfuse = new LangfuseWeb({
+        publicKey: "pk",
+        flushAt: 10,
+      });
+      expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
+
+      const id = utils.generateUUID();
+      const score = langfuse.score({
+        id,
+        name: "categorical-test",
+        traceId: "test-trace-1",
+        value: 1,
+        comment: "test comment",
+        observationId: "test-observation-id",
+        dataType: "NUMERIC",
+        stringValue: "test-value",
       });
 
       expect(score).toBeInstanceOf(Promise);
@@ -194,6 +248,7 @@ describe("langfuseWeb", () => {
         value: 200,
         comment: "test comment",
         observationId: "test-observation-id",
+        configId: "test-config-id",
       });
 
       // should not throw error

@@ -359,6 +359,11 @@ export interface components {
      * @enum {string}
      */
     ScoreSource: "ANNOTATION" | "API" | "EVAL";
+    /**
+     * ScoreDataType
+     * @enum {string}
+     */
+    ScoreDataType: "NUMERIC" | "CATEGORICAL" | "BOOLEAN";
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
@@ -605,8 +610,11 @@ export interface components {
       name: string;
       /** Format: double */
       value: number;
+      stringValue?: string | null;
       observationId?: string | null;
       comment?: string | null;
+      dataType?: components["schemas"]["ScoreDataType"] | null;
+      configId?: string | null;
     };
     /** BaseEvent */
     BaseEvent: {

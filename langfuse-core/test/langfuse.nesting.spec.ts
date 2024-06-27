@@ -113,6 +113,7 @@ describe("Langfuse Core", () => {
                   traceId: trace.id,
                   observationId: event.id,
                   value: 0.5,
+                  dataType: "NUMERIC",
                 },
               },
             ],

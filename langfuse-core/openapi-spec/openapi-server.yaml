@@ -1605,6 +1605,9 @@ components:
         value:
           type: number
           format: double
+        stringValue: 
+          type: string
+          nullable: true
         source:
           $ref: "#/components/schemas/ScoreSource"
         observationId:
@@ -1616,6 +1619,12 @@ components:
         comment:
           type: string
           nullable: true
+        dataType:
+          type: "#/components/schemas/ScoreDataType"
+          nullable: true
+        configId:
+          type: string
+          nullable: true
       required:
         - id
         - traceId
@@ -1623,6 +1632,7 @@ components:
         - value
         - source
         - timestamp
+        - dataType
     DatasetCore:
       title: DatasetCore
       type: object
@@ -1834,6 +1844,13 @@ components:
         - ANNOTATION
         - API
         - EVAL
+    ScoreDataType:
+      title: ScoreDataType
+      type: string
+      enum:
+        - NUMERIC
+        - CATEGORICAL
+        - BOOLEAN
     CreateDatasetItemRequest:
       title: CreateDatasetItemRequest
       type: object
@@ -2313,10 +2330,19 @@ components:
         value:
           type: number
           format: double
+        stringValue:
+          type: string
+          nullable: true
         observationId:
           type: string
           nullable: true
         comment:
+          type: string
+          nullable: true
+        dataType:
+          type: string
+          nullable: true
+        configId:
           type: string
           nullable: true
       required:
@@ -2809,10 +2835,19 @@ components:
         value:
           type: number
           format: double
+        stringValue:
+          type: string
+          nullable: true
         observationId:
           type: string
           nullable: true
         comment:
+          type: string
+          nullable: true
+        dataType:
+          type: string
+          nullable: true
+        configId:
           type: string
           nullable: true
       required:

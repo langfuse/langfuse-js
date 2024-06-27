@@ -64,9 +64,15 @@ components:
         value:
           type: number
           format: double
+        stringValue: 
+          type: string
         observationId:
           type: string
         comment:
+          type: string
+        dataType: 
+          type: string
+        configId: 
           type: string
       required:
         - traceId
@@ -85,12 +91,18 @@ components:
         value:
           type: number
           format: double
+        stringValue: 
+          type: string
         observationId:
           type: string
         timestamp:
           type: string
           format: date-time
         comment:
+          type: string
+        dataType: 
+          type: string
+        configId: 
           type: string
       required:
         - id
