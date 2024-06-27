@@ -162,6 +162,8 @@ describe("langfuseWeb", () => {
               value: 200,
               comment: "test comment",
               observationId: "test-observation-id",
+              dataType: "NUMERIC",
+              configId: "test-config-id",
             })
           ),
           method: "POST",
@@ -193,7 +195,7 @@ describe("langfuseWeb", () => {
         value: 1,
         comment: "test comment",
         observationId: "test-observation-id",
-        dataType: "NUMERIC",
+        dataType: "CATEGORICAL",
         stringValue: "test-value",
       });
 
@@ -214,6 +216,8 @@ describe("langfuseWeb", () => {
               value: 200,
               comment: "test comment",
               observationId: "test-observation-id",
+              dataType: "CATEGORICAL",
+              stringValue: "test-value",
             })
           ),
           method: "POST",
@@ -248,7 +252,6 @@ describe("langfuseWeb", () => {
         value: 200,
         comment: "test comment",
         observationId: "test-observation-id",
-        configId: "test-config-id",
       });
 
       // should not throw error
