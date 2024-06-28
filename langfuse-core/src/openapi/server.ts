@@ -485,7 +485,7 @@ export interface components {
       timestamp: string;
       comment?: string | null;
       /** @description The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
-      dataType?: components["schemas"]["ScoreDataType"];
+      dataType: components["schemas"]["ScoreDataType"];
       /** @description The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
       configId?: string | null;
     };
@@ -803,7 +803,7 @@ export interface components {
       stringValue?: string | null;
       observationId?: string | null;
       comment?: string | null;
-      dataType?: components["schemas"]["ScoreDataType"];
+      dataType?: components["schemas"]["ScoreDataType"] | null;
       configId?: string | null;
     };
     /** BaseEvent */
