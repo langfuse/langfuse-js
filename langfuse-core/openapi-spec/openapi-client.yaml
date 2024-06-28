@@ -71,7 +71,7 @@ components:
         comment:
           type: string
         dataType: 
-          type: string
+          $ref: '#/components/schemas/ScoreDataType'
         configId: 
           type: string
       required:
@@ -101,7 +101,7 @@ components:
         comment:
           type: string
         dataType: 
-          type: string
+          $ref: '#/components/schemas/ScoreDataType'
         configId: 
           type: string
       required:
@@ -110,6 +110,14 @@ components:
         - name
         - value
         - timestamp
+        - dataType
+    ScoreDataType:
+      title: ScoreDataType
+      type: string
+      enum:
+        - NUMERIC
+        - CATEGORICAL
+        - BOOLEAN
   securitySchemes:
     BearerAuth:
       type: http
