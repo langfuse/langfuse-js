@@ -71,6 +71,77 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateDatasetItemRequest"
+    get:
+      description: Get dataset items
+      operationId: datasetItems_list
+      tags:
+        - DatasetItems
+      parameters:
+        - name: datasetName
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: sourceTraceId
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: sourceObservationId
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: page
+          in: query
+          description: page number, starts at 1
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: limit of items per page
+          required: false
+          schema:
+            type: integer
+            nullable: true
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedDatasetItems"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
   /api/public/dataset-items/{id}:
     get:
       description: Get a dataset item
@@ -162,7 +233,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateDatasetRunItemRequest"
-  /api/public/datasets:
+  /api/public/v2/datasets:
     get:
       description: Get all datasets
       operationId: datasets_list
@@ -171,12 +242,14 @@ paths:
       parameters:
         - name: page
           in: query
+          description: page number, starts at 1
           required: false
           schema:
             type: integer
             nullable: true
         - name: limit
           in: query
+          description: limit of items per page
           required: false
           schema:
             type: integer
@@ -259,7 +332,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateDatasetRequest"
-  /api/public/datasets/{datasetName}:
+  /api/public/v2/datasets/{datasetName}:
     get:
       description: Get a dataset and its items
       operationId: datasets_get
@@ -307,7 +380,7 @@ paths:
   /api/public/datasets/{datasetName}/runs/{runName}:
     get:
       description: Get a dataset run and its items
-      operationId: datasets_getRuns
+      operationId: datasets_getRun
       tags:
         - Datasets
       parameters:
@@ -327,7 +400,66 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DatasetRun"
+                $ref: "#/components/schemas/DatasetRunWithItems"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
+  /api/public/datasets/{datasetName}/runs:
+    get:
+      description: Get a dataset runs
+      operationId: datasets_getRuns
+      tags:
+        - Datasets
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: page number, starts at 1
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: limit of items per page
+          required: false
+          schema:
+            type: integer
+            nullable: true
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedDatasetRuns"
         "400":
           description: ""
           content:
@@ -397,7 +529,21 @@ paths:
           description: ""
   /api/public/ingestion:
     post:
-      description: Batched ingestion for Langfuse Tracing
+      description: >-
+        Batched ingestion for Langfuse Tracing. If you want to use tracing via
+        the API, such as to build your own Langfuse client implementation, this
+        is the only API route you need to implement.
+
+
+        Notes:
+
+
+        - Batch sizes are limited to 3.5 MB in total. You need to adjust the
+        number of events per batch accordingly.
+
+        - The API does not return a 4xx status code for input errors. Instead,
+        it responds with a 207 status code, which includes a list of the
+        encountered errors.
       operationId: ingestion_batch
       tags:
         - Ingestion
@@ -446,6 +592,14 @@ paths:
                   type: array
                   items:
                     $ref: "#/components/schemas/IngestionEvent"
+                  description: >-
+                    Batch of tracing events to be ingested. Discriminated by
+                    attribute `type`.
+                metadata:
+                  nullable: true
+                  description: >-
+                    Optional. Metadata field used by the Langfuse SDKs for
+                    debugging.
               required:
                 - batch
   /api/public/metrics/daily:
@@ -818,12 +972,14 @@ paths:
             nullable: true
         - name: page
           in: query
+          description: page number, starts at 1
           required: false
           schema:
             type: integer
             nullable: true
         - name: limit
           in: query
+          description: limit of items per page
           required: false
           schema:
             type: integer
@@ -906,6 +1062,108 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreatePromptRequest"
+  /api/public/score-configs:
+    get:
+      description: Get all score configs
+      operationId: scoreConfigs_get
+      tags:
+        - ScoreConfigs
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starts at 1.
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: >-
+            Limit of items per page. If you encounter api issues due to too
+            large page sizes, try to reduce the limit.
+          required: false
+          schema:
+            type: integer
+            nullable: true
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreConfigs"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
+  /api/public/score-configs/{configId}:
+    get:
+      description: Get a score config
+      operationId: scoreConfigs_get-by-id
+      tags:
+        - ScoreConfigs
+      parameters:
+        - name: configId
+          in: path
+          description: The unique langfuse identifier of a score config
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreConfig"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
   /api/public/scores:
     post:
       description: Create a score
@@ -997,9 +1255,10 @@ paths:
         - name: source
           in: query
           description: Retrieve only scores from a specific source.
-          required: true
+          required: false
           schema:
             $ref: "#/components/schemas/ScoreSource"
+            nullable: true
         - name: operator
           in: query
           description: Retrieve only scores with <operator> value.
@@ -1014,6 +1273,13 @@ paths:
           schema:
             type: number
             format: double
+            nullable: true
+        - name: scoreIds
+          in: query
+          description: Comma-separated list of score IDs to limit the results to.
+          required: false
+          schema:
+            type: string
             nullable: true
       responses:
         "200":
@@ -1137,7 +1403,10 @@ paths:
       security: *ref_0
   /api/public/sessions/{sessionId}:
     get:
-      description: Get a session
+      description: >-
+        Get a session. Please note that `traces` on this endpoint are not
+        paginated, if you plan to fetch large sessions, consider `GET
+        /api/public/traces?sessionId=<sessionId>`
       operationId: sessions_get
       tags:
         - Sessions
@@ -1592,6 +1861,63 @@ components:
           format: double
           nullable: true
           description: USD total cost, defaults to input+output
+    ScoreConfig:
+      title: ScoreConfig
+      type: object
+      description: Configuration for a score
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+        dataType:
+          $ref: "#/components/schemas/ScoreDataType"
+        isArchived:
+          type: boolean
+        minValue:
+          type: number
+          format: double
+          nullable: true
+        maxValue:
+          type: number
+          format: double
+          nullable: true
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigCategory"
+          nullable: true
+        description:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - createdAt
+        - updatedAt
+        - projectId
+        - dataType
+        - isArchived
+    ConfigCategory:
+      title: ConfigCategory
+      type: object
+      properties:
+        value:
+          type: number
+          format: double
+        label:
+          type: string
+      required:
+        - value
+        - label
     Score:
       title: Score
       type: object
@@ -1623,8 +1949,8 @@ components:
         - value
         - source
         - timestamp
-    DatasetCore:
-      title: DatasetCore
+    Dataset:
+      title: Dataset
       type: object
       properties:
         id:
@@ -1650,43 +1976,6 @@ components:
         - projectId
         - createdAt
         - updatedAt
-    DatasetWithReferences:
-      title: DatasetWithReferences
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            type: string
-          description: list of dataset item ids
-        runs:
-          type: array
-          items:
-            type: string
-          description: list of dataset run names
-      required:
-        - items
-        - runs
-      allOf:
-        - $ref: "#/components/schemas/DatasetCore"
-    Dataset:
-      title: Dataset
-      type: object
-      description: Dataset including all items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/DatasetItem"
-        runs:
-          type: array
-          items:
-            type: string
-      required:
-        - items
-        - runs
-      allOf:
-        - $ref: "#/components/schemas/DatasetCore"
     DatasetItem:
       title: DatasetItem
       type: object
@@ -1778,10 +2067,6 @@ components:
         updatedAt:
           type: string
           format: date-time
-        datasetRunItems:
-          type: array
-          items:
-            $ref: "#/components/schemas/DatasetRunItem"
       required:
         - id
         - name
@@ -1789,7 +2074,18 @@ components:
         - datasetName
         - createdAt
         - updatedAt
+    DatasetRunWithItems:
+      title: DatasetRunWithItems
+      type: object
+      properties:
+        datasetRunItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetRunItem"
+      required:
         - datasetRunItems
+      allOf:
+        - $ref: "#/components/schemas/DatasetRun"
     ModelUsageUnit:
       title: ModelUsageUnit
       type: string
@@ -1834,6 +2130,13 @@ components:
         - ANNOTATION
         - API
         - EVAL
+    ScoreDataType:
+      title: ScoreDataType
+      type: string
+      enum:
+        - NUMERIC
+        - BOOLEAN
+        - CATEGORICAL
     CreateDatasetItemRequest:
       title: CreateDatasetItemRequest
       type: object
@@ -1855,13 +2158,28 @@ components:
         id:
           type: string
           nullable: true
-          description: Dataset items are upserted on their id
+          description: >-
+            Dataset items are upserted on their id. Id needs to be globally
+            unique and cannot be reused across datasets.
         status:
           $ref: "#/components/schemas/DatasetStatus"
           nullable: true
           description: Defaults to ACTIVE for newly created items
       required:
         - datasetName
+    PaginatedDatasetItems:
+      title: PaginatedDatasetItems
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetItem"
+        meta:
+          $ref: "#/components/schemas/utilsMetaResponse"
+      required:
+        - data
+        - meta
     CreateDatasetRunItemRequest:
       title: CreateDatasetRunItemRequest
       type: object
@@ -1896,7 +2214,7 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/DatasetWithReferences"
+            $ref: "#/components/schemas/Dataset"
         meta:
           $ref: "#/components/schemas/utilsMetaResponse"
       required:
@@ -1915,6 +2233,19 @@ components:
           nullable: true
       required:
         - name
+    PaginatedDatasetRuns:
+      title: PaginatedDatasetRuns
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetRun"
+        meta:
+          $ref: "#/components/schemas/utilsMetaResponse"
+      required:
+        - data
+        - meta
     HealthResponse:
       title: HealthResponse
       type: object
@@ -1961,8 +2292,19 @@ components:
                 type:
                   type: string
                   enum:
-                    - event-create
-            - $ref: "#/components/schemas/CreateEventEvent"
+                    - span-create
+            - $ref: "#/components/schemas/CreateSpanEvent"
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - span-update
+            - $ref: "#/components/schemas/UpdateSpanEvent"
           required:
             - type
         - type: object
@@ -1994,19 +2336,8 @@ components:
                 type:
                   type: string
                   enum:
-                    - span-create
-            - $ref: "#/components/schemas/CreateSpanEvent"
-          required:
-            - type
-        - type: object
-          allOf:
-            - type: object
-              properties:
-                type:
-                  type: string
-                  enum:
-                    - span-update
-            - $ref: "#/components/schemas/UpdateSpanEvent"
+                    - event-create
+            - $ref: "#/components/schemas/CreateEventEvent"
           required:
             - type
         - type: object
@@ -2329,13 +2660,20 @@ components:
       properties:
         id:
           type: string
+          description: UUID v4 that identifies the event
         timestamp:
           type: string
-        metadata: {}
+          description: >-
+            Datetime (ISO 8601) of event creation in client. Should be as close
+            to actual event creation in client as possible, this timestamp will
+            be used for ordering of events in future release. Resolution:
+            milliseconds (required), microseconds (optimal).
+        metadata:
+          nullable: true
+          description: Optional. Metadata field used by the Langfuse SDKs for debugging.
       required:
         - id
         - timestamp
-        - metadata
     TraceEvent:
       title: TraceEvent
       type: object
@@ -2795,6 +3133,19 @@ components:
         - prompt
       allOf:
         - $ref: "#/components/schemas/BasePrompt"
+    ScoreConfigs:
+      title: ScoreConfigs
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreConfig"
+        meta:
+          $ref: "#/components/schemas/utilsMetaResponse"
+      required:
+        - data
+        - meta
     CreateScoreRequest:
       title: CreateScoreRequest
       type: object
