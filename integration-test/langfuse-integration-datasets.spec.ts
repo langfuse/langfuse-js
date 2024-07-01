@@ -99,6 +99,38 @@ describe("Langfuse Node.js", () => {
       expect(getDatasetItem).toEqual(item1);
     }, 10000);
 
+    it("create and get many dataset items to test pagination", async () => {
+      const datasetNameRandom = Math.random().toString(36).substring(7);
+      await langfuse.createDataset({ name: datasetNameRandom, metadata: { test: "test" } });
+      await langfuse.flushAsync();
+      // create 99 items
+      for (let i = 0; i < 99; i++) {
+        await langfuse.createDatasetItem({
+          datasetName: datasetNameRandom,
+          input: "prompt",
+          expectedOutput: "completion",
+          metadata: { test: "test" },
+        });
+      }
+
+      // default
+      const getDatasetDefault = await langfuse.getDataset(datasetNameRandom);
+      expect(getDatasetDefault.items.length).toEqual(99);
+      expect(getDatasetDefault.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ input: "prompt", expectedOutput: "completion", metadata: { test: "test" } }),
+        ])
+      );
+
+      // chunks 8
+      const getDatasetChunk8 = await langfuse.getDataset(datasetNameRandom, { itemsChunkSize: 8 });
+      expect(getDatasetChunk8.items.length).toEqual(99);
+
+      // chunks 11
+      const getDatasetChunk11 = await langfuse.getDataset(datasetNameRandom, { itemsChunkSize: 11 });
+      expect(getDatasetChunk11.items.length).toEqual(99);
+    }, 10000);
+
     it("create, upsert and get dataset item", async () => {
       const projectNameRandom = Math.random().toString(36).substring(7);
       await langfuse.createDataset(projectNameRandom);
@@ -194,12 +226,12 @@ describe("Langfuse Node.js", () => {
         }
       }
 
-      const getRuns = await langfuse.getDatasetRun({
+      const getRun = await langfuse.getDatasetRun({
         datasetName: projectNameRandom,
         runName: "test-run-" + projectNameRandom,
       });
 
-      expect(getRuns).toMatchObject({
+      expect(getRun).toMatchObject({
         name: "test-run-" + projectNameRandom,
         description: "test-run-description", // from second link
         metadata: { test: "test" }, // from second link
@@ -214,6 +246,81 @@ describe("Langfuse Node.js", () => {
             traceId: trace.id,
           }),
         ]),
+      });
+    }, 10000);
+
+    it("e2e multiple runs", async () => {
+      const datasetName = Math.random().toString(36).substring(7);
+      await langfuse.createDataset(datasetName);
+      await langfuse.createDatasetItem({
+        datasetName: datasetName,
+        input: "Hello trace",
+        expectedOutput: "Hello world",
+      });
+      await langfuse.createDatasetItem({
+        datasetName: datasetName,
+        input: "Hello generation",
+        expectedOutput: "Hello world",
+      });
+
+      const trace = langfuse.trace({
+        id: "test-trace-id-" + datasetName,
+        input: "input",
+        output: "Hello world traced",
+      });
+
+      const generation = langfuse.generation({
+        id: "test-generation-id-" + datasetName,
+        input: "input",
+        output: "Hello world generated",
+      });
+
+      await langfuse.flushAsync();
+
+      const dataset = await langfuse.getDataset(datasetName);
+      for (let i = 0; i < 9; i++) {
+        for (const item of dataset.items) {
+          if (item.input === "Hello trace") {
+            await item.link(trace, `test-run-${datasetName}-${i}`);
+            trace.score({
+              name: "test-score-trace",
+              value: 0.5,
+            });
+          } else if (item.input === "Hello generation") {
+            await item.link(generation, `test-run-${datasetName}-${i}`, {
+              description: "test-run-description",
+              metadata: { test: "test" },
+            });
+            generation.score({
+              name: "test-score-generation",
+              value: 0.5,
+            });
+          }
+        }
+      }
+
+      // all at once
+      const getRuns = await langfuse.getDatasetRuns(datasetName);
+      expect(getRuns.data.length).toEqual(9);
+      expect(getRuns.data[0]).toMatchObject({
+        name: `test-run-${datasetName}-8`,
+        description: "test-run-description",
+        metadata: { test: "test" },
+        datasetId: dataset.id,
+        datasetName: datasetName,
+      });
+
+      // custom query
+      const getRunsQuery = await langfuse.getDatasetRuns(datasetName, {
+        limit: 2,
+        page: 2,
+      });
+      expect(getRunsQuery.data.length).toEqual(2);
+      expect(getRunsQuery.meta).toMatchObject({
+        limit: 2,
+        page: 2,
+        totalItems: 9,
+        totalPages: 5,
       });
     }, 10000);
   });
