@@ -32,8 +32,11 @@ export interface components {
       name: string;
       /** Format: double */
       value: number;
+      stringValue?: string;
       observationId?: string;
       comment?: string;
+      dataType?: components["schemas"]["ScoreDataType"];
+      configId?: string;
     };
     /** Score */
     Score: {
@@ -42,11 +45,19 @@ export interface components {
       name: string;
       /** Format: double */
       value: number;
+      stringValue?: string;
       observationId?: string;
       /** Format: date-time */
       timestamp: string;
       comment?: string;
+      dataType: components["schemas"]["ScoreDataType"];
+      configId?: string;
     };
+    /**
+     * ScoreDataType
+     * @enum {string}
+     */
+    ScoreDataType: "NUMERIC" | "CATEGORICAL" | "BOOLEAN";
   };
   responses: never;
   parameters: never;

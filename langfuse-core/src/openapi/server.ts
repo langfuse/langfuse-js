@@ -472,13 +472,22 @@ export interface components {
       id: string;
       traceId: string;
       name: string;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The numeric value of the score. Must be passed for all data types. Is used as source of truth when inferring the string value.
+       */
       value: number;
+      /** @description Translates numeric value to string equivalent for boolean and categorical score types. When passing a configId or boolean data type this field is automatically populated. Otherwise, you may use this field to provide a custom string value. */
+      stringValue?: string | null;
       source: components["schemas"]["ScoreSource"];
       observationId?: string | null;
       /** Format: date-time */
       timestamp: string;
       comment?: string | null;
+      /** @description The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
+      dataType: components["schemas"]["ScoreDataType"];
+      /** @description The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
+      configId?: string | null;
     };
     /** DatasetCore */
     DatasetCore: {
@@ -573,6 +582,11 @@ export interface components {
      * @enum {string}
      */
     ScoreSource: "ANNOTATION" | "API" | "EVAL";
+    /**
+     * ScoreDataType
+     * @enum {string}
+     */
+    ScoreDataType: "NUMERIC" | "CATEGORICAL" | "BOOLEAN";
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
@@ -786,8 +800,11 @@ export interface components {
       name: string;
       /** Format: double */
       value: number;
+      stringValue?: string | null;
       observationId?: string | null;
       comment?: string | null;
+      dataType?: components["schemas"]["ScoreDataType"] | null;
+      configId?: string | null;
     };
     /** BaseEvent */
     BaseEvent: {
@@ -991,8 +1008,11 @@ export interface components {
       name: string;
       /** Format: double */
       value: number;
+      stringValue?: string | null;
       observationId?: string | null;
       comment?: string | null;
+      dataType?: string | null;
+      configId?: string | null;
     };
     /** Scores */
     Scores: {
