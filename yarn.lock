@@ -1562,10 +1562,10 @@
     zod "^3.22.3"
     zod-to-json-schema "^3.22.5"
 
-"@langchain/core@>0.1.0  <0.3.0", "@langchain/core@>0.1.56 <0.3.0", "@langchain/core@>=0.2.5 <0.3.0", "@langchain/core@>=0.2.8 <0.3.0", "@langchain/core@~0.2.0", "@langchain/core@~0.2.9":
-  version "0.2.9"
-  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.2.9.tgz#8a22585ef11d2ca8742a8bbfe77dd25baedc7779"
-  integrity sha512-pJshopBZqMNF020q0OrrO+vfApWTZUlZecRYMM7TWA5M8/zvEyU/mgA9DlzeRjjDmG6pwF6dIKVjpl6fIGVXlQ==
+"@langchain/core@>0.1.0  <0.3.0", "@langchain/core@>0.1.56 <0.3.0", "@langchain/core@>=0.2.5 <0.3.0", "@langchain/core@>=0.2.8 <0.3.0", "@langchain/core@>=0.2.9 <0.3.0", "@langchain/core@~0.2.0", "@langchain/core@~0.2.9":
+  version "0.2.10"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.2.10.tgz#23899ac977e94f27c1dfb8d5fa2e8707be6c7532"
+  integrity sha512-M0WIaz7cdC5ilyfjAmxuJl88QP2i1EIPozjstkVNuOvA4gb16sfkhitQ2sGRDQwPsAL3+O1nLjAWYyrR9r1AIg==
   dependencies:
     ansi-styles "^5.0.0"
     camelcase "6"
@@ -6401,11 +6401,11 @@ langchain@0.2.3:
     zod-to-json-schema "^3.22.3"
 
 langchain@^0.2:
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.2.6.tgz#22249707ba800c38ec9a6cca36e383a881227393"
-  integrity sha512-vDAJHGu/lA4pn3hkyzSC6RiaZhtj0ozfRyG8L6J2vCnXyJV/lgk9uGMP2x645EBrSozBMHJBng1UYeaUR/1fQQ==
+  version "0.2.8"
+  resolved "https://registry.yarnpkg.com/langchain/-/langchain-0.2.8.tgz#9bd77f5c12071d0ccb637c04fc33415e5369e5aa"
+  integrity sha512-kb2IOMA71xH8e6EXFg0l4S+QSMC/c796pj1+7mPBkR91HHwoyHZhFRrBaZv4tV+Td+Ba91J2uEDBmySklZLpNQ==
   dependencies:
-    "@langchain/core" "~0.2.0"
+    "@langchain/core" ">=0.2.9 <0.3.0"
     "@langchain/openai" ">=0.1.0 <0.3.0"
     "@langchain/textsplitters" "~0.0.0"
     binary-extensions "^2.2.0"
