@@ -82,10 +82,14 @@ export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"
 
 // SYNC
 export type GetLangfuseDatasetParams = FixTypes<
-  paths["/api/public/datasets/{datasetName}"]["get"]["parameters"]["path"]
+  paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
 export type GetLangfuseDatasetResponse = FixTypes<
-  paths["/api/public/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+  paths["/api/public/v2/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseDatasetItemsQuery = paths["/api/public/dataset-items"]["get"]["parameters"]["query"];
+export type GetLangfuseDatasetItemsResponse = FixTypes<
+  paths["/api/public/dataset-items"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type CreateLangfuseDatasetRunItemBody = FixTypes<
   paths["/api/public/dataset-run-items"]["post"]["requestBody"]["content"]["application/json"]
@@ -94,9 +98,9 @@ export type CreateLangfuseDatasetRunItemResponse = FixTypes<
   paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
 export type CreateLangfuseDatasetBody =
-  paths["/api/public/datasets"]["post"]["requestBody"]["content"]["application/json"];
+  paths["/api/public/v2/datasets"]["post"]["requestBody"]["content"]["application/json"];
 export type CreateLangfuseDatasetResponse = FixTypes<
-  paths["/api/public/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
+  paths["/api/public/v2/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
 export type CreateLangfuseDatasetItemBody = FixTypes<
   paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"]
@@ -109,6 +113,13 @@ export type GetLangfuseDatasetRunParams = FixTypes<
 >;
 export type GetLangfuseDatasetRunResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseDatasetRunsQuery =
+  paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["query"];
+export type GetLangfuseDatasetRunsPath = paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["path"];
+
+export type GetLangfuseDatasetRunsResponse = FixTypes<
+  paths["/api/public/datasets/{datasetName}/runs"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type CreateLangfusePromptBody = FixTypes<
   paths["/api/public/v2/prompts"]["post"]["requestBody"]["content"]["application/json"]
