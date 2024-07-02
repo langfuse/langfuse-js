@@ -112,3 +112,13 @@ export function configLangfuseSDK(params?: LangfuseCoreOptions, secretRequired: 
     ...finalCoreOptions,
   };
 }
+
+export const encodeQueryParams = (params?: { [key: string]: any }): string => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, value.toString());
+    }
+  });
+  return queryParams.toString();
+};

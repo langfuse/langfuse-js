@@ -32,6 +32,10 @@ import {
   type CreatePromptBody,
   type CreateChatPromptBody,
   type CreateTextPromptBody,
+  type GetLangfuseDatasetItemsQuery,
+  type GetLangfuseDatasetItemsResponse,
+  type GetLangfuseDatasetRunsQuery,
+  type GetLangfuseDatasetRunsResponse,
 } from "./types";
 import {
   generateUUID,
@@ -41,6 +45,7 @@ import {
   safeSetTimeout,
   getEnv,
   currentISOTime,
+  encodeQueryParams,
 } from "./utils";
 
 export * as utils from "./utils";
@@ -251,7 +256,21 @@ abstract class LangfuseCoreStateless {
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
     const encodedName = encodeURIComponent(name);
     return this.fetch(
-      `${this.baseUrl}/api/public/datasets/${encodedName}`,
+      `${this.baseUrl}/api/public/v2/datasets/${encodedName}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
+  }
+
+  protected async _getDatasetItems(query: GetLangfuseDatasetItemsQuery): Promise<GetLangfuseDatasetItemsResponse> {
+    const params = new URLSearchParams();
+    Object.entries(query ?? {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, value.toString());
+      }
+    });
+
+    return this.fetch(
+      `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
@@ -261,6 +280,16 @@ abstract class LangfuseCoreStateless {
     const encodedRunName = encodeURIComponent(params.runName);
     return this.fetch(
       `${this.baseUrl}/api/public/datasets/${encodedDatasetName}/runs/${encodedRunName}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
+  }
+
+  async getDatasetRuns(
+    datasetName: string,
+    query?: GetLangfuseDatasetRunsQuery
+  ): Promise<GetLangfuseDatasetRunsResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/datasets/${encodeURIComponent(datasetName)}/runs?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
@@ -726,7 +755,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return this;
   }
 
-  async getDataset(name: string): Promise<{
+  async getDataset(
+    name: string,
+    options?: {
+      fetchItemsPageSize: number;
+    }
+  ): Promise<{
     id: string;
     name: string;
     description?: string;
@@ -748,7 +782,22 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       ) => Promise<{ id: string }>;
     }>;
   }> {
-    const { items, ...dataset } = await this._getDataset(name);
+    const dataset = await this._getDataset(name);
+    const items: GetLangfuseDatasetItemsResponse["data"] = [];
+
+    let page = 1;
+    while (true) {
+      const itemsResponse = await this._getDatasetItems({
+        datasetName: name,
+        limit: options?.fetchItemsPageSize ?? 50,
+        page,
+      });
+      items.push(...itemsResponse.data);
+      if (itemsResponse.meta.totalPages <= page) {
+        break;
+      }
+      page++;
+    }
 
     const returnDataset = {
       ...dataset,

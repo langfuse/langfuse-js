@@ -11,7 +11,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** @description Get dataset items */
+    get: operations["datasetItems_list"];
     put?: never;
     /** @description Create a dataset item */
     post: operations["datasetItems_create"];
@@ -55,7 +56,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/public/datasets": {
+  "/api/public/v2/datasets": {
     parameters: {
       query?: never;
       header?: never;
@@ -73,7 +74,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/public/datasets/{datasetName}": {
+  "/api/public/v2/datasets/{datasetName}": {
     parameters: {
       query?: never;
       header?: never;
@@ -98,6 +99,23 @@ export interface paths {
       cookie?: never;
     };
     /** @description Get a dataset run and its items */
+    get: operations["datasets_getRun"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/datasets/{datasetName}/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a dataset runs */
     get: operations["datasets_getRuns"];
     put?: never;
     post?: never;
@@ -133,7 +151,12 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** @description Batched ingestion for Langfuse Tracing */
+    /** @description Batched ingestion for Langfuse Tracing. If you want to use tracing via the API, such as to build your own Langfuse client implementation, this is the only API route you need to implement.
+     *
+     *     Notes:
+     *
+     *     - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
+     *     - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors. */
     post: operations["ingestion_batch"];
     delete?: never;
     options?: never;
@@ -244,6 +267,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/public/score-configs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all score configs */
+    get: operations["scoreConfigs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/score-configs/{configId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a score config */
+    get: operations["scoreConfigs_get-by-id"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/public/scores": {
     parameters: {
       query?: never;
@@ -287,7 +344,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get a session */
+    /** @description Get a session. Please note that `traces` on this endpoint are not paginated, if you plan to fetch large sessions, consider `GET /api/public/traces?sessionId=<sessionId>` */
     get: operations["sessions_get"];
     put?: never;
     post?: never;
@@ -467,6 +524,33 @@ export interface components {
        */
       totalCost?: number | null;
     };
+    /**
+     * ScoreConfig
+     * @description Configuration for a score
+     */
+    ScoreConfig: {
+      id: string;
+      name: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      projectId: string;
+      dataType: components["schemas"]["ScoreDataType"];
+      isArchived: boolean;
+      /** Format: double */
+      minValue?: number | null;
+      /** Format: double */
+      maxValue?: number | null;
+      categories?: components["schemas"]["ConfigCategory"][] | null;
+      description?: string | null;
+    };
+    /** ConfigCategory */
+    ConfigCategory: {
+      /** Format: double */
+      value: number;
+      label: string;
+    };
     /** Score */
     Score: {
       id: string;
@@ -480,8 +564,8 @@ export interface components {
       timestamp: string;
       comment?: string | null;
     };
-    /** DatasetCore */
-    DatasetCore: {
+    /** Dataset */
+    Dataset: {
       id: string;
       name: string;
       description?: string | null;
@@ -492,21 +576,6 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
     };
-    /** DatasetWithReferences */
-    DatasetWithReferences: {
-      /** @description list of dataset item ids */
-      items: string[];
-      /** @description list of dataset run names */
-      runs: string[];
-    } & components["schemas"]["DatasetCore"];
-    /**
-     * Dataset
-     * @description Dataset including all items
-     */
-    Dataset: {
-      items: components["schemas"]["DatasetItem"][];
-      runs: string[];
-    } & components["schemas"]["DatasetCore"];
     /** DatasetItem */
     DatasetItem: {
       id: string;
@@ -548,8 +617,11 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
-      datasetRunItems: components["schemas"]["DatasetRunItem"][];
     };
+    /** DatasetRunWithItems */
+    DatasetRunWithItems: {
+      datasetRunItems: components["schemas"]["DatasetRunItem"][];
+    } & components["schemas"]["DatasetRun"];
     /**
      * ModelUsageUnit
      * @description Unit of usage in Langfuse
@@ -573,6 +645,11 @@ export interface components {
      * @enum {string}
      */
     ScoreSource: "ANNOTATION" | "API" | "EVAL";
+    /**
+     * ScoreDataType
+     * @enum {string}
+     */
+    ScoreDataType: "NUMERIC" | "BOOLEAN" | "CATEGORICAL";
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
@@ -581,10 +658,15 @@ export interface components {
       metadata?: unknown;
       sourceTraceId?: string | null;
       sourceObservationId?: string | null;
-      /** @description Dataset items are upserted on their id */
+      /** @description Dataset items are upserted on their id. Id needs to be globally unique and cannot be reused across datasets. */
       id?: string | null;
       /** @description Defaults to ACTIVE for newly created items */
       status?: components["schemas"]["DatasetStatus"];
+    };
+    /** PaginatedDatasetItems */
+    PaginatedDatasetItems: {
+      data: components["schemas"]["DatasetItem"][];
+      meta: components["schemas"]["utilsMetaResponse"];
     };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
@@ -600,7 +682,7 @@ export interface components {
     };
     /** PaginatedDatasets */
     PaginatedDatasets: {
-      data: components["schemas"]["DatasetWithReferences"][];
+      data: components["schemas"]["Dataset"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
     /** CreateDatasetRequest */
@@ -608,6 +690,11 @@ export interface components {
       name: string;
       description?: string | null;
       metadata?: unknown;
+    };
+    /** PaginatedDatasetRuns */
+    PaginatedDatasetRuns: {
+      data: components["schemas"]["DatasetRun"][];
+      meta: components["schemas"]["utilsMetaResponse"];
     };
     /** HealthResponse */
     HealthResponse: {
@@ -631,8 +718,12 @@ export interface components {
         } & components["schemas"]["ScoreEvent"])
       | ({
           /** @enum {string} */
-          type: "event-create";
-        } & components["schemas"]["CreateEventEvent"])
+          type: "span-create";
+        } & components["schemas"]["CreateSpanEvent"])
+      | ({
+          /** @enum {string} */
+          type: "span-update";
+        } & components["schemas"]["UpdateSpanEvent"])
       | ({
           /** @enum {string} */
           type: "generation-create";
@@ -643,12 +734,8 @@ export interface components {
         } & components["schemas"]["UpdateGenerationEvent"])
       | ({
           /** @enum {string} */
-          type: "span-create";
-        } & components["schemas"]["CreateSpanEvent"])
-      | ({
-          /** @enum {string} */
-          type: "span-update";
-        } & components["schemas"]["UpdateSpanEvent"])
+          type: "event-create";
+        } & components["schemas"]["CreateEventEvent"])
       | ({
           /** @enum {string} */
           type: "sdk-log";
@@ -791,9 +878,12 @@ export interface components {
     };
     /** BaseEvent */
     BaseEvent: {
+      /** @description UUID v4 that identifies the event */
       id: string;
+      /** @description Datetime (ISO 8601) of event creation in client. Should be as close to actual event creation in client as possible, this timestamp will be used for ordering of events in future release. Resolution: milliseconds (required), microseconds (optimal). */
       timestamp: string;
-      metadata: unknown;
+      /** @description Optional. Metadata field used by the Langfuse SDKs for debugging. */
+      metadata?: unknown;
     };
     /** TraceEvent */
     TraceEvent: {
@@ -984,6 +1074,11 @@ export interface components {
     ChatPrompt: {
       prompt: components["schemas"]["ChatMessage"][];
     } & components["schemas"]["BasePrompt"];
+    /** ScoreConfigs */
+    ScoreConfigs: {
+      data: components["schemas"]["ScoreConfig"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
     /** CreateScoreRequest */
     CreateScoreRequest: {
       id?: string | null;
@@ -1028,6 +1123,73 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  datasetItems_list: {
+    parameters: {
+      query?: {
+        datasetName?: string | null;
+        sourceTraceId?: string | null;
+        sourceObservationId?: string | null;
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDatasetItems"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   datasetItems_create: {
     parameters: {
       query?: never;
@@ -1218,7 +1380,9 @@ export interface operations {
   datasets_list: {
     parameters: {
       query?: {
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
       };
       header?: never;
@@ -1401,7 +1565,7 @@ export interface operations {
       };
     };
   };
-  datasets_getRuns: {
+  datasets_getRun: {
     parameters: {
       query?: never;
       header?: never;
@@ -1418,7 +1582,73 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["DatasetRun"];
+          "application/json": components["schemas"]["DatasetRunWithItems"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  datasets_getRuns: {
+    parameters: {
+      query?: {
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path: {
+        datasetName: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDatasetRuns"];
         };
       };
       400: {
@@ -1538,7 +1768,10 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": {
+          /** @description Batch of tracing events to be ingested. Discriminated by attribute `type`. */
           batch: components["schemas"]["IngestionEvent"][];
+          /** @description Optional. Metadata field used by the Langfuse SDKs for debugging. */
+          metadata?: unknown;
         };
       };
     };
@@ -1932,7 +2165,9 @@ export interface operations {
         name?: string | null;
         label?: string | null;
         tag?: string | null;
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
       };
       header?: never;
@@ -2054,9 +2289,135 @@ export interface operations {
       };
     };
   };
+  scoreConfigs_get: {
+    parameters: {
+      query?: {
+        /** @description Page number, starts at 1. */
+        page?: number | null;
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScoreConfigs"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  "scoreConfigs_get-by-id": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique langfuse identifier of a score config */
+        configId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScoreConfig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   score_get: {
     parameters: {
-      query: {
+      query?: {
         /** @description Page number, starts at 1. */
         page?: number | null;
         /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
@@ -2066,11 +2427,13 @@ export interface operations {
         /** @description Retrieve only scores newer than this datetime (ISO 8601). */
         fromTimestamp?: string | null;
         /** @description Retrieve only scores from a specific source. */
-        source: components["schemas"]["ScoreSource"];
+        source?: components["schemas"]["ScoreSource"];
         /** @description Retrieve only scores with <operator> value. */
         operator?: string | null;
         /** @description Retrieve only scores with <operator> value. */
         value?: number | null;
+        /** @description Comma-separated list of score IDs to limit the results to. */
+        scoreIds?: string | null;
       };
       header?: never;
       path?: never;
