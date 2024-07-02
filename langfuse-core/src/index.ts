@@ -758,7 +758,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async getDataset(
     name: string,
     options?: {
-      fetchPageSize: number;
+      fetchItemsPageSize: number;
     }
   ): Promise<{
     id: string;
@@ -789,7 +789,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     while (true) {
       const itemsResponse = await this._getDatasetItems({
         datasetName: name,
-        limit: options?.fetchPageSize ?? 50,
+        limit: options?.fetchItemsPageSize ?? 50,
         page,
       });
       items.push(...itemsResponse.data);

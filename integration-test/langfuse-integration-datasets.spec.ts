@@ -123,11 +123,11 @@ describe("Langfuse Node.js", () => {
       );
 
       // chunks 8
-      const getDatasetChunk8 = await langfuse.getDataset(datasetNameRandom, { fetchPageSize: 8 });
+      const getDatasetChunk8 = await langfuse.getDataset(datasetNameRandom, { fetchItemsPageSize: 8 });
       expect(getDatasetChunk8.items.length).toEqual(99);
 
       // chunks 11
-      const getDatasetChunk11 = await langfuse.getDataset(datasetNameRandom, { fetchPageSize: 11 });
+      const getDatasetChunk11 = await langfuse.getDataset(datasetNameRandom, { fetchItemsPageSize: 11 });
       expect(getDatasetChunk11.items.length).toEqual(99);
     }, 10000);
 
