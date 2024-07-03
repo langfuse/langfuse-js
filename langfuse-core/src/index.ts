@@ -390,6 +390,16 @@ abstract class LangfuseCoreStateless {
       if (!this.enabled) {
         return;
       }
+
+      try {
+        JSON.stringify(body);
+      } catch (e) {
+        console.error(`Event Body for ${type} is not JSON-serializable: ${e}`);
+        this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
+
+        return;
+      }
+
       const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
 
       queue.push({
