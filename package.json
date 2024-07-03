@@ -34,6 +34,7 @@
     "test:integration": "dotenv -- jest integration-test/* --verbose --runInBand",
     "test:langchain": "dotenv -- jest integration-test/langfuse-integration-langchain --verbose --runInBand",
     "test:datasets": "dotenv -- jest integration-test/langfuse-integration-datasets*",
+    "test:node-integration": "dotenv -- jest integration-test/langfuse-integration-node*",
     "test:modules": "dotenv -- jest integration-test/langfuse-integration-modules*",
     "test:examples": "dotenv -- jest integration-test/langfuse-integration-examples*",
     "compile": "rollup -c --bundleConfigAsCjs",

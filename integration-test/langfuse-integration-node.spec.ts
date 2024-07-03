@@ -537,8 +537,7 @@ describe("Langfuse Node.js", () => {
     await langfuse.flushAsync();
 
     const traces = await langfuse.fetchTraces();
-    expect(traces).toBeInstanceOf(Array);
-    expect(traces).toContainEqual(expect.objectContaining({ id: trace.id }));
+    expect(traces.data).toContainEqual(expect.objectContaining({ id: trace.id }));
 
     const fetchedTrace = await langfuse.fetchTrace(trace.id);
     expect(fetchedTrace).toMatchObject({
@@ -561,8 +560,7 @@ describe("Langfuse Node.js", () => {
     await langfuse.flushAsync();
 
     const observations = await langfuse.fetchObservations();
-    expect(observations).toBeInstanceOf(Array);
-    expect(observations).toContainEqual(expect.objectContaining({ id: observation.id }));
+    expect(observations.data).toContainEqual(expect.objectContaining({ id: observation.id }));
 
     const fetchedObservation = await langfuse.fetchObservation(observation.id);
     expect(fetchedObservation).toMatchObject({
