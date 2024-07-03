@@ -526,4 +526,49 @@ describe("Langfuse Node.js", () => {
       config: {},
     });
   });
+
+  it("create and fetch traces", async () => {
+    const trace = langfuse.trace({
+      name: "test-trace",
+      sessionId: "session-123",
+      input: { key: "value" },
+      output: "output-value",
+    });
+    await langfuse.flushAsync();
+
+    const traces = await langfuse.fetchTraces();
+    expect(traces).toBeInstanceOf(Array);
+    expect(traces).toContainEqual(expect.objectContaining({ id: trace.id }));
+
+    const fetchedTrace = await langfuse.fetchTrace(trace.id);
+    expect(fetchedTrace).toMatchObject({
+      id: trace.id,
+      name: "test-trace",
+      sessionId: "session-123",
+      input: { key: "value" },
+      output: "output-value",
+    });
+  });
+
+  it("create and fetch observations", async () => {
+    const trace = langfuse.trace({
+      name: "test-trace-for-observation",
+    });
+    const observation = trace.generation({
+      name: "test-observation",
+      input: "observation-value",
+    });
+    await langfuse.flushAsync();
+
+    const observations = await langfuse.fetchObservations();
+    expect(observations).toBeInstanceOf(Array);
+    expect(observations).toContainEqual(expect.objectContaining({ id: observation.id }));
+
+    const fetchedObservation = await langfuse.fetchObservation(observation.id);
+    expect(fetchedObservation).toMatchObject({
+      id: observation.id,
+      name: "test-observation",
+      input: "observation-value",
+    });
+  });
 });

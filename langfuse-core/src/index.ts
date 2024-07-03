@@ -36,6 +36,12 @@ import {
   type GetLangfuseDatasetItemsResponse,
   type GetLangfuseDatasetRunsQuery,
   type GetLangfuseDatasetRunsResponse,
+  type GetLangfuseTracesQuery,
+  type GetLangfuseTracesResponse,
+  type GetLangfuseObservationsQuery,
+  type GetLangfuseObservationsResponse,
+  type GetLangfuseObservationResponse,
+  type GetLangfuseTraceResponse,
 } from "./types";
 import {
   generateUUID,
@@ -271,6 +277,33 @@ abstract class LangfuseCoreStateless {
 
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-items?${params}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
+  }
+
+  async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/traces?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
+  }
+
+  async fetchTrace(traceId: string): Promise<GetLangfuseTraceResponse> {
+    return this.fetch(`${this.baseUrl}/api/public/traces/${traceId}`, this._getFetchOptions({ method: "GET" })).then(
+      (res) => res.json()
+    );
+  }
+
+  async fetchObservations(query?: GetLangfuseObservationsQuery): Promise<GetLangfuseObservationsResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/observations?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
+  }
+
+  async fetchObservation(observationId: string): Promise<GetLangfuseObservationResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/observations/${observationId}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
