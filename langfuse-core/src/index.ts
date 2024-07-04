@@ -36,6 +36,12 @@ import {
   type GetLangfuseDatasetItemsResponse,
   type GetLangfuseDatasetRunsQuery,
   type GetLangfuseDatasetRunsResponse,
+  type GetLangfuseTracesQuery,
+  type GetLangfuseTracesResponse,
+  type GetLangfuseObservationsQuery,
+  type GetLangfuseObservationsResponse,
+  type GetLangfuseObservationResponse,
+  type GetLangfuseTraceResponse,
 } from "./types";
 import {
   generateUUID,
@@ -273,6 +279,45 @@ abstract class LangfuseCoreStateless {
       `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
+  }
+
+  async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/traces?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseTracesResponse;
+    return { data, meta };
+  }
+
+  async fetchTrace(traceId: string): Promise<{ data: GetLangfuseTraceResponse }> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/traces/${traceId}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+
+    const trace = (await res.json()) as GetLangfuseTraceResponse;
+    return { data: trace };
+  }
+
+  async fetchObservations(query?: GetLangfuseObservationsQuery): Promise<GetLangfuseObservationsResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/observations?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseObservationsResponse;
+    return { data, meta };
+  }
+
+  async fetchObservation(observationId: string): Promise<{ data: GetLangfuseObservationResponse }> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/observations/${observationId}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    const observation = (await res.json()) as GetLangfuseObservationResponse;
+    return { data: observation };
   }
 
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
