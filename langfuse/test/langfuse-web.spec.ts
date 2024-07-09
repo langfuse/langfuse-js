@@ -143,7 +143,6 @@ describe("langfuseWeb", () => {
         observationId: "test-observation-id",
       });
 
-
       expect(score).toBeInstanceOf(Promise);
 
       await score;
