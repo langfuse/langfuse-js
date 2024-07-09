@@ -42,6 +42,6 @@
   },
   "devDependencies": {
     "cheerio": "^1.0.0-rc.12",
-    "typedoc": "^0.26.2"
+    "typedoc": "^0.26.3"
   }
 }
