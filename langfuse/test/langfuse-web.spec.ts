@@ -147,7 +147,7 @@ describe("langfuseWeb", () => {
         id: score_two_id,
         name: "test",
         traceId: "test-trace-1",
-        value: 0,
+        value: 1,
         dataType: "BOOLEAN",
         comment: "test comment",
         observationId: "test-observation-id",
