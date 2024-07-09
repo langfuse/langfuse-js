@@ -634,7 +634,7 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) |(object | null);
     /**
      * DatasetStatus
      * @enum {string}
