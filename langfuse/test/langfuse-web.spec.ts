@@ -126,7 +126,7 @@ describe("langfuseWeb", () => {
       process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
     });
 
-    it("should initialize and create multiple scores", async () => {
+    it("should initialize", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
         flushAt: 10,
