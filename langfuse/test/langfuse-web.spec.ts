@@ -126,38 +126,77 @@ describe("langfuseWeb", () => {
       process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
     });
 
-    it("should initialise", async () => {
+    it("should initialize and create multiple scores", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
         flushAt: 10,
       });
       expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
-      const id = utils.generateUUID();
-      const score = langfuse.score({
-        id,
+      const score_one_id = utils.generateUUID();
+      const score_two_id = utils.generateUUID();
+      const score_one = langfuse.score({
+        id: score_one_id,
         name: "test",
         traceId: "test-trace-1",
         value: 200,
         comment: "test comment",
         observationId: "test-observation-id",
       });
+      const score_two = langfuse.score({
+        id: score_two_id,
+        name: "test",
+        traceId: "test-trace-1",
+        value: 0,
+        dataType: "BOOLEAN",
+        comment: "test comment",
+        observationId: "test-observation-id",
+      });
 
-      expect(score).toBeInstanceOf(Promise);
 
-      await score;
+      expect(score_one).toBeInstanceOf(Promise);
+      expect(score_two).toBeInstanceOf(Promise);
 
-      expect(fetch).toHaveBeenCalledTimes(1);
+      await score_one;
+      await score_two;
+
+      expect(fetch).toHaveBeenCalledTimes(2);
 
       expect(fetch).toHaveBeenCalledWith(
         `${LANGFUSE_BASEURL}/api/public/ingestion`,
         expect.objectContaining({
           body: expect.stringContaining(
             JSON.stringify({
-              id,
+              id: score_one_id,
               name: "test",
               traceId: "test-trace-1",
               value: 200,
+              comment: "test comment",
+              observationId: "test-observation-id",
+            })
+          ),
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            "X-Langfuse-Public-Key": "pk",
+            Authorization: "Bearer pk",
+            "X-Langfuse-Sdk-Name": "langfuse-js",
+            "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
+            "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
+          }),
+          signal: expect.anything(),
+        })
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        `${LANGFUSE_BASEURL}/api/public/ingestion`,
+        expect.objectContaining({
+          body: expect.stringContaining(
+            JSON.stringify({
+              id: score_two_id,
+              name: "test",
+              traceId: "test-trace-1",
+              value: 0,
+              dataType: "BOOLEAN",
               comment: "test comment",
               observationId: "test-observation-id",
             })

@@ -105,6 +105,7 @@ describe("Langfuse (fetch)", () => {
         name: "generation-name",
       });
       trace.score({ name: "score-name", value: 1 });
+      trace.score({ name: "score-name-2", value: "This is my score value", dataType: "CATEGORICAL" });
 
       await langfuse.flushAsync();
 
