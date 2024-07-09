@@ -27,7 +27,7 @@ export const parseInputArgs = (args: Record<string, any>): ParsedOpenAIArguments
   };
 
   let input: Record<string, any> | string;
-  if ("messages" in args) {
+  if (args && typeof args === "object" && !Array.isArray(args) && "messages" in args) {
     input = {};
     input.messages = args.messages;
     if ("function_call" in args) {
@@ -81,7 +81,7 @@ export const parseChunk = (
   | { isToolCall: true; data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall } => {
   let isToolCall = false;
   const _chunk = rawChunk as OpenAI.ChatCompletionChunk | OpenAI.Completions.Completion;
-  const chunkData = _chunk?.choices[0];
+  const chunkData = _chunk?.choices?.[0];
 
   try {
     if ("delta" in chunkData && "tool_calls" in chunkData.delta && Array.isArray(chunkData.delta.tool_calls)) {

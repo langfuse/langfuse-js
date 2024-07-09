@@ -962,4 +962,37 @@ describe("Langfuse-OpenAI-Integation", () => {
     // @ts-expect-error: promptResponse.id is not defined in the type
     expect(generation.promptId).toBe(prompt.promptResponse.id);
   }, 10000);
+
+  it("should fail silently when using the Assistants API", async () => {
+    const traceId = randomUUID();
+    const client = observeOpenAI(openai, { traceId });
+
+    const assistant = await client.beta.assistants.create({
+      name: "Math Tutor",
+      instructions: "You are a personal math tutor. Answer questions briefly, in a sentence or less.",
+      model: "gpt-4",
+    });
+
+    const inputMessages = [
+      {
+        role: "assistant",
+        content: "I am a math tutor that likes to help math students, how can I help?",
+      },
+      {
+        role: "user",
+        content: "I need to solve the equation `3x + 11 = 14`. Can you help me?",
+      },
+    ];
+
+    const thread = await client.beta.threads.create({ messages: inputMessages } as any);
+    await client.beta.threads.runs.create(thread.id, {
+      assistant_id: assistant.id,
+      stream: false,
+    });
+
+    const messages = await client.beta.threads.messages.list(thread.id);
+    expect(messages).toBeDefined();
+
+    await client.flushAsync();
+  }, 10000);
 });
