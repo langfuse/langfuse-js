@@ -28,25 +28,94 @@ export interface components {
     /** CreateScoreRequest */
     CreateScoreRequest: {
       id?: string;
+      /** @example cdef-1234-5678-90ab */
       traceId: string;
+      /** @example novelty */
       name: string;
-      /** Format: double */
-      value: number;
+      /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+      value: components["schemas"]["CreateScoreValue"];
       observationId?: string;
       comment?: string;
+      /** @description When set, must match the score value's type. If not set, will be inferred from the score value or config */
+      dataType?: components["schemas"]["ScoreDataType"];
+      /** @description Reference a score config on a score. When set, the score name must equal the config name and scores must comply with the config's range and data type. For categorical scores, the value must map to a config category. Numeric scores might be constrained by the score config's max and min values */
+      configId?: string;
     };
-    /** Score */
-    Score: {
+    /** BaseScore */
+    BaseScore: {
       id: string;
       traceId: string;
       name: string;
-      /** Format: double */
-      value: number;
+      source: components["schemas"]["ScoreSource"];
       observationId?: string;
       /** Format: date-time */
       timestamp: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      authorUserId?: string;
       comment?: string;
+      /** @description Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
+      configId?: string;
     };
+    /** NumericScore */
+    NumericScore: {
+      /**
+       * Format: double
+       * @description The numeric value of the score
+       */
+      value: number;
+    } & components["schemas"]["BaseScore"];
+    /** BooleanScore */
+    BooleanScore: {
+      /**
+       * Format: double
+       * @description The numeric value of the score. Equals 1 for "True" and 0 for "False"
+       */
+      value: number;
+      /** @description The string representation of the score value. Is inferred from the numeric value and equals "True" or "False" */
+      stringValue: string;
+    } & components["schemas"]["BaseScore"];
+    /** CategoricalScore */
+    CategoricalScore: {
+      /**
+       * Format: double
+       * @description Only defined if a config is linked. Represents the numeric category mapping of the stringValue
+       */
+      value?: number;
+      /** @description The string representation of the score value. If no config is linked, can be any string. Otherwise, must map to a config category */
+      stringValue: string;
+    } & components["schemas"]["BaseScore"];
+    /** Score */
+    Score:
+      | ({
+          /** @enum {string} */
+          dataType: "NUMERIC";
+        } & components["schemas"]["NumericScore"])
+      | ({
+          /** @enum {string} */
+          dataType: "CATEGORICAL";
+        } & components["schemas"]["CategoricalScore"])
+      | ({
+          /** @enum {string} */
+          dataType: "BOOLEAN";
+        } & components["schemas"]["BooleanScore"]);
+    /**
+     * ScoreSource
+     * @enum {string}
+     */
+    ScoreSource: "ANNOTATION" | "API" | "EVAL";
+    /**
+     * ScoreDataType
+     * @enum {string}
+     */
+    ScoreDataType: "NUMERIC" | "CATEGORICAL" | "BOOLEAN";
+    /**
+     * CreateScoreValue
+     * @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores
+     */
+    CreateScoreValue: number | string;
   };
   responses: never;
   parameters: never;
@@ -69,13 +138,11 @@ export interface operations {
       };
     };
     responses: {
-      200: {
+      204: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          "application/json": components["schemas"]["Score"];
-        };
+        content?: never;
       };
       400: {
         headers: {
