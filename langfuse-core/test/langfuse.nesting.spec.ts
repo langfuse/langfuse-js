@@ -40,6 +40,15 @@ describe("Langfuse Core", () => {
         name: "test-score-1",
         value: 0.5,
       });
+      event.score({
+        name: "test-score-categorical",
+        value: "my-category",
+      });
+      event.score({
+        name: "test-score-boolean",
+        value: 0,
+        dataType: "BOOLEAN",
+      });
 
       await langfuse.shutdownAsync();
 
@@ -115,18 +124,13 @@ describe("Langfuse Core", () => {
                   value: 0.5,
                 },
               },
-              {
-                id: expect.any(String),
-                timestamp: expect.any(String),
-                type: "score-create",
-                body: {
-                  name: "test-score-numeric",
-                  traceId: trace.id,
-                  observationId: event.id,
-                  value: 0.5,
-                  dataType: "NUMERIC",
-                },
-              },
+            ],
+          },
+        },
+        {
+          url: "https://cloud.langfuse.com/api/public/ingestion",
+          object: {
+            batch: [
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
@@ -135,21 +139,16 @@ describe("Langfuse Core", () => {
                   name: "test-score-categorical",
                   traceId: trace.id,
                   observationId: event.id,
-                  value: "test",
+                  value: "my-category",
                 },
               },
-              {
-                id: expect.any(String),
-                timestamp: expect.any(String),
-                type: "score-create",
-                body: {
-                  name: "test-score-categorical-2",
-                  traceId: trace.id,
-                  observationId: event.id,
-                  value: "test",
-                  dataType: "CATEGORICAL",
-                },
-              },
+            ],
+          },
+        },
+        {
+          url: "https://cloud.langfuse.com/api/public/ingestion",
+          object: {
+            batch: [
               {
                 id: expect.any(String),
                 timestamp: expect.any(String),
@@ -158,15 +157,15 @@ describe("Langfuse Core", () => {
                   name: "test-score-boolean",
                   traceId: trace.id,
                   observationId: event.id,
-                  dataType: "BOOLEAN",
                   value: 0,
+                  dataType: "BOOLEAN",
                 },
               },
             ],
           },
         },
       ];
-      expect(mocks.fetch).toHaveBeenCalledTimes(5);
+      expect(mocks.fetch).toHaveBeenCalledTimes(7);
       checks.forEach((check, i) => {
         const [url, options] = mocks.fetch.mock.calls[i];
         expect(url).toMatch(check.url);

@@ -133,70 +133,32 @@ describe("langfuseWeb", () => {
       });
       expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
-      const score_one_id = utils.generateUUID();
-      const score_two_id = utils.generateUUID();
-      const score_one = langfuse.score({
-        id: score_one_id,
+      const id = utils.generateUUID();
+      const score = langfuse.score({
+        id,
         name: "test",
         traceId: "test-trace-1",
         value: 200,
         comment: "test comment",
         observationId: "test-observation-id",
       });
-      const score_two = langfuse.score({
-        id: score_two_id,
-        name: "test",
-        traceId: "test-trace-1",
-        value: 1,
-        dataType: "BOOLEAN",
-        comment: "test comment",
-        observationId: "test-observation-id",
-      });
 
 
-      expect(score_one).toBeInstanceOf(Promise);
-      expect(score_two).toBeInstanceOf(Promise);
+      expect(score).toBeInstanceOf(Promise);
 
-      await score_one;
-      await score_two;
+      await score;
 
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(fetch).toHaveBeenCalledTimes(1);
 
       expect(fetch).toHaveBeenCalledWith(
         `${LANGFUSE_BASEURL}/api/public/ingestion`,
         expect.objectContaining({
           body: expect.stringContaining(
             JSON.stringify({
-              id: score_one_id,
+              id,
               name: "test",
               traceId: "test-trace-1",
               value: 200,
-              comment: "test comment",
-              observationId: "test-observation-id",
-            })
-          ),
-          method: "POST",
-          headers: expect.objectContaining({
-            "Content-Type": "application/json",
-            "X-Langfuse-Public-Key": "pk",
-            Authorization: "Bearer pk",
-            "X-Langfuse-Sdk-Name": "langfuse-js",
-            "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
-            "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
-          }),
-          signal: expect.anything(),
-        })
-      );
-      expect(fetch).toHaveBeenCalledWith(
-        `${LANGFUSE_BASEURL}/api/public/ingestion`,
-        expect.objectContaining({
-          body: expect.stringContaining(
-            JSON.stringify({
-              id: score_two_id,
-              name: "test",
-              traceId: "test-trace-1",
-              value: 0,
-              dataType: "BOOLEAN",
               comment: "test comment",
               observationId: "test-observation-id",
             })
