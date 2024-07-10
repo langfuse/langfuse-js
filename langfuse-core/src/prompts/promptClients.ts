@@ -11,12 +11,14 @@ abstract class BasePromptClient {
   public readonly version: number;
   public readonly config: unknown;
   public readonly labels: string[];
+  public readonly isFallback: boolean;
 
-  constructor(prompt: CreateLangfusePromptResponse) {
+  constructor(prompt: CreateLangfusePromptResponse, isFallback = false) {
     this.name = prompt.name;
     this.version = prompt.version;
     this.config = prompt.config;
     this.labels = prompt.labels;
+    this.isFallback = isFallback;
   }
 
   abstract compile(variables?: Record<string, string>): string | ChatMessage[];
@@ -32,8 +34,8 @@ export class TextPromptClient extends BasePromptClient {
   public readonly promptResponse: TextPrompt;
   public readonly prompt: string;
 
-  constructor(prompt: TextPrompt) {
-    super(prompt);
+  constructor(prompt: TextPrompt, isFallback = false) {
+    super(prompt, isFallback);
     this.promptResponse = prompt;
     this.prompt = prompt.prompt;
   }
@@ -59,8 +61,8 @@ export class ChatPromptClient extends BasePromptClient {
   public readonly promptResponse: ChatPrompt;
   public readonly prompt: ChatMessage[];
 
-  constructor(prompt: ChatPrompt) {
-    super(prompt);
+  constructor(prompt: ChatPrompt, isFallback = false) {
+    super(prompt, isFallback);
     this.promptResponse = prompt;
     this.prompt = prompt.prompt;
   }
