@@ -445,6 +445,90 @@ describe("Langfuse (fetch)", () => {
       ]);
     });
 
+    it("should not return fallback if fetch succeeds", async () => {
+      const promptName = "test_text_prompt";
+      const createdPrompt = await langfuse.createPrompt({
+        name: promptName,
+        isActive: true,
+        prompt: "A {{animal}} usually has {{animal}} friends.",
+      });
+
+      expect(createdPrompt.constructor.name).toBe("TextPromptClient");
+
+      const fetchedPrompt = await langfuse.getPrompt(promptName, undefined, {
+        fallback: "fallback with variable {{variable}}",
+      });
+
+      expect(createdPrompt.constructor.name).toBe("TextPromptClient");
+      expect(fetchedPrompt.name).toEqual(promptName);
+      expect(fetchedPrompt.prompt).toEqual("A {{animal}} usually has {{animal}} friends.");
+      expect(fetchedPrompt.compile({ animal: "dog" })).toEqual("A dog usually has dog friends.");
+    });
+
+    it("should return the fallback text prompt if cache empty and fetch fails", async () => {
+      const promptName = "non-existing-prompt" + Date.now();
+      const fallback = "fallback with variable {{variable}}";
+
+      // should throw without fallback
+      await expect(langfuse.getPrompt(promptName)).rejects.toThrow();
+
+      const prompt = await langfuse.getPrompt(promptName, undefined, {
+        fallback,
+      });
+
+      expect(prompt.name).toEqual(promptName);
+      expect(prompt.prompt).toEqual(fallback);
+      expect(prompt.compile({ variable: "value" })).toEqual("fallback with variable value");
+    });
+
+    it("should return the fallback chat prompt if cache empty and fetch fails", async () => {
+      const promptName = "non-existing-prompt" + Date.now();
+      const fallback = [{ role: "system", content: "fallback with variable {{variable}}" }];
+
+      // should throw without fallback
+      await expect(langfuse.getPrompt(promptName)).rejects.toThrow();
+
+      const prompt = await langfuse.getPrompt(promptName, undefined, {
+        type: "chat",
+        fallback,
+      });
+
+      expect(prompt.name).toEqual(promptName);
+      expect(prompt.prompt).toEqual(fallback);
+      expect(prompt.compile({ variable: "value" })).toEqual([
+        { role: "system", content: "fallback with variable value" },
+      ]);
+    });
+
+    it("should not link the prompt to a generation if it was a fallback", async () => {
+      const promptName = "non-existing-prompt" + Date.now();
+      const fallback = "fallback with variable {{variable}}";
+
+      const prompt = await langfuse.getPrompt(promptName, undefined, {
+        fallback,
+      });
+
+      expect(prompt.name).toEqual(promptName);
+      expect(prompt.prompt).toEqual(fallback);
+      expect(prompt.compile({ variable: "value" })).toEqual("fallback with variable value");
+
+      const trace = langfuse.trace({ name: "trace-name-generation-new" });
+      const generation = trace.generation({ name: "generation-name-new", prompt });
+
+      await langfuse.flushAsync();
+
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+        headers: getHeaders(),
+      });
+
+      expect(res.data).toMatchObject({
+        id: generation.id,
+        name: "generation-name-new",
+        type: "GENERATION",
+        promptId: null,
+      });
+    });
+
     it("create event without creating trace before", async () => {
       const event = langfuse.event({ name: "event-name" });
       await langfuse.flushAsync();
