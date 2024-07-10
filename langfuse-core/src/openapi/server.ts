@@ -81,7 +81,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get a dataset and its items */
+    /** @description Get a dataset */
     get: operations["datasets_get"];
     put?: never;
     post?: never;
@@ -115,7 +115,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get a dataset runs */
+    /** @description Get dataset runs */
     get: operations["datasets_getRuns"];
     put?: never;
     post?: never;
@@ -176,6 +176,42 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/models": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all models */
+    get: operations["models_list"];
+    put?: never;
+    /** @description Create a model */
+    post: operations["models_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/models/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a model */
+    get: operations["models_get"];
+    put?: never;
+    post?: never;
+    /** @description Delete a model. Cannot delete models managed by Langfuse. You can create your own definition with the same modelName to override the definition though. */
+    delete: operations["models_delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -277,7 +313,8 @@ export interface paths {
     /** @description Get all score configs */
     get: operations["scoreConfigs_get"];
     put?: never;
-    post?: never;
+    /** @description Create a score configuration (config). Score configs are used to define the structure of scores */
+    post: operations["scoreConfigs_create"];
     delete?: never;
     options?: never;
     head?: never;
@@ -537,11 +574,19 @@ export interface components {
       updatedAt: string;
       projectId: string;
       dataType: components["schemas"]["ScoreDataType"];
+      /** @description Whether the score config is archived. Defaults to false */
       isArchived: boolean;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description Sets minimum value for numerical scores. If not set, the minimum value defaults to -∞
+       */
       minValue?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description Sets maximum value for numerical scores. If not set, the maximum value defaults to +∞
+       */
       maxValue?: number | null;
+      /** @description Configures custom categories for categorical scores */
       categories?: components["schemas"]["ConfigCategory"][] | null;
       description?: string | null;
     };
@@ -551,19 +596,71 @@ export interface components {
       value: number;
       label: string;
     };
-    /** Score */
-    Score: {
+    /** BaseScore */
+    BaseScore: {
       id: string;
       traceId: string;
       name: string;
-      /** Format: double */
-      value: number;
       source: components["schemas"]["ScoreSource"];
       observationId?: string | null;
       /** Format: date-time */
       timestamp: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      authorUserId?: string | null;
       comment?: string | null;
+      /** @description Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
+      configId?: string | null;
     };
+    /** NumericScore */
+    NumericScore: {
+      /**
+       * Format: double
+       * @description The numeric value of the score
+       */
+      value: number;
+    } & components["schemas"]["BaseScore"];
+    /** BooleanScore */
+    BooleanScore: {
+      /**
+       * Format: double
+       * @description The numeric value of the score. Equals 1 for "True" and 0 for "False"
+       */
+      value: number;
+      /** @description The string representation of the score value. Is inferred from the numeric value and equals "True" or "False" */
+      stringValue: string;
+    } & components["schemas"]["BaseScore"];
+    /** CategoricalScore */
+    CategoricalScore: {
+      /**
+       * Format: double
+       * @description Only defined if a config is linked. Represents the numeric category mapping of the stringValue
+       */
+      value?: number | null;
+      /** @description The string representation of the score value. If no config is linked, can be any string. Otherwise, must map to a config category */
+      stringValue: string;
+    } & components["schemas"]["BaseScore"];
+    /** Score */
+    Score:
+      | ({
+          /** @enum {string} */
+          dataType: "NUMERIC";
+        } & components["schemas"]["NumericScore"])
+      | ({
+          /** @enum {string} */
+          dataType: "CATEGORICAL";
+        } & components["schemas"]["CategoricalScore"])
+      | ({
+          /** @enum {string} */
+          dataType: "BOOLEAN";
+        } & components["schemas"]["BooleanScore"]);
+    /**
+     * CreateScoreValue
+     * @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores
+     */
+    CreateScoreValue: number | string;
     /** Dataset */
     Dataset: {
       id: string;
@@ -622,6 +719,41 @@ export interface components {
     DatasetRunWithItems: {
       datasetRunItems: components["schemas"]["DatasetRunItem"][];
     } & components["schemas"]["DatasetRun"];
+    /**
+     * Model
+     * @description Model definition used for transforming usage into USD cost and/or tokenization.
+     */
+    Model: {
+      id: string;
+      /** @description Name of the model definition. If multiple with the same name exist, they are applied in the following order: (1) custom over built-in, (2) newest according to startTime where model.startTime<observation.startTime */
+      modelName: string;
+      /** @description Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
+      matchPattern: string;
+      /** @description Apply only to generations which are newer than this ISO date. */
+      startDate?: string | null;
+      /** @description Unit used by this model. */
+      unit: components["schemas"]["ModelUsageUnit"];
+      /**
+       * Format: double
+       * @description Price (USD) per input unit
+       */
+      inputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per output unit
+       */
+      outputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per total unit. Cannot be set if input or output price is set.
+       */
+      totalPrice?: number | null;
+      /** @description Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
+      tokenizerId?: string | null;
+      /** @description Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
+      tokenizerConfig?: unknown;
+      isLangfuseManaged: boolean;
+    };
     /**
      * ModelUsageUnit
      * @description Unit of usage in Langfuse
@@ -869,12 +1001,18 @@ export interface components {
     /** ScoreBody */
     ScoreBody: {
       id?: string | null;
+      /** @example cdef-1234-5678-90ab */
       traceId: string;
+      /** @example novelty */
       name: string;
-      /** Format: double */
-      value: number;
+      /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+      value: components["schemas"]["CreateScoreValue"];
       observationId?: string | null;
       comment?: string | null;
+      /** @description When set, must match the score value's type. If not set, will be inferred from the score value or config */
+      dataType?: components["schemas"]["ScoreDataType"];
+      /** @description Reference a score config on a score. When set, the score name must equal the config name and scores must comply with the config's range and data type. For categorical scores, the value must map to a config category. Numeric scores might be constrained by the score config's max and min values */
+      configId?: string | null;
     };
     /** BaseEvent */
     BaseEvent: {
@@ -980,6 +1118,41 @@ export interface components {
        */
       totalCost: number;
     };
+    /** PaginatedModels */
+    PaginatedModels: {
+      data: components["schemas"]["Model"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** CreateModelRequest */
+    CreateModelRequest: {
+      /** @description Name of the model definition. If multiple with the same name exist, they are applied in the following order: (1) custom over built-in, (2) newest according to startTime where model.startTime<observation.startTime */
+      modelName: string;
+      /** @description Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
+      matchPattern: string;
+      /** @description Apply only to generations which are newer than this ISO date. */
+      startDate?: string | null;
+      /** @description Unit used by this model. */
+      unit: components["schemas"]["ModelUsageUnit"];
+      /**
+       * Format: double
+       * @description Price (USD) per input unit
+       */
+      inputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per output unit
+       */
+      outputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per total units. Cannot be set if input or output price is set.
+       */
+      totalPrice?: number | null;
+      /** @description Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
+      tokenizerId?: string | null;
+      /** @description Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
+      tokenizerConfig?: unknown;
+    };
     /** Observations */
     Observations: {
       data: components["schemas"]["Observation"][];
@@ -1079,15 +1252,40 @@ export interface components {
       data: components["schemas"]["ScoreConfig"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
+    /** CreateScoreConfigRequest */
+    CreateScoreConfigRequest: {
+      name: string;
+      dataType: components["schemas"]["ScoreDataType"];
+      /** @description Configure custom categories for categorical scores. Pass a list of objects with `label` and `value` properties. Categories are autogenerated for boolean configs and cannot be passed */
+      categories?: components["schemas"]["ConfigCategory"][] | null;
+      /**
+       * Format: double
+       * @description Configure a minimum value for numerical scores. If not set, the minimum value defaults to -∞
+       */
+      minValue?: number | null;
+      /**
+       * Format: double
+       * @description Configure a maximum value for numerical scores. If not set, the maximum value defaults to +∞
+       */
+      maxValue?: number | null;
+      /** @description Description is shown across the Langfuse UI and can be used to e.g. explain the config categories in detail, why a numeric range was set, or provide additional context on config name or usage */
+      description?: string | null;
+    };
     /** CreateScoreRequest */
     CreateScoreRequest: {
       id?: string | null;
+      /** @example cdef-1234-5678-90ab */
       traceId: string;
+      /** @example novelty */
       name: string;
-      /** Format: double */
-      value: number;
+      /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+      value: components["schemas"]["CreateScoreValue"];
       observationId?: string | null;
       comment?: string | null;
+      /** @description The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
+      dataType?: components["schemas"]["ScoreDataType"];
+      /** @description Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
+      configId?: string | null;
     };
     /** Scores */
     Scores: {
@@ -1900,6 +2098,253 @@ export interface operations {
       };
     };
   };
+  models_list: {
+    parameters: {
+      query?: {
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedModels"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  models_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateModelRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Model"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  models_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Model"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  models_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   observations_get: {
     parameters: {
       query?: never;
@@ -2294,7 +2739,7 @@ export interface operations {
       query?: {
         /** @description Page number, starts at 1. */
         page?: number | null;
-        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
         limit?: number | null;
       };
       header?: never;
@@ -2309,6 +2754,69 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ScoreConfigs"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scoreConfigs_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateScoreConfigRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScoreConfig"];
         };
       };
       400: {
@@ -2422,7 +2930,9 @@ export interface operations {
         page?: number | null;
         /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
         limit?: number | null;
+        /** @description Retrieve only scores with this userId associated to the trace. */
         userId?: string | null;
+        /** @description Retrieve only scores with this name. */
         name?: string | null;
         /** @description Retrieve only scores newer than this datetime (ISO 8601). */
         fromTimestamp?: string | null;
@@ -2434,6 +2944,10 @@ export interface operations {
         value?: number | null;
         /** @description Comma-separated list of score IDs to limit the results to. */
         scoreIds?: string | null;
+        /** @description Retrieve only scores with a specific configId. */
+        configId?: string | null;
+        /** @description Retrieve only scores with a specific dataType. */
+        dataType?: components["schemas"]["ScoreDataType"];
       };
       header?: never;
       path?: never;

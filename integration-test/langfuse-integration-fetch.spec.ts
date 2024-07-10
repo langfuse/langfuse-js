@@ -104,7 +104,7 @@ describe("Langfuse (fetch)", () => {
       trace.generation({
         name: "generation-name",
       });
-      trace.score({ name: "score-name", value: 1 });
+      trace.score({ name: "score-name", value: 1, dataType: "NUMERIC" });
 
       await langfuse.flushAsync();
 
@@ -124,6 +124,56 @@ describe("Langfuse (fetch)", () => {
       expect(res.data).toMatchObject({
         timestamp: timestamp.toISOString(),
       });
+    });
+
+    it("create categorical score", async () => {
+      const trace = langfuse.trace({});
+
+      langfuse.score({
+        traceId: trace.id,
+        name: "score-name",
+        value: "value",
+        dataType: "CATEGORICAL",
+      });
+      await langfuse.flushAsync();
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=CATEGORICAL`, {
+        headers: getHeaders(),
+      });
+
+      for (const score of res.data.data) {
+        if (score.traceId === trace.id) {
+          expect(score).toMatchObject({
+            value: null,
+            stringValue: "value",
+            dataType: "CATEGORICAL",
+          });
+        }
+      }
+    });
+
+    it("create boolean score", async () => {
+      const trace = langfuse.trace({});
+
+      langfuse.score({
+        traceId: trace.id,
+        name: "score-name",
+        value: 0,
+        dataType: "BOOLEAN",
+      });
+      await langfuse.flushAsync();
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=BOOLEAN`, {
+        headers: getHeaders(),
+      });
+
+      for (const score of res.data.data) {
+        if (score.traceId === trace.id) {
+          expect(score).toMatchObject({
+            value: 0,
+            stringValue: "False",
+            dataType: "BOOLEAN",
+          });
+        }
+      }
     });
 
     it("update a trace", async () => {

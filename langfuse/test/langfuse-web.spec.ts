@@ -126,16 +126,16 @@ describe("langfuseWeb", () => {
       process.env.LANGFUSE_BASEURL = LANGFUSE_BASEURL;
     });
 
-    it("should initialise", async () => {
+    it("should initialize", async () => {
       const langfuse = new LangfuseWeb({
         publicKey: "pk",
         flushAt: 10,
       });
       expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
-      const id = utils.generateUUID();
-      const score = langfuse.score({
-        id,
+      const scoreNumericId = utils.generateUUID();
+      const scoreNumeric = langfuse.score({
+        id: scoreNumericId,
         name: "test",
         traceId: "test-trace-1",
         value: 200,
@@ -143,23 +143,101 @@ describe("langfuseWeb", () => {
         observationId: "test-observation-id",
       });
 
-      expect(score).toBeInstanceOf(Promise);
+      const scoreCategoricalId = utils.generateUUID();
+      const scoreCategorical = langfuse.score({
+        id: scoreCategoricalId,
+        name: "test",
+        traceId: "test-trace-1",
+        value: "great",
+        comment: "test comment",
+        observationId: "test-observation-id",
+      });
 
-      await score;
+      const scoreBooleanId = utils.generateUUID();
+      const scoreBoolean = langfuse.score({
+        id: scoreBooleanId,
+        name: "test",
+        traceId: "test-trace-1",
+        value: 0,
+        comment: "test comment",
+        observationId: "test-observation-id",
+        dataType: "BOOLEAN",
+      });
 
-      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(scoreNumeric).toBeInstanceOf(Promise);
+      expect(scoreCategorical).toBeInstanceOf(Promise);
+      expect(scoreBoolean).toBeInstanceOf(Promise);
+
+      await scoreNumeric;
+      await scoreCategorical;
+      await scoreBoolean;
+
+      expect(fetch).toHaveBeenCalledTimes(3);
 
       expect(fetch).toHaveBeenCalledWith(
         `${LANGFUSE_BASEURL}/api/public/ingestion`,
         expect.objectContaining({
           body: expect.stringContaining(
             JSON.stringify({
-              id,
+              id: scoreNumericId,
               name: "test",
               traceId: "test-trace-1",
               value: 200,
               comment: "test comment",
               observationId: "test-observation-id",
+            })
+          ),
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            "X-Langfuse-Public-Key": "pk",
+            Authorization: "Bearer pk",
+            "X-Langfuse-Sdk-Name": "langfuse-js",
+            "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
+            "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
+          }),
+          signal: expect.anything(),
+        })
+      );
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${LANGFUSE_BASEURL}/api/public/ingestion`,
+        expect.objectContaining({
+          body: expect.stringContaining(
+            JSON.stringify({
+              id: scoreCategoricalId,
+              name: "test",
+              traceId: "test-trace-1",
+              value: "great",
+              comment: "test comment",
+              observationId: "test-observation-id",
+            })
+          ),
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            "X-Langfuse-Public-Key": "pk",
+            Authorization: "Bearer pk",
+            "X-Langfuse-Sdk-Name": "langfuse-js",
+            "X-Langfuse-Sdk-Version": langfuse.getLibraryVersion(),
+            "X-Langfuse-Sdk-Variant": langfuse.getLibraryId(),
+          }),
+          signal: expect.anything(),
+        })
+      );
+
+      expect(fetch).toHaveBeenCalledWith(
+        `${LANGFUSE_BASEURL}/api/public/ingestion`,
+        expect.objectContaining({
+          body: expect.stringContaining(
+            JSON.stringify({
+              id: scoreBooleanId,
+              name: "test",
+              traceId: "test-trace-1",
+              value: 0,
+              comment: "test comment",
+              observationId: "test-observation-id",
+              dataType: "BOOLEAN",
             })
           ),
           method: "POST",
