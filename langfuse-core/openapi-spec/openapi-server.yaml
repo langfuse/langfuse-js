@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: langfuse
-  version: ''
+  version: ""
   description: >-
     ## Authentication
 
@@ -32,34 +32,34 @@ paths:
         - DatasetItems
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatasetItem'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/DatasetItem"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -70,7 +70,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateDatasetItemRequest'
+              $ref: "#/components/schemas/CreateDatasetItemRequest"
     get:
       description: Get dataset items
       operationId: datasetItems_list
@@ -110,34 +110,34 @@ paths:
             type: integer
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedDatasetItems'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/PaginatedDatasetItems"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -155,34 +155,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatasetItem'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/DatasetItem"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -195,34 +195,34 @@ paths:
         - DatasetRunItems
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatasetRunItem'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/DatasetRunItem"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -232,7 +232,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateDatasetRunItemRequest'
+              $ref: "#/components/schemas/CreateDatasetRunItemRequest"
   /api/public/v2/datasets:
     get:
       description: Get all datasets
@@ -255,34 +255,34 @@ paths:
             type: integer
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedDatasets'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/PaginatedDatasets"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -294,34 +294,34 @@ paths:
         - Datasets
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Dataset'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Dataset"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -331,7 +331,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateDatasetRequest'
+              $ref: "#/components/schemas/CreateDatasetRequest"
   /api/public/v2/datasets/{datasetName}:
     get:
       description: Get a dataset
@@ -345,34 +345,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Dataset'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Dataset"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -395,34 +395,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatasetRunWithItems'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/DatasetRunWithItems"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -454,34 +454,34 @@ paths:
             type: integer
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedDatasetRuns'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/PaginatedDatasetRuns"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -494,39 +494,39 @@ paths:
         - Health
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/HealthResponse"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
-        '503':
-          description: ''
+        "503":
+          description: ""
   /api/public/ingestion:
     post:
       description: >-
@@ -549,34 +549,34 @@ paths:
         - Ingestion
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IngestionResponse'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/IngestionResponse"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -591,7 +591,7 @@ paths:
                 batch:
                   type: array
                   items:
-                    $ref: '#/components/schemas/IngestionEvent'
+                    $ref: "#/components/schemas/IngestionEvent"
                   description: >-
                     Batch of tracing events to be ingested. Discriminated by
                     attribute `type`.
@@ -667,34 +667,34 @@ paths:
             format: date-time
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DailyMetrics'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/DailyMetrics"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -707,34 +707,34 @@ paths:
         - Models
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Model'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Model"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -744,7 +744,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateModelRequest'
+              $ref: "#/components/schemas/CreateModelRequest"
     get:
       description: Get all models
       operationId: models_list
@@ -766,34 +766,34 @@ paths:
             type: integer
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedModels'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/PaginatedModels"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -811,34 +811,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Model'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Model"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -858,30 +858,30 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: ''
-        '400':
-          description: ''
+        "204":
+          description: ""
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -902,34 +902,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ObservationsView'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/ObservationsView"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -990,42 +990,52 @@ paths:
         - name: fromStartTime
           in: query
           description: >-
-            Retrieve only observations with a start_time greater than this
+            Retrieve only observations with a start_time or or after this
             datetime (ISO 8601).
           required: false
           schema:
             type: string
             format: date-time
             nullable: true
+        - name: toStartTime
+          in: query
+          description: >-
+            Retrieve only observations with a start_time before this datetime
+            (ISO 8601).
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ObservationsViews'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/ObservationsViews"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1038,34 +1048,34 @@ paths:
         - Projects
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Projects'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Projects"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1100,34 +1110,34 @@ paths:
             type: string
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Prompt'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Prompt"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1172,34 +1182,34 @@ paths:
             type: integer
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PromptMetaListResponse'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/PromptMetaListResponse"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1211,34 +1221,34 @@ paths:
         - Prompts
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Prompt'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Prompt"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1248,7 +1258,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePromptRequest'
+              $ref: "#/components/schemas/CreatePromptRequest"
   /api/public/score-configs:
     post:
       description: >-
@@ -1259,34 +1269,34 @@ paths:
         - ScoreConfigs
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScoreConfig'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/ScoreConfig"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1296,7 +1306,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateScoreConfigRequest'
+              $ref: "#/components/schemas/CreateScoreConfigRequest"
     get:
       description: Get all score configs
       operationId: scoreConfigs_get
@@ -1320,34 +1330,34 @@ paths:
             type: integer
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScoreConfigs'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/ScoreConfigs"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1366,34 +1376,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScoreConfig'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/ScoreConfig"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1406,34 +1416,34 @@ paths:
         - Score
       parameters: []
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Score'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/CreateScoreResponse"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1443,7 +1453,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateScoreRequest'
+              $ref: "#/components/schemas/CreateScoreRequest"
     get:
       description: Get a list of scores
       operationId: score_get
@@ -1482,7 +1492,19 @@ paths:
             nullable: true
         - name: fromTimestamp
           in: query
-          description: Retrieve only scores newer than this datetime (ISO 8601).
+          description: >-
+            Optional filter to only include scores created on or after a certain
+            datetime (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: toTimestamp
+          in: query
+          description: >-
+            Optional filter to only include scores created before a certain
+            datetime (ISO 8601)
           required: false
           schema:
             type: string
@@ -1493,7 +1515,7 @@ paths:
           description: Retrieve only scores from a specific source.
           required: false
           schema:
-            $ref: '#/components/schemas/ScoreSource'
+            $ref: "#/components/schemas/ScoreSource"
             nullable: true
         - name: operator
           in: query
@@ -1529,37 +1551,37 @@ paths:
           description: Retrieve only scores with a specific dataType.
           required: false
           schema:
-            $ref: '#/components/schemas/ScoreDataType'
+            $ref: "#/components/schemas/ScoreDataType"
             nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Scores'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Scores"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1578,34 +1600,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Score'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Score"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1623,30 +1645,106 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: ''
-        '400':
-          description: ''
+        "204":
+          description: ""
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+      security: *ref_0
+  /api/public/sessions:
+    get:
+      description: Get sessions.
+      operationId: sessions_list
+      tags:
+        - Sessions
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starts at 1
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: >-
+            Limit of items per page. If you encounter api issues due to too
+            large page sizes, try to reduce the limit.
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: fromTimestamp
+          in: query
+          description: >-
+            Optional filter to only include sessions created on or after a
+            certain datetime (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: toTimestamp
+          in: query
+          description: >-
+            Optional filter to only include sessions created before a certain
+            datetime (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedSessions"
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1668,34 +1766,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionWithTraces'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/SessionWithTraces"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1714,34 +1812,34 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TraceWithFullDetails'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/TraceWithFullDetails"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1789,7 +1887,19 @@ paths:
             nullable: true
         - name: fromTimestamp
           in: query
-          description: Retrieve only traces newer than this datetime (ISO 8601).
+          description: >-
+            Optional filter to only include traces with a trace.timestamp on or
+            after a certain datetime (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: toTimestamp
+          in: query
+          description: >-
+            Optional filter to only include traces with a trace.timestamp before
+            a certain datetime (ISO 8601)
           required: false
           schema:
             type: string
@@ -1815,34 +1925,34 @@ paths:
               type: string
               nullable: true
       responses:
-        '200':
-          description: ''
+        "200":
+          description: ""
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Traces'
-        '400':
-          description: ''
+                $ref: "#/components/schemas/Traces"
+        "400":
+          description: ""
           content:
             application/json:
               schema: {}
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema: {}
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema: {}
-        '404':
-          description: ''
+        "404":
+          description: ""
           content:
             application/json:
               schema: {}
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema: {}
@@ -1924,7 +2034,7 @@ components:
         - observations
         - scores
       allOf:
-        - $ref: '#/components/schemas/Trace'
+        - $ref: "#/components/schemas/Trace"
     TraceWithFullDetails:
       title: TraceWithFullDetails
       type: object
@@ -1932,6 +2042,10 @@ components:
         htmlPath:
           type: string
           description: Path of trace in Langfuse UI
+        latency:
+          type: number
+          format: double
+          description: Latency of trace in seconds
         totalCost:
           type: number
           format: double
@@ -1939,18 +2053,21 @@ components:
         observations:
           type: array
           items:
-            $ref: '#/components/schemas/ObservationsView'
+            $ref: "#/components/schemas/ObservationsView"
+          description: List of observations
         scores:
           type: array
           items:
-            $ref: '#/components/schemas/Score'
+            $ref: "#/components/schemas/Score"
+          description: List of scores
       required:
         - htmlPath
+        - latency
         - totalCost
         - observations
         - scores
       allOf:
-        - $ref: '#/components/schemas/Trace'
+        - $ref: "#/components/schemas/Trace"
     Session:
       title: Session
       type: object
@@ -1973,11 +2090,11 @@ components:
         traces:
           type: array
           items:
-            $ref: '#/components/schemas/Trace'
+            $ref: "#/components/schemas/Trace"
       required:
         - traces
       allOf:
-        - $ref: '#/components/schemas/Session'
+        - $ref: "#/components/schemas/Session"
     Observation:
       title: Observation
       type: object
@@ -2009,7 +2126,7 @@ components:
         modelParameters:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/MapValue'
+            $ref: "#/components/schemas/MapValue"
           nullable: true
         input:
           nullable: true
@@ -2021,10 +2138,10 @@ components:
         output:
           nullable: true
         usage:
-          $ref: '#/components/schemas/Usage'
+          $ref: "#/components/schemas/Usage"
           nullable: true
         level:
-          $ref: '#/components/schemas/ObservationLevel'
+          $ref: "#/components/schemas/ObservationLevel"
         statusMessage:
           type: string
           nullable: true
@@ -2074,8 +2191,12 @@ components:
           type: number
           format: double
           nullable: true
+        timeToFirstToken:
+          type: number
+          format: double
+          nullable: true
       allOf:
-        - $ref: '#/components/schemas/Observation'
+        - $ref: "#/components/schemas/Observation"
     Usage:
       title: Usage
       type: object
@@ -2094,7 +2215,7 @@ components:
           nullable: true
           description: Defaults to input+output if not set
         unit:
-          $ref: '#/components/schemas/ModelUsageUnit'
+          $ref: "#/components/schemas/ModelUsageUnit"
           nullable: true
         inputCost:
           type: number
@@ -2129,7 +2250,7 @@ components:
         projectId:
           type: string
         dataType:
-          $ref: '#/components/schemas/ScoreDataType'
+          $ref: "#/components/schemas/ScoreDataType"
         isArchived:
           type: boolean
           description: Whether the score config is archived. Defaults to false
@@ -2150,7 +2271,7 @@ components:
         categories:
           type: array
           items:
-            $ref: '#/components/schemas/ConfigCategory'
+            $ref: "#/components/schemas/ConfigCategory"
           nullable: true
           description: Configures custom categories for categorical scores
         description:
@@ -2187,7 +2308,7 @@ components:
         name:
           type: string
         source:
-          $ref: '#/components/schemas/ScoreSource'
+          $ref: "#/components/schemas/ScoreSource"
         observationId:
           type: string
           nullable: true
@@ -2232,7 +2353,7 @@ components:
       required:
         - value
       allOf:
-        - $ref: '#/components/schemas/BaseScore'
+        - $ref: "#/components/schemas/BaseScore"
     BooleanScore:
       title: BooleanScore
       type: object
@@ -2252,7 +2373,7 @@ components:
         - value
         - stringValue
       allOf:
-        - $ref: '#/components/schemas/BaseScore'
+        - $ref: "#/components/schemas/BaseScore"
     CategoricalScore:
       title: CategoricalScore
       type: object
@@ -2272,7 +2393,7 @@ components:
       required:
         - stringValue
       allOf:
-        - $ref: '#/components/schemas/BaseScore'
+        - $ref: "#/components/schemas/BaseScore"
     Score:
       title: Score
       oneOf:
@@ -2284,7 +2405,7 @@ components:
                   type: string
                   enum:
                     - NUMERIC
-            - $ref: '#/components/schemas/NumericScore'
+            - $ref: "#/components/schemas/NumericScore"
           required:
             - dataType
         - type: object
@@ -2295,7 +2416,7 @@ components:
                   type: string
                   enum:
                     - CATEGORICAL
-            - $ref: '#/components/schemas/CategoricalScore'
+            - $ref: "#/components/schemas/CategoricalScore"
           required:
             - dataType
         - type: object
@@ -2306,7 +2427,7 @@ components:
                   type: string
                   enum:
                     - BOOLEAN
-            - $ref: '#/components/schemas/BooleanScore'
+            - $ref: "#/components/schemas/BooleanScore"
           required:
             - dataType
     CreateScoreValue:
@@ -2352,7 +2473,7 @@ components:
         id:
           type: string
         status:
-          $ref: '#/components/schemas/DatasetStatus'
+          $ref: "#/components/schemas/DatasetStatus"
         input:
           nullable: true
         expectedOutput:
@@ -2450,11 +2571,11 @@ components:
         datasetRunItems:
           type: array
           items:
-            $ref: '#/components/schemas/DatasetRunItem'
+            $ref: "#/components/schemas/DatasetRunItem"
       required:
         - datasetRunItems
       allOf:
-        - $ref: '#/components/schemas/DatasetRun'
+        - $ref: "#/components/schemas/DatasetRun"
     Model:
       title: Model
       type: object
@@ -2482,7 +2603,7 @@ components:
           nullable: true
           description: Apply only to generations which are newer than this ISO date.
         unit:
-          $ref: '#/components/schemas/ModelUsageUnit'
+          $ref: "#/components/schemas/ModelUsageUnit"
           description: Unit used by this model.
         inputPrice:
           type: number
@@ -2596,7 +2717,7 @@ components:
             Dataset items are upserted on their id. Id needs to be globally
             unique and cannot be reused across datasets.
         status:
-          $ref: '#/components/schemas/DatasetStatus'
+          $ref: "#/components/schemas/DatasetStatus"
           nullable: true
           description: Defaults to ACTIVE for newly created items
       required:
@@ -2608,9 +2729,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/DatasetItem'
+            $ref: "#/components/schemas/DatasetItem"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -2648,9 +2769,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Dataset'
+            $ref: "#/components/schemas/Dataset"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -2674,9 +2795,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/DatasetRun'
+            $ref: "#/components/schemas/DatasetRun"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -2705,7 +2826,7 @@ components:
                   type: string
                   enum:
                     - trace-create
-            - $ref: '#/components/schemas/TraceEvent'
+            - $ref: "#/components/schemas/TraceEvent"
           required:
             - type
         - type: object
@@ -2716,7 +2837,7 @@ components:
                   type: string
                   enum:
                     - score-create
-            - $ref: '#/components/schemas/ScoreEvent'
+            - $ref: "#/components/schemas/ScoreEvent"
           required:
             - type
         - type: object
@@ -2727,7 +2848,7 @@ components:
                   type: string
                   enum:
                     - span-create
-            - $ref: '#/components/schemas/CreateSpanEvent'
+            - $ref: "#/components/schemas/CreateSpanEvent"
           required:
             - type
         - type: object
@@ -2738,7 +2859,7 @@ components:
                   type: string
                   enum:
                     - span-update
-            - $ref: '#/components/schemas/UpdateSpanEvent'
+            - $ref: "#/components/schemas/UpdateSpanEvent"
           required:
             - type
         - type: object
@@ -2749,7 +2870,7 @@ components:
                   type: string
                   enum:
                     - generation-create
-            - $ref: '#/components/schemas/CreateGenerationEvent'
+            - $ref: "#/components/schemas/CreateGenerationEvent"
           required:
             - type
         - type: object
@@ -2760,7 +2881,7 @@ components:
                   type: string
                   enum:
                     - generation-update
-            - $ref: '#/components/schemas/UpdateGenerationEvent'
+            - $ref: "#/components/schemas/UpdateGenerationEvent"
           required:
             - type
         - type: object
@@ -2771,7 +2892,7 @@ components:
                   type: string
                   enum:
                     - event-create
-            - $ref: '#/components/schemas/CreateEventEvent'
+            - $ref: "#/components/schemas/CreateEventEvent"
           required:
             - type
         - type: object
@@ -2782,7 +2903,7 @@ components:
                   type: string
                   enum:
                     - sdk-log
-            - $ref: '#/components/schemas/SDKLogEvent'
+            - $ref: "#/components/schemas/SDKLogEvent"
           required:
             - type
         - type: object
@@ -2793,7 +2914,7 @@ components:
                   type: string
                   enum:
                     - observation-create
-            - $ref: '#/components/schemas/CreateObservationEvent'
+            - $ref: "#/components/schemas/CreateObservationEvent"
           required:
             - type
         - type: object
@@ -2804,7 +2925,7 @@ components:
                   type: string
                   enum:
                     - observation-update
-            - $ref: '#/components/schemas/UpdateObservationEvent'
+            - $ref: "#/components/schemas/UpdateObservationEvent"
           required:
             - type
     ObservationType:
@@ -2817,8 +2938,8 @@ components:
     IngestionUsage:
       title: IngestionUsage
       oneOf:
-        - $ref: '#/components/schemas/Usage'
-        - $ref: '#/components/schemas/OpenAIUsage'
+        - $ref: "#/components/schemas/Usage"
+        - $ref: "#/components/schemas/OpenAIUsage"
     OpenAIUsage:
       title: OpenAIUsage
       type: object
@@ -2854,7 +2975,7 @@ components:
         output:
           nullable: true
         level:
-          $ref: '#/components/schemas/ObservationLevel'
+          $ref: "#/components/schemas/ObservationLevel"
           nullable: true
         statusMessage:
           type: string
@@ -2873,7 +2994,7 @@ components:
           type: string
           nullable: true
       allOf:
-        - $ref: '#/components/schemas/OptionalObservationBody'
+        - $ref: "#/components/schemas/OptionalObservationBody"
     UpdateEventBody:
       title: UpdateEventBody
       type: object
@@ -2883,7 +3004,7 @@ components:
       required:
         - id
       allOf:
-        - $ref: '#/components/schemas/OptionalObservationBody'
+        - $ref: "#/components/schemas/OptionalObservationBody"
     CreateSpanBody:
       title: CreateSpanBody
       type: object
@@ -2893,7 +3014,7 @@ components:
           format: date-time
           nullable: true
       allOf:
-        - $ref: '#/components/schemas/CreateEventBody'
+        - $ref: "#/components/schemas/CreateEventBody"
     UpdateSpanBody:
       title: UpdateSpanBody
       type: object
@@ -2903,7 +3024,7 @@ components:
           format: date-time
           nullable: true
       allOf:
-        - $ref: '#/components/schemas/UpdateEventBody'
+        - $ref: "#/components/schemas/UpdateEventBody"
     CreateGenerationBody:
       title: CreateGenerationBody
       type: object
@@ -2918,10 +3039,10 @@ components:
         modelParameters:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/MapValue'
+            $ref: "#/components/schemas/MapValue"
           nullable: true
         usage:
-          $ref: '#/components/schemas/IngestionUsage'
+          $ref: "#/components/schemas/IngestionUsage"
           nullable: true
         promptName:
           type: string
@@ -2930,7 +3051,7 @@ components:
           type: integer
           nullable: true
       allOf:
-        - $ref: '#/components/schemas/CreateSpanBody'
+        - $ref: "#/components/schemas/CreateSpanBody"
     UpdateGenerationBody:
       title: UpdateGenerationBody
       type: object
@@ -2945,10 +3066,10 @@ components:
         modelParameters:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/MapValue'
+            $ref: "#/components/schemas/MapValue"
           nullable: true
         usage:
-          $ref: '#/components/schemas/IngestionUsage'
+          $ref: "#/components/schemas/IngestionUsage"
           nullable: true
         promptName:
           type: string
@@ -2957,7 +3078,7 @@ components:
           type: integer
           nullable: true
       allOf:
-        - $ref: '#/components/schemas/UpdateSpanBody'
+        - $ref: "#/components/schemas/UpdateSpanBody"
     ObservationBody:
       title: ObservationBody
       type: object
@@ -2969,7 +3090,7 @@ components:
           type: string
           nullable: true
         type:
-          $ref: '#/components/schemas/ObservationType'
+          $ref: "#/components/schemas/ObservationType"
         name:
           type: string
           nullable: true
@@ -2991,7 +3112,7 @@ components:
         modelParameters:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/MapValue'
+            $ref: "#/components/schemas/MapValue"
           nullable: true
         input:
           nullable: true
@@ -3003,10 +3124,10 @@ components:
         output:
           nullable: true
         usage:
-          $ref: '#/components/schemas/Usage'
+          $ref: "#/components/schemas/Usage"
           nullable: true
         level:
-          $ref: '#/components/schemas/ObservationLevel'
+          $ref: "#/components/schemas/ObservationLevel"
           nullable: true
         statusMessage:
           type: string
@@ -3078,7 +3199,7 @@ components:
           type: string
           example: novelty
         value:
-          $ref: '#/components/schemas/CreateScoreValue'
+          $ref: "#/components/schemas/CreateScoreValue"
           description: >-
             The value of the score. Must be passed as string for categorical
             scores, and numeric for boolean and numeric scores. Boolean score
@@ -3090,7 +3211,7 @@ components:
           type: string
           nullable: true
         dataType:
-          $ref: '#/components/schemas/ScoreDataType'
+          $ref: "#/components/schemas/ScoreDataType"
           nullable: true
           description: >-
             When set, must match the score value's type. If not set, will be
@@ -3133,101 +3254,101 @@ components:
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/TraceBody'
+          $ref: "#/components/schemas/TraceBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     CreateObservationEvent:
       title: CreateObservationEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/ObservationBody'
+          $ref: "#/components/schemas/ObservationBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     UpdateObservationEvent:
       title: UpdateObservationEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/ObservationBody'
+          $ref: "#/components/schemas/ObservationBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     ScoreEvent:
       title: ScoreEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/ScoreBody'
+          $ref: "#/components/schemas/ScoreBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     SDKLogEvent:
       title: SDKLogEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/SDKLogBody'
+          $ref: "#/components/schemas/SDKLogBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     CreateGenerationEvent:
       title: CreateGenerationEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/CreateGenerationBody'
+          $ref: "#/components/schemas/CreateGenerationBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     UpdateGenerationEvent:
       title: UpdateGenerationEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/UpdateGenerationBody'
+          $ref: "#/components/schemas/UpdateGenerationBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     CreateSpanEvent:
       title: CreateSpanEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/CreateSpanBody'
+          $ref: "#/components/schemas/CreateSpanBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     UpdateSpanEvent:
       title: UpdateSpanEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/UpdateSpanBody'
+          $ref: "#/components/schemas/UpdateSpanBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     CreateEventEvent:
       title: CreateEventEvent
       type: object
       properties:
         body:
-          $ref: '#/components/schemas/CreateEventBody'
+          $ref: "#/components/schemas/CreateEventBody"
       required:
         - body
       allOf:
-        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: "#/components/schemas/BaseEvent"
     IngestionSuccess:
       title: IngestionSuccess
       type: object
@@ -3262,11 +3383,11 @@ components:
         successes:
           type: array
           items:
-            $ref: '#/components/schemas/IngestionSuccess'
+            $ref: "#/components/schemas/IngestionSuccess"
         errors:
           type: array
           items:
-            $ref: '#/components/schemas/IngestionError'
+            $ref: "#/components/schemas/IngestionError"
       required:
         - successes
         - errors
@@ -3277,10 +3398,10 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/DailyMetricsDetails'
+            $ref: "#/components/schemas/DailyMetricsDetails"
           description: A list of daily metrics, only days with ingested data are included.
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -3301,7 +3422,7 @@ components:
         usage:
           type: array
           items:
-            $ref: '#/components/schemas/UsageByModel'
+            $ref: "#/components/schemas/UsageByModel"
       required:
         - date
         - countTraces
@@ -3349,9 +3470,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Model'
+            $ref: "#/components/schemas/Model"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -3377,7 +3498,7 @@ components:
           nullable: true
           description: Apply only to generations which are newer than this ISO date.
         unit:
-          $ref: '#/components/schemas/ModelUsageUnit'
+          $ref: "#/components/schemas/ModelUsageUnit"
           description: Unit used by this model.
         inputPrice:
           type: number
@@ -3418,9 +3539,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Observation'
+            $ref: "#/components/schemas/Observation"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -3431,9 +3552,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ObservationsView'
+            $ref: "#/components/schemas/ObservationsView"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -3444,7 +3565,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Project'
+            $ref: "#/components/schemas/Project"
       required:
         - data
     Project:
@@ -3465,9 +3586,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/PromptMeta'
+            $ref: "#/components/schemas/PromptMeta"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -3505,7 +3626,7 @@ components:
                   type: string
                   enum:
                     - chat
-            - $ref: '#/components/schemas/CreateChatPromptRequest'
+            - $ref: "#/components/schemas/CreateChatPromptRequest"
           required:
             - type
         - type: object
@@ -3516,7 +3637,7 @@ components:
                   type: string
                   enum:
                     - text
-            - $ref: '#/components/schemas/CreateTextPromptRequest'
+            - $ref: "#/components/schemas/CreateTextPromptRequest"
           required:
             - type
     CreateChatPromptRequest:
@@ -3528,7 +3649,7 @@ components:
         prompt:
           type: array
           items:
-            $ref: '#/components/schemas/ChatMessage'
+            $ref: "#/components/schemas/ChatMessage"
         config:
           nullable: true
         labels:
@@ -3582,7 +3703,7 @@ components:
                   type: string
                   enum:
                     - chat
-            - $ref: '#/components/schemas/ChatPrompt'
+            - $ref: "#/components/schemas/ChatPrompt"
           required:
             - type
         - type: object
@@ -3593,7 +3714,7 @@ components:
                   type: string
                   enum:
                     - text
-            - $ref: '#/components/schemas/TextPrompt'
+            - $ref: "#/components/schemas/TextPrompt"
           required:
             - type
     BasePrompt:
@@ -3643,7 +3764,7 @@ components:
       required:
         - prompt
       allOf:
-        - $ref: '#/components/schemas/BasePrompt'
+        - $ref: "#/components/schemas/BasePrompt"
     ChatPrompt:
       title: ChatPrompt
       type: object
@@ -3651,11 +3772,11 @@ components:
         prompt:
           type: array
           items:
-            $ref: '#/components/schemas/ChatMessage'
+            $ref: "#/components/schemas/ChatMessage"
       required:
         - prompt
       allOf:
-        - $ref: '#/components/schemas/BasePrompt'
+        - $ref: "#/components/schemas/BasePrompt"
     ScoreConfigs:
       title: ScoreConfigs
       type: object
@@ -3663,9 +3784,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ScoreConfig'
+            $ref: "#/components/schemas/ScoreConfig"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -3676,11 +3797,11 @@ components:
         name:
           type: string
         dataType:
-          $ref: '#/components/schemas/ScoreDataType'
+          $ref: "#/components/schemas/ScoreDataType"
         categories:
           type: array
           items:
-            $ref: '#/components/schemas/ConfigCategory'
+            $ref: "#/components/schemas/ConfigCategory"
           nullable: true
           description: >-
             Configure custom categories for categorical scores. Pass a list of
@@ -3724,7 +3845,7 @@ components:
           type: string
           example: novelty
         value:
-          $ref: '#/components/schemas/CreateScoreValue'
+          $ref: "#/components/schemas/CreateScoreValue"
           description: >-
             The value of the score. Must be passed as string for categorical
             scores, and numeric for boolean and numeric scores. Boolean score
@@ -3736,7 +3857,7 @@ components:
           type: string
           nullable: true
         dataType:
-          $ref: '#/components/schemas/ScoreDataType'
+          $ref: "#/components/schemas/ScoreDataType"
           nullable: true
           description: >-
             The data type of the score. When passing a configId this field is
@@ -3753,6 +3874,15 @@ components:
         - traceId
         - name
         - value
+    CreateScoreResponse:
+      title: CreateScoreResponse
+      type: object
+      properties:
+        id:
+          type: string
+          description: The id of the created object in Langfuse
+      required:
+        - id
     Scores:
       title: Scores
       type: object
@@ -3760,9 +3890,22 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Score'
+            $ref: "#/components/schemas/Score"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
+      required:
+        - data
+        - meta
+    PaginatedSessions:
+      title: PaginatedSessions
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+        meta:
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
@@ -3773,9 +3916,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/TraceWithDetails'
+            $ref: "#/components/schemas/TraceWithDetails"
         meta:
-          $ref: '#/components/schemas/utilsMetaResponse'
+          $ref: "#/components/schemas/utilsMetaResponse"
       required:
         - data
         - meta
