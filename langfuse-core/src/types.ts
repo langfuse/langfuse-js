@@ -81,21 +81,21 @@ export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["Updat
 export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
 
 // SYNC
-export type GetLangfuseTracesQuery = paths["/api/public/traces"]["get"]["parameters"]["query"];
+export type GetLangfuseTracesQuery = FixTypes<paths["/api/public/traces"]["get"]["parameters"]["query"]>;
 export type GetLangfuseTracesResponse = FixTypes<
   paths["/api/public/traces"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type GetLangfuseTraceResponse = FixTypes<
   paths["/api/public/traces/{traceId}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
-export type GetLangfuseObservationsQuery = paths["/api/public/observations"]["get"]["parameters"]["query"];
+export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
 export type GetLangfuseObservationsResponse = FixTypes<
   paths["/api/public/observations"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type GetLangfuseObservationResponse = FixTypes<
   paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
-export type GetLangfuseSessionsQuery = paths["/api/public/sessions"]["get"]["parameters"]["query"];
+export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["get"]["parameters"]["query"]>;
 export type GetLangfuseSessionsResponse = FixTypes<
   paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
@@ -174,18 +174,31 @@ export type PromptInput = {
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
 type OptionalTypes<T> = T extends null | undefined ? T : never;
-type FixTypes<T> = Omit<
-  {
-    [P in keyof T]: P extends "startTime" | "endTime" | "timestamp" | "completionStartTime" | "createdAt" | "updatedAt"
-      ? // Dates instead of strings
-        Date | OptionalTypes<T[P]>
-      : P extends "metadata" | "input" | "output" | "completion" | "expectedOutput"
-        ? // JSON instead of strings
-          any | OptionalTypes<T[P]>
-        : T[P];
-  },
-  "externalId" | "traceIdType"
->;
+
+type FixTypes<T> = T extends undefined
+  ? undefined
+  : Omit<
+      {
+        [P in keyof T]: P extends
+          | "startTime"
+          | "endTime"
+          | "timestamp"
+          | "completionStartTime"
+          | "createdAt"
+          | "updatedAt"
+          | "fromTimestamp"
+          | "toTimestamp"
+          | "fromStartTime"
+          | "toStartTime"
+          ? // Dates instead of strings
+            Date | OptionalTypes<T[P]>
+          : P extends "metadata" | "input" | "output" | "completion" | "expectedOutput"
+            ? // JSON instead of strings
+              any | OptionalTypes<T[P]>
+            : T[P];
+      },
+      "externalId" | "traceIdType"
+    >;
 
 export type DeferRuntime = {
   langfuseTraces: (
