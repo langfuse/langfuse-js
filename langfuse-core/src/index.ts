@@ -42,6 +42,7 @@ import {
   type GetLangfuseObservationsResponse,
   type GetLangfuseObservationResponse,
   type GetLangfuseTraceResponse,
+  type ChatMessage,
 } from "./types";
 import {
   generateUUID,
@@ -215,13 +216,15 @@ abstract class LangfuseCoreStateless {
     body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
   ): string {
     const { id: bodyId, startTime: bodyStartTime, prompt, ...rest } = body;
+    const promptDetails =
+      prompt && !prompt.isFallback ? { promptName: prompt.name, promptVersion: prompt.version } : {};
 
     const id = bodyId || generateUUID();
 
     const parsedBody: CreateLangfuseGenerationBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
-      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
+      ...promptDetails,
       ...rest,
     };
 
@@ -251,8 +254,11 @@ abstract class LangfuseCoreStateless {
     body: Omit<UpdateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
   ): string {
     const { prompt, ...rest } = body;
+    const promptDetails =
+      prompt && !prompt.isFallback ? { promptName: prompt.name, promptVersion: prompt.version } : {};
+
     const parsedBody: UpdateLangfuseGenerationBody = {
-      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
+      ...promptDetails,
       ...rest,
     };
     this.enqueue("generation-update", parsedBody);
@@ -420,11 +426,27 @@ abstract class LangfuseCoreStateless {
 
     const url = `${this.baseUrl}/api/public/v2/prompts/${encodedName}${params.size ? "?" + params : ""}`;
 
-    return this.fetch(url, this._getFetchOptions({ method: "GET" })).then(async (res) => {
-      const data = await res.json();
+    const retryOptions = { ...this._retryOptions, retryCount: 2, retryDelay: 500 };
+    const retryLogger = (string: string): void =>
+      this._events.emit("retry", string + ", " + url + ", " + JSON.stringify(retryOptions));
 
-      return { fetchResult: res.status === 200 ? "success" : "failure", data };
-    });
+    return retriable(
+      async () => {
+        const res = await this.fetch(url, this._getFetchOptions({ method: "GET" })).catch((e) => {
+          throw new LangfuseFetchNetworkError(e);
+        });
+
+        const data = await res.json();
+
+        if (res.status >= 500) {
+          throw new LangfuseFetchHttpError(res, JSON.stringify(data));
+        }
+
+        return { fetchResult: res.status === 200 ? "success" : "failure", data };
+      },
+      retryOptions,
+      retryLogger
+    );
   }
 
   /***
@@ -906,28 +928,63 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; type?: "text" }
+    options?: { label?: string; cacheTtlSeconds?: number; fallback?: string; type?: "text" }
   ): Promise<TextPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; type: "chat" }
+    options?: { label?: string; cacheTtlSeconds?: number; fallback?: ChatMessage[]; type: "chat" }
   ): Promise<ChatPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; type?: "chat" | "text" }
+    options?: { label?: string; cacheTtlSeconds?: number; fallback?: ChatMessage[] | string; type?: "chat" | "text" }
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
 
     if (!cachedPrompt) {
-      return await this._fetchPromptAndUpdateCache({
-        name,
-        version,
-        label: options?.label,
-        cacheTtlSeconds: options?.cacheTtlSeconds,
-      });
+      try {
+        return await this._fetchPromptAndUpdateCache({
+          name,
+          version,
+          label: options?.label,
+          cacheTtlSeconds: options?.cacheTtlSeconds,
+        });
+      } catch (err) {
+        if (options?.fallback) {
+          const sharedFallbackParams = {
+            name,
+            version: version ?? 0,
+            labels: options.label ? [options.label] : [],
+            cacheTtlSeconds: options?.cacheTtlSeconds,
+            config: {},
+            tags: [],
+          };
+
+          if (options.type === "chat") {
+            return new ChatPromptClient(
+              {
+                ...sharedFallbackParams,
+                type: "chat",
+                prompt: options.fallback as ChatMessage[],
+              },
+              true
+            );
+          } else {
+            return new TextPromptClient(
+              {
+                ...sharedFallbackParams,
+                type: "text",
+                prompt: options.fallback as string,
+              },
+              true
+            );
+          }
+        }
+
+        throw err;
+      }
     }
 
     if (cachedPrompt.isExpired) {
