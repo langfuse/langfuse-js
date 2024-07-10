@@ -126,6 +126,45 @@ describe("Langfuse (fetch)", () => {
       });
     });
 
+    it("create categorical score", async () => {
+      const scoreId = "cat-score-id";
+      langfuse.score({
+        id: scoreId,
+        name: "score-name",
+        value: "value",
+        dataType: "CATEGORICAL",
+        traceId: "trace-id",
+      });
+      await langfuse.flushAsync();
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/${scoreId}"`, {
+        headers: getHeaders(),
+      });
+      expect(res.data).toMatchObject({
+        stringValue: "value",
+        dataType: "CATEGORICAL",
+      });
+    });
+
+    it("create boolean score", async () => {
+      const scoreId = "bool-score-id";
+      langfuse.score({
+        id: scoreId,
+        name: "score-name",
+        value: 0,
+        dataType: "BOOLEAN",
+        traceId: "trace-id",
+      });
+      await langfuse.flushAsync();
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/${scoreId}"`, {
+        headers: getHeaders(),
+      });
+      expect(res.data).toMatchObject({
+        value: 0,
+        stringValue: "False",
+        dataType: "BOOLEAN",
+      });
+    });
+
     it("update a trace", async () => {
       const trace = langfuse.trace({
         name: "test-trace-10",
