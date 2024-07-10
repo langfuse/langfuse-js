@@ -552,23 +552,24 @@ describe("Langfuse Node.js", () => {
   });
 
   it("create 3 traces with different timestamps and fetch the middle one using to and from timestamp", async () => {
-    const traceNames = [utils.generateUUID(), utils.generateUUID(), utils.generateUUID()];
-    const timestamps = [
-      new Date(Date.now() - 10000), // 10 seconds ago
-      new Date(Date.now() - 5000), // 5 seconds ago
-      new Date(Date.now()), // now
+    const traceName = utils.generateUUID();
+    const traceParams = [
+      { id: utils.generateUUID(), timestamp: new Date(Date.now() - 10000) }, // 10 seconds ago
+      { id: utils.generateUUID(), timestamp: new Date(Date.now() - 5000) }, // 5 seconds ago
+      { id: utils.generateUUID(), timestamp: new Date(Date.now()) }, // now
     ];
 
     // Create 3 traces with different timestamps
-    for (let i = 0; i < traceNames.length; i++) {
-      await langfuse.trace({
-        name: traceNames[i],
-        sessionId: `session-${i}`,
-        input: { key: `value-${i}` },
-        output: `output-value-${i}`,
-        timestamp: timestamps[i],
+    traceParams.forEach((traceParam) => {
+      langfuse.trace({
+        id: traceParam.id,
+        name: traceName,
+        sessionId: "session-1",
+        input: { key: "value" },
+        output: "output-value",
+        timestamp: traceParam.timestamp,
       });
-    }
+    });
     await langfuse.flushAsync();
 
     // Fetch traces with a time range that should only include the middle trace
@@ -578,15 +579,16 @@ describe("Langfuse Node.js", () => {
     const fetchedTraces = await langfuse.fetchTraces({
       fromTimestamp: fromTimestamp,
       toTimestamp: toTimestamp,
+      name: traceName,
     });
 
     expect(fetchedTraces.data).toHaveLength(1);
     expect(fetchedTraces.data[0]).toMatchObject({
-      name: traceNames[1],
+      name: traceName,
       sessionId: "session-1",
-      input: { key: "value-1" },
-      output: "output-value-1",
-      timestamp: timestamps[1],
+      input: { key: "value" },
+      output: "output-value",
+      timestamp: traceParams[1].timestamp.toISOString(),
     });
   });
 
