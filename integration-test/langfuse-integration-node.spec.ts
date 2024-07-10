@@ -573,4 +573,17 @@ describe("Langfuse Node.js", () => {
       input: "observation-value",
     });
   });
+
+  it("create and fetch a session", async () => {
+    const traceName = utils.generateUUID();
+    const sessionId = utils.generateUUID();
+    langfuse.trace({
+      name: traceName,
+      sessionId,
+    });
+    await langfuse.flushAsync();
+
+    const sessions = await langfuse.fetchSessions();
+    expect(sessions.data).toContainEqual(expect.objectContaining({ id: sessionId }));
+  });
 });

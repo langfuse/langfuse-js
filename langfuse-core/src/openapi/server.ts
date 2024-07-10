@@ -374,6 +374,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/public/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get sessions. */
+    get: operations["sessions_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/public/sessions/{sessionId}": {
     parameters: {
       query?: never;
@@ -472,10 +489,17 @@ export interface components {
       htmlPath: string;
       /**
        * Format: double
+       * @description Latency of trace in seconds
+       */
+      latency: number;
+      /**
+       * Format: double
        * @description Cost of trace in USD
        */
       totalCost: number;
+      /** @description List of observations */
       observations: components["schemas"]["ObservationsView"][];
+      /** @description List of scores */
       scores: components["schemas"]["Score"][];
     } & components["schemas"]["Trace"];
     /** Session */
@@ -532,6 +556,8 @@ export interface components {
       calculatedTotalCost?: number | null;
       /** Format: double */
       latency?: number | null;
+      /** Format: double */
+      timeToFirstToken?: number | null;
     } & components["schemas"]["Observation"];
     /**
      * Usage
@@ -1287,9 +1313,19 @@ export interface components {
       /** @description Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
       configId?: string | null;
     };
+    /** CreateScoreResponse */
+    CreateScoreResponse: {
+      /** @description The id of the created object in Langfuse */
+      id: string;
+    };
     /** Scores */
     Scores: {
       data: components["schemas"]["Score"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** PaginatedSessions */
+    PaginatedSessions: {
+      data: components["schemas"]["Session"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
     /** Traces */
@@ -2419,8 +2455,10 @@ export interface operations {
         type?: string | null;
         traceId?: string | null;
         parentObservationId?: string | null;
-        /** @description Retrieve only observations with a start_time greater than this datetime (ISO 8601). */
+        /** @description Retrieve only observations with a start_time or or after this datetime (ISO 8601). */
         fromStartTime?: string | null;
+        /** @description Retrieve only observations with a start_time before this datetime (ISO 8601). */
+        toStartTime?: string | null;
       };
       header?: never;
       path?: never;
@@ -2934,8 +2972,10 @@ export interface operations {
         userId?: string | null;
         /** @description Retrieve only scores with this name. */
         name?: string | null;
-        /** @description Retrieve only scores newer than this datetime (ISO 8601). */
+        /** @description Optional filter to only include scores created on or after a certain datetime (ISO 8601) */
         fromTimestamp?: string | null;
+        /** @description Optional filter to only include scores created before a certain datetime (ISO 8601) */
+        toTimestamp?: string | null;
         /** @description Retrieve only scores from a specific source. */
         source?: components["schemas"]["ScoreSource"];
         /** @description Retrieve only scores with <operator> value. */
@@ -3023,7 +3063,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Score"];
+          "application/json": components["schemas"]["CreateScoreResponse"];
         };
       };
       400: {
@@ -3147,6 +3187,74 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  sessions_list: {
+    parameters: {
+      query?: {
+        /** @description Page number, starts at 1 */
+        page?: number | null;
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+        limit?: number | null;
+        /** @description Optional filter to only include sessions created on or after a certain datetime (ISO 8601) */
+        fromTimestamp?: string | null;
+        /** @description Optional filter to only include sessions created before a certain datetime (ISO 8601) */
+        toTimestamp?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedSessions"];
+        };
       };
       400: {
         headers: {
@@ -3324,8 +3432,10 @@ export interface operations {
         userId?: string | null;
         name?: string | null;
         sessionId?: string | null;
-        /** @description Retrieve only traces newer than this datetime (ISO 8601). */
+        /** @description Optional filter to only include traces with a trace.timestamp on or after a certain datetime (ISO 8601) */
         fromTimestamp?: string | null;
+        /** @description Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601) */
+        toTimestamp?: string | null;
         /** @description Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
         orderBy?: string | null;
         /** @description Only traces that include all of these tags will be returned. */

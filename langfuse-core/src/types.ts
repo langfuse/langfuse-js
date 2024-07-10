@@ -95,6 +95,10 @@ export type GetLangfuseObservationsResponse = FixTypes<
 export type GetLangfuseObservationResponse = FixTypes<
   paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfuseSessionsQuery = paths["/api/public/sessions"]["get"]["parameters"]["query"];
+export type GetLangfuseSessionsResponse = FixTypes<
+  paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 export type GetLangfuseDatasetParams = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;

@@ -43,6 +43,8 @@ import {
   type GetLangfuseObservationResponse,
   type GetLangfuseTraceResponse,
   type ChatMessage,
+  type GetLangfuseSessionsQuery,
+  type GetLangfuseSessionsResponse,
 } from "./types";
 import {
   generateUUID,
@@ -324,6 +326,16 @@ abstract class LangfuseCoreStateless {
     );
     const observation = (await res.json()) as GetLangfuseObservationResponse;
     return { data: observation };
+  }
+
+  async fetchSessions(query?: GetLangfuseSessionsQuery): Promise<GetLangfuseSessionsResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/sessions?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseSessionsResponse;
+    return { data, meta };
   }
 
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
