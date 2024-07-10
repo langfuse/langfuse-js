@@ -127,42 +127,53 @@ describe("Langfuse (fetch)", () => {
     });
 
     it("create categorical score", async () => {
-      const scoreId = "cat-score-id";
+      const trace = langfuse.trace({});
+
       langfuse.score({
-        id: scoreId,
+        traceId: trace.id,
         name: "score-name",
         value: "value",
         dataType: "CATEGORICAL",
-        traceId: "trace-id",
       });
       await langfuse.flushAsync();
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/${scoreId}"`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=CATEGORICAL`, {
         headers: getHeaders(),
       });
-      expect(res.data).toMatchObject({
-        stringValue: "value",
-        dataType: "CATEGORICAL",
-      });
+
+      for (const score of res.data.data) {
+        if (score.traceId === trace.id) {
+          expect(score).toMatchObject({
+            value: null,
+            stringValue: "value",
+            dataType: "CATEGORICAL",
+          });
+        }
+      }
     });
 
     it("create boolean score", async () => {
-      const scoreId = "bool-score-id";
+      const trace = langfuse.trace({});
+
       langfuse.score({
-        id: scoreId,
+        traceId: trace.id,
         name: "score-name",
         value: 0,
         dataType: "BOOLEAN",
-        traceId: "trace-id",
       });
       await langfuse.flushAsync();
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/${scoreId}"`, {
+      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=BOOLEAN`, {
         headers: getHeaders(),
       });
-      expect(res.data).toMatchObject({
-        value: 0,
-        stringValue: "False",
-        dataType: "BOOLEAN",
-      });
+
+      for (const score of res.data.data) {
+        if (score.traceId === trace.id) {
+          expect(score).toMatchObject({
+            value: 0,
+            stringValue: "False",
+            dataType: "BOOLEAN",
+          });
+        }
+      }
     });
 
     it("update a trace", async () => {

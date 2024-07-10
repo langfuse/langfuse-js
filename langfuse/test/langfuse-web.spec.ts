@@ -252,7 +252,6 @@ describe("langfuseWeb", () => {
           signal: expect.anything(),
         })
       );
-
     });
 
     it("should log error if score was not created", async () => {
