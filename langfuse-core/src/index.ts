@@ -426,11 +426,27 @@ abstract class LangfuseCoreStateless {
 
     const url = `${this.baseUrl}/api/public/v2/prompts/${encodedName}${params.size ? "?" + params : ""}`;
 
-    return this.fetch(url, this._getFetchOptions({ method: "GET" })).then(async (res) => {
-      const data = await res.json();
+    const retryOptions = { ...this._retryOptions, retryCount: 2, retryDelay: 500 };
+    const retryLogger = (string: string): void =>
+      this._events.emit("retry", string + ", " + url + ", " + JSON.stringify(retryOptions));
 
-      return { fetchResult: res.status === 200 ? "success" : "failure", data };
-    });
+    return retriable(
+      async () => {
+        const res = await this.fetch(url, this._getFetchOptions({ method: "GET" })).catch((e) => {
+          throw new LangfuseFetchNetworkError(e);
+        });
+
+        const data = await res.json();
+
+        if (res.status >= 500) {
+          throw new LangfuseFetchHttpError(res, JSON.stringify(data));
+        }
+
+        return { fetchResult: res.status === 200 ? "success" : "failure", data };
+      },
+      retryOptions,
+      retryLogger
+    );
   }
 
   /***
