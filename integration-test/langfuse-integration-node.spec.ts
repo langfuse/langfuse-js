@@ -551,6 +551,47 @@ describe("Langfuse Node.js", () => {
     });
   });
 
+  it("create 3 traces with different timestamps and fetch the middle one using to and from timestamp", async () => {
+    const traceName = utils.generateUUID();
+    const traceParams = [
+      { id: utils.generateUUID(), timestamp: new Date(Date.now() - 10000) }, // 10 seconds ago
+      { id: utils.generateUUID(), timestamp: new Date(Date.now() - 5000) }, // 5 seconds ago
+      { id: utils.generateUUID(), timestamp: new Date(Date.now()) }, // now
+    ];
+
+    // Create 3 traces with different timestamps
+    traceParams.forEach((traceParam) => {
+      langfuse.trace({
+        id: traceParam.id,
+        name: traceName,
+        sessionId: "session-1",
+        input: { key: "value" },
+        output: "output-value",
+        timestamp: traceParam.timestamp,
+      });
+    });
+    await langfuse.flushAsync();
+
+    // Fetch traces with a time range that should only include the middle trace
+    const fromTimestamp = new Date(Date.now() - 7500); // 7.5 seconds ago
+    const toTimestamp = new Date(Date.now() - 2500); // 2.5 seconds ago
+
+    const fetchedTraces = await langfuse.fetchTraces({
+      fromTimestamp: fromTimestamp,
+      toTimestamp: toTimestamp,
+      name: traceName,
+    });
+
+    expect(fetchedTraces.data).toHaveLength(1);
+    expect(fetchedTraces.data[0]).toMatchObject({
+      name: traceName,
+      sessionId: "session-1",
+      input: { key: "value" },
+      output: "output-value",
+      timestamp: traceParams[1].timestamp.toISOString(),
+    });
+  });
+
   it("create and fetch observations", async () => {
     const traceName = utils.generateUUID();
     const observationName = utils.generateUUID();

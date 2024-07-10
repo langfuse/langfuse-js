@@ -924,11 +924,17 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async createPrompt(body: CreatePromptBody): Promise<LangfusePromptClient> {
     const labels = body.labels ?? [];
 
-    const promptResponse = await this.createPromptStateless({
-      ...body,
-      type: body.type ?? "text",
-      labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
-    });
+    const promptResponse =
+      body.type === "chat" // necessary to get types right here
+        ? await this.createPromptStateless({
+            ...body,
+            labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
+          })
+        : await this.createPromptStateless({
+            ...body,
+            type: body.type ?? "text",
+            labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
+          });
 
     if (promptResponse.type === "chat") {
       return new ChatPromptClient(promptResponse);
