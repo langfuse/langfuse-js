@@ -419,7 +419,12 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
-  async getPromptStateless(name: string, version?: number, label?: string): Promise<GetLangfusePromptResponse> {
+  async getPromptStateless(
+    name: string,
+    version?: number,
+    label?: string,
+    maxRetries?: number
+  ): Promise<GetLangfusePromptResponse> {
     const encodedName = encodeURIComponent(name);
     const params = new URLSearchParams();
 
@@ -438,7 +443,8 @@ abstract class LangfuseCoreStateless {
 
     const url = `${this.baseUrl}/api/public/v2/prompts/${encodedName}${params.size ? "?" + params : ""}`;
 
-    const retryOptions = { ...this._retryOptions, retryCount: 2, retryDelay: 500 };
+    const boundedMaxRetries = this._getBoundedMaxRetries({ maxRetries, defaultMaxRetries: 2, maxRetriesUpperBound: 4 });
+    const retryOptions = { ...this._retryOptions, retryCount: boundedMaxRetries, retryDelay: 500 };
     const retryLogger = (string: string): void =>
       this._events.emit("retry", string + ", " + url + ", " + JSON.stringify(retryOptions));
 
@@ -459,6 +465,21 @@ abstract class LangfuseCoreStateless {
       retryOptions,
       retryLogger
     );
+  }
+
+  private _getBoundedMaxRetries(params: {
+    maxRetries?: number;
+    defaultMaxRetries?: number;
+    maxRetriesUpperBound?: number;
+  }): number {
+    const defaultMaxRetries = Math.max(params.defaultMaxRetries ?? 2, 0);
+    const maxRetriesUpperBound = Math.max(params.maxRetriesUpperBound ?? 4, 0);
+
+    if (params.maxRetries === undefined) {
+      return defaultMaxRetries;
+    }
+
+    return Math.min(Math.max(params.maxRetries, 0), maxRetriesUpperBound);
   }
 
   /***
@@ -946,17 +967,23 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; fallback?: string; type?: "text" }
+    options?: { label?: string; cacheTtlSeconds?: number; fallback?: string; maxRetries?: number; type?: "text" }
   ): Promise<TextPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; fallback?: ChatMessage[]; type: "chat" }
+    options?: { label?: string; cacheTtlSeconds?: number; fallback?: ChatMessage[]; maxRetries?: number; type: "chat" }
   ): Promise<ChatPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; fallback?: ChatMessage[] | string; type?: "chat" | "text" }
+    options?: {
+      label?: string;
+      cacheTtlSeconds?: number;
+      fallback?: ChatMessage[] | string;
+      maxRetries?: number;
+      type?: "chat" | "text";
+    }
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
@@ -968,6 +995,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
           version,
           label: options?.label,
           cacheTtlSeconds: options?.cacheTtlSeconds,
+          maxRetries: options?.maxRetries,
         });
       } catch (err) {
         if (options?.fallback) {
@@ -1011,6 +1039,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         version,
         label: options?.label,
         cacheTtlSeconds: options?.cacheTtlSeconds,
+        maxRetries: options?.maxRetries,
       }).catch(() => {
         console.warn(
           `Returning expired prompt cache for '${this._getPromptCacheKey({ name, version, label: options?.label })}' due to fetch error`
@@ -1043,13 +1072,14 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     version?: number;
     cacheTtlSeconds?: number;
     label?: string;
+    maxRetries?: number;
   }): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey(params);
 
     try {
-      const { name, version, cacheTtlSeconds, label } = params;
+      const { name, version, cacheTtlSeconds, label, maxRetries } = params;
 
-      const { data, fetchResult } = await this.getPromptStateless(name, version, label);
+      const { data, fetchResult } = await this.getPromptStateless(name, version, label, maxRetries);
       if (fetchResult === "failure") {
         throw Error(data.message ?? "Internal error while fetching prompt");
       }
