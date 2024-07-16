@@ -127,3 +127,141 @@ export const encodeQueryParams = (params?: { [key: string]: any }): string => {
   });
   return queryParams.toString();
 };
+
+export function extractModelName(
+  serialized: Record<string, any>,
+  kwargs: Record<string, any> = {}
+): string | undefined {
+  const modelsById: [string, string[], "serialized" | "kwargs"][] = [
+    ["ChatGoogleGenerativeAI", ["kwargs", "model"], "serialized"],
+    ["ChatMistralAI", ["kwargs", "model"], "serialized"],
+    ["ChatVertexAi", ["kwargs", "model_name"], "serialized"],
+    ["ChatVertexAI", ["kwargs", "model_name"], "serialized"],
+    ["OpenAI", ["invocation_params", "model_name"], "kwargs"],
+    ["ChatOpenAI", ["invocation_params", "model_name"], "kwargs"],
+    ["AzureChatOpenAI", ["invocation_params", "model"], "kwargs"],
+    ["AzureChatOpenAI", ["invocation_params", "model_name"], "kwargs"],
+    ["HuggingFacePipeline", ["invocation_params", "model_id"], "kwargs"],
+    ["BedrockChat", ["kwargs", "model_id"], "serialized"],
+    ["Bedrock", ["kwargs", "model_id"], "serialized"],
+    ["ChatBedrock", ["kwargs", "model_id"], "serialized"],
+    ["LlamaCpp", ["invocation_params", "model_path"], "kwargs"],
+  ];
+
+  for (const [modelName, keys, selectFrom] of modelsById) {
+    const model = _extractModelByPathForId(modelName, serialized, kwargs, keys, selectFrom);
+    if (model) {
+      return model;
+    }
+  }
+
+  if (serialized.id && serialized.id.slice(-1)[0] === "AzureOpenAI") {
+    if (kwargs.invocation_params && kwargs.invocation_params.model_name) {
+      return kwargs.invocation_params.model_name;
+    }
+
+    let deploymentVersion = undefined;
+    if (serialized.kwargs && serialized.kwargs.openai_api_version) {
+      deploymentVersion = serialized.kwargs.deployment_version;
+    }
+    let deploymentName = undefined;
+    if (serialized.kwargs && serialized.kwargs.deployment_name) {
+      deploymentName = serialized.kwargs.deployment_name;
+    }
+    return deploymentName + "-" + deploymentVersion;
+  }
+
+  const modelsByPattern: Array<[string, string, string | undefined]> = [
+    ["Anthropic", "model", "anthropic"],
+    ["ChatAnthropic", "model", undefined],
+    ["ChatTongyi", "model_name", undefined],
+    ["ChatCohere", "model", undefined],
+    ["Cohere", "model", undefined],
+    ["HuggingFaceHub", "model", undefined],
+    ["ChatAnyscale", "model_name", undefined],
+    ["TextGen", "model", "text-gen"],
+    ["Ollama", "model", undefined],
+    ["ChatOllama", "model", undefined],
+    ["ChatFireworks", "model", undefined],
+    ["ChatPerplexity", "model", undefined],
+  ];
+
+  for (const [modelName, pattern, defaultVal] of modelsByPattern) {
+    const model = _extractModelFromReprByPattern(modelName, serialized, pattern, defaultVal);
+    if (model) {
+      return model;
+    }
+  }
+
+  const randomPaths: Array<Array<string>> = [
+    ["kwargs", "model_name"],
+    ["kwargs", "model"],
+    ["invocation_params", "model_name"],
+    ["invocation_params", "model"],
+  ];
+  for (const select of ["kwargs", "serialized"]) {
+    for (const path of randomPaths) {
+      const model = _extractModelByPath(serialized, kwargs, path, select as "serialized" | "kwargs");
+      if (model) {
+        return model;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function _extractModelFromReprByPattern(
+  id: string,
+  serialized: Record<string, any>,
+  pattern: string,
+  defaultVal: string | undefined = undefined
+): string | undefined {
+  if (serialized.id && serialized.id.slice(-1)[0] === id) {
+    if (serialized.repr) {
+      const extracted = _extractModelWithRegex(pattern, serialized.repr);
+      return extracted ? extracted : defaultVal;
+    }
+  }
+  return undefined;
+}
+
+function _extractModelWithRegex(pattern: string, text: string): string | undefined {
+  const match = new RegExp(`${pattern}="(.*?)"`).exec(text);
+  return match ? match[1] : undefined;
+}
+
+function _extractModelByPathForId(
+  id: string,
+  serialized: Record<string, any>,
+  kwargs: Record<string, any>,
+  keys: Array<string>,
+  selectFrom: "serialized" | "kwargs"
+): string | undefined {
+  if (serialized.id && serialized.id.slice(-1)[0] === id) {
+    return _extractModelByPath(serialized, kwargs, keys, selectFrom);
+  }
+  return undefined;
+}
+
+function _extractModelByPath(
+  serialized: Record<string, any>,
+  kwargs: Record<string, any>,
+  keys: Array<string>,
+  selectFrom: "serialized" | "kwargs"
+): string | undefined {
+  let currentObj = selectFrom === "kwargs" ? kwargs : serialized;
+
+  for (const key of keys) {
+    currentObj = currentObj[key];
+    if (!currentObj) {
+      return undefined;
+    }
+  }
+
+  if (typeof currentObj === "string") {
+    return currentObj ? currentObj : undefined;
+  } else {
+    return undefined;
+  }
+}
