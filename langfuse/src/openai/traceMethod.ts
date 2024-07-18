@@ -36,8 +36,12 @@ const wrapMethod = async <T extends GenericMethod>(
 
   if (hasUserProvidedParent) {
     langfuseParent = config.parent;
+
+    // Remove the parent from the config to avoid circular references in the generation body
+    const filteredConfig = { ...config, parent: undefined };
+
     observationData = {
-      ...config,
+      ...filteredConfig,
       ...observationData,
       promptName: config?.promptName ?? config?.langfusePrompt?.name, // Maintain backward compatibility for users who use promptName
       promptVersion: config?.promptVersion ?? config?.langfusePrompt?.version, // Maintain backward compatibility for users who use promptVersion
