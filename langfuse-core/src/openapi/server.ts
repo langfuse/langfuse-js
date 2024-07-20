@@ -785,7 +785,7 @@ export interface components {
      * @description Unit of usage in Langfuse
      * @enum {string}
      */
-    ModelUsageUnit: "CHARACTERS" | "TOKENS" | "MILLISECONDS" | "SECONDS" | "IMAGES";
+    ModelUsageUnit: "CHARACTERS" | "TOKENS" | "MILLISECONDS" | "SECONDS" | "IMAGES" | "REQUESTS";
     /**
      * ObservationLevel
      * @enum {string}
