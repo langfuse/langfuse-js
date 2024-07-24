@@ -3,107 +3,447 @@
  * Do not make direct changes to the file.
  */
 
-/** WithRequired type helpers */
-type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
-
-/** OneOf type helpers */
-type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-type OneOf<T extends any[]> = T extends [infer Only]
-  ? Only
-  : T extends [infer A, infer B, ...infer Rest]
-    ? OneOf<[XOR<A, B>, ...Rest]>
-    : never;
-
 export interface paths {
   "/api/public/dataset-items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get dataset items */
+    get: operations["datasetItems_list"];
+    put?: never;
     /** @description Create a dataset item */
     post: operations["datasetItems_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/dataset-items/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a dataset item */
     get: operations["datasetItems_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/dataset-run-items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
     /** @description Create a dataset run item */
     post: operations["datasetRunItems_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
-  "/api/public/datasets": {
+  "/api/public/v2/datasets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get all datasets */
     get: operations["datasets_list"];
+    put?: never;
     /** @description Create a dataset */
     post: operations["datasets_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
-  "/api/public/datasets/{datasetName}": {
-    /** @description Get a dataset and its items */
+  "/api/public/v2/datasets/{datasetName}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a dataset */
     get: operations["datasets_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/datasets/{datasetName}/runs/{runName}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a dataset run and its items */
+    get: operations["datasets_getRun"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/datasets/{datasetName}/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get dataset runs */
     get: operations["datasets_getRuns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Check health of API and database */
     get: operations["health_health"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/ingestion": {
-    /** @description Batched ingestion for Langfuse Tracing */
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Batched ingestion for Langfuse Tracing. If you want to use tracing via the API, such as to build your own Langfuse client implementation, this is the only API route you need to implement.
+     *
+     *     Notes:
+     *
+     *     - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
+     *     - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors. */
     post: operations["ingestion_batch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/metrics/daily": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get daily metrics of the Langfuse project */
     get: operations["metrics_daily"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/models": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all models */
+    get: operations["models_list"];
+    put?: never;
+    /** @description Create a model */
+    post: operations["models_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/models/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a model */
+    get: operations["models_get"];
+    put?: never;
+    post?: never;
+    /** @description Delete a model. Cannot delete models managed by Langfuse. You can create your own definition with the same modelName to override the definition though. */
+    delete: operations["models_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/observations/{observationId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a observation */
     get: operations["observations_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/observations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a list of observations */
     get: operations["observations_getMany"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/projects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get Project associated with API key */
     get: operations["projects_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/v2/prompts/{promptName}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a prompt */
     get: operations["prompts_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/v2/prompts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a list of prompt names with versions and labels */
     get: operations["prompts_list"];
+    put?: never;
     /** @description Create a prompt */
     post: operations["prompts_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/score-configs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all score configs */
+    get: operations["scoreConfigs_get"];
+    put?: never;
+    /** @description Create a score configuration (config). Score configs are used to define the structure of scores */
+    post: operations["scoreConfigs_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/score-configs/{configId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a score config */
+    get: operations["scoreConfigs_get-by-id"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/scores": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a list of scores */
     get: operations["score_get"];
+    put?: never;
     /** @description Create a score */
     post: operations["score_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/scores/{scoreId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a score */
     get: operations["score_get-by-id"];
+    put?: never;
+    post?: never;
     /** @description Delete a score */
     delete: operations["score_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get sessions. */
+    get: operations["sessions_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/sessions/{sessionId}": {
-    /** @description Get a session */
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a session. Please note that `traces` on this endpoint are not paginated, if you plan to fetch large sessions, consider `GET /api/public/traces?sessionId=<sessionId>` */
     get: operations["sessions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/traces/{traceId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get a specific trace */
     get: operations["trace_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/api/public/traces": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** @description Get list of traces. */
     get: operations["trace_list"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
 }
-
 export type webhooks = Record<string, never>;
-
 export interface components {
   schemas: {
     /** Trace */
@@ -125,42 +465,43 @@ export interface components {
       public?: boolean | null;
     };
     /** TraceWithDetails */
-    TraceWithDetails: WithRequired<
-      {
-        /** @description Path of trace in Langfuse UI */
-        htmlPath: string;
-        /**
-         * Format: double
-         * @description Latency of trace in seconds
-         */
-        latency: number;
-        /**
-         * Format: double
-         * @description Cost of trace in USD
-         */
-        totalCost: number;
-        /** @description List of observation ids */
-        observations: string[];
-        /** @description List of score ids */
-        scores: string[];
-      } & components["schemas"]["Trace"],
-      "htmlPath" | "latency" | "totalCost" | "observations" | "scores"
-    >;
+    TraceWithDetails: {
+      /** @description Path of trace in Langfuse UI */
+      htmlPath: string;
+      /**
+       * Format: double
+       * @description Latency of trace in seconds
+       */
+      latency: number;
+      /**
+       * Format: double
+       * @description Cost of trace in USD
+       */
+      totalCost: number;
+      /** @description List of observation ids */
+      observations: string[];
+      /** @description List of score ids */
+      scores: string[];
+    } & components["schemas"]["Trace"];
     /** TraceWithFullDetails */
-    TraceWithFullDetails: WithRequired<
-      {
-        /** @description Path of trace in Langfuse UI */
-        htmlPath: string;
-        /**
-         * Format: double
-         * @description Cost of trace in USD
-         */
-        totalCost: number;
-        observations: components["schemas"]["ObservationsView"][];
-        scores: components["schemas"]["Score"][];
-      } & components["schemas"]["Trace"],
-      "htmlPath" | "totalCost" | "observations" | "scores"
-    >;
+    TraceWithFullDetails: {
+      /** @description Path of trace in Langfuse UI */
+      htmlPath: string;
+      /**
+       * Format: double
+       * @description Latency of trace in seconds
+       */
+      latency: number;
+      /**
+       * Format: double
+       * @description Cost of trace in USD
+       */
+      totalCost: number;
+      /** @description List of observations */
+      observations: components["schemas"]["ObservationsView"][];
+      /** @description List of scores */
+      scores: components["schemas"]["Score"][];
+    } & components["schemas"]["Trace"];
     /** Session */
     Session: {
       id: string;
@@ -169,12 +510,9 @@ export interface components {
       projectId: string;
     };
     /** SessionWithTraces */
-    SessionWithTraces: WithRequired<
-      {
-        traces: components["schemas"]["Trace"][];
-      } & components["schemas"]["Session"],
-      "traces"
-    >;
+    SessionWithTraces: {
+      traces: components["schemas"]["Trace"][];
+    } & components["schemas"]["Session"];
     /** Observation */
     Observation: {
       id: string;
@@ -189,7 +527,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"];
+        [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
       input?: unknown;
       version?: string | null;
@@ -218,6 +556,8 @@ export interface components {
       calculatedTotalCost?: number | null;
       /** Format: double */
       latency?: number | null;
+      /** Format: double */
+      timeToFirstToken?: number | null;
     } & components["schemas"]["Observation"];
     /**
      * Usage
@@ -247,21 +587,108 @@ export interface components {
        */
       totalCost?: number | null;
     };
-    /** Score */
-    Score: {
+    /**
+     * ScoreConfig
+     * @description Configuration for a score
+     */
+    ScoreConfig: {
+      id: string;
+      name: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      projectId: string;
+      dataType: components["schemas"]["ScoreDataType"];
+      /** @description Whether the score config is archived. Defaults to false */
+      isArchived: boolean;
+      /**
+       * Format: double
+       * @description Sets minimum value for numerical scores. If not set, the minimum value defaults to -∞
+       */
+      minValue?: number | null;
+      /**
+       * Format: double
+       * @description Sets maximum value for numerical scores. If not set, the maximum value defaults to +∞
+       */
+      maxValue?: number | null;
+      /** @description Configures custom categories for categorical scores */
+      categories?: components["schemas"]["ConfigCategory"][] | null;
+      description?: string | null;
+    };
+    /** ConfigCategory */
+    ConfigCategory: {
+      /** Format: double */
+      value: number;
+      label: string;
+    };
+    /** BaseScore */
+    BaseScore: {
       id: string;
       traceId: string;
       name: string;
-      /** Format: double */
-      value: number;
       source: components["schemas"]["ScoreSource"];
       observationId?: string | null;
       /** Format: date-time */
       timestamp: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      authorUserId?: string | null;
       comment?: string | null;
+      /** @description Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
+      configId?: string | null;
     };
-    /** DatasetCore */
-    DatasetCore: {
+    /** NumericScore */
+    NumericScore: {
+      /**
+       * Format: double
+       * @description The numeric value of the score
+       */
+      value: number;
+    } & components["schemas"]["BaseScore"];
+    /** BooleanScore */
+    BooleanScore: {
+      /**
+       * Format: double
+       * @description The numeric value of the score. Equals 1 for "True" and 0 for "False"
+       */
+      value: number;
+      /** @description The string representation of the score value. Is inferred from the numeric value and equals "True" or "False" */
+      stringValue: string;
+    } & components["schemas"]["BaseScore"];
+    /** CategoricalScore */
+    CategoricalScore: {
+      /**
+       * Format: double
+       * @description Only defined if a config is linked. Represents the numeric category mapping of the stringValue
+       */
+      value?: number | null;
+      /** @description The string representation of the score value. If no config is linked, can be any string. Otherwise, must map to a config category */
+      stringValue: string;
+    } & components["schemas"]["BaseScore"];
+    /** Score */
+    Score:
+      | ({
+          /** @enum {string} */
+          dataType: "NUMERIC";
+        } & components["schemas"]["NumericScore"])
+      | ({
+          /** @enum {string} */
+          dataType: "CATEGORICAL";
+        } & components["schemas"]["CategoricalScore"])
+      | ({
+          /** @enum {string} */
+          dataType: "BOOLEAN";
+        } & components["schemas"]["BooleanScore"]);
+    /**
+     * CreateScoreValue
+     * @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores
+     */
+    CreateScoreValue: number | string;
+    /** Dataset */
+    Dataset: {
       id: string;
       name: string;
       description?: string | null;
@@ -272,27 +699,6 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
     };
-    /** DatasetWithReferences */
-    DatasetWithReferences: WithRequired<
-      {
-        /** @description list of dataset item ids */
-        items: string[];
-        /** @description list of dataset run names */
-        runs: string[];
-      } & components["schemas"]["DatasetCore"],
-      "items" | "runs"
-    >;
-    /**
-     * Dataset
-     * @description Dataset including all items
-     */
-    Dataset: WithRequired<
-      {
-        items: components["schemas"]["DatasetItem"][];
-        runs: string[];
-      } & components["schemas"]["DatasetCore"],
-      "items" | "runs"
-    >;
     /** DatasetItem */
     DatasetItem: {
       id: string;
@@ -334,14 +740,52 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+    };
+    /** DatasetRunWithItems */
+    DatasetRunWithItems: {
       datasetRunItems: components["schemas"]["DatasetRunItem"][];
+    } & components["schemas"]["DatasetRun"];
+    /**
+     * Model
+     * @description Model definition used for transforming usage into USD cost and/or tokenization.
+     */
+    Model: {
+      id: string;
+      /** @description Name of the model definition. If multiple with the same name exist, they are applied in the following order: (1) custom over built-in, (2) newest according to startTime where model.startTime<observation.startTime */
+      modelName: string;
+      /** @description Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
+      matchPattern: string;
+      /** @description Apply only to generations which are newer than this ISO date. */
+      startDate?: string | null;
+      /** @description Unit used by this model. */
+      unit: components["schemas"]["ModelUsageUnit"];
+      /**
+       * Format: double
+       * @description Price (USD) per input unit
+       */
+      inputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per output unit
+       */
+      outputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per total unit. Cannot be set if input or output price is set.
+       */
+      totalPrice?: number | null;
+      /** @description Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
+      tokenizerId?: string | null;
+      /** @description Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
+      tokenizerConfig?: unknown;
+      isLangfuseManaged: boolean;
     };
     /**
      * ModelUsageUnit
      * @description Unit of usage in Langfuse
      * @enum {string}
      */
-    ModelUsageUnit: "CHARACTERS" | "TOKENS" | "MILLISECONDS" | "SECONDS" | "IMAGES";
+    ModelUsageUnit: "CHARACTERS" | "TOKENS" | "MILLISECONDS" | "SECONDS" | "IMAGES" | "REQUESTS";
     /**
      * ObservationLevel
      * @enum {string}
@@ -359,6 +803,11 @@ export interface components {
      * @enum {string}
      */
     ScoreSource: "ANNOTATION" | "API" | "EVAL";
+    /**
+     * ScoreDataType
+     * @enum {string}
+     */
+    ScoreDataType: "NUMERIC" | "BOOLEAN" | "CATEGORICAL";
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
@@ -367,10 +816,15 @@ export interface components {
       metadata?: unknown;
       sourceTraceId?: string | null;
       sourceObservationId?: string | null;
-      /** @description Dataset items are upserted on their id */
+      /** @description Dataset items are upserted on their id. Id needs to be globally unique and cannot be reused across datasets. */
       id?: string | null;
       /** @description Defaults to ACTIVE for newly created items */
       status?: components["schemas"]["DatasetStatus"];
+    };
+    /** PaginatedDatasetItems */
+    PaginatedDatasetItems: {
+      data: components["schemas"]["DatasetItem"][];
+      meta: components["schemas"]["utilsMetaResponse"];
     };
     /** CreateDatasetRunItemRequest */
     CreateDatasetRunItemRequest: {
@@ -386,7 +840,7 @@ export interface components {
     };
     /** PaginatedDatasets */
     PaginatedDatasets: {
-      data: components["schemas"]["DatasetWithReferences"][];
+      data: components["schemas"]["Dataset"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
     /** CreateDatasetRequest */
@@ -394,6 +848,11 @@ export interface components {
       name: string;
       description?: string | null;
       metadata?: unknown;
+    };
+    /** PaginatedDatasetRuns */
+    PaginatedDatasetRuns: {
+      data: components["schemas"]["DatasetRun"][];
+      meta: components["schemas"]["utilsMetaResponse"];
     };
     /** HealthResponse */
     HealthResponse: {
@@ -407,76 +866,46 @@ export interface components {
     };
     /** IngestionEvent */
     IngestionEvent:
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "trace-create";
-          } & components["schemas"]["TraceEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "score-create";
-          } & components["schemas"]["ScoreEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "event-create";
-          } & components["schemas"]["CreateEventEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "generation-create";
-          } & components["schemas"]["CreateGenerationEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "generation-update";
-          } & components["schemas"]["UpdateGenerationEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "span-create";
-          } & components["schemas"]["CreateSpanEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "span-update";
-          } & components["schemas"]["UpdateSpanEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "sdk-log";
-          } & components["schemas"]["SDKLogEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "observation-create";
-          } & components["schemas"]["CreateObservationEvent"],
-          "type"
-        >
-      | WithRequired<
-          {
-            /** @enum {string} */
-            type?: "observation-update";
-          } & components["schemas"]["UpdateObservationEvent"],
-          "type"
-        >;
+      | ({
+          /** @enum {string} */
+          type: "trace-create";
+        } & components["schemas"]["TraceEvent"])
+      | ({
+          /** @enum {string} */
+          type: "score-create";
+        } & components["schemas"]["ScoreEvent"])
+      | ({
+          /** @enum {string} */
+          type: "span-create";
+        } & components["schemas"]["CreateSpanEvent"])
+      | ({
+          /** @enum {string} */
+          type: "span-update";
+        } & components["schemas"]["UpdateSpanEvent"])
+      | ({
+          /** @enum {string} */
+          type: "generation-create";
+        } & components["schemas"]["CreateGenerationEvent"])
+      | ({
+          /** @enum {string} */
+          type: "generation-update";
+        } & components["schemas"]["UpdateGenerationEvent"])
+      | ({
+          /** @enum {string} */
+          type: "event-create";
+        } & components["schemas"]["CreateEventEvent"])
+      | ({
+          /** @enum {string} */
+          type: "sdk-log";
+        } & components["schemas"]["SDKLogEvent"])
+      | ({
+          /** @enum {string} */
+          type: "observation-create";
+        } & components["schemas"]["CreateObservationEvent"])
+      | ({
+          /** @enum {string} */
+          type: "observation-update";
+        } & components["schemas"]["UpdateObservationEvent"]);
     /**
      * ObservationType
      * @enum {string}
@@ -512,12 +941,9 @@ export interface components {
       id?: string | null;
     } & components["schemas"]["OptionalObservationBody"];
     /** UpdateEventBody */
-    UpdateEventBody: WithRequired<
-      {
-        id: string;
-      } & components["schemas"]["OptionalObservationBody"],
-      "id"
-    >;
+    UpdateEventBody: {
+      id: string;
+    } & components["schemas"]["OptionalObservationBody"];
     /** CreateSpanBody */
     CreateSpanBody: {
       /** Format: date-time */
@@ -534,7 +960,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"];
+        [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
       promptName?: string | null;
@@ -546,7 +972,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"];
+        [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
       promptName?: string | null;
@@ -566,7 +992,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"];
+        [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
       input?: unknown;
       version?: string | null;
@@ -601,89 +1027,68 @@ export interface components {
     /** ScoreBody */
     ScoreBody: {
       id?: string | null;
+      /** @example cdef-1234-5678-90ab */
       traceId: string;
+      /** @example novelty */
       name: string;
-      /** Format: double */
-      value: number;
+      /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+      value: components["schemas"]["CreateScoreValue"];
       observationId?: string | null;
       comment?: string | null;
+      /** @description When set, must match the score value's type. If not set, will be inferred from the score value or config */
+      dataType?: components["schemas"]["ScoreDataType"];
+      /** @description Reference a score config on a score. When set, the score name must equal the config name and scores must comply with the config's range and data type. For categorical scores, the value must map to a config category. Numeric scores might be constrained by the score config's max and min values */
+      configId?: string | null;
     };
     /** BaseEvent */
     BaseEvent: {
+      /** @description UUID v4 that identifies the event */
       id: string;
+      /** @description Datetime (ISO 8601) of event creation in client. Should be as close to actual event creation in client as possible, this timestamp will be used for ordering of events in future release. Resolution: milliseconds (required), microseconds (optimal). */
       timestamp: string;
-      metadata: unknown;
+      /** @description Optional. Metadata field used by the Langfuse SDKs for debugging. */
+      metadata?: unknown;
     };
     /** TraceEvent */
-    TraceEvent: WithRequired<
-      {
-        body: components["schemas"]["TraceBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    TraceEvent: {
+      body: components["schemas"]["TraceBody"];
+    } & components["schemas"]["BaseEvent"];
     /** CreateObservationEvent */
-    CreateObservationEvent: WithRequired<
-      {
-        body: components["schemas"]["ObservationBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    CreateObservationEvent: {
+      body: components["schemas"]["ObservationBody"];
+    } & components["schemas"]["BaseEvent"];
     /** UpdateObservationEvent */
-    UpdateObservationEvent: WithRequired<
-      {
-        body: components["schemas"]["ObservationBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    UpdateObservationEvent: {
+      body: components["schemas"]["ObservationBody"];
+    } & components["schemas"]["BaseEvent"];
     /** ScoreEvent */
-    ScoreEvent: WithRequired<
-      {
-        body: components["schemas"]["ScoreBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    ScoreEvent: {
+      body: components["schemas"]["ScoreBody"];
+    } & components["schemas"]["BaseEvent"];
     /** SDKLogEvent */
-    SDKLogEvent: WithRequired<
-      {
-        body: components["schemas"]["SDKLogBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    SDKLogEvent: {
+      body: components["schemas"]["SDKLogBody"];
+    } & components["schemas"]["BaseEvent"];
     /** CreateGenerationEvent */
-    CreateGenerationEvent: WithRequired<
-      {
-        body: components["schemas"]["CreateGenerationBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    CreateGenerationEvent: {
+      body: components["schemas"]["CreateGenerationBody"];
+    } & components["schemas"]["BaseEvent"];
     /** UpdateGenerationEvent */
-    UpdateGenerationEvent: WithRequired<
-      {
-        body: components["schemas"]["UpdateGenerationBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    UpdateGenerationEvent: {
+      body: components["schemas"]["UpdateGenerationBody"];
+    } & components["schemas"]["BaseEvent"];
     /** CreateSpanEvent */
-    CreateSpanEvent: WithRequired<
-      {
-        body: components["schemas"]["CreateSpanBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    CreateSpanEvent: {
+      body: components["schemas"]["CreateSpanBody"];
+    } & components["schemas"]["BaseEvent"];
     /** UpdateSpanEvent */
-    UpdateSpanEvent: WithRequired<
-      {
-        body: components["schemas"]["UpdateSpanBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    UpdateSpanEvent: {
+      body: components["schemas"]["UpdateSpanBody"];
+    } & components["schemas"]["BaseEvent"];
     /** CreateEventEvent */
-    CreateEventEvent: WithRequired<
-      {
-        body: components["schemas"]["CreateEventBody"];
-      } & components["schemas"]["BaseEvent"],
-      "body"
-    >;
+    CreateEventEvent: {
+      body: components["schemas"]["CreateEventBody"];
+    } & components["schemas"]["BaseEvent"];
     /** IngestionSuccess */
     IngestionSuccess: {
       id: string;
@@ -739,6 +1144,41 @@ export interface components {
        */
       totalCost: number;
     };
+    /** PaginatedModels */
+    PaginatedModels: {
+      data: components["schemas"]["Model"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** CreateModelRequest */
+    CreateModelRequest: {
+      /** @description Name of the model definition. If multiple with the same name exist, they are applied in the following order: (1) custom over built-in, (2) newest according to startTime where model.startTime<observation.startTime */
+      modelName: string;
+      /** @description Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
+      matchPattern: string;
+      /** @description Apply only to generations which are newer than this ISO date. */
+      startDate?: string | null;
+      /** @description Unit used by this model. */
+      unit: components["schemas"]["ModelUsageUnit"];
+      /**
+       * Format: double
+       * @description Price (USD) per input unit
+       */
+      inputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per output unit
+       */
+      outputPrice?: number | null;
+      /**
+       * Format: double
+       * @description Price (USD) per total units. Cannot be set if input or output price is set.
+       */
+      totalPrice?: number | null;
+      /** @description Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
+      tokenizerId?: string | null;
+      /** @description Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
+      tokenizerConfig?: unknown;
+    };
     /** Observations */
     Observations: {
       data: components["schemas"]["Observation"][];
@@ -771,24 +1211,15 @@ export interface components {
       tags: string[];
     };
     /** CreatePromptRequest */
-    CreatePromptRequest: OneOf<
-      [
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "chat";
-          } & components["schemas"]["CreateChatPromptRequest"],
-          "type"
-        >,
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "text";
-          } & components["schemas"]["CreateTextPromptRequest"],
-          "type"
-        >,
-      ]
-    >;
+    CreatePromptRequest:
+      | ({
+          /** @enum {string} */
+          type: "chat";
+        } & components["schemas"]["CreateChatPromptRequest"])
+      | ({
+          /** @enum {string} */
+          type: "text";
+        } & components["schemas"]["CreateTextPromptRequest"]);
     /** CreateChatPromptRequest */
     CreateChatPromptRequest: {
       name: string;
@@ -810,24 +1241,15 @@ export interface components {
       tags?: string[] | null;
     };
     /** Prompt */
-    Prompt: OneOf<
-      [
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "chat";
-          } & components["schemas"]["ChatPrompt"],
-          "type"
-        >,
-        WithRequired<
-          {
-            /** @enum {string} */
-            type?: "text";
-          } & components["schemas"]["TextPrompt"],
-          "type"
-        >,
-      ]
-    >;
+    Prompt:
+      | ({
+          /** @enum {string} */
+          type: "chat";
+        } & components["schemas"]["ChatPrompt"])
+      | ({
+          /** @enum {string} */
+          type: "text";
+        } & components["schemas"]["TextPrompt"]);
     /** BasePrompt */
     BasePrompt: {
       name: string;
@@ -844,32 +1266,66 @@ export interface components {
       content: string;
     };
     /** TextPrompt */
-    TextPrompt: WithRequired<
-      {
-        prompt: string;
-      } & components["schemas"]["BasePrompt"],
-      "prompt"
-    >;
+    TextPrompt: {
+      prompt: string;
+    } & components["schemas"]["BasePrompt"];
     /** ChatPrompt */
-    ChatPrompt: WithRequired<
-      {
-        prompt: components["schemas"]["ChatMessage"][];
-      } & components["schemas"]["BasePrompt"],
-      "prompt"
-    >;
+    ChatPrompt: {
+      prompt: components["schemas"]["ChatMessage"][];
+    } & components["schemas"]["BasePrompt"];
+    /** ScoreConfigs */
+    ScoreConfigs: {
+      data: components["schemas"]["ScoreConfig"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** CreateScoreConfigRequest */
+    CreateScoreConfigRequest: {
+      name: string;
+      dataType: components["schemas"]["ScoreDataType"];
+      /** @description Configure custom categories for categorical scores. Pass a list of objects with `label` and `value` properties. Categories are autogenerated for boolean configs and cannot be passed */
+      categories?: components["schemas"]["ConfigCategory"][] | null;
+      /**
+       * Format: double
+       * @description Configure a minimum value for numerical scores. If not set, the minimum value defaults to -∞
+       */
+      minValue?: number | null;
+      /**
+       * Format: double
+       * @description Configure a maximum value for numerical scores. If not set, the maximum value defaults to +∞
+       */
+      maxValue?: number | null;
+      /** @description Description is shown across the Langfuse UI and can be used to e.g. explain the config categories in detail, why a numeric range was set, or provide additional context on config name or usage */
+      description?: string | null;
+    };
     /** CreateScoreRequest */
     CreateScoreRequest: {
       id?: string | null;
+      /** @example cdef-1234-5678-90ab */
       traceId: string;
+      /** @example novelty */
       name: string;
-      /** Format: double */
-      value: number;
+      /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+      value: components["schemas"]["CreateScoreValue"];
       observationId?: string | null;
       comment?: string | null;
+      /** @description The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
+      dataType?: components["schemas"]["ScoreDataType"];
+      /** @description Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
+      configId?: string | null;
+    };
+    /** CreateScoreResponse */
+    CreateScoreResponse: {
+      /** @description The id of the created object in Langfuse */
+      id: string;
     };
     /** Scores */
     Scores: {
       data: components["schemas"]["Score"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** PaginatedSessions */
+    PaginatedSessions: {
+      data: components["schemas"]["Session"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
     /** Traces */
@@ -899,14 +1355,82 @@ export interface components {
   headers: never;
   pathItems: never;
 }
-
 export type $defs = Record<string, never>;
-
-export type external = Record<string, never>;
-
 export interface operations {
-  /** @description Create a dataset item */
+  datasetItems_list: {
+    parameters: {
+      query?: {
+        datasetName?: string | null;
+        sourceTraceId?: string | null;
+        sourceObservationId?: string | null;
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDatasetItems"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   datasetItems_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["CreateDatasetItemRequest"];
@@ -914,79 +1438,123 @@ export interface operations {
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["DatasetItem"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a dataset item */
   datasetItems_get: {
     parameters: {
+      query?: never;
+      header?: never;
       path: {
         id: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["DatasetItem"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Create a dataset run item */
   datasetRunItems_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["CreateDatasetRunItemRequest"];
@@ -994,80 +1562,126 @@ export interface operations {
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["DatasetRunItem"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get all datasets */
   datasets_list: {
     parameters: {
       query?: {
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
       };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["PaginatedDatasets"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Create a dataset */
   datasets_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["CreateDatasetRequest"];
@@ -1075,199 +1689,377 @@ export interface operations {
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Dataset"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a dataset and its items */
   datasets_get: {
     parameters: {
+      query?: never;
+      header?: never;
       path: {
         datasetName: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Dataset"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a dataset run and its items */
-  datasets_getRuns: {
+  datasets_getRun: {
     parameters: {
+      query?: never;
+      header?: never;
       path: {
         datasetName: string;
         runName: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
-          "application/json": components["schemas"]["DatasetRun"];
+          "application/json": components["schemas"]["DatasetRunWithItems"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Check health of API and database */
-  health_health: {
+  datasets_getRuns: {
+    parameters: {
+      query?: {
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path: {
+        datasetName: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDatasetRuns"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  health_health: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["HealthResponse"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       503: {
-        content: never;
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
-  /** @description Batched ingestion for Langfuse Tracing */
   ingestion_batch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
         "application/json": {
+          /** @description Batch of tracing events to be ingested. Discriminated by attribute `type`. */
           batch: components["schemas"]["IngestionEvent"][];
+          /** @description Optional. Metadata field used by the Langfuse SDKs for debugging. */
+          metadata?: unknown;
         };
       };
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["IngestionResponse"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get daily metrics of the Langfuse project */
   metrics_daily: {
     parameters: {
       query?: {
@@ -1286,82 +2078,371 @@ export interface operations {
         /** @description Optional filter to only include traces before a certain datetime (ISO 8601) */
         toTimestamp?: string | null;
       };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["DailyMetrics"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a observation */
-  observations_get: {
+  models_list: {
     parameters: {
-      path: {
-        /** @description The unique langfuse identifier of an observation, can be an event, span or generation */
-        observationId: string;
+      query?: {
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedModels"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  models_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateModelRequest"];
       };
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Model"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  models_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Model"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  models_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  observations_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique langfuse identifier of an observation, can be an event, span or generation */
+        observationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["ObservationsView"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a list of observations */
   observations_getMany: {
     parameters: {
       query?: {
@@ -1374,79 +2455,126 @@ export interface operations {
         type?: string | null;
         traceId?: string | null;
         parentObservationId?: string | null;
-        /** @description Retrieve only observations with a start_time greater than this datetime (ISO 8601). */
+        /** @description Retrieve only observations with a start_time or or after this datetime (ISO 8601). */
         fromStartTime?: string | null;
+        /** @description Retrieve only observations with a start_time before this datetime (ISO 8601). */
+        toStartTime?: string | null;
       };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["ObservationsViews"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get Project associated with API key */
   projects_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Projects"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a prompt */
   prompts_get: {
     parameters: {
       query?: {
@@ -1455,90 +2583,139 @@ export interface operations {
         /** @description Label of the prompt to be retrieved. Defaults to "production" if no label or version is set. */
         label?: string | null;
       };
+      header?: never;
       path: {
         /** @description The name of the prompt */
         promptName: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Prompt"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a list of prompt names with versions and labels */
   prompts_list: {
     parameters: {
       query?: {
         name?: string | null;
         label?: string | null;
         tag?: string | null;
+        /** @description page number, starts at 1 */
         page?: number | null;
+        /** @description limit of items per page */
         limit?: number | null;
       };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["PromptMetaListResponse"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Create a prompt */
   prompts_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["CreatePromptRequest"];
@@ -1546,92 +2723,335 @@ export interface operations {
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Prompt"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a list of scores */
-  score_get: {
+  scoreConfigs_get: {
     parameters: {
-      query: {
+      query?: {
         /** @description Page number, starts at 1. */
         page?: number | null;
-        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
         limit?: number | null;
-        userId?: string | null;
-        name?: string | null;
-        /** @description Retrieve only scores newer than this datetime (ISO 8601). */
-        fromTimestamp?: string | null;
-        /** @description Retrieve only scores from a specific source. */
-        source: components["schemas"]["ScoreSource"];
-        /** @description Retrieve only scores with <operator> value. */
-        operator?: string | null;
-        /** @description Retrieve only scores with <operator> value. */
-        value?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScoreConfigs"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scoreConfigs_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateScoreConfigRequest"];
       };
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScoreConfig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  "scoreConfigs_get-by-id": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique langfuse identifier of a score config */
+        configId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScoreConfig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  score_get: {
+    parameters: {
+      query?: {
+        /** @description Page number, starts at 1. */
+        page?: number | null;
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+        limit?: number | null;
+        /** @description Retrieve only scores with this userId associated to the trace. */
+        userId?: string | null;
+        /** @description Retrieve only scores with this name. */
+        name?: string | null;
+        /** @description Optional filter to only include scores created on or after a certain datetime (ISO 8601) */
+        fromTimestamp?: string | null;
+        /** @description Optional filter to only include scores created before a certain datetime (ISO 8601) */
+        toTimestamp?: string | null;
+        /** @description Retrieve only scores from a specific source. */
+        source?: components["schemas"]["ScoreSource"];
+        /** @description Retrieve only scores with <operator> value. */
+        operator?: string | null;
+        /** @description Retrieve only scores with <operator> value. */
+        value?: number | null;
+        /** @description Comma-separated list of score IDs to limit the results to. */
+        scoreIds?: string | null;
+        /** @description Retrieve only scores with a specific configId. */
+        configId?: string | null;
+        /** @description Retrieve only scores with a specific dataType. */
+        dataType?: components["schemas"]["ScoreDataType"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Scores"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Create a score */
   score_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["CreateScoreRequest"];
@@ -1639,200 +3059,369 @@ export interface operations {
     };
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
-          "application/json": components["schemas"]["Score"];
+          "application/json": components["schemas"]["CreateScoreResponse"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a score */
   "score_get-by-id": {
     parameters: {
+      query?: never;
+      header?: never;
       path: {
         /** @description The unique langfuse identifier of a score */
         scoreId: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Score"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Delete a score */
   score_delete: {
     parameters: {
+      query?: never;
+      header?: never;
       path: {
         /** @description The unique langfuse identifier of a score */
         scoreId: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       204: {
-        content: never;
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a session */
+  sessions_list: {
+    parameters: {
+      query?: {
+        /** @description Page number, starts at 1 */
+        page?: number | null;
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+        limit?: number | null;
+        /** @description Optional filter to only include sessions created on or after a certain datetime (ISO 8601) */
+        fromTimestamp?: string | null;
+        /** @description Optional filter to only include sessions created before a certain datetime (ISO 8601) */
+        toTimestamp?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedSessions"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   sessions_get: {
     parameters: {
+      query?: never;
+      header?: never;
       path: {
         /** @description The unique id of a session */
         sessionId: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["SessionWithTraces"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get a specific trace */
   trace_get: {
     parameters: {
+      query?: never;
+      header?: never;
       path: {
         /** @description The unique langfuse identifier of a trace */
         traceId: string;
       };
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["TraceWithFullDetails"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
     };
   };
-  /** @description Get list of traces. */
   trace_list: {
     parameters: {
       query?: {
@@ -1843,41 +3432,65 @@ export interface operations {
         userId?: string | null;
         name?: string | null;
         sessionId?: string | null;
-        /** @description Retrieve only traces newer than this datetime (ISO 8601). */
+        /** @description Optional filter to only include traces with a trace.timestamp on or after a certain datetime (ISO 8601) */
         fromTimestamp?: string | null;
+        /** @description Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601) */
+        toTimestamp?: string | null;
         /** @description Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
         orderBy?: string | null;
         /** @description Only traces that include all of these tags will be returned. */
         tags?: (string | null)[];
       };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody?: never;
     responses: {
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Traces"];
         };
       };
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };
       };
       405: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": unknown;
         };

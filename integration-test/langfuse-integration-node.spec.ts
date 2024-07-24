@@ -4,6 +4,7 @@ import Langfuse from "../langfuse-node";
 // import { wait } from '../langfuse-core/test/test-utils/test-utils'
 import axios from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
+import { utils } from "../langfuse-core/src";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
@@ -525,5 +526,105 @@ describe("Langfuse Node.js", () => {
       version: expect.any(Number),
       config: {},
     });
+  });
+
+  it("create and fetch traces", async () => {
+    const name = utils.generateUUID();
+    const trace = langfuse.trace({
+      name,
+      sessionId: "session-123",
+      input: { key: "value" },
+      output: "output-value",
+    });
+    await langfuse.flushAsync();
+
+    const traces = await langfuse.fetchTraces({ name });
+    expect(traces.data).toContainEqual(expect.objectContaining({ id: trace.id, name }));
+
+    const fetchedTrace = await langfuse.fetchTrace(trace.id);
+    expect(fetchedTrace.data).toMatchObject({
+      id: trace.id,
+      name,
+      sessionId: "session-123",
+      input: { key: "value" },
+      output: "output-value",
+    });
+  });
+
+  it("create 3 traces with different timestamps and fetch the middle one using to and from timestamp", async () => {
+    const traceName = utils.generateUUID();
+    const traceParams = [
+      { id: utils.generateUUID(), timestamp: new Date(Date.now() - 10000) }, // 10 seconds ago
+      { id: utils.generateUUID(), timestamp: new Date(Date.now() - 5000) }, // 5 seconds ago
+      { id: utils.generateUUID(), timestamp: new Date(Date.now()) }, // now
+    ];
+
+    // Create 3 traces with different timestamps
+    traceParams.forEach((traceParam) => {
+      langfuse.trace({
+        id: traceParam.id,
+        name: traceName,
+        sessionId: "session-1",
+        input: { key: "value" },
+        output: "output-value",
+        timestamp: traceParam.timestamp,
+      });
+    });
+    await langfuse.flushAsync();
+
+    // Fetch traces with a time range that should only include the middle trace
+    const fromTimestamp = new Date(Date.now() - 7500); // 7.5 seconds ago
+    const toTimestamp = new Date(Date.now() - 2500); // 2.5 seconds ago
+
+    const fetchedTraces = await langfuse.fetchTraces({
+      fromTimestamp: fromTimestamp,
+      toTimestamp: toTimestamp,
+      name: traceName,
+    });
+
+    expect(fetchedTraces.data).toHaveLength(1);
+    expect(fetchedTraces.data[0]).toMatchObject({
+      name: traceName,
+      sessionId: "session-1",
+      input: { key: "value" },
+      output: "output-value",
+      timestamp: traceParams[1].timestamp.toISOString(),
+    });
+  });
+
+  it("create and fetch observations", async () => {
+    const traceName = utils.generateUUID();
+    const observationName = utils.generateUUID();
+    const trace = langfuse.trace({
+      name: traceName,
+    });
+    const observation = trace.generation({
+      name: observationName,
+      input: "observation-value",
+    });
+    await langfuse.flushAsync();
+
+    const observations = await langfuse.fetchObservations({ name: observationName });
+    expect(observations.data).toContainEqual(expect.objectContaining({ id: observation.id, name: observationName }));
+
+    const fetchedObservation = await langfuse.fetchObservation(observation.id);
+    expect(fetchedObservation.data).toMatchObject({
+      id: observation.id,
+      name: observationName,
+      input: "observation-value",
+    });
+  });
+
+  it("create and fetch a session", async () => {
+    const traceName = utils.generateUUID();
+    const sessionId = utils.generateUUID();
+    langfuse.trace({
+      name: traceName,
+      sessionId,
+    });
+    await langfuse.flushAsync();
+
+    const sessions = await langfuse.fetchSessions();
+    expect(sessions.data).toContainEqual(expect.objectContaining({ id: sessionId }));
   });
 });

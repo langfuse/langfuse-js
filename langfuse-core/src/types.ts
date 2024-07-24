@@ -163,11 +163,33 @@ export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["Updat
 export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
 
 // SYNC
+export type GetLangfuseTracesQuery = FixTypes<paths["/api/public/traces"]["get"]["parameters"]["query"]>;
+export type GetLangfuseTracesResponse = FixTypes<
+  paths["/api/public/traces"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseTraceResponse = FixTypes<
+  paths["/api/public/traces/{traceId}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
+export type GetLangfuseObservationsResponse = FixTypes<
+  paths["/api/public/observations"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseObservationResponse = FixTypes<
+  paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["get"]["parameters"]["query"]>;
+export type GetLangfuseSessionsResponse = FixTypes<
+  paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 export type GetLangfuseDatasetParams = FixTypes<
-  paths["/api/public/datasets/{datasetName}"]["get"]["parameters"]["path"]
+  paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
 export type GetLangfuseDatasetResponse = FixTypes<
-  paths["/api/public/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+  paths["/api/public/v2/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseDatasetItemsQuery = paths["/api/public/dataset-items"]["get"]["parameters"]["query"];
+export type GetLangfuseDatasetItemsResponse = FixTypes<
+  paths["/api/public/dataset-items"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 
 /**
@@ -200,7 +222,7 @@ export type CreateLangfuseDatasetRunItemResponse = FixTypes<
   paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
 export type CreateLangfuseDatasetBody =
-  paths["/api/public/datasets"]["post"]["requestBody"]["content"]["application/json"];
+  paths["/api/public/v2/datasets"]["post"]["requestBody"]["content"]["application/json"];
 
 /**
  * CreateLangfuseDatasetResponse
@@ -216,7 +238,7 @@ export type CreateLangfuseDatasetBody =
  * @interface
  */
 export type CreateLangfuseDatasetResponse = FixTypes<
-  paths["/api/public/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
+  paths["/api/public/v2/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
 >;
 
 /**
@@ -280,6 +302,13 @@ export type GetLangfuseDatasetRunParams = FixTypes<
  */
 export type GetLangfuseDatasetRunResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseDatasetRunsQuery =
+  paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["query"];
+export type GetLangfuseDatasetRunsPath = paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["path"];
+
+export type GetLangfuseDatasetRunsResponse = FixTypes<
+  paths["/api/public/datasets/{datasetName}/runs"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type CreateLangfusePromptBody = FixTypes<
   paths["/api/public/v2/prompts"]["post"]["requestBody"]["content"]["application/json"]
@@ -533,18 +562,31 @@ export type UpdateLangfuseTrace = Omit<CreateLangfuseTraceBody, "id">;
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
 
 type OptionalTypes<T> = T extends null | undefined ? T : never;
-type FixTypes<T> = Omit<
-  {
-    [P in keyof T]: P extends "startTime" | "endTime" | "timestamp" | "completionStartTime" | "createdAt" | "updatedAt"
-      ? // Dates instead of strings
-        Date | OptionalTypes<T[P]>
-      : P extends "metadata" | "input" | "output" | "completion" | "expectedOutput"
-        ? // JSON instead of strings
-          any | OptionalTypes<T[P]>
-        : T[P];
-  },
-  "externalId" | "traceIdType"
->;
+
+type FixTypes<T> = T extends undefined
+  ? undefined
+  : Omit<
+      {
+        [P in keyof T]: P extends
+          | "startTime"
+          | "endTime"
+          | "timestamp"
+          | "completionStartTime"
+          | "createdAt"
+          | "updatedAt"
+          | "fromTimestamp"
+          | "toTimestamp"
+          | "fromStartTime"
+          | "toStartTime"
+          ? // Dates instead of strings
+            Date | OptionalTypes<T[P]>
+          : P extends "metadata" | "input" | "output" | "completion" | "expectedOutput"
+            ? // JSON instead of strings
+              any | OptionalTypes<T[P]>
+            : T[P];
+      },
+      "externalId" | "traceIdType"
+    >;
 
 export type DeferRuntime = {
   langfuseTraces: (

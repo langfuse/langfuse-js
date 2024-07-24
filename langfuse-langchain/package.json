@@ -1,6 +1,6 @@
 {
   "name": "langfuse-langchain",
-  "version": "3.12.1",
+  "version": "3.16.2",
   "engines": {
     "node": ">=18"
   },
@@ -34,13 +34,14 @@
   ],
   "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
   "dependencies": {
-    "langfuse": "^3.12.1",
-    "langfuse-core": "^3.12.1"
+    "langfuse": "^3.16.2",
+    "langfuse-core": "^3.16.2"
   },
   "peerDependencies": {
     "langchain": ">=0.0.157 <0.3.0"
   },
   "devDependencies": {
-    "cheerio": "^1.0.0-rc.12"
+    "cheerio": "^1.0.0-rc.12",
+    "typedoc": "^0.26.4"
   }
 }

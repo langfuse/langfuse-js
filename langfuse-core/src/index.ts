@@ -42,6 +42,19 @@ import {
   type EndLangfuseSpan,
   type EndLangfuseGeneration,
   type UpdateLangfuseTrace,
+  type GetLangfuseDatasetItemsQuery,
+  type GetLangfuseDatasetItemsResponse,
+  type GetLangfuseDatasetRunsQuery,
+  type GetLangfuseDatasetRunsResponse,
+  type GetLangfuseTracesQuery,
+  type GetLangfuseTracesResponse,
+  type GetLangfuseObservationsQuery,
+  type GetLangfuseObservationsResponse,
+  type GetLangfuseObservationResponse,
+  type GetLangfuseTraceResponse,
+  type ChatMessage,
+  type GetLangfuseSessionsQuery,
+  type GetLangfuseSessionsResponse,
 } from "./types";
 import {
   generateUUID,
@@ -51,6 +64,7 @@ import {
   safeSetTimeout,
   getEnv,
   currentISOTime,
+  encodeQueryParams,
 } from "./utils";
 
 export * as utils from "./utils";
@@ -245,13 +259,15 @@ abstract class LangfuseCoreStateless {
     body: Omit<CreateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
   ): string {
     const { id: bodyId, startTime: bodyStartTime, prompt, ...rest } = body;
+    const promptDetails =
+      prompt && !prompt.isFallback ? { promptName: prompt.name, promptVersion: prompt.version } : {};
 
     const id = bodyId || generateUUID();
 
     const parsedBody: CreateLangfuseGenerationBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
-      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
+      ...promptDetails,
       ...rest,
     };
 
@@ -281,8 +297,11 @@ abstract class LangfuseCoreStateless {
     body: Omit<UpdateLangfuseGenerationBody, "promptName" | "promptVersion"> & PromptInput
   ): string {
     const { prompt, ...rest } = body;
+    const promptDetails =
+      prompt && !prompt.isFallback ? { promptName: prompt.name, promptVersion: prompt.version } : {};
+
     const parsedBody: UpdateLangfuseGenerationBody = {
-      ...(prompt ? { promptName: prompt.name, promptVersion: prompt.version } : {}),
+      ...promptDetails,
       ...rest,
     };
     this.enqueue("generation-update", parsedBody);
@@ -292,9 +311,72 @@ abstract class LangfuseCoreStateless {
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
     const encodedName = encodeURIComponent(name);
     return this.fetch(
-      `${this.baseUrl}/api/public/datasets/${encodedName}`,
+      `${this.baseUrl}/api/public/v2/datasets/${encodedName}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
+  }
+
+  protected async _getDatasetItems(query: GetLangfuseDatasetItemsQuery): Promise<GetLangfuseDatasetItemsResponse> {
+    const params = new URLSearchParams();
+    Object.entries(query ?? {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, value.toString());
+      }
+    });
+
+    return this.fetch(
+      `${this.baseUrl}/api/public/dataset-items?${params}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
+  }
+
+  async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/traces?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseTracesResponse;
+    return { data, meta };
+  }
+
+  async fetchTrace(traceId: string): Promise<{ data: GetLangfuseTraceResponse }> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/traces/${traceId}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+
+    const trace = (await res.json()) as GetLangfuseTraceResponse;
+    return { data: trace };
+  }
+
+  async fetchObservations(query?: GetLangfuseObservationsQuery): Promise<GetLangfuseObservationsResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/observations?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseObservationsResponse;
+    return { data, meta };
+  }
+
+  async fetchObservation(observationId: string): Promise<{ data: GetLangfuseObservationResponse }> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/observations/${observationId}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    const observation = (await res.json()) as GetLangfuseObservationResponse;
+    return { data: observation };
+  }
+
+  async fetchSessions(query?: GetLangfuseSessionsQuery): Promise<GetLangfuseSessionsResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/sessions?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseSessionsResponse;
+    return { data, meta };
   }
 
   /**
@@ -310,12 +392,21 @@ abstract class LangfuseCoreStateless {
    * });
    *
    */
-
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
     const encodedDatasetName = encodeURIComponent(params.datasetName);
     const encodedRunName = encodeURIComponent(params.runName);
     return this.fetch(
       `${this.baseUrl}/api/public/datasets/${encodedDatasetName}/runs/${encodedRunName}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
+  }
+
+  async getDatasetRuns(
+    datasetName: string,
+    query?: GetLangfuseDatasetRunsQuery
+  ): Promise<GetLangfuseDatasetRunsResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/datasets/${encodeURIComponent(datasetName)}/runs?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
@@ -438,7 +529,12 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
-  async getPromptStateless(name: string, version?: number, label?: string): Promise<GetLangfusePromptResponse> {
+  async getPromptStateless(
+    name: string,
+    version?: number,
+    label?: string,
+    maxRetries?: number
+  ): Promise<GetLangfusePromptResponse> {
     const encodedName = encodeURIComponent(name);
     const params = new URLSearchParams();
 
@@ -457,11 +553,43 @@ abstract class LangfuseCoreStateless {
 
     const url = `${this.baseUrl}/api/public/v2/prompts/${encodedName}${params.size ? "?" + params : ""}`;
 
-    return this.fetch(url, this._getFetchOptions({ method: "GET" })).then(async (res) => {
-      const data = await res.json();
+    const boundedMaxRetries = this._getBoundedMaxRetries({ maxRetries, defaultMaxRetries: 2, maxRetriesUpperBound: 4 });
+    const retryOptions = { ...this._retryOptions, retryCount: boundedMaxRetries, retryDelay: 500 };
+    const retryLogger = (string: string): void =>
+      this._events.emit("retry", string + ", " + url + ", " + JSON.stringify(retryOptions));
 
-      return { fetchResult: res.status === 200 ? "success" : "failure", data };
-    });
+    return retriable(
+      async () => {
+        const res = await this.fetch(url, this._getFetchOptions({ method: "GET" })).catch((e) => {
+          throw new LangfuseFetchNetworkError(e);
+        });
+
+        const data = await res.json();
+
+        if (res.status >= 500) {
+          throw new LangfuseFetchHttpError(res, JSON.stringify(data));
+        }
+
+        return { fetchResult: res.status === 200 ? "success" : "failure", data };
+      },
+      retryOptions,
+      retryLogger
+    );
+  }
+
+  private _getBoundedMaxRetries(params: {
+    maxRetries?: number;
+    defaultMaxRetries?: number;
+    maxRetriesUpperBound?: number;
+  }): number {
+    const defaultMaxRetries = Math.max(params.defaultMaxRetries ?? 2, 0);
+    const maxRetriesUpperBound = Math.max(params.maxRetriesUpperBound ?? 4, 0);
+
+    if (params.maxRetries === undefined) {
+      return defaultMaxRetries;
+    }
+
+    return Math.min(Math.max(params.maxRetries, 0), maxRetriesUpperBound);
   }
 
   /***
@@ -472,6 +600,16 @@ abstract class LangfuseCoreStateless {
       if (!this.enabled) {
         return;
       }
+
+      try {
+        JSON.stringify(body);
+      } catch (e) {
+        console.error(`Event Body for ${type} is not JSON-serializable: ${e}`);
+        this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
+
+        return;
+      }
+
       const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
 
       queue.push({
@@ -1119,7 +1257,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * const dataset = await langfuse.getDataset("<dataset_name>");
    * ```
    */
-  async getDataset(name: string): Promise<{
+  async getDataset(
+    name: string,
+    options?: {
+      fetchItemsPageSize: number;
+    }
+  ): Promise<{
     id: string;
     name: string;
     description?: string;
@@ -1141,7 +1284,22 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       ) => Promise<{ id: string }>;
     }>;
   }> {
-    const { items, ...dataset } = await this._getDataset(name);
+    const dataset = await this._getDataset(name);
+    const items: GetLangfuseDatasetItemsResponse["data"] = [];
+
+    let page = 1;
+    while (true) {
+      const itemsResponse = await this._getDatasetItems({
+        datasetName: name,
+        limit: options?.fetchItemsPageSize ?? 50,
+        page,
+      });
+      items.push(...itemsResponse.data);
+      if (itemsResponse.meta.totalPages <= page) {
+        break;
+      }
+      page++;
+    }
 
     const returnDataset = {
       ...dataset,
@@ -1190,11 +1348,17 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async createPrompt(body: CreatePromptBody): Promise<LangfusePromptClient> {
     const labels = body.labels ?? [];
 
-    const promptResponse = await this.createPromptStateless({
-      ...body,
-      type: body.type ?? "text",
-      labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
-    });
+    const promptResponse =
+      body.type === "chat" // necessary to get types right here
+        ? await this.createPromptStateless({
+            ...body,
+            labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
+          })
+        : await this.createPromptStateless({
+            ...body,
+            type: body.type ?? "text",
+            labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
+          });
 
     if (promptResponse.type === "chat") {
       return new ChatPromptClient(promptResponse);
@@ -1225,28 +1389,70 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; type?: "text" }
+    options?: { label?: string; cacheTtlSeconds?: number; fallback?: string; maxRetries?: number; type?: "text" }
   ): Promise<TextPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; type: "chat" }
+    options?: { label?: string; cacheTtlSeconds?: number; fallback?: ChatMessage[]; maxRetries?: number; type: "chat" }
   ): Promise<ChatPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; type?: "chat" | "text" }
+    options?: {
+      label?: string;
+      cacheTtlSeconds?: number;
+      fallback?: ChatMessage[] | string;
+      maxRetries?: number;
+      type?: "chat" | "text";
+    }
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
 
     if (!cachedPrompt) {
-      return await this._fetchPromptAndUpdateCache({
-        name,
-        version,
-        label: options?.label,
-        cacheTtlSeconds: options?.cacheTtlSeconds,
-      });
+      try {
+        return await this._fetchPromptAndUpdateCache({
+          name,
+          version,
+          label: options?.label,
+          cacheTtlSeconds: options?.cacheTtlSeconds,
+          maxRetries: options?.maxRetries,
+        });
+      } catch (err) {
+        if (options?.fallback) {
+          const sharedFallbackParams = {
+            name,
+            version: version ?? 0,
+            labels: options.label ? [options.label] : [],
+            cacheTtlSeconds: options?.cacheTtlSeconds,
+            config: {},
+            tags: [],
+          };
+
+          if (options.type === "chat") {
+            return new ChatPromptClient(
+              {
+                ...sharedFallbackParams,
+                type: "chat",
+                prompt: options.fallback as ChatMessage[],
+              },
+              true
+            );
+          } else {
+            return new TextPromptClient(
+              {
+                ...sharedFallbackParams,
+                type: "text",
+                prompt: options.fallback as string,
+              },
+              true
+            );
+          }
+        }
+
+        throw err;
+      }
     }
 
     if (cachedPrompt.isExpired) {
@@ -1255,6 +1461,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         version,
         label: options?.label,
         cacheTtlSeconds: options?.cacheTtlSeconds,
+        maxRetries: options?.maxRetries,
       }).catch(() => {
         console.warn(
           `Returning expired prompt cache for '${this._getPromptCacheKey({
@@ -1291,13 +1498,14 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     version?: number;
     cacheTtlSeconds?: number;
     label?: string;
+    maxRetries?: number;
   }): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey(params);
 
     try {
-      const { name, version, cacheTtlSeconds, label } = params;
+      const { name, version, cacheTtlSeconds, label, maxRetries } = params;
 
-      const { data, fetchResult } = await this.getPromptStateless(name, version, label);
+      const { data, fetchResult } = await this.getPromptStateless(name, version, label, maxRetries);
       if (fetchResult === "failure") {
         throw Error(data.message ?? "Internal error while fetching prompt");
       }
