@@ -14,6 +14,7 @@ mustache.escape = function (text) {
  * @property {number} version - The version of the prompt.
  * @property {unknown} config - The config of the prompt.
  * @property {string[]} labels - The labels of the prompt.
+ * @property {boolean} isFallback - Whether the prompt is a fallback prompt.
  * @method compile - Compiles the prompt content.
  * @method getLangchainPrompt - Converts the prompt content to a Langchain-compatible format.
  */
