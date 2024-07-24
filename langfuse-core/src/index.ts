@@ -330,6 +330,15 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
+  /**
+   * Fetch list of traces, supports filters and pagination
+   * @param {GetLangfuseTracesQuery} query - The query to filter and paginate the traces.
+   * @returns {Promise<GetLangfuseTracesResponse>} A promise that resolves to the response containing the traces.
+   * @example
+   * ```typescript
+   * const traces = await langfuse.fetchTraces();
+   * ```
+   */
   async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
     const res = await this.fetch(
       `${this.baseUrl}/api/public/traces?${encodeQueryParams(query)}`,
@@ -340,6 +349,16 @@ abstract class LangfuseCoreStateless {
     return { data, meta };
   }
 
+  /**
+   * Fetch a trace by id
+   *
+   * @param {string} traceId - The id of the trace to fetch.
+   * @returns {Promise<{ data: GetLangfuseTraceResponse }>} A promise that resolves to the response containing the trace.
+   * @example
+   * ```typescript
+   * const trace = await langfuse.fetchTrace("<traceId>");
+   * ```
+   * */
   async fetchTrace(traceId: string): Promise<{ data: GetLangfuseTraceResponse }> {
     const res = await this.fetch(
       `${this.baseUrl}/api/public/traces/${traceId}`,
@@ -350,6 +369,15 @@ abstract class LangfuseCoreStateless {
     return { data: trace };
   }
 
+  /**
+   * Fetch list of observations, supports filters and pagination
+   * @param {GetLangfuseObservationsQuery} query - The query to filter and paginate the observations.
+   * @returns {Promise<GetLangfuseObservationsResponse>} A promise that resolves to the response containing the observations.
+   * @example
+   * ```typescript
+   * const observations = await langfuse.fetchObservations();
+   * ```
+   * */
   async fetchObservations(query?: GetLangfuseObservationsQuery): Promise<GetLangfuseObservationsResponse> {
     const res = await this.fetch(
       `${this.baseUrl}/api/public/observations?${encodeQueryParams(query)}`,
@@ -360,6 +388,16 @@ abstract class LangfuseCoreStateless {
     return { data, meta };
   }
 
+  /**
+   * Fetch an observation by id
+   *
+   * @param {string} observationId - The id of the observation to fetch.
+   * @returns {Promise<{ data: GetLangfuseObservationResponse }>} A promise that resolves to the response containing the observation.
+   * @example
+   * ```typescript
+   * const observation = await langfuse.fetchObservation("<observationId>");
+   * ```
+   * */
   async fetchObservation(observationId: string): Promise<{ data: GetLangfuseObservationResponse }> {
     const res = await this.fetch(
       `${this.baseUrl}/api/public/observations/${observationId}`,
@@ -369,6 +407,15 @@ abstract class LangfuseCoreStateless {
     return { data: observation };
   }
 
+  /**
+   * Fetch list of sessions, supports filters and pagination
+   * @param {GetLangfuseSessionsQuery} query - The query to filter and paginate the sessions.
+   * @returns {Promise<GetLangfuseSessionsResponse>} A promise that resolves to the response containing the sessions.
+   * @example
+   * ```typescript
+   * const sessions = await langfuse.fetchSessions();
+   * ```
+   * */
   async fetchSessions(query?: GetLangfuseSessionsQuery): Promise<GetLangfuseSessionsResponse> {
     const res = await this.fetch(
       `${this.baseUrl}/api/public/sessions?${encodeQueryParams(query)}`,
@@ -401,6 +448,15 @@ abstract class LangfuseCoreStateless {
     ).then((res) => res.json());
   }
 
+  /**
+   * Get a dataset by name.
+   * @param {string} datasetName - The name of the dataset.
+   * @returns {Promise<GetLangfuseDatasetResponse>} A promise that resolves to the response containing the dataset.
+   * @example
+   * ```typescript
+   * const dataset = await langfuse.getDataset("<dataset_name>");
+   * ```
+   */
   async getDatasetRuns(
     datasetName: string,
     query?: GetLangfuseDatasetRunsQuery
@@ -1230,6 +1286,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * Fetch a dataset by its name.
    *
    * @param {string} name - The name of the dataset.
+   * @param {{fetchItemsPageSize: number}} [options] - The options for fetching the dataset items.
    * @returns {Promise<{
    *  id: string,
    *  name: string,
@@ -1375,7 +1432,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    *
    * @param {string} name - The name of the prompt.
    * @param {number} [version] - The version of the prompt.
-   * @param {{label?: string, cacheTtlSeconds?: number, type?: "chat" | "text"}} [options] - The options for the prompt.
+   * @param {{label?: string, cacheTtlSeconds?: number, fallback?: string, maxRetries?: number, type?: "chat" | "text"}} [options] - The options for the prompt.
    * @returns {Promise<TextPromptClient | ChatPromptClient | LangfusePromptClient>} A promise that resolves to a TextPromptClient, ChatPromptClient, or LangfusePromptClient depending on the type of the prompt.
    * @example
    * ```typescript
