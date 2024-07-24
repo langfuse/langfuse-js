@@ -491,7 +491,7 @@ abstract class LangfuseCoreStateless {
 
   /**
    * Creates a dataset.
-   * @param {string | {name: string, description?: string, metadata?: any}} dataset
+   * @param {string | {name: string, description?: string, metadata?: any}} dataset - The name of the dataset or the body of the dataset to be created.
    * @returns {Promise<CreateLangfuseDatasetResponse>} A promise that resolves to the response containing the newly created dataset.
    * @example
    * ```typescript
