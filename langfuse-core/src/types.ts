@@ -218,9 +218,9 @@ export type CreateLangfuseDatasetRunItemBody = FixTypes<
  * @property datasetRunName - Name of the dataset run.
  * @interface
  */
-export type CreateLangfuseDatasetRunItemResponse = FixTypes<
-  paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]
->;
+export interface CreateLangfuseDatasetRunItemResponse
+  extends FixTypes<paths["/api/public/dataset-run-items"]["post"]["responses"]["200"]["content"]["application/json"]> {}
+
 export type CreateLangfuseDatasetBody =
   paths["/api/public/v2/datasets"]["post"]["requestBody"]["content"]["application/json"];
 
