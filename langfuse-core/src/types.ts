@@ -84,8 +84,7 @@ export type LangfuseMetadataProperties = {
  * @property public - You can make a trace public to share it via a public link. This allows others to view the trace without needing to log in or be members of your Langfuse project.
  * @interface
  */
-
-export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"]>;
+export interface CreateLangfuseTraceBody extends FixTypes<components["schemas"]["TraceBody"]> {}
 
 /**
  * CreateLangfuseEventBody
@@ -102,7 +101,7 @@ export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"
  * @property version - The version of the event type. Used to understand how changes to the event type affect metrics. Useful in debugging.
  * @interface
  */
-export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEventBody"]>;
+export interface CreateLangfuseEventBody extends FixTypes<components["schemas"]["CreateEventBody"]> {}
 
 /**
  * CreateLangfuseSpanBody
@@ -120,7 +119,8 @@ export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEven
  * @property version - The version of the span type. Used to understand how changes to the span type affect metrics. Useful in debugging.
  * @interface
  */
-export type CreateLangfuseSpanBody = FixTypes<components["schemas"]["CreateSpanBody"]>;
+export interface CreateLangfuseSpanBody extends FixTypes<components["schemas"]["CreateSpanBody"]> {}
+
 export type UpdateLangfuseSpanBody = FixTypes<components["schemas"]["UpdateSpanBody"]>;
 
 export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
@@ -147,7 +147,7 @@ export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
  * @property promptVersion - The version of the prompt.
  * @interface
  */
-export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
+export interface CreateLangfuseGenerationBody extends FixTypes<components["schemas"]["CreateGenerationBody"]> {}
 export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
 
 /**
@@ -160,8 +160,7 @@ export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["Updat
  * @property comment - Additional context/explanation of the score.
  * @interface
  */
-export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
-
+export interface CreateLangfuseScoreBody extends FixTypes<components["schemas"]["ScoreBody"]> {}
 // SYNC
 export type GetLangfuseTracesQuery = FixTypes<paths["/api/public/traces"]["get"]["parameters"]["query"]>;
 export type GetLangfuseTracesResponse = FixTypes<
@@ -202,9 +201,8 @@ export type GetLangfuseDatasetItemsResponse = FixTypes<
  * @property datasetItemId - Id of the dataset item in which the dataset run should be created.
  * @interface
  */
-export type CreateLangfuseDatasetRunItemBody = FixTypes<
-  paths["/api/public/dataset-run-items"]["post"]["requestBody"]["content"]["application/json"]
->;
+export interface CreateLangfuseDatasetRunItemBody
+  extends FixTypes<paths["/api/public/dataset-run-items"]["post"]["requestBody"]["content"]["application/json"]> {}
 
 /**
  * CreateLangfuseDatasetRunItemResponse
@@ -237,9 +235,8 @@ export type CreateLangfuseDatasetBody =
  * @property updatedAt - Last update time of the dataset.
  * @interface
  */
-export type CreateLangfuseDatasetResponse = FixTypes<
-  paths["/api/public/v2/datasets"]["post"]["responses"]["200"]["content"]["application/json"]
->;
+export interface CreateLangfuseDatasetResponse
+  extends FixTypes<paths["/api/public/v2/datasets"]["post"]["responses"]["200"]["content"]["application/json"]> {}
 
 /**
  * CreateLangfuseDatasetItemBody
@@ -254,9 +251,8 @@ export type CreateLangfuseDatasetResponse = FixTypes<
  *
  * @interface
  */
-export type CreateLangfuseDatasetItemBody = FixTypes<
-  paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"]
->;
+export interface CreateLangfuseDatasetItemBody
+  extends FixTypes<paths["/api/public/dataset-items"]["post"]["requestBody"]["content"]["application/json"]> {}
 
 /**
  * CreateLangfuseDatasetItemResponse
@@ -273,9 +269,8 @@ export type CreateLangfuseDatasetItemBody = FixTypes<
  * @property datasetId - Id of the dataset.
  * @interface
  */
-export type CreateLangfuseDatasetItemResponse = FixTypes<
-  paths["/api/public/dataset-items"]["post"]["responses"]["200"]["content"]["application/json"]
->;
+export interface CreateLangfuseDatasetItemResponse
+  extends FixTypes<paths["/api/public/dataset-items"]["post"]["responses"]["200"]["content"]["application/json"]> {}
 
 /**
  * GetLangfuseDatasetRunParams
@@ -283,10 +278,8 @@ export type CreateLangfuseDatasetItemResponse = FixTypes<
  * @property runName - Name of the dataset run.
  * @interface
  */
-export type GetLangfuseDatasetRunParams = FixTypes<
-  paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["parameters"]["path"]
->;
-
+export interface GetLangfuseDatasetRunParams
+  extends FixTypes<paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["parameters"]["path"]> {}
 /**
  * GetLangfuseDatasetRunResponse
  * @property name - Name of the dataset run.
@@ -300,9 +293,10 @@ export type GetLangfuseDatasetRunParams = FixTypes<
  * @property datasetRunItems - List of dataset run items.
  * @interface
  */
-export type GetLangfuseDatasetRunResponse = FixTypes<
-  paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+export interface GetLangfuseDatasetRunResponse
+  extends FixTypes<
+    paths["/api/public/datasets/{datasetName}/runs/{runName}"]["get"]["responses"]["200"]["content"]["application/json"]
+  > {}
 export type GetLangfuseDatasetRunsQuery =
   paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["query"];
 export type GetLangfuseDatasetRunsPath = paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["path"];
