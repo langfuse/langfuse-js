@@ -348,6 +348,11 @@ type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptR
 /**
  * CreateTextPromptBody
  * @interface
+ * @property type - The type of the prompt, always "text" for TextPrompt.
+ * @property prompt - The text template with variables (e.g. This is a prompt with a {{variable}}).
+ * @property isActive - Whether the prompt is active.
+ * @property name - Unique name of the prompt within a Langfuse project.
+ * @property config - Optional JSON object to store any parameters (e.g. model parameters or model tools).
  */
 
 export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
@@ -355,6 +360,11 @@ export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequ
 /**
  * CreateChatPromptBody
  * @interface
+ * @property type - The type of the prompt, always "chat" for ChatPrompt.
+ * @property prompt - The prompt content, which is a list of chat messages each with role and content.
+ * @property isActive - Whether the prompt is active.
+ * @property name - Unique name of the prompt within a Langfuse project.
+ * @property config - Optional JSON object to store any parameters (e.g. model parameters or model tools).
  */
 
 export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
