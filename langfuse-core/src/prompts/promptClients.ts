@@ -18,6 +18,7 @@ abstract class BasePromptClient {
     this.version = prompt.version;
     this.config = prompt.config;
     this.labels = prompt.labels;
+    this.tags = prompt.tags;
     this.isFallback = isFallback;
   }
 
