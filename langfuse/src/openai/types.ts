@@ -30,7 +30,12 @@ export type LangfuseNewTraceConfig = LangfuseTraceConfig & { traceId?: string; c
  * LangfuseParent
  * @typedef {LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient} LangfuseParent
  */
-export type LangfuseParent = LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient;
+export interface LangfuseParent {
+  traceClient: LangfuseTraceClient;
+  spanClient: LangfuseSpanClient;
+  generationClient: LangfuseGenerationClient;
+}
+
 export type LangfuseWithParentConfig = LangfuseGenerationConfig & { parent: LangfuseParent };
 
 /**
@@ -40,8 +45,8 @@ export type LangfuseWithParentConfig = LangfuseGenerationConfig & { parent: Lang
  * @typedef {LangfuseNewTraceConfig | LangfuseWithParentConfig} BaseConfig
  * @typedef {BaseConfig & { generationName?: string; langfusePrompt?: LangfusePromptClient }} LangfuseConfig
  */
-export type LangfuseConfig = (LangfuseNewTraceConfig | LangfuseWithParentConfig) & {
+export interface LangfuseConfig extends LangfuseNewTraceConfig, LangfuseWithParentConfig {
   generationName?: string;
   langfusePrompt?: LangfusePromptClient;
-};
+}
 export type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync">;
