@@ -51,6 +51,7 @@ type ConstructorParams = (RootParams | LangfuseOptions) & {
  *
  * @class
  * @extends BaseCallbackHandler
+ * @property {string} name - The name of the handler. Defaults to "CallbackHandler".
  * @property {Langfuse} langfuse - The Langfuse SDK instance.
  * @property {string} [traceId] - The trace ID for the current session.
  * @property {string} [observationId] - The observation ID for the current session.
