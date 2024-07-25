@@ -248,7 +248,6 @@ export interface CreateLangfuseDatasetResponse
  * @property sourceTraceId - Id of the source trace. Defaults to None.
  * @property sourceObservationId - Id of the source observation. Defaults to None.
  * @property status - Status of the dataset item. Defaults to ACTIVE for newly created items.
- *
  * @interface
  */
 export interface CreateLangfuseDatasetItemBody
@@ -304,9 +303,21 @@ export type GetLangfuseDatasetRunsPath = paths["/api/public/datasets/{datasetNam
 export type GetLangfuseDatasetRunsResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+
+/**
+ * CreateLangfusePromptBody
+ * @property name - Unique name of the prompt within a Langfuse project.
+ * @property type - The type of the prompt, either "text" for TextPrompt or "chat" for ChatPrompt.
+ * @property prompt - The prompt content. For TextPrompt, this is the text template with variables (e.g. This is a prompt with a {{variable}}). For ChatPrompt, this is a list of chat messages each with role and content.
+ * @property isActive - Whether the prompt is active.
+ * @property config - Optional JSON object to store any parameters (e.g. model parameters or model tools).
+ *
+ * @interface
+ */
 export type CreateLangfusePromptBody = FixTypes<
   paths["/api/public/v2/prompts"]["post"]["requestBody"]["content"]["application/json"]
 >;
+
 export type CreateLangfusePromptResponse =
   paths["/api/public/v2/prompts"]["post"]["responses"]["200"]["content"]["application/json"];
 
