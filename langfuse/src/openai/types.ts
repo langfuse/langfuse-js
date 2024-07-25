@@ -25,28 +25,11 @@ type LangfuseGenerationConfig = Pick<
 >;
 
 export type LangfuseNewTraceConfig = LangfuseTraceConfig & { traceId?: string; clientInitParams?: LangfuseInitParams };
-
-/**
- * LangfuseParent
- * @typedef {LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient} LangfuseParent
- */
-export interface LangfuseParent {
-  traceClient: LangfuseTraceClient;
-  spanClient: LangfuseSpanClient;
-  generationClient: LangfuseGenerationClient;
-}
-
+export type LangfuseParent = LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient;
 export type LangfuseWithParentConfig = LangfuseGenerationConfig & { parent: LangfuseParent };
 
-/**
- * LangfuseConfig
- * @property {string} [generationName] - Name of the generation.
- * @property {LangfusePromptClient} [langfusePrompt] - LangfusePromptClient instance.
- * @typedef {LangfuseNewTraceConfig | LangfuseWithParentConfig} BaseConfig
- * @typedef {BaseConfig & { generationName?: string; langfusePrompt?: LangfusePromptClient }} LangfuseConfig
- */
-export interface LangfuseConfig extends LangfuseNewTraceConfig, LangfuseWithParentConfig {
+export type LangfuseConfig = (LangfuseNewTraceConfig | LangfuseWithParentConfig) & {
   generationName?: string;
   langfusePrompt?: LangfusePromptClient;
-}
+};
 export type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync">;
