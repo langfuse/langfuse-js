@@ -171,7 +171,7 @@ export type GetLangfuseTraceResponse = FixTypes<
 >;
 
 /**
- * GetLangfuseObservationsQuery
+ * @typedef GetLangfuseObservationsQuery
  * @property page - The page number for pagination. Can be null or undefined.
  * @property limit - The limit for pagination. Can be null or undefined.
  * @property name - The name of the observation. Can be null or undefined.
@@ -181,7 +181,7 @@ export type GetLangfuseTraceResponse = FixTypes<
  * @property parentObservationId - The id of the parent observation. Can be null or undefined.
  * @property fromStartTime - The start time of the observation. Can be null or undefined.
  * @property toStartTime - The end time of the observation. Can be null or undefined.
- * @interface
+ *
  */
 export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
 
