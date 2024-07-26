@@ -223,9 +223,8 @@ export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observati
  * @property meta.totalPages - The total number of pages given the current limit.
  * @interface
  */
-export type GetLangfuseObservationsResponse = FixTypes<
-  paths["/api/public/observations"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+export interface GetLangfuseObservationsResponse
+  extends FixTypes<paths["/api/public/observations"]["get"]["responses"]["200"]["content"]["application/json"]> {}
 export type GetLangfuseObservationResponse = FixTypes<
   paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
