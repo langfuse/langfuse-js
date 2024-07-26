@@ -172,16 +172,15 @@ export type GetLangfuseTraceResponse = FixTypes<
 
 /**
  * GetLangfuseObservationsQuery
- * @property {number} [page] - The page number for pagination. Can be number, null, or undefined.
- * @property {number} [limit] - The limit for pagination. Can be number, null, or undefined.
- * @property {string} [name] - The name of the observation. Can be string, null, or undefined.
- * @property {string} [userId] - The user id associated with the observation. Can be string, null, or undefined.
- * @property {string} [type] - The type of the observation. Can be string, null, or undefined.
- * @property {string} [traceId] - The id of the trace associated with the observation. Can be string, null, or undefined.
- * @property {string} [parentObservationId] - The id of the parent observation. Can be string, null, or undefined.
- * @property {Date} [fromStartTime] - The start time of the observation. Can be Date, null, or undefined.
- * @property {Date} [toStartTime] - The end time of the observation. Can be Date, null, or undefined.
- * @interface
+ * @param page - The page number for pagination. Can be number, null or undefined.
+ * @param limit - The limit for pagination. Can be number, null or undefined.
+ * @param name - The name of the observation. Can be string, null or undefined.
+ * @param userId - The user id associated with the observation. Can be string, null or undefined.
+ * @param type - The type of the observation. Can be string, null or undefined.
+ * @param traceId - The id of the trace associated with the observation. Can be string, null or undefined.
+ * @param parentObservationId - The id of the parent observation. Can be string, null or undefined.
+ * @param fromStartTime - The start time of the observation. Can be Date, null or undefined.
+ * @param toStartTime - The end time of the observation. Can be Date, null or undefined.
  */
 export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
 
