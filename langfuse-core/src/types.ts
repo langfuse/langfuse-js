@@ -172,8 +172,7 @@ export type GetLangfuseTraceResponse = FixTypes<
 
 /**
  * GetLangfuseObservationsQuery
- * @param page - The page number for pagination. Can be number, null or undefined.
- * @type number | null | undefined
+ * @param {number} page - The page number for pagination. Can be number, null or undefined.
  * @param limit - The limit for pagination. Can be number, null or undefined.
  * @param name - The name of the observation. Can be string, null or undefined.
  * @param userId - The user id associated with the observation. Can be string, null or undefined.
