@@ -231,10 +231,26 @@ export interface GetLangfuseObservationResponse
   extends FixTypes<
     paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
   > {}
+
+/**
+ * GetLangfuseSessionsQuery
+ * @param page - The page number for pagination. Can be number, null or undefined.
+ * @param limit - The limit for pagination. Can be number, null or undefined.
+ * @param fromTimestamp - Optional filter to only include sessions created on or after a certain datetime (ISO 8601). Can be string, null or undefined.
+ * @param toTimestamp - Optional filter to only include sessions created before a certain datetime (ISO 8601). Can be string, null or undefined.
+ */
 export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["get"]["parameters"]["query"]>;
-export type GetLangfuseSessionsResponse = FixTypes<
-  paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+/**
+ * GetLangfuseSessionsResponse
+ * @property data - List of sessions.
+ * @property meta - Metadata about the response.
+ * @property meta.page - The current page number.
+ * @property meta.limit - The number of items per page.
+ * @property meta.totalItems - The total number of items given the current filters/selection (if any).
+ * @property meta.totalPages - The total number of pages given the current limit.
+ */
+export interface GetLangfuseSessionsResponse
+  extends FixTypes<paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]> {}
 export type GetLangfuseDatasetParams = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
