@@ -171,16 +171,58 @@ export type GetLangfuseTraceResponse = FixTypes<
 >;
 
 /**
- * GetLangfuseObservationsQuery
- * @property {number | null | undefined} page - The page number for pagination. Can be null or undefined.
- * @property {number | null | undefined} limit - The limit for pagination. Can be null or undefined.
- * @property {string | null | undefined} name - The name of the observation. Can be null or undefined.
- * @property {string | null | undefined} userId - The user id associated with the observation. Can be null or undefined.
- * @property {string | null | undefined} type - The type of the observation. Can be null or undefined.
- * @property {string | null | undefined} traceId - The id of the trace associated with the observation. Can be null or undefined.
- * @property {string | null | undefined} parentObservationId - The id of the parent observation. Can be null or undefined.
- * @property {Date | null | undefined} fromStartTime - The start time of the observation. Can be null or undefined.
- * @property {Date | null | undefined} toStartTime - The end time of the observation. Can be null or undefined.
+ * Interface representing the query parameters for GetLangfuseObservations.
+ */
+export interface GetLangfuseObservationsQueryDoc {
+  /**
+   * The page number for pagination. Can be null or undefined.
+   * @type {number | null | undefined}
+   */
+  page?: number | null;
+  /**
+   * The limit for pagination. Can be null or undefined.
+   * @type {number | null | undefined}
+   */
+  limit?: number | null;
+  /**
+   * The name of the observation. Can be null or undefined.
+   * @type {string | null | undefined}
+   */
+  name?: string | null;
+  /**
+   * The user id associated with the observation. Can be null or undefined.
+   * @type {string | null | undefined}
+   */
+  userId?: string | null;
+  /**
+   * The type of the observation. Can be null or undefined.
+   * @type {string | null | undefined}
+   */
+  type?: string | null;
+  /**
+   * The id of the trace associated with the observation. Can be null or undefined.
+   * @type {string | null | undefined}
+   */
+  traceId?: string | null;
+  /**
+   * The id of the parent observation. Can be null or undefined.
+   * @type {string | null | undefined}
+   */
+  parentObservationId?: string | null;
+  /**
+   * The start time of the observation. Can be null or undefined.
+   * @type {Date | null | undefined}
+   */
+  fromStartTime?: Date | null;
+  /**
+   * The end time of the observation. Can be null or undefined.
+   * @type {Date | null | undefined}
+   */
+  toStartTime?: Date | null;
+}
+
+/**
+ * GetLangfuseObservationsQuery type.
  */
 export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
 

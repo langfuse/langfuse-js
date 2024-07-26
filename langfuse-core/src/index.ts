@@ -371,7 +371,7 @@ abstract class LangfuseCoreStateless {
 
   /**
    * Fetch list of observations, supports filters and pagination
-   * @param {GetLangfuseObservationsQuery} query - The query to filter and paginate the observations.
+   * @param {GetLangfuseObservationsQueryDoc} query - The query to filter and paginate the observations.
    * @returns {Promise<GetLangfuseObservationsResponse>} A promise that resolves to the response containing the observations.
    * @example
    * ```typescript
