@@ -196,9 +196,41 @@ export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observati
  */
 export interface GetLangfuseObservationsResponse
   extends FixTypes<paths["/api/public/observations"]["get"]["responses"]["200"]["content"]["application/json"]> {}
-export type GetLangfuseObservationResponse = FixTypes<
-  paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+
+/**
+ * GetLangfuseObservationResponse
+ * @property modelId - The id of the model. Can be string, null or undefined.
+ * @property inputPrice - The price of the input. Can be number, null or undefined.
+ * @property outputPrice - The price of the output. Can be number, null or undefined.
+ * @property totalPrice - The total price. Can be number, null or undefined.
+ * @property calculatedInputCost - The calculated cost of the input. Can be number, null or undefined.
+ * @property calculatedOutputCost - The calculated cost of the output. Can be number, null or undefined.
+ * @property calculatedTotalCost - The calculated total cost. Can be number, null or undefined.
+ * @property latency - The latency. Can be number, null or undefined.
+ * @property timeToFirstToken - The time to the first token. Can be number, null or undefined.
+ * @property id - The ID of the observation.
+ * @property traceId - The trace ID associated with the observation.
+ * @property type - The type of the observation.
+ * @property name - The name of the observation.
+ * @property startTime - The start time of the observation.
+ * @property endTime - The end time of the observation.
+ * @property completionStartTime - The completion start time of the observation.
+ * @property model - The model used for the observation.
+ * @property modelParameters - The parameters of the model used for the observation.
+ * @property input - The input data of the observation.
+ * @property version - The version of the observation.
+ * @property metadata - Additional metadata of the observation.
+ * @property output - The output data of the observation.
+ * @property usage - The usage data of the observation.
+ * @property level - The level of the observation.
+ * @property statusMessage - The status message of the observation.
+ * @property parentObservationId - The parent observation ID.
+ * @property promptId - The prompt ID associated with the observation.
+ */
+export interface GetLangfuseObservationResponse
+  extends FixTypes<
+    paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
+  > {}
 export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["get"]["parameters"]["query"]>;
 export type GetLangfuseSessionsResponse = FixTypes<
   paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
