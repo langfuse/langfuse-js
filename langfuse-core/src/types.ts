@@ -171,7 +171,7 @@ export type GetLangfuseTraceResponse = FixTypes<
 >;
 
 /**
- * @typedef {Object} GetLangfuseObservationsQuery
+ * @type {Object} GetLangfuseObservationsQuery
  * @property {number | null | undefined} page - The page number for pagination. Can be null or undefined.
  * @property {number | null | undefined} limit - The limit for pagination. Can be null or undefined.
  * @property {string | null | undefined} name - The name of the observation. Can be null or undefined.
