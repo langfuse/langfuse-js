@@ -171,91 +171,23 @@ export type GetLangfuseTraceResponse = FixTypes<
 >;
 
 /**
- * Interface representing the query parameters for GetLangfuseObservations.
- */
-export interface GetLangfuseObservationsQueryDoc {
-  /**
-   * The page number for pagination. Can be null or undefined.
-   * @type {number | null | undefined}
-   */
-  page?: number | null;
-  /**
-   * The limit for pagination. Can be null or undefined.
-   * @type {number | null | undefined}
-   */
-  limit?: number | null;
-  /**
-   * The name of the observation. Can be null or undefined.
-   * @type {string | null | undefined}
-   */
-  name?: string | null;
-  /**
-   * The user id associated with the observation. Can be null or undefined.
-   * @type {string | null | undefined}
-   */
-  userId?: string | null;
-  /**
-   * The type of the observation. Can be null or undefined.
-   * @type {string | null | undefined}
-   */
-  type?: string | null;
-  /**
-   * The id of the trace associated with the observation. Can be null or undefined.
-   * @type {string | null | undefined}
-   */
-  traceId?: string | null;
-  /**
-   * The id of the parent observation. Can be null or undefined.
-   * @type {string | null | undefined}
-   */
-  parentObservationId?: string | null;
-  /**
-   * The start time of the observation. Can be null or undefined.
-   * @type {Date | null | undefined}
-   */
-  fromStartTime?: Date | null;
-  /**
-   * The end time of the observation. Can be null or undefined.
-   * @type {Date | null | undefined}
-   */
-  toStartTime?: Date | null;
-}
-
-/**
- * GetLangfuseObservationsQuery type.
+ * GetLangfuseObservationsQuery
+ * @param page - The page number for pagination. Can be number, null or undefined.
+ * @type number | null | undefined
+ * @param limit - The limit for pagination. Can be number, null or undefined.
+ * @param name - The name of the observation. Can be string, null or undefined.
+ * @param userId - The user id associated with the observation. Can be string, null or undefined.
+ * @param type - The type of the observation. Can be string, null or undefined.
+ * @param traceId - The id of the trace associated with the observation. Can be string, null or undefined.
+ * @param parentObservationId - The id of the parent observation. Can be string, null or undefined.
+ * @param fromStartTime - The start time of the observation. Can be Date, null or undefined.
+ * @param toStartTime - The end time of the observation. Can be Date, null or undefined.
  */
 export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
 
 /**
  * GetLangfuseObservationsResponse
  * @property data - List of observations.
- * @property data[].modelId - The model ID associated with the observation.
- * @property data[].inputPrice - The input price of the observation.
- * @property data[].outputPrice - The output price of the observation.
- * @property data[].totalPrice - The total price of the observation.
- * @property data[].calculatedInputCost - The calculated input cost of the observation.
- * @property data[].calculatedOutputCost - The calculated output cost of the observation.
- * @property data[].calculatedTotalCost - The calculated total cost of the observation.
- * @property data[].latency - The latency of the observation.
- * @property data[].timeToFirstToken - The time to first token of the observation.
- * @property data[].id - The ID of the observation.
- * @property data[].traceId - The trace ID associated with the observation.
- * @property data[].type - The type of the observation.
- * @property data[].name - The name of the observation.
- * @property data[].startTime - The start time of the observation.
- * @property data[].endTime - The end time of the observation.
- * @property data[].completionStartTime - The completion start time of the observation.
- * @property data[].model - The model used for the observation.
- * @property data[].modelParameters - The parameters of the model used for the observation.
- * @property data[].input - The input data of the observation.
- * @property data[].version - The version of the observation.
- * @property data[].metadata - Additional metadata of the observation.
- * @property data[].output - The output data of the observation.
- * @property data[].usage - The usage data of the observation.
- * @property data[].level - The level of the observation.
- * @property data[].statusMessage - The status message of the observation.
- * @property data[].parentObservationId - The parent observation ID.
- * @property data[].promptId - The prompt ID associated with the observation.
  * @property meta - Metadata about the response.
  * @property meta.page - The current page number.
  * @property meta.limit - The number of items per page.
