@@ -162,10 +162,35 @@ export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["Updat
  */
 export interface CreateLangfuseScoreBody extends FixTypes<components["schemas"]["ScoreBody"]> {}
 // SYNC
+/**
+ * @param traceId - The id of the trace to which the score should be attached. Automatically set if you use {trace,generation,span,event}.score({})
+ * @param observationId - The id of the observation to which the score should be attached. Automatically set if you use {generation,span,event}.score({})
+ * @param name - Identifier of the score.
+ * @param value - The value of the score. Can be any number, often standardized to 0..1
+ * @param comment - Additional context/explanation of the score.
+ * @param page - Page number, starts at 1
+ * @param limit - Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit.
+ * @param userId - User id filter
+ * @param sessionId - Session id filter
+ * @param fromTimestamp - Optional filter to only include traces with a trace.timestamp on or after a certain datetime (ISO 8601)
+ * @param toTimestamp - Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601)
+ * @param orderBy - Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc
+ * @param tags - Only traces that include all of these tags will be returned.
+ */
 export type GetLangfuseTracesQuery = FixTypes<paths["/api/public/traces"]["get"]["parameters"]["query"]>;
-export type GetLangfuseTracesResponse = FixTypes<
-  paths["/api/public/traces"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+
+/**
+ * GetLangfuseTracesResponse
+ * @property data - List of traces.
+ * @property meta - Metadata about the response.
+ * @property meta.page - The current page number.
+ * @property meta.limit - The number of items per page.
+ * @property meta.totalItems - The total number of items given the current filters/selection (if any).
+ * @property meta.totalPages - The total number of pages given the current limit.
+ * @interface
+ */
+export interface GetLangfuseTracesResponse
+  extends FixTypes<paths["/api/public/traces"]["get"]["responses"]["200"]["content"]["application/json"]> {}
 
 /**
  * GetLangfuseTraceResponse
@@ -186,10 +211,10 @@ export type GetLangfuseTracesResponse = FixTypes<
  * @property totalCost - Cost of trace in USD.
  * @property observations - List of observations.
  * @property scores - List of scores.
+ * @interface
  */
-export type GetLangfuseTraceResponse = FixTypes<
-  paths["/api/public/traces/{traceId}"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+export interface GetLangfuseTraceResponse
+  extends FixTypes<paths["/api/public/traces/{traceId}"]["get"]["responses"]["200"]["content"]["application/json"]> {}
 
 /**
  * GetLangfuseObservationsQuery
