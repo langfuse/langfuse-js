@@ -451,7 +451,7 @@ abstract class LangfuseCoreStateless {
   /**
    * Get all dataset runs by dataset name.
    * @param {string} datasetName - The name of the dataset.
-   * @returns {Promise<GetLangfuseDatasetResponse>} A promise that resolves to the response containing the dataset.
+   * @returns {Promise<GetLangfuseDatasetRunsResponse>} A promise that resolves to the response containing the dataset.
    * @example
    * ```typescript
    * const datasetRun = await langfuse.getDatasetRuns("<dataset_name>");
