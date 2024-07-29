@@ -449,12 +449,12 @@ abstract class LangfuseCoreStateless {
   }
 
   /**
-   * Get a dataset by name.
+   * Get all dataset runs by dataset name.
    * @param {string} datasetName - The name of the dataset.
    * @returns {Promise<GetLangfuseDatasetResponse>} A promise that resolves to the response containing the dataset.
    * @example
    * ```typescript
-   * const dataset = await langfuse.getDataset("<dataset_name>");
+   * const datasetRun = await langfuse.getDatasetRuns("<dataset_name>");
    * ```
    */
   async getDatasetRuns(
@@ -1288,17 +1288,17 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * @param {string} name - The name of the dataset.
    * @param {{fetchItemsPageSize: number}} [options] - The options for fetching the dataset items.
    * @returns {Promise<{
-   *  id: string,
-   *  name: string,
-   *  description?: string,
-   *  metadata?: any,
-   *  projectId: string,
+   *  id: string, // dataset id
+   *  name: string, // dataset name
+   *  description?: string, // optional dataset description
+   *  metadata?: any, // optional dataset metadata
+   *  projectId: string, // project id
    *  items: Array<{
-   *    id: string,
-   *    input?: any,
-   *    expectedOutput?: any,
-   *    metadata?: any,
-   *    sourceObservationId?: string | null,
+   *    id: string, // dataset item id
+   *    input?: any, // optional input
+   *    expectedOutput?: any, // optional expected output
+   *    metadata?: any, // optional metadata
+   *    sourceObservationId?: string | null, // optional source observation id
    *    link: (
    *      obj: LangfuseObjectClient,
    *      runName: string,
@@ -1306,7 +1306,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    *        description?: string,
    *        metadata?: any
    *      }
-   *    ) => Promise<{id: string}>,
+   *    ) => Promise<{id: string}>, // link function to create a dataset run item
    *  }>
    * }>} A promise that resolves to the response containing the dataset.
    * @example

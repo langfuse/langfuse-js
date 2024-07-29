@@ -211,6 +211,7 @@ export interface GetLangfuseTracesResponse
  * @property totalCost - Cost of trace in USD.
  * @property observations - List of observations.
  * @property scores - List of scores.
+ * @property usage - The usage object supports the OpenAi structure with (promptTokens, completionTokens, totalTokens) and a more generic version (input, output, total, unit, inputCost, outputCost, totalCost) where unit can be of value "TOKENS", "CHARACTERS", "MILLISECONDS", "SECONDS", "IMAGES". Refer to the docs on how to automatically calculate tokens and costs by Langfuse.
  * @interface
  */
 export interface GetLangfuseTraceResponse
@@ -300,9 +301,22 @@ export interface GetLangfuseSessionsResponse
 export type GetLangfuseDatasetParams = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
-export type GetLangfuseDatasetResponse = FixTypes<
-  paths["/api/public/v2/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+
+/**
+ * GetLangfuseDatasetResponse
+ * @property id - The unique identifier of the dataset.
+ * @property name - The name of the dataset.
+ * @property description - The description of the dataset.
+ * @property metadata - The metadata associated with the dataset.
+ * @property projectId - The unique identifier of the project that the dataset belongs to.
+ * @property createdAt - The timestamp indicating when the dataset was created.
+ * @property updatedAt - The timestamp indicating when the dataset was last updated.
+ * @interface
+ */
+export interface GetLangfuseDatasetResponse
+  extends FixTypes<
+    paths["/api/public/v2/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+  > {}
 export type GetLangfuseDatasetItemsQuery = paths["/api/public/dataset-items"]["get"]["parameters"]["query"];
 export type GetLangfuseDatasetItemsResponse = FixTypes<
   paths["/api/public/dataset-items"]["get"]["responses"]["200"]["content"]["application/json"]
@@ -417,9 +431,21 @@ export type GetLangfuseDatasetRunsQuery =
   paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["query"];
 export type GetLangfuseDatasetRunsPath = paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["path"];
 
-export type GetLangfuseDatasetRunsResponse = FixTypes<
-  paths["/api/public/datasets/{datasetName}/runs"]["get"]["responses"]["200"]["content"]["application/json"]
->;
+/**
+ * GetLangfuseDatasetRunsResponse
+ * @property data - List of dataset runs.
+ * @property meta - Metadata about the response.
+ * @property meta.page - The current page number.
+ * @property meta.limit - The number of items per page.
+ * @property meta.totalItems - The total number of items given the current filters/selection (if any).
+ * @property meta.totalPages - The total number of pages given the current limit.
+ * @interface
+ 
+ */
+export interface GetLangfuseDatasetRunsResponse
+  extends FixTypes<
+    paths["/api/public/datasets/{datasetName}/runs"]["get"]["responses"]["200"]["content"]["application/json"]
+  > {}
 
 /**
  * CreateLangfusePromptBody
