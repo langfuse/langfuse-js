@@ -166,6 +166,27 @@ export type GetLangfuseTracesQuery = FixTypes<paths["/api/public/traces"]["get"]
 export type GetLangfuseTracesResponse = FixTypes<
   paths["/api/public/traces"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+
+/**
+ * GetLangfuseTraceResponse
+ * @property id - The id of the trace.
+ * @property timestamp - The time at which the trace was created.
+ * @property name - Identifier of the trace. Useful for sorting/filtering in the UI.
+ * @property input - The input of the trace.
+ * @property output - The output of the trace.
+ * @property sessionId - Used to group multiple traces into a session in Langfuse.
+ * @property release - Release number/hash of the application to provide analytics grouped by release.
+ * @property version - The version of the trace.
+ * @property userId - The id of the user that triggered the execution.
+ * @property metadata - Additional metadata of the trace.
+ * @property tags - Tags associated with the trace.
+ * @property public - Indicates if the trace is publicly accessible via url without login.
+ * @property htmlPath - Path of trace in Langfuse UI.
+ * @property latency - Latency of trace in seconds.
+ * @property totalCost - Cost of trace in USD.
+ * @property observations - List of observations.
+ * @property scores - List of scores.
+ */
 export type GetLangfuseTraceResponse = FixTypes<
   paths["/api/public/traces/{traceId}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
