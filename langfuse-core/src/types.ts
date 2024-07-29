@@ -176,6 +176,8 @@ export interface CreateLangfuseScoreBody extends FixTypes<components["schemas"][
  * @param toTimestamp - Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601)
  * @param orderBy - Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc
  * @param tags - Only traces that include all of these tags will be returned.
+ * @param version - Only traces with this version will be returned.
+ * @param release - Only traces with this release will be returned.
  */
 export type GetLangfuseTracesQuery = FixTypes<paths["/api/public/traces"]["get"]["parameters"]["query"]>;
 
@@ -228,6 +230,7 @@ export interface GetLangfuseTraceResponse
  * @param parentObservationId - The id of the parent observation. Can be string, null or undefined.
  * @param fromStartTime - The start time of the observation. Can be Date, null or undefined.
  * @param toStartTime - The end time of the observation. Can be Date, null or undefined.
+ * @param version - The version of the observation. Can be string, null or undefined.
  */
 export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
 
@@ -273,6 +276,8 @@ export interface GetLangfuseObservationsResponse
  * @property statusMessage - The status message of the observation.
  * @property parentObservationId - The parent observation ID.
  * @property promptId - The prompt ID associated with the observation.
+ * @property promptName - The prompt name associated with the observation.
+ * @property promptVersion - The prompt version associated with the observation.
  */
 export interface GetLangfuseObservationResponse
   extends FixTypes<
