@@ -450,16 +450,25 @@ export interface components {
     Trace: {
       /** @description The unique identifier of a trace */
       id: string;
-      /** Format: date-time */
+      /** @description The timestamp when the trace was created. Format: date-time */
       timestamp: string;
+      /** @description The name of the trace. Can be null. */
       name?: string | null;
+      /** @description The input data of the trace. Can be any type. */
       input?: unknown;
+      /** @description The output data of the trace. Can be any type. */
       output?: unknown;
+      /** @description The session identifier associated with the trace. Can be null. */
       sessionId?: string | null;
+      /** @description The release version of the application when the trace was created. Can be null. */
       release?: string | null;
+      /** @description The version of the trace. Can be null. */
       version?: string | null;
+      /** @description The user identifier associated with the trace. Can be null. */
       userId?: string | null;
+      /** @description The metadata associated with the trace. Can be any type. */
       metadata?: unknown;
+      /** @description The tags associated with the trace. Can be an array of strings or null. */
       tags?: string[] | null;
       /** @description Public traces are accessible via url without login */
       public?: boolean | null;
@@ -504,9 +513,12 @@ export interface components {
     } & components["schemas"]["Trace"];
     /** Session */
     Session: {
+      /** @description The unique identifier of a session */
       id: string;
+      /** @description The creation time of the session */
       /** Format: date-time */
       createdAt: string;
+      /** @description The project identifier associated with the session */
       projectId: string;
     };
     /** SessionWithTraces */
@@ -515,48 +527,64 @@ export interface components {
     } & components["schemas"]["Session"];
     /** Observation */
     Observation: {
+      /** @description The unique identifier of the observation */
       id: string;
+      /** @description The trace ID associated with the observation */
       traceId?: string | null;
+      /** @description The type of the observation */
       type: string;
+      /** @description The name of the observation */
       name?: string | null;
-      /** Format: date-time */
+      /** @description The start time of the observation. Format: date-time */
       startTime: string;
-      /** Format: date-time */
+      /** @description The end time of the observation. Format: date-time */
       endTime?: string | null;
-      /** Format: date-time */
+      /** @description The completion start time of the observation. Format: date-time */
       completionStartTime?: string | null;
+      /** @description The model used for the observation */
       model?: string | null;
+      /** @description The parameters of the model used for the observation */
       modelParameters?: {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
+      /** @description The input data of the observation */
       input?: unknown;
+      /** @description The version of the observation */
       version?: string | null;
+      /** @description Additional metadata of the observation */
       metadata?: unknown;
+      /** @description The output data of the observation */
       output?: unknown;
+      /** @description The usage data of the observation */
       usage?: components["schemas"]["Usage"];
+      /** @description The level of the observation */
       level: components["schemas"]["ObservationLevel"];
+      /** @description The status message of the observation */
       statusMessage?: string | null;
+      /** @description The parent observation ID */
       parentObservationId?: string | null;
+      /** @description The prompt ID associated with the observation */
       promptId?: string | null;
     };
     /** ObservationsView */
     ObservationsView: {
+      /** @description The unique identifier of the model */
       modelId?: string | null;
-      /** Format: double */
+      /** @description The price of the input in USD. Format: double */
       inputPrice?: number | null;
-      /** Format: double */
+      /** @description The price of the output in USD. Format: double */
       outputPrice?: number | null;
-      /** Format: double */
+      /** @description The total price in USD. Format: double */
       totalPrice?: number | null;
-      /** Format: double */
+      /** @description The calculated cost of the input in USD. Format: double */
       calculatedInputCost?: number | null;
-      /** Format: double */
+      /** @description The calculated cost of the output in USD. Format: double */
       calculatedOutputCost?: number | null;
-      /** Format: double */
+      /** @description The calculated total cost in USD. Format: double */
       calculatedTotalCost?: number | null;
-      /** Format: double */
+      /** @description The latency in seconds. Format: double */
       latency?: number | null;
-      /** Format: double */
+      /** @description The time to the first token in seconds. Format: double */
       timeToFirstToken?: number | null;
     } & components["schemas"]["Observation"];
     /**
@@ -730,15 +758,21 @@ export interface components {
     };
     /** DatasetRun */
     DatasetRun: {
+      /** @description Unique identifier of the dataset run */
       id: string;
+      /** @description Name of the dataset run */
       name: string;
+      /** @description Description of the run */
       description?: string | null;
+      /** @description Metadata of the dataset run */
       metadata?: unknown;
+      /** @description Dataset id */
       datasetId: string;
+      /** @description Dataset name */
       datasetName: string;
-      /** Format: date-time */
+      /** @description The date and time when the dataset run was created */
       createdAt: string;
-      /** Format: date-time */
+      /** @description The date and time when the dataset run was last updated */
       updatedAt: string;
     };
     /** DatasetRunWithItems */

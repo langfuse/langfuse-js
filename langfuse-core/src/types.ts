@@ -440,7 +440,6 @@ export type GetLangfuseDatasetRunsPath = paths["/api/public/datasets/{datasetNam
  * @property meta.totalItems - The total number of items given the current filters/selection (if any).
  * @property meta.totalPages - The total number of pages given the current limit.
  * @interface
- 
  */
 export interface GetLangfuseDatasetRunsResponse
   extends FixTypes<
