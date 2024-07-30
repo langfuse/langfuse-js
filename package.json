@@ -65,7 +65,7 @@
     "jest-environment-jsdom": "^29.6.2",
     "langchain": "^0.2",
     "lerna": "^8.1.6",
-    "openapi-typescript": "^7.0.2",
+    "openapi-typescript": "^7.1.1",
     "prettier": "^3.3.2",
     "rollup": "^4.19.0",
     "rollup-plugin-delete": "^2.0.0",
