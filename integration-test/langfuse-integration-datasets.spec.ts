@@ -1,4 +1,5 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
+import { utils } from "../langfuse-core/src";
 import Langfuse from "../langfuse-node";
 
 describe("Langfuse Node.js", () => {
@@ -323,5 +324,54 @@ describe("Langfuse Node.js", () => {
         totalPages: 5,
       });
     }, 10000);
+  });
+  it("create and fetch dataset items", async () => {
+    const datasetName = utils.generateUUID();
+    langfuse.createDataset({
+      name: datasetName,
+      description: "My first dataset",
+      metadata: {
+        author: "Alice",
+        date: "2022-01-01",
+        type: "benchmark",
+      },
+    });
+    langfuse.createDatasetItem({
+      datasetName: datasetName,
+    });
+    langfuse.createDatasetItem({
+      datasetName: datasetName,
+    });
+    await langfuse.flushAsync();
+
+    const datasetItems = await langfuse.getDatasetItems({ datasetName: datasetName });
+    expect(datasetItems.meta["totalItems"]).toEqual(2);
+    expect(datasetItems.data[0]).toMatchObject({ datasetName: datasetName });
+    expect(datasetItems.data[1]).toMatchObject({ datasetName: datasetName });
+  });
+
+  it("create and fetch datasets", async () => {
+    const datasetName1 = utils.generateUUID();
+    const datasetName2 = utils.generateUUID();
+    const datasetName3 = utils.generateUUID();
+
+    // Create multiple datasets
+    langfuse.createDataset({
+      name: datasetName1,
+      description: "My first dataset",
+    });
+    langfuse.createDataset({
+      name: datasetName2,
+      description: "My second dataset",
+    });
+    langfuse.createDataset({
+      name: datasetName3,
+      description: "My third dataset",
+    });
+
+    const datasets = await langfuse.getDatasets();
+    expect(datasets.data).toContainEqual(expect.objectContaining({ name: datasetName1 }));
+    expect(datasets.data).toContainEqual(expect.objectContaining({ name: datasetName2 }));
+    expect(datasets.data).toContainEqual(expect.objectContaining({ name: datasetName3 }));
   });
 });
