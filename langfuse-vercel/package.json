@@ -1,0 +1,46 @@
+{
+  "name": "langfuse-vercel",
+  "version": "3.16.2",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "Langfuse",
+    "email": "hi@langfuse.com",
+    "url": "https://langfuse.com"
+  },
+  "license": "MIT",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.mjs",
+  "types": "lib/index.d.ts",
+  "exports": {
+    "require": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.cjs.js"
+    },
+    "import": {
+      "types": "./lib/index.d.mts",
+      "default": "./lib/index.mjs"
+    }
+  },
+  "scripts": {
+    "test": "jest -c jest.config.js",
+    "prepublishOnly": "cd .. && yarn build",
+    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.vercel.spec.ts"
+  },
+  "files": [
+    "lib",
+    "Readme.md"
+  ],
+  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
+  "dependencies": {
+    "langfuse": "^3.16.2",
+    "langfuse-core": "^3.16.2"
+  },
+  "peerDependencies": {
+    "ai": ">=3.2.44"
+  },
+  "devDependencies": {
+    "typedoc": "^0.26.4"
+  }
+}
