@@ -5,6 +5,7 @@ import Langfuse from "../langfuse-node";
 import axios from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
 import { utils } from "../langfuse-core/src";
+import exp from "constants";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
@@ -686,5 +687,55 @@ describe("Langfuse Node.js", () => {
     expect(prompt1Version1.prompt).toEqual("This is prompt 1");
     expect(prompt1Version2.prompt).toEqual("This is prompt 1 version 2");
     expect(prompt1Version3.prompt).toEqual("This is prompt 1 version 3");
+  });
+
+  it("create and fetch dataset items", async () => {
+    const datasetName = utils.generateUUID();
+    const datasetItemName = utils.generateUUID();
+    langfuse.createDataset({
+      name: datasetName,
+      description: "My first dataset",
+      metadata: {
+        author: "Alice",
+        date: "2022-01-01",
+        type: "benchmark",
+      },
+    });
+    langfuse.createDatasetItem({
+      datasetName: datasetName,
+      input: {
+        text: "hello world",
+      },
+      expectedOutput: {
+        text: "hello world",
+      },
+      metadata: {
+        model: "llama3",
+      },
+    });
+    langfuse.createDatasetItem({
+      datasetName: datasetName,
+      input: {
+        text: "goodbye world",
+      },
+      expectedOutput: {
+        text: "goodbye world",
+      },
+      metadata: {
+        model: "llama4",
+      },
+    });
+    await langfuse.flushAsync();
+
+    const datasetItems = await langfuse.getDatasetItems({ name: datasetItemName });
+
+    expect(datasetItems.data).toHaveLength(2);
+    expect(datasetItems.data[0]).toContainEqual(expect.objectContaining({ name: datasetItemName }));
+    expect(datasetItems.data[0].input).toEqual({ text: "hello world" });
+    expect(datasetItems.data[0].expectedOutput).toEqual({ text: "hello world" });
+    expect(datasetItems.data[0].metadata).toEqual({ model: "llama3" });
+    expect(datasetItems.data[1].input).toEqual({ text: "goodbye world" });
+    expect(datasetItems.data[1].expectedOutput).toEqual({ text: "goodbye world" });
+    expect(datasetItems.data[1].metadata).toEqual({ model: "llama4" });
   });
 });
