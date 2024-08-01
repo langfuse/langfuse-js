@@ -898,9 +898,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return this;
   }
 
-  async getDatasets(body: GetLangfuseDatasetsQuery): Promise<GetLangfuseDatasetsResponse> {
+  async getDatasets(query?: GetLangfuseDatasetsQuery): Promise<GetLangfuseDatasetsResponse> {
     return this.fetch(
-      `${this.baseUrl}/api/public/datasets?${encodeQueryParams(body)}`,
+      `${this.baseUrl}/api/public/datasets?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
