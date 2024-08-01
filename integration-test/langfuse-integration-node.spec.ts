@@ -551,6 +551,22 @@ describe("Langfuse Node.js", () => {
     });
   });
 
+  it("create and fetch scores", async () => {
+    const traceName = utils.generateUUID();
+    const trace = langfuse.trace({
+      name: traceName,
+    });
+    const score = trace.score({
+      name: "quality",
+      value: 1,
+      comment: "Factually correct",
+    });
+    await langfuse.flushAsync();
+
+    const scores = await langfuse.fetchScores({ name: "quality" });
+    expect(scores.data).toContainEqual(expect.objectContaining({ id: score.id, name: "quality" }));
+  });
+
   it("create 3 traces with different timestamps and fetch the middle one using to and from timestamp", async () => {
     const traceName = utils.generateUUID();
     const traceParams = [
