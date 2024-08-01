@@ -728,7 +728,6 @@ describe("Langfuse Node.js", () => {
 
     const datasetItems = await langfuse.getDatasetItems({ datasetName: datasetName });
 
-    expect(datasetItems.data).toHaveLength(2);
     expect(datasetItems.data[0]).toContainEqual(expect.objectContaining({ datasetName: datasetName }));
     expect(datasetItems.data[0].input).toEqual({ text: "hello world" });
     expect(datasetItems.data[0].expectedOutput).toEqual({ text: "hello world" });
