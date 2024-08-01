@@ -651,7 +651,7 @@ describe("Langfuse Node.js", () => {
       prompt: "This is a prompt",
     });
 
-    const prompts = await langfuse.fetchPrompts({ name: promptName });
+    const prompts = await langfuse.fetchPrompts();
     expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName }));
   });
 });
