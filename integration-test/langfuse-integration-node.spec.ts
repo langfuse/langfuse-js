@@ -645,13 +645,46 @@ describe("Langfuse Node.js", () => {
   });
 
   it("create and fetch prompts", async () => {
-    const promptName = utils.generateUUID();
+    const promptName1 = utils.generateUUID();
+    const promptName2 = utils.generateUUID();
+    const promptName3 = utils.generateUUID();
+
+    // Create multiple prompts
     await langfuse.createPrompt({
-      name: promptName,
-      prompt: "This is a prompt",
+      name: promptName1,
+      prompt: "This is prompt 1",
+    });
+    await langfuse.createPrompt({
+      name: promptName2,
+      prompt: "This is prompt 2",
+    });
+    await langfuse.createPrompt({
+      name: promptName3,
+      prompt: "This is prompt 3",
+    });
+
+    // Create multiple versions of the same prompt
+    await langfuse.createPrompt({
+      name: promptName1,
+      prompt: "This is prompt 1 version 2",
+    });
+    await langfuse.createPrompt({
+      name: promptName1,
+      prompt: "This is prompt 1 version 3",
     });
 
     const prompts = await langfuse.fetchPrompts();
-    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName }));
+    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName1 }));
+    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName2 }));
+    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName3 }));
+
+    // Fetch specific versions of the prompt
+    const prompt1Version1 = await langfuse.getPrompt(promptName1, 1);
+    const prompt1Version2 = await langfuse.getPrompt(promptName1, 2);
+    const prompt1Version3 = await langfuse.getPrompt(promptName1, 3);
+
+    expect(prompt1Version1.prompt).toEqual("This is prompt 1");
+    expect(prompt1Version2.prompt).toEqual("This is prompt 1 version 2");
+    expect(prompt1Version3.prompt).toEqual("This is prompt 1 version 3");
   });
 });
