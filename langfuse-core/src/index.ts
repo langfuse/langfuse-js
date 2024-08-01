@@ -49,6 +49,8 @@ import {
   type GetLangfuseScoresResponse,
   type GetLangfusePromptsQuery,
   type GetLangfusePromptsResponse,
+  type GetLangfuseDatasetsQuery,
+  type GetLangfuseDatasetsResponse,
 } from "./types";
 import {
   generateUUID,
@@ -894,6 +896,13 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   score(body: CreateLangfuseScoreBody): this {
     this.scoreStateless(body);
     return this;
+  }
+
+  async getDatasets(body: GetLangfuseDatasetsQuery): Promise<GetLangfuseDatasetsResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/datasets?${encodeQueryParams(body)}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
   }
 
   async getDataset(

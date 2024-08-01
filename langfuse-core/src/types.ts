@@ -113,6 +113,10 @@ export type GetLangfuseDatasetParams = FixTypes<
 export type GetLangfuseDatasetResponse = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfuseDatasetsQuery = FixTypes<paths["/api/public/v2/datasets"]["get"]["parameters"]["query"]>;
+export type GetLangfuseDatasetsResponse = FixTypes<
+  paths["/api/public/v2/datasets"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 export type GetLangfuseDatasetItemsQuery = paths["/api/public/dataset-items"]["get"]["parameters"]["query"];
 export type GetLangfuseDatasetItemsResponse = FixTypes<
   paths["/api/public/dataset-items"]["get"]["responses"]["200"]["content"]["application/json"]
