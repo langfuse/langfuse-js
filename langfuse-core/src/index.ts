@@ -45,6 +45,8 @@ import {
   type ChatMessage,
   type GetLangfuseSessionsQuery,
   type GetLangfuseSessionsResponse,
+  type GetLangfuseScoresQuery,
+  type GetLangfuseScoresResponse,
 } from "./types";
 import {
   generateUUID,
@@ -335,6 +337,16 @@ abstract class LangfuseCoreStateless {
     );
     // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
     const { data, meta } = (await res.json()) as GetLangfuseSessionsResponse;
+    return { data, meta };
+  }
+
+  async fetchScores(query?: GetLangfuseScoresQuery): Promise<GetLangfuseScoresResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/scores?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseScoresResponse;
     return { data, meta };
   }
 
