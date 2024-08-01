@@ -728,12 +728,38 @@ describe("Langfuse Node.js", () => {
 
     const datasetItems = await langfuse.getDatasetItems({ datasetName: datasetName });
 
-    expect(datasetItems.data[0]).toContainEqual(expect.objectContaining({ datasetName: datasetName }));
+    expect(datasetItems.data[0]).toMatchObject({ datasetName: datasetName });
     expect(datasetItems.data[0].input).toEqual({ text: "hello world" });
     expect(datasetItems.data[0].expectedOutput).toEqual({ text: "hello world" });
     expect(datasetItems.data[0].metadata).toEqual({ model: "llama3" });
+    expect(datasetItems.data[1]).toMatchObject({ datasetName: datasetName });
     expect(datasetItems.data[1].input).toEqual({ text: "goodbye world" });
     expect(datasetItems.data[1].expectedOutput).toEqual({ text: "goodbye world" });
     expect(datasetItems.data[1].metadata).toEqual({ model: "llama4" });
+  });
+
+  it("create and fetch datasets", async () => {
+    const datasetName1 = utils.generateUUID();
+    const datasetName2 = utils.generateUUID();
+    const datasetName3 = utils.generateUUID();
+
+    // Create multiple datasets
+    langfuse.createDataset({
+      name: datasetName1,
+      description: "My first dataset",
+    });
+    langfuse.createDataset({
+      name: datasetName2,
+      description: "My second dataset",
+    });
+    langfuse.createDataset({
+      name: datasetName3,
+      description: "My third dataset",
+    });
+
+    const datasets = await langfuse.getDatasets();
+    expect(datasets.data).toContainEqual(expect.objectContaining({ name: datasetName1 }));
+    expect(datasets.data).toContainEqual(expect.objectContaining({ name: datasetName2 }));
+    expect(datasets.data).toContainEqual(expect.objectContaining({ name: datasetName3 }));
   });
 });
