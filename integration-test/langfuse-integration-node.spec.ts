@@ -691,7 +691,6 @@ describe("Langfuse Node.js", () => {
 
   it("create and fetch dataset items", async () => {
     const datasetName = utils.generateUUID();
-    const datasetItemName = utils.generateUUID();
     langfuse.createDataset({
       name: datasetName,
       description: "My first dataset",
@@ -727,10 +726,10 @@ describe("Langfuse Node.js", () => {
     });
     await langfuse.flushAsync();
 
-    const datasetItems = await langfuse.getDatasetItems({ name: datasetItemName });
+    const datasetItems = await langfuse.getDatasetItems({ datasetName: datasetName });
 
     expect(datasetItems.data).toHaveLength(2);
-    expect(datasetItems.data[0]).toContainEqual(expect.objectContaining({ name: datasetItemName }));
+    expect(datasetItems.data[0]).toContainEqual(expect.objectContaining({ datasetName: datasetName }));
     expect(datasetItems.data[0].input).toEqual({ text: "hello world" });
     expect(datasetItems.data[0].expectedOutput).toEqual({ text: "hello world" });
     expect(datasetItems.data[0].metadata).toEqual({ model: "llama3" });
