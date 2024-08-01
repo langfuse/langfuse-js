@@ -99,6 +99,10 @@ export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["g
 export type GetLangfuseSessionsResponse = FixTypes<
   paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfuseScoresQuery = FixTypes<paths["/api/public/scores"]["get"]["parameters"]["query"]>;
+export type GetLangfuseScoresResponse = FixTypes<
+  paths["/api/public/scores"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 export type GetLangfuseDatasetParams = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
