@@ -564,7 +564,7 @@ describe("Langfuse Node.js", () => {
     await langfuse.flushAsync();
 
     const scores = await langfuse.fetchScores({ name: "quality" });
-    expect(scores.data).toContainEqual(expect.objectContaining({ id: score.id, name: "quality" }));
+    expect(scores.data).toContainEqual(expect.objectContaining({ traceId: score.id, name: "quality" }));
   });
 
   it("create 3 traces with different timestamps and fetch the middle one using to and from timestamp", async () => {
