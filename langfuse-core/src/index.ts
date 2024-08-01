@@ -354,7 +354,7 @@ abstract class LangfuseCoreStateless {
 
   async fetchPrompts(query?: GetLangfusePromptsQuery): Promise<GetLangfusePromptsResponse> {
     const res = await this.fetch(
-      `${this.baseUrl}/api/public/prompts?${encodeQueryParams(query)}`,
+      `${this.baseUrl}/api/public/v2/prompts?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     );
     // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
