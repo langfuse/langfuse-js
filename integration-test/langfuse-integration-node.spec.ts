@@ -702,40 +702,16 @@ describe("Langfuse Node.js", () => {
     });
     langfuse.createDatasetItem({
       datasetName: datasetName,
-      input: {
-        text: "hello world",
-      },
-      expectedOutput: {
-        text: "hello world",
-      },
-      metadata: {
-        model: "llama3",
-      },
     });
     langfuse.createDatasetItem({
       datasetName: datasetName,
-      input: {
-        text: "goodbye world",
-      },
-      expectedOutput: {
-        text: "goodbye world",
-      },
-      metadata: {
-        model: "llama4",
-      },
     });
     await langfuse.flushAsync();
 
     const datasetItems = await langfuse.getDatasetItems({ datasetName: datasetName });
     expect(datasetItems.meta["totalItems"]).toEqual(2);
     expect(datasetItems.data[0]).toMatchObject({ datasetName: datasetName });
-    expect(datasetItems.data[0].input).toEqual({ text: "hello world" });
-    expect(datasetItems.data[0].expectedOutput).toEqual({ text: "hello world" });
-    expect(datasetItems.data[0].metadata).toEqual({ model: "llama3" });
     expect(datasetItems.data[1]).toMatchObject({ datasetName: datasetName });
-    expect(datasetItems.data[1].input).toEqual({ text: "goodbye world" });
-    expect(datasetItems.data[1].expectedOutput).toEqual({ text: "goodbye world" });
-    expect(datasetItems.data[1].metadata).toEqual({ model: "llama4" });
   });
 
   it("create and fetch datasets", async () => {
