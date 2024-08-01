@@ -643,4 +643,15 @@ describe("Langfuse Node.js", () => {
     const sessions = await langfuse.fetchSessions();
     expect(sessions.data).toContainEqual(expect.objectContaining({ id: sessionId }));
   });
+
+  it("create and fetch prompts", async () => {
+    const promptName = utils.generateUUID();
+    await langfuse.createPrompt({
+      name: promptName,
+      prompt: "This is a prompt",
+    });
+
+    const prompts = await langfuse.fetchPrompts({ name: promptName });
+    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName }));
+  });
 });
