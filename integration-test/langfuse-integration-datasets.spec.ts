@@ -345,6 +345,9 @@ describe("Langfuse Node.js", () => {
     await langfuse.flushAsync();
 
     const datasetItems = await langfuse.getDatasetItems({ datasetName: datasetName });
+
+    console.log("Dataset Items:", datasetItems);
+
     expect(datasetItems.meta["totalItems"]).toEqual(2);
     expect(datasetItems.data[0]).toMatchObject({ datasetName: datasetName });
     expect(datasetItems.data[1]).toMatchObject({ datasetName: datasetName });
