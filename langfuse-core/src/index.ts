@@ -430,7 +430,7 @@ abstract class LangfuseCoreStateless {
     );
   }
 
-  async getDatasetItems(query: GetLangfuseDatasetItemsQuery): Promise<GetLangfuseDatasetItemsResponse> {
+  async getDatasetItems(query?: GetLangfuseDatasetItemsQuery): Promise<GetLangfuseDatasetItemsResponse> {
     return this.fetch(
       `${this.baseUrl}/api/public/dataset-items?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
