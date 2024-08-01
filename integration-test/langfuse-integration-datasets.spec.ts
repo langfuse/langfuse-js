@@ -338,10 +338,29 @@ describe("Langfuse Node.js", () => {
     });
     langfuse.createDatasetItem({
       datasetName: datasetName,
+      input: {
+        text: "hello world",
+      },
+      expectedOutput: {
+        text: "hello world",
+      },
+      metadata: {
+        model: "llama3",
+      },
     });
     langfuse.createDatasetItem({
       datasetName: datasetName,
+      input: {
+        text: "goodbye world",
+      },
+      expectedOutput: {
+        text: "goodbye world",
+      },
+      metadata: {
+        model: "llama4",
+      },
     });
+
     await langfuse.flushAsync();
 
     const datasetItems = await langfuse.getDatasetItems({ datasetName: datasetName });
