@@ -103,6 +103,10 @@ export type GetLangfuseScoresQuery = FixTypes<paths["/api/public/scores"]["get"]
 export type GetLangfuseScoresResponse = FixTypes<
   paths["/api/public/scores"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfusePromptsQuery = FixTypes<paths["/api/public/v2/prompts"]["get"]["parameters"]["query"]>;
+export type GetLangfusePromptsResponse = FixTypes<
+  paths["/api/public/v2/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 export type GetLangfuseDatasetParams = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
