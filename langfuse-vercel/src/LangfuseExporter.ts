@@ -6,6 +6,7 @@ import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 type LangfuseExporterParams = {
   publicKey?: string;
   secretKey?: string;
+  baseUrl?: string;
   debug?: boolean;
 } & LangfuseOptions;
 
