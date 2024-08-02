@@ -592,7 +592,7 @@ describe("Langfuse Node.js", () => {
 
     const fetchedScore1 = await langfuse.fetchScore(score1.id);
     console.log(fetchedScore1.data);
-    expect(fetchedScore1.data[0]).toEqual(
+    expect(fetchedScore1.data).toEqual(
       expect.objectContaining({
         traceId: trace.id,
         name: "quality",
@@ -601,7 +601,7 @@ describe("Langfuse Node.js", () => {
       })
     );
     const fetchedScore2 = await langfuse.fetchScore(score2.id);
-    expect(fetchedScore2.data[0]).toEqual(
+    expect(fetchedScore2.data).toEqual(
       expect.objectContaining({
         traceId: trace.id,
         name: "quality",
