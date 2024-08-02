@@ -91,7 +91,6 @@ describe("langfuse-integration-vercel", () => {
     // Validate generations
     expect(trace.observations.length).toBeGreaterThan(0);
     const generations = trace.observations.filter((o: any) => o.type === "GENERATION");
-    console.log(generations);
 
     for (const generation of generations) {
       expect(generation.input).toBeDefined();
@@ -167,7 +166,6 @@ describe("langfuse-integration-vercel", () => {
     // Validate generations
     expect(trace.observations.length).toBeGreaterThan(0);
     const generations = trace.observations.filter((o: any) => o.type === "GENERATION");
-    console.log(generations);
 
     for (const generation of generations) {
       expect(generation.input).toBeDefined();
@@ -224,8 +222,6 @@ describe("langfuse-integration-vercel", () => {
       result += chunk;
     }
 
-    console.log(result);
-
     await sdk.shutdown();
 
     // Fetch trace
@@ -247,7 +243,6 @@ describe("langfuse-integration-vercel", () => {
     // Validate generations
     expect(trace.observations.length).toBeGreaterThan(0);
     const generations = trace.observations.filter((o: any) => o.type === "GENERATION");
-    console.log(generations);
 
     for (const generation of generations) {
       expect(generation.input).toBeDefined();
