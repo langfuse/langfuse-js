@@ -5,7 +5,7 @@ import { openai } from "@ai-sdk/openai";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import z from "zod";
-import { LangfuseVercelSpanExporter } from "../langfuse-vercel";
+import { LangfuseExporter } from "../langfuse-vercel";
 import { randomUUID } from "crypto";
 import { fetchTraceById } from "./integration-utils";
 
@@ -28,7 +28,7 @@ describe("langfuse-integration-vercel", () => {
 
   beforeEach(() => {
     sdk = new NodeSDK({
-      traceExporter: new LangfuseVercelSpanExporter({ debug: true }),
+      traceExporter: new LangfuseExporter({ debug: true }),
       instrumentations: [getNodeAutoInstrumentations()],
     });
 

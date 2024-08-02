@@ -1,1 +1,1 @@
-export { LangfuseVercelSpanExporter } from "./src/LangfuseVercelSpanExporter";
+export { LangfuseExporter } from "./src/LangfuseExporter";

@@ -3,29 +3,29 @@ import { Langfuse, type LangfuseOptions } from "langfuse";
 
 import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
 
-type LangfuseVercelSpanExporterParams = {
+type LangfuseExporterParams = {
   publicKey?: string;
   secretKey?: string;
   debug?: boolean;
 } & LangfuseOptions;
 
-export class LangfuseVercelSpanExporter implements SpanExporter {
+export class LangfuseExporter implements SpanExporter {
   static langfuse: Langfuse | null = null; // Singleton instance
   private readonly debug: boolean;
   private readonly langfuse: Langfuse;
 
-  constructor(params: LangfuseVercelSpanExporterParams = {}) {
+  constructor(params: LangfuseExporterParams = {}) {
     this.debug = params.debug ?? false;
 
-    if (!LangfuseVercelSpanExporter.langfuse) {
-      LangfuseVercelSpanExporter.langfuse = new Langfuse({
+    if (!LangfuseExporter.langfuse) {
+      LangfuseExporter.langfuse = new Langfuse({
         ...params,
         persistence: "memory",
         sdkIntegration: "vercel-ai-sdk",
       });
     }
 
-    this.langfuse = LangfuseVercelSpanExporter.langfuse; // store reference to singleton instance
+    this.langfuse = LangfuseExporter.langfuse; // store reference to singleton instance
   }
 
   export(allSpans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
@@ -239,7 +239,7 @@ export class LangfuseVercelSpanExporter implements SpanExporter {
   }
 
   private logInfo(message: string, ...args: any[]): void {
-    console.log(`[${new Date().toISOString()}] [LangfuseVercelSpanExporter] ${message}`, ...args);
+    console.log(`[${new Date().toISOString()}] [LangfuseExporter] ${message}`, ...args);
   }
 
   private logDebug(message: string, ...args: any[]): void {
@@ -247,7 +247,7 @@ export class LangfuseVercelSpanExporter implements SpanExporter {
       return;
     }
 
-    console.log(`[${new Date().toISOString()}] [LangfuseVercelSpanExporter] ${message}`, ...args);
+    console.log(`[${new Date().toISOString()}] [LangfuseExporter] ${message}`, ...args);
   }
 
   private hrTimeToDate(hrtime: [number, number]): Date {
