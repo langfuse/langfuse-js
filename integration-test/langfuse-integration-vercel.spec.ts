@@ -1,12 +1,13 @@
 import { embed, embedMany, generateObject, generateText, streamObject, streamText, tool } from "ai";
+import { randomUUID } from "crypto";
+import z from "zod";
 
 import { openai } from "@ai-sdk/openai";
-
+import { context, trace } from "@opentelemetry/api";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { NodeSDK } from "@opentelemetry/sdk-node";
-import z from "zod";
+
 import { LangfuseExporter } from "../langfuse-vercel";
-import { randomUUID } from "crypto";
 import { fetchTraceById } from "./integration-utils";
 
 jest.useRealTimers();
@@ -33,6 +34,12 @@ describe("langfuse-integration-vercel", () => {
     });
 
     sdk.start();
+  });
+
+  afterEach(() => {
+    // Reset OTEL as it manipulates the global state and can cause issues with other tests
+    context.disable();
+    trace.disable();
   });
 
   it("should trace a generateText call", async () => {
@@ -257,8 +264,147 @@ describe("langfuse-integration-vercel", () => {
       expect(generation.totalTokens).toBeGreaterThan(0);
     }
   }, 10_000);
-  //   it("should trace a generateObject call", async () => {});
-  //   it("should trace a streamObject call", async () => {});
-  //   it("should trace a embed call", async () => {});
-  //   it("should trace a embedMany call", async () => {});
+
+  // Currently flaky from the AI SDK side, skipping for now
+  it.skip("should trace a generateObject call", async () => {
+    const testParams = {
+      traceId: randomUUID(),
+      functionId: "test-vercel-generate-object",
+      modelName: "gpt-4-turbo",
+      maxTokens: 512,
+      prompt: "Generate a lasagna recipe.",
+      userId: "some-user-id",
+      sessionId: "some-session-id",
+      metadata: {
+        something: "custom",
+        someOtherThing: "other-value",
+      },
+      tags: ["vercel", "openai"],
+    };
+
+    const { traceId, modelName, maxTokens, prompt, functionId, userId, sessionId, metadata, tags } = testParams;
+
+    const result = await generateObject({
+      model: openai(modelName),
+      schema: z.object({
+        recipe: z.object({
+          name: z.string(),
+          ingredients: z.array(
+            z.object({
+              name: z.string(),
+              amount: z.string(),
+            })
+          ),
+          steps: z.array(z.string()),
+        }),
+      }),
+      prompt,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId,
+        metadata: {
+          langfuseTraceId: traceId,
+          userId,
+          sessionId,
+          tags,
+          ...metadata,
+        },
+      },
+    });
+
+    console.log(JSON.stringify(result.object.recipe, null, 2));
+
+    await sdk.shutdown();
+
+    // Fetch trace
+    const traceFetchResult = await fetchTraceById(traceId);
+    expect(traceFetchResult.status).toBe(200);
+
+    // Validate trace
+    const trace = traceFetchResult.data;
+
+    expect(trace.id).toBe(traceId);
+    expect(trace.name).toBe(functionId);
+    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.output.length).toBeGreaterThan(100);
+    expect(trace.userId).toBe(userId);
+    expect(trace.sessionId).toBe(sessionId);
+    expect(trace.tags).toEqual(tags.sort());
+    expect(trace.metadata).toMatchObject(metadata);
+
+    // Validate generations
+    expect(trace.observations.length).toBeGreaterThan(0);
+    const generations = trace.observations.filter((o: any) => o.type === "GENERATION");
+
+    for (const generation of generations) {
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.model).toBe(modelName);
+      expect(generation.modelParameters).toMatchObject({ maxTokens: maxTokens.toString() });
+      expect(generation.calculatedInputCost).toBeGreaterThan(0);
+      expect(generation.calculatedOutputCost).toBeGreaterThan(0);
+      expect(generation.calculatedTotalCost).toBeGreaterThan(0);
+      expect(generation.promptTokens).toBeGreaterThan(0);
+      expect(generation.completionTokens).toBeGreaterThan(0);
+      expect(generation.totalTokens).toBeGreaterThan(0);
+    }
+  }, 30_000);
+  it("should trace a embed call", async () => {
+    const testParams = {
+      traceId: randomUUID(),
+      modelName: "text-embedding-3-small",
+      functionId: "test-vercel-embed",
+      userId: "some-user-id",
+      sessionId: "some-session-id",
+      metadata: {
+        something: "custom",
+        someOtherThing: "other-value",
+      },
+      tags: ["vercel", "openai"],
+    };
+
+    const { traceId, modelName, functionId, userId, sessionId, metadata, tags } = testParams;
+
+    const result = await embed({
+      model: openai.embedding(modelName),
+      value: "sunny day at the beach",
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId,
+        metadata: {
+          langfuseTraceId: traceId,
+          userId,
+          sessionId,
+          tags,
+          ...metadata,
+        },
+      },
+    });
+
+    await sdk.shutdown();
+
+    // Fetch trace
+    const traceFetchResult = await fetchTraceById(traceId);
+    expect(traceFetchResult.status).toBe(200);
+
+    // Validate trace
+    const trace = traceFetchResult.data;
+
+    expect(trace.id).toBe(traceId);
+    expect(trace.name).toBe(functionId);
+    expect(trace.userId).toBe(userId);
+    expect(trace.sessionId).toBe(sessionId);
+    expect(trace.tags).toEqual(tags.sort());
+    expect(trace.metadata).toMatchObject(metadata);
+
+    // Validate generations
+    expect(trace.observations.length).toBeGreaterThan(0);
+    const generations = trace.observations.filter((o: any) => o.type === "GENERATION");
+
+    for (const generation of generations) {
+      expect(generation.model).toBe(modelName);
+      expect(generation.calculatedTotalCost).toBeGreaterThan(0);
+      expect(generation.totalTokens).toBeGreaterThan(0);
+    }
+  }, 10_000);
 });

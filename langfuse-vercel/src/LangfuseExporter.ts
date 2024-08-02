@@ -1,6 +1,5 @@
 import type { SpanExporter, ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import { Langfuse, type LangfuseOptions } from "langfuse";
-import { z } from "zod";
 
 import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
@@ -78,7 +77,9 @@ export class LangfuseExporter implements SpanExporter {
       userId: "userId" in parsedMetadata ? parsedMetadata["userId"]?.toString() : undefined,
       sessionId: "sessionId" in parsedMetadata ? parsedMetadata["sessionId"]?.toString() : undefined,
       tags:
-        "tags" in parsedMetadata && z.array(z.string()).safeParse(parsedMetadata["tags"]).success
+        "tags" in parsedMetadata &&
+        Array.isArray(parsedMetadata["tags"]) &&
+        parsedMetadata["tags"].every((tag) => typeof tag === "string")
           ? (parsedMetadata["tags"] as string[])
           : [],
       input:
