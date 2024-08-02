@@ -586,7 +586,8 @@ describe("Langfuse Node.js", () => {
 
     await langfuse.flushAsync();
     const scores = await langfuse.fetchScores();
-    const [score1, score2] = scores.data;
+    const score2 = scores.data[0];
+    const score1 = scores.data[1];
 
     const fetchedScore1 = await langfuse.fetchScore(score1.id);
     expect(fetchedScore1.data).toMatchObject({
