@@ -61,8 +61,8 @@ export class LangfuseExporter implements SpanExporter {
       throw Error("Root span not found");
     }
 
-    if (!rootSpan.name.startsWith("ai.")) {
-      this.logDebug("Ignoring non-AI SDK trace with root span name", rootSpan.name);
+    if (!spans.some((span) => span.name.startsWith("ai."))) {
+      this.logDebug("Ignoring trace with no 'ai.' span names", traceId);
 
       return;
     }
