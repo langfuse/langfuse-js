@@ -9,6 +9,7 @@
     "langfuse-node",
     "langfuse",
     "langfuse-langchain",
+    "langfuse-vercel",
     "integration-test/modules"
   ],
   "author": {
