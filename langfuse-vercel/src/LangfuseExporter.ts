@@ -2,7 +2,7 @@ import type { SpanExporter, ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import { Langfuse, type LangfuseOptions } from "langfuse";
 import { z } from "zod";
 
-import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
+import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
 type LangfuseExporterParams = {
   publicKey?: string;
@@ -45,9 +45,13 @@ export class LangfuseExporter implements SpanExporter {
         this.processTraceSpans(traceId, spans);
       }
 
-      resultCallback({ code: ExportResultCode.SUCCESS });
+      const successCode: ExportResultCode.SUCCESS = 0; // Do not use enum directly to avoid adding a dependency on the enum
+
+      resultCallback({ code: successCode });
     } catch (err) {
-      resultCallback({ code: ExportResultCode.FAILED, error: err instanceof Error ? err : new Error("Unknown error") });
+      const failureCode: ExportResultCode.FAILED = 1; // Do not use enum directly to avoid adding a dependency on the enum
+
+      resultCallback({ code: failureCode, error: err instanceof Error ? err : new Error("Unknown error") });
     }
   }
 
