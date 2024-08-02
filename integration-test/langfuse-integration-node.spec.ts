@@ -552,23 +552,41 @@ describe("Langfuse Node.js", () => {
     });
   });
 
+  it("create and fetch scores", async () => {
+    const traceName = utils.generateUUID();
+    const trace = langfuse.trace({
+      name: traceName,
+    });
+    const score = trace.score({
+      name: "quality",
+      value: 1,
+      comment: "Factually correct",
+    });
+    await langfuse.flushAsync();
+
+    const scores = await langfuse.fetchScores({ name: "quality" });
+    expect(scores.data).toContainEqual(expect.objectContaining({ traceId: score.id, name: "quality" }));
+  });
+
   it("create and fetch score by id", async () => {
     const traceName = utils.generateUUID();
     const trace = langfuse.trace({
       name: traceName,
     });
-    const score1 = trace.score({
+    trace.score({
       name: "quality",
       value: 1,
       comment: "Factually correct",
     });
-    const score2 = trace.score({
+    trace.score({
       name: "quality",
       value: 0,
       comment: "Factually incorrect",
     });
 
     await langfuse.flushAsync();
+    const scores = await langfuse.fetchScores();
+    const [score2, score1] = scores.data;
 
     const fetchedScore1 = await langfuse.fetchScore(score1.id);
     expect(fetchedScore1.data).toMatchObject({
@@ -584,22 +602,6 @@ describe("Langfuse Node.js", () => {
       value: 0,
       comment: "Factually incorrect",
     });
-  });
-
-  it("create and fetch scores", async () => {
-    const traceName = utils.generateUUID();
-    const trace = langfuse.trace({
-      name: traceName,
-    });
-    const score = trace.score({
-      name: "quality",
-      value: 1,
-      comment: "Factually correct",
-    });
-    await langfuse.flushAsync();
-
-    const scores = await langfuse.fetchScores({ name: "quality" });
-    expect(scores.data).toContainEqual(expect.objectContaining({ traceId: score.id, name: "quality" }));
   });
 
   it("create 3 traces with different timestamps and fetch the middle one using to and from timestamp", async () => {
