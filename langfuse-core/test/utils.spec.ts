@@ -5,6 +5,7 @@ import {
   currentISOTime,
   currentTimestamp,
   configLangfuseSDK,
+  extractModelName,
 } from "../src/utils";
 
 describe("utils", () => {
@@ -88,6 +89,29 @@ describe("utils", () => {
 
       const config = configLangfuseSDK({});
       expect(config).toEqual({});
+    });
+  });
+
+  describe("extractModelName", () => {
+    it("should extract the model name from Bedrock chat/anthropic", () => {
+      const serialized = {
+        lc: 1,
+        type: "constructor",
+        id: ["langchain", "chat_models", "bedrock", "BedrockChat"],
+        kwargs: {
+          callbacks: undefined,
+          model_id: "anthropic.claude-3-haiku-20240307-v1:0",
+          region_name: "us-east-1",
+          max_retries: 0,
+          max_tokens: undefined,
+          model_kwargs: undefined,
+          temperature: 0.1,
+          verbose: undefined,
+          credentials: {},
+        },
+      };
+
+      expect(extractModelName(serialized)).toEqual("anthropic.claude-3-haiku-20240307-v1:0");
     });
   });
 });

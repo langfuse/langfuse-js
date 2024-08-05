@@ -1,4 +1,5 @@
 import { Langfuse, type LangfuseOptions } from "langfuse";
+import { utils } from "langfuse-core";
 
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import {
@@ -326,19 +327,6 @@ export class CallbackHandler extends BaseCallbackHandler {
       }
     }
 
-    interface InvocationParams {
-      _type?: string;
-      model?: string;
-      model_name?: string;
-      repo_id?: string;
-    }
-
-    let extractedModelName: string | undefined;
-    if (extraParams) {
-      const params = extraParams.invocation_params as InvocationParams;
-      extractedModelName = params.model;
-    }
-
     this.langfuse.generation({
       id: runId,
       traceId: this.traceId,
@@ -346,7 +334,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       metadata: this.joinTagsAndMetaData(tags, metadata),
       parentObservationId: parentRunId ?? this.rootObservationId,
       input: messages,
-      model: extractedModelName,
+      model: utils.extractModelName(llm, extraParams),
       modelParameters: modelParameters,
       version: this.version,
     });
@@ -524,7 +512,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
 
-      const llmUsage = output.llmOutput?.["tokenUsage"];
+      const llmUsage = this._parseUsage(output);
 
       const extractedOutput =
         "message" in lastResponse && lastResponse["message"] instanceof BaseMessage
@@ -628,5 +616,76 @@ export class CallbackHandler extends BaseCallbackHandler {
       Object.assign(finalDict, metadata2);
     }
     return finalDict;
+  }
+
+  private _parseUsageModel(usage: Record<string, any>): Record<string, any> | undefined {
+    if (usage && typeof usage === "object" && !Array.isArray(usage)) {
+      usage = { ...usage };
+    }
+
+    const conversionList: Array<[string, string]> = [
+      // https://pypi.org/project/langchain-anthropic/ (works also for Bedrock-Anthropic)
+      ["input_tokens", "input"],
+      ["output_tokens", "output"],
+      // https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/get-token-count
+      ["prompt_token_count", "input"],
+      ["candidates_token_count", "output"],
+      // Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/monitoring-cw.html#runtime-cloudwatch-metrics
+      ["inputTokenCount", "input"],
+      ["outputTokenCount", "output"],
+    ];
+
+    const usageModel: Record<string, any> = { ...usage };
+    for (const [modelKey, langfuseKey] of conversionList) {
+      if (modelKey in usageModel) {
+        const capturedCount = usageModel[modelKey];
+        delete usageModel[modelKey];
+
+        // Per comments in Python version: "For Bedrock, the token count is a list when streamed"
+        const finalCount = Array.isArray(capturedCount) ? capturedCount.reduce((a, b) => a + b, 0) : capturedCount;
+
+        usageModel[langfuseKey] = finalCount;
+      }
+    }
+
+    return Object.keys(usageModel).length > 0 ? usageModel : undefined;
+  }
+
+  private _parseUsage(response: LLMResult): Record<string, any> | undefined {
+    // langchain-anthropic uses the `usage` field
+    const llmUsageKeys = ["token_usage", "tokenUsage", "usage"];
+    let llmUsage: Record<string, any> | undefined = undefined;
+
+    if (response.llmOutput) {
+      // Check all the known top-level keys for usage info
+      for (const key of llmUsageKeys) {
+        if (key in response.llmOutput && response.llmOutput[key]) {
+          llmUsage = this._parseUsageModel(response.llmOutput[key]);
+          break;
+        }
+      }
+    }
+
+    if (response.generations) {
+      for (const generation of response.generations) {
+        for (const generationChunk of generation) {
+          if (generationChunk.generationInfo) {
+            // Check for `usage_metadata` in the generation info
+            if ("usage_metadata" in generationChunk.generationInfo) {
+              llmUsage = this._parseUsageModel(generationChunk.generationInfo["usage_metadata"]);
+              break;
+            }
+
+            // Check for Bedrock data
+            if ("amazon-bedrock-invocationMetrics" in generationChunk.generationInfo) {
+              llmUsage = this._parseUsageModel(generationChunk.generationInfo["amazon-bedrock-invocationMetrics"]);
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    return llmUsage;
   }
 }
