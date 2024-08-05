@@ -381,7 +381,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get sessions. */
+    /** @description Get sessions */
     get: operations["sessions_list"];
     put?: never;
     post?: never;
@@ -432,7 +432,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get list of traces. */
+    /** @description Get list of traces */
     get: operations["trace_list"];
     put?: never;
     post?: never;
@@ -450,16 +450,28 @@ export interface components {
     Trace: {
       /** @description The unique identifier of a trace */
       id: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The timestamp when the trace was created
+       */
       timestamp: string;
+      /** @description The name of the trace */
       name?: string | null;
+      /** @description The input data of the trace. Can be any JSON. */
       input?: unknown;
+      /** @description The output data of the trace. Can be any JSON. */
       output?: unknown;
+      /** @description The session identifier associated with the trace */
       sessionId?: string | null;
+      /** @description The release version of the application when the trace was created */
       release?: string | null;
+      /** @description The version of the trace */
       version?: string | null;
+      /** @description The user identifier associated with the trace */
       userId?: string | null;
+      /** @description The metadata associated with the trace. Can be any JSON. */
       metadata?: unknown;
+      /** @description The tags associated with the trace. Can be an array of strings or null. */
       tags?: string[] | null;
       /** @description Public traces are accessible via url without login */
       public?: boolean | null;
@@ -515,48 +527,101 @@ export interface components {
     } & components["schemas"]["Session"];
     /** Observation */
     Observation: {
+      /** @description The unique identifier of the observation */
       id: string;
+      /** @description The trace ID associated with the observation */
       traceId?: string | null;
+      /** @description The type of the observation */
       type: string;
+      /** @description The name of the observation */
       name?: string | null;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The start time of the observation
+       */
       startTime: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The end time of the observation.
+       */
       endTime?: string | null;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The completion start time of the observation
+       */
       completionStartTime?: string | null;
+      /** @description The model used for the observation */
       model?: string | null;
+      /** @description The parameters of the model used for the observation */
       modelParameters?: {
         [key: string]: components["schemas"]["MapValue"] | undefined;
       } | null;
+      /** @description The input data of the observation */
       input?: unknown;
+      /** @description The version of the observation */
       version?: string | null;
+      /** @description Additional metadata of the observation */
       metadata?: unknown;
+      /** @description The output data of the observation */
       output?: unknown;
+      /** @description The usage data of the observation */
       usage?: components["schemas"]["Usage"];
+      /** @description The level of the observation */
       level: components["schemas"]["ObservationLevel"];
+      /** @description The status message of the observation */
       statusMessage?: string | null;
+      /** @description The parent observation ID */
       parentObservationId?: string | null;
+      /** @description The prompt ID associated with the observation */
       promptId?: string | null;
     };
     /** ObservationsView */
     ObservationsView: {
+      /** @description The name of the prompt associated with the observation */
+      promptName?: string | null;
+      /** @description The version of the prompt associated with the observation */
+      promptVersion?: number | null;
+      /** @description The unique identifier of the model */
       modelId?: string | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The price of the input in USD
+       */
       inputPrice?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The price of the output in USD.
+       */
       outputPrice?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The total price in USD.
+       */
       totalPrice?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The calculated cost of the input in USD
+       */
       calculatedInputCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The calculated cost of the output in USD
+       */
       calculatedOutputCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The calculated total cost in USD
+       */
       calculatedTotalCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The latency in seconds.
+       */
       latency?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The time to the first token in seconds
+       */
       timeToFirstToken?: number | null;
     } & components["schemas"]["Observation"];
     /**
@@ -730,15 +795,27 @@ export interface components {
     };
     /** DatasetRun */
     DatasetRun: {
+      /** @description Unique identifier of the dataset run */
       id: string;
+      /** @description Name of the dataset run */
       name: string;
+      /** @description Description of the run */
       description?: string | null;
+      /** @description Metadata of the dataset run */
       metadata?: unknown;
+      /** @description Id of the associated dataset */
       datasetId: string;
+      /** @description Name of the associated dataset */
       datasetName: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The date and time when the dataset run was created
+       */
       createdAt: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The date and time when the dataset run was last updated
+       */
       updatedAt: string;
     };
     /** DatasetRunWithItems */
@@ -816,7 +893,7 @@ export interface components {
       metadata?: unknown;
       sourceTraceId?: string | null;
       sourceObservationId?: string | null;
-      /** @description Dataset items are upserted on their id. Id needs to be globally unique and cannot be reused across datasets. */
+      /** @description Dataset items are upserted on their id. Id needs to be unique (project-level) and cannot be reused across datasets. */
       id?: string | null;
       /** @description Defaults to ACTIVE for newly created items */
       status?: components["schemas"]["DatasetStatus"];
@@ -2459,6 +2536,8 @@ export interface operations {
         fromStartTime?: string | null;
         /** @description Retrieve only observations with a start_time before this datetime (ISO 8601). */
         toStartTime?: string | null;
+        /** @description Optional filter to only include observations with a certain version. */
+        version?: string | null;
       };
       header?: never;
       path?: never;
@@ -3440,6 +3519,10 @@ export interface operations {
         orderBy?: string | null;
         /** @description Only traces that include all of these tags will be returned. */
         tags?: (string | null)[];
+        /** @description Optional filter to only include traces with a certain version. */
+        version?: string | null;
+        /** @description Optional filter to only include traces with a certain release. */
+        release?: string | null;
       };
       header?: never;
       path?: never;

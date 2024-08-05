@@ -24,9 +24,9 @@ export {
 export default class Langfuse extends LangfuseCore {
   private _memoryStorage = new LangfuseMemoryStorage();
 
-  private options: LangfuseOptions;
+  private options: Omit<LangfuseOptions, "publicKey" | "secretKey">;
 
-  constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
+  constructor(params?: LangfuseOptions) {
     const { publicKey, secretKey, ...options } = utils.configLangfuseSDK(params);
     if (!secretKey) {
       throw new Error("[Langfuse] secretKey is required for instantiation");

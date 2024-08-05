@@ -6,6 +6,18 @@ mustache.escape = function (text) {
   return text;
 };
 
+/**
+ * BasePromptClient - A base class for handling prompts.
+ *
+ * @class
+ * @property {string} name - The name of the prompt.
+ * @property {number} version - The version of the prompt.
+ * @property {unknown} config - The config of the prompt.
+ * @property {string[]} labels - The labels of the prompt.
+ * @property {boolean} isFallback - Whether the prompt is a fallback prompt.
+ * @method compile - Compiles the prompt content.
+ * @method getLangchainPrompt - Converts the prompt content to a Langchain-compatible format.
+ */
 abstract class BasePromptClient {
   public readonly name: string;
   public readonly version: number;
@@ -29,7 +41,14 @@ abstract class BasePromptClient {
     return content.replace(/\{\{(.*?)\}\}/g, "{$1}");
   }
 }
-
+/**
+ * TextPromptClient - A client for handling text-based prompts.
+ *
+ * @class
+ * @extends BasePromptClient
+ * @property {TextPrompt} promptResponse - The prompt response object.
+ * @property {string} prompt - The prompt content.
+ */
 export class TextPromptClient extends BasePromptClient {
   public readonly promptResponse: TextPrompt;
   public readonly prompt: string;
@@ -40,10 +59,20 @@ export class TextPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
+  /**
+   * Compiles the prompt content.
+   * @param {Record<string, string>} variables - The variables to be used in the prompt.
+   * @returns {string} The compiled prompt content.
+   */
   compile(variables?: Record<string, string>): string {
     return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
 
+  /**
+   * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
+   *
+   * @returns {string} The string that can be plugged into Langchain's PromptTemplate.
+   */
   public getLangchainPrompt(): string {
     /**
      * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
@@ -57,6 +86,14 @@ export class TextPromptClient extends BasePromptClient {
   }
 }
 
+/**
+ * ChatPromptClient - A client for handling chat-based prompts.
+ *
+ * @class
+ * @extends BasePromptClient
+ * @property {ChatPrompt} promptResponse - The prompt response object.
+ * @property {ChatMessage[]} prompt - The prompt content.
+ */
 export class ChatPromptClient extends BasePromptClient {
   public readonly promptResponse: ChatPrompt;
   public readonly prompt: ChatMessage[];
@@ -67,6 +104,11 @@ export class ChatPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
+  /**
+   * Compiles the prompt content.
+   * @param {Record<string, string>} variables - The variables to be used in the prompt.
+   * @returns {ChatMessage[]} The compiled prompt content.
+   */
   compile(variables?: Record<string, string>): ChatMessage[] {
     return this.prompt.map<ChatMessage>((chatMessage) => ({
       ...chatMessage,
@@ -74,6 +116,11 @@ export class ChatPromptClient extends BasePromptClient {
     }));
   }
 
+  /**
+   * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
+   *
+   * @returns {ChatMessage[]} Chat messages with variables that can be plugged into Langchain's ChatPromptTemplate.
+   */
   public getLangchainPrompt(): ChatMessage[] {
     /**
      * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
@@ -101,4 +148,10 @@ export class ChatPromptClient extends BasePromptClient {
   }
 }
 
+/**
+ * LangfusePromptClient - A client for handling prompts.
+ * It can be either a TextPromptClient or a ChatPromptClient.
+ *
+ * @type {TextPromptClient | ChatPromptClient}
+ */
 export type LangfusePromptClient = TextPromptClient | ChatPromptClient;

@@ -36,12 +36,7 @@ type RootParams = {
   root: LangfuseTraceClient | LangfuseSpanClient;
 };
 
-type KeyParams = {
-  publicKey?: string;
-  secretKey?: string;
-} & LangfuseOptions;
-
-type ConstructorParams = (RootParams | KeyParams) & {
+type ConstructorParams = (RootParams | LangfuseOptions) & {
   userId?: string; // added to all traces
   version?: string; // added to all traces and observations
   sessionId?: string; // added to all traces
@@ -50,6 +45,43 @@ type ConstructorParams = (RootParams | KeyParams) & {
   updateRoot?: boolean;
 };
 
+/**
+ * CallbackHandler
+ * Handles various callbacks and interactions with the Langfuse SDK.
+ *
+ * @class
+ * @extends BaseCallbackHandler
+ * @property {string} name - The name of the handler. Defaults to "CallbackHandler".
+ * @property {Langfuse} langfuse - The Langfuse SDK instance.
+ * @property {string} [traceId] - The trace ID for the current session.
+ * @property {string} [observationId] - The observation ID for the current session.
+ * @property {string} [rootObservationId] - The root observation ID for the current session.
+ * @property {string} [topLevelObservationId] - The top-level observation ID for the current session.
+ * @property {string} [userId] - The user ID associated with the session.
+ * @property {string} [version] - The version of the application.
+ * @property {string} [sessionId] - The session ID for the current session.
+ * @property {Record<string, unknown>} [metadata] - Additional metadata for the session.
+ * @property {string[]} [tags] - Tags associated with the session.
+ * @property {boolean} rootProvided - Indicates if the root was provided.
+ * @property {boolean} updateRoot - Indicates if the root should be updated.
+ * @property {boolean} debugEnabled - Indicates if debugging is enabled.
+ * @property {Record<string, Date>} completionStartTimes - Records the start times of completions.
+ *
+ * @example
+ * ```typescript
+ * const langfuseHandler = new CallbackHandler({
+ *   secretKey: "sk-lf-...",
+ *   publicKey: "pk-lf-...",
+ *   baseUrl: "https://cloud.langfuse.com", // 🇪🇺 EU region
+ *   // baseUrl: "https://us.cloud.langfuse.com", // 🇺🇸 US region
+ * });
+ *
+ * // Your Langchain code
+ *
+ * // Add Langfuse handler as callback to `run` or `invoke`
+ * await chain.invoke({ input: "<user_input>" }, { callbacks: [langfuseHandler] });
+ * ```
+ */
 export class CallbackHandler extends BaseCallbackHandler {
   name = "CallbackHandler";
   langfuse: Langfuse;
@@ -67,6 +99,11 @@ export class CallbackHandler extends BaseCallbackHandler {
   debugEnabled: boolean = false;
   completionStartTimes: Record<string, Date> = {};
 
+  /**
+   * Creates an instance of CallbackHandler.
+   *
+   * @param {ConstructorParams} [params] - The configuration options for the CallbackHandler.
+   */
   constructor(params?: ConstructorParams) {
     super();
     if (params && "root" in params) {
@@ -89,14 +126,35 @@ export class CallbackHandler extends BaseCallbackHandler {
     this.version = params?.version;
   }
 
+  /**
+   * Flushes any pending data asynchronously.
+   *
+   * @returns {Promise<any>} A promise that resolves when the flush is complete.
+   */
   async flushAsync(): Promise<any> {
     return this.langfuse.flushAsync();
   }
 
+  /**
+   * Shuts down the Langfuse SDK asynchronously.
+   *
+   * @returns {Promise<any>} A promise that resolves when the shutdown is complete.
+   */
   async shutdownAsync(): Promise<any> {
     return this.langfuse.shutdownAsync();
   }
 
+  /**
+   * Enables or disables debugging.
+   *
+   * @param {boolean} [enabled=true] - Whether to enable debugging or not. Defaults to true.
+   * @returns {void}
+   *
+   * @example
+   * ```typescript
+   * langfuse.debug();
+   * ```
+   */
   debug(enabled: boolean = true): void {
     this.langfuse.debug(enabled);
     this.debugEnabled = enabled;
@@ -149,6 +207,11 @@ export class CallbackHandler extends BaseCallbackHandler {
     return this.traceId ? `${this.langfuse.baseUrl}/trace/${this.traceId}` : undefined;
   }
 
+  /**
+   * Gets the Langchain run ID.
+   *
+   * @returns {string | undefined}
+   */
   getLangchainRunId(): string | undefined {
     return this.topLevelObservationId;
   }
