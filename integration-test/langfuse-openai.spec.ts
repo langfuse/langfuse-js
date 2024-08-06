@@ -4,7 +4,7 @@ import OpenAI from "openai";
 import Langfuse, { observeOpenAI } from "../langfuse";
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
-import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
+import { LANGFUSE_BASEURL, getHeaders, fetchTraceById } from "./integration-utils";
 
 jest.useFakeTimers({ doNotFake: ["Date"] });
 
@@ -18,21 +18,6 @@ const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => 
   return res;
 };
 
-const getTraceById = async (id: string): Promise<AxiosResponse<any, any>> => {
-  const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
-  const res = await axios.get(url, {
-    headers: getHeaders(),
-  });
-  return res;
-};
-
-const getTrace = async (id: string): Promise<AxiosResponse<any, any>> => {
-  const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
-  const res = await axios.get(url, {
-    headers: getHeaders(),
-  });
-  return res;
-};
 describe("Langfuse-OpenAI-Integation", () => {
   describe("Core Methods", () => {
     it("Chat-completion without streaming", async () => {
@@ -553,7 +538,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.statusMessage).toBeNull();
 
       const traceId = generation.traceId;
-      const resp = await getTrace(traceId);
+      const resp = await fetchTraceById(traceId);
       expect(resp.status).toBe(200);
       expect(resp.data).toBeDefined();
       const trace = resp.data;
@@ -601,7 +586,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         expect(generation.statusMessage).toBeDefined();
 
         const traceId = generation.traceId;
-        const resp = await getTrace(traceId);
+        const resp = await fetchTraceById(traceId);
         expect(resp.status).toBe(200);
         expect(resp.data).toBeDefined();
         const trace = resp.data;
@@ -640,7 +625,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     // Flushes the correct client
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
 
     expect(response.status).toBe(200);
     const trace_data = response.data;
@@ -709,7 +694,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     // Flushes the correct client
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
     expect(response.status).toBe(200);
 
     const trace_data = response.data;
@@ -789,7 +774,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(res).toBeDefined();
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
     expect(response.status).toBe(200);
 
     const trace_data = response.data;
@@ -955,7 +940,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(res).toBeDefined();
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
     expect(response.status).toBe(200);
 
     const generation = response.data.observations[0];

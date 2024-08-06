@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 
 import { type components } from "../langfuse-core/src/openapi/server";
 
@@ -26,3 +26,11 @@ export async function getTrace(traceId: string): Promise<TraceAndObservations> {
   }
   return res.data;
 }
+
+export const fetchTraceById = async (id: string): Promise<AxiosResponse<any, any>> => {
+  const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
+  const res = await axios.get(url, {
+    headers: getHeaders(),
+  });
+  return res;
+};
