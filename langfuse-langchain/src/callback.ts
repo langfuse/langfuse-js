@@ -554,21 +554,27 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   /** Not all models supports tokenUsage in llmOutput, can use AIMessage.usage_metadata instead */
   private extractUsageMetadata(generation: Generation): components["schemas"]["IngestionUsage"] | undefined {
-    const usageMetadata =
-      "message" in generation &&
-      (generation["message"] instanceof AIMessage || generation["message"] instanceof AIMessageChunk)
-        ? generation["message"].usage_metadata
-        : undefined;
+    try {
+      const usageMetadata =
+        "message" in generation &&
+        (generation["message"] instanceof AIMessage || generation["message"] instanceof AIMessageChunk)
+          ? generation["message"].usage_metadata
+          : undefined;
 
-    if (!usageMetadata) {
-      return undefined;
+      if (!usageMetadata) {
+        return;
+      }
+
+      return {
+        promptTokens: usageMetadata.input_tokens,
+        completionTokens: usageMetadata.output_tokens,
+        totalTokens: usageMetadata.total_tokens,
+      };
+    } catch (err) {
+      this._log(`Error extracting usage metadata: ${err}`);
+
+      return;
     }
-
-    return {
-      promptTokens: usageMetadata.input_tokens,
-      completionTokens: usageMetadata.output_tokens,
-      totalTokens: usageMetadata.total_tokens,
-    };
   }
 
   private extractChatMessageContent(message: BaseMessage): LlmMessage | AnonymousLlmMessage | MessageContent {
