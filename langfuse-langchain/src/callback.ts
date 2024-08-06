@@ -2,12 +2,13 @@ import { Langfuse, type LangfuseOptions } from "langfuse";
 
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import {
-  BaseMessage,
-  HumanMessage,
-  ChatMessage,
   AIMessage,
-  SystemMessage,
+  AIMessageChunk,
+  BaseMessage,
+  ChatMessage,
   FunctionMessage,
+  HumanMessage,
+  SystemMessage,
   ToolMessage,
   type BaseMessageFields,
   type MessageContent,
@@ -16,10 +17,10 @@ import {
 import type { Serialized } from "@langchain/core/load/serializable";
 import type { AgentAction, AgentFinish } from "@langchain/core/agents";
 import type { ChainValues } from "@langchain/core/utils/types";
-import type { LLMResult } from "@langchain/core/outputs";
+import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { Document } from "@langchain/core/documents";
 
-import type { LangfuseTraceClient, LangfuseSpanClient } from "langfuse-core";
+import type { components, LangfuseSpanClient, LangfuseTraceClient } from "langfuse-core";
 
 export type LlmMessage = {
   role: string;
@@ -524,7 +525,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
 
-      const llmUsage = output.llmOutput?.["tokenUsage"];
+      const llmUsage = output.llmOutput?.["tokenUsage"] ?? this.extractUsageMetadata(lastResponse);
 
       const extractedOutput =
         "message" in lastResponse && lastResponse["message"] instanceof BaseMessage
@@ -548,6 +549,31 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.updateTrace(runId, parentRunId, extractedOutput);
     } catch (e) {
       this._log(e);
+    }
+  }
+
+  /** Not all models supports tokenUsage in llmOutput, can use AIMessage.usage_metadata instead */
+  private extractUsageMetadata(generation: Generation): components["schemas"]["IngestionUsage"] | undefined {
+    try {
+      const usageMetadata =
+        "message" in generation &&
+        (generation["message"] instanceof AIMessage || generation["message"] instanceof AIMessageChunk)
+          ? generation["message"].usage_metadata
+          : undefined;
+
+      if (!usageMetadata) {
+        return;
+      }
+
+      return {
+        promptTokens: usageMetadata.input_tokens,
+        completionTokens: usageMetadata.output_tokens,
+        totalTokens: usageMetadata.total_tokens,
+      };
+    } catch (err) {
+      this._log(`Error extracting usage metadata: ${err}`);
+
+      return;
     }
   }
 
