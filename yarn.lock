@@ -25,6 +25,16 @@
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
 
+"@ai-sdk/provider-utils@1.0.7":
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.7.tgz#fa0d09b69225cdba3aa7f3daa63231c337f5019d"
+  integrity sha512-xIDpinTnuInH16wBgKAVdN6pmrpjlJF+5f+f/8ahYMQlYzpe4Vj1qw8OL+rUGdCePcRSrFmjk8G/wdX5+J8dIw==
+  dependencies:
+    "@ai-sdk/provider" "0.0.15"
+    eventsource-parser "1.1.2"
+    nanoid "3.3.6"
+    secure-json-parse "2.7.0"
+
 "@ai-sdk/provider@0.0.14":
   version "0.0.14"
   resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.14.tgz#a07569c39a8828aa8312cf1ac6f35ce6ee1b2fce"
@@ -32,48 +42,55 @@
   dependencies:
     json-schema "0.4.0"
 
-"@ai-sdk/react@0.0.35":
-  version "0.0.35"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-0.0.35.tgz#091fd9b0fec14ced2328d43ab0f90c7b05ebcad7"
-  integrity sha512-tw/JNuzrDx4RQk/V/pYREwTiQkr+3i0MwROB8NAHlM70dyiKc/97vskQmIwBCuVGfXoEchzUtlF4LeYx085qmw==
+"@ai-sdk/provider@0.0.15":
+  version "0.0.15"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.15.tgz#41ba967514866e5a4f11df1f6cbdcf98899a890c"
+  integrity sha512-phX/YdwKd8q8/uZ7MsUytcHuN5KvT+wgM+y78eu6E+VyFE3GRwelctBFnaaA96uRL6xnKNmb0e7e+2fDOYuBoA==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.5"
-    "@ai-sdk/ui-utils" "0.0.23"
+    json-schema "0.4.0"
+
+"@ai-sdk/react@0.0.38":
+  version "0.0.38"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-0.0.38.tgz#35ed23982b5c9c105f3dfba94a37f0c0b417f010"
+  integrity sha512-TH8uubORsHBNfZQvHnvivOgKR/xWnMl0SZiGEj+MYgDGu6xpPW+gHlwYXZM8Fey6V/lvqhe1rNfV7D7E6xJn8A==
+  dependencies:
+    "@ai-sdk/provider-utils" "1.0.7"
+    "@ai-sdk/ui-utils" "0.0.26"
     swr "2.2.5"
 
-"@ai-sdk/solid@0.0.26":
-  version "0.0.26"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/solid/-/solid-0.0.26.tgz#0df17249e95776d0573b2b8223f4b71a8525f02a"
-  integrity sha512-kY9CJXYaZS57qi5Yc1hjkBtGwgEubkfn7P1CXYbY/wMpTkvlUaHw5JY2twMgG9qdq+uNWp1omZUVlVEkqZMqbA==
+"@ai-sdk/solid@0.0.29":
+  version "0.0.29"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/solid/-/solid-0.0.29.tgz#c2a8aded578cef88c1defcc48cc7c92b1d315e64"
+  integrity sha512-usf7yZPdx5HcTdLrs4rI2cfAqz4V0H61uTJ6SrFmbjObUF8wCGZVMNvUB3zXxrIrlVeHJKEueGd1QNPSG06qBA==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.5"
-    "@ai-sdk/ui-utils" "0.0.23"
+    "@ai-sdk/provider-utils" "1.0.7"
+    "@ai-sdk/ui-utils" "0.0.26"
 
-"@ai-sdk/svelte@0.0.28":
-  version "0.0.28"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/svelte/-/svelte-0.0.28.tgz#e912eaf4cff737ce6d4a8a305055f1084bb17600"
-  integrity sha512-n5MOV7UF/3wQvtGMUccMnoV+Xk524fVWzmPF9C0h1ZcS1oskutNqVbfZzFFoB2otD0/DBj2IS+rmHH4Dqc6D0g==
+"@ai-sdk/svelte@0.0.31":
+  version "0.0.31"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/svelte/-/svelte-0.0.31.tgz#400b180e661419eb2dc2a15183b494921e4a42c7"
+  integrity sha512-hXPc+g0NgxEHGtGCa3OSC8I4mGw41Bi2jYmkzHpoUiHciUv29LPB08r0s2e139nMUDIDf8iYg4faxxdrTcKs7g==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.5"
-    "@ai-sdk/ui-utils" "0.0.23"
+    "@ai-sdk/provider-utils" "1.0.7"
+    "@ai-sdk/ui-utils" "0.0.26"
     sswr "2.1.0"
 
-"@ai-sdk/ui-utils@0.0.23":
-  version "0.0.23"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-0.0.23.tgz#7c46da248e10236af23b469d9e4a414c7617ad08"
-  integrity sha512-9KONrxwnoV9VyW9I3m9+cEi5IANvADeLuCe+oB3JzOobNKASwYwcQZ4X7no28DckfiJUmHk4gmPnsC3yfRoU5Q==
+"@ai-sdk/ui-utils@0.0.26":
+  version "0.0.26"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-0.0.26.tgz#f6d2d86589bbf53de832cbaeca427af32fe0c276"
+  integrity sha512-d+16/dcKJM4m4KFgaz8AtJFvJhUNEdqGVFczY6jtFyyBqXz42pQtAASRATtgOatdSuOeEzOSkTzBAr49/qN3Wg==
   dependencies:
-    "@ai-sdk/provider" "0.0.14"
-    "@ai-sdk/provider-utils" "1.0.5"
+    "@ai-sdk/provider" "0.0.15"
+    "@ai-sdk/provider-utils" "1.0.7"
     secure-json-parse "2.7.0"
 
-"@ai-sdk/vue@0.0.27":
-  version "0.0.27"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/vue/-/vue-0.0.27.tgz#bc663ae85f1142d5f038b9fdec54ed932eb20e25"
-  integrity sha512-pYksYRUtMdAceZRKg9M6Rh1M4uSKJpa+cm0CC3Q2CMufE9Tgs3eEMB5ZqdSlP00uOifL3h36O14Y9vQwW4x7uw==
+"@ai-sdk/vue@0.0.30":
+  version "0.0.30"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/vue/-/vue-0.0.30.tgz#19af3604d48fb4eaaf37b7b4c26aa39447119ac6"
+  integrity sha512-FC0/5CpMkYS0RTlTs5E6xw0nM0kNvFWkB2FqxkWvx0R7AKJBjZlXXTtq8aEAXlOg/ce+XSTAG/aTswmjWy6C4A==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.5"
-    "@ai-sdk/ui-utils" "0.0.23"
+    "@ai-sdk/provider-utils" "1.0.7"
+    "@ai-sdk/ui-utils" "0.0.26"
     swrv "1.0.4"
 
 "@ampproject/remapping@^2.2.0":
@@ -3804,18 +3821,18 @@ aggregate-error@^3.0.0:
     clean-stack "^2.0.0"
     indent-string "^4.0.0"
 
-ai@^3.2.44:
-  version "3.2.44"
-  resolved "https://registry.yarnpkg.com/ai/-/ai-3.2.44.tgz#ebd09051feab568a056ff91c131aa3bb3381845c"
-  integrity sha512-3QYkFFxMWzkVXaezxW1NL/AsdBio0YCtqxzGA5u6dumRSAfX2ZAd7OFeZTrCj7b2ubTmHn+l0cLotTSlQH8UQg==
+ai@^3.3.2:
+  version "3.3.2"
+  resolved "https://registry.yarnpkg.com/ai/-/ai-3.3.2.tgz#71e10e5b8174b038404a1a40e919ab5534cc2f84"
+  integrity sha512-oQF9L75J8kyfYKFNOCFrzmJOeZyj2kWED3x2hl+ZnR93TD1mhtA5XBvukTXK8UjthutRPinSBZaFH2GFn3qAWQ==
   dependencies:
-    "@ai-sdk/provider" "0.0.14"
-    "@ai-sdk/provider-utils" "1.0.5"
-    "@ai-sdk/react" "0.0.35"
-    "@ai-sdk/solid" "0.0.26"
-    "@ai-sdk/svelte" "0.0.28"
-    "@ai-sdk/ui-utils" "0.0.23"
-    "@ai-sdk/vue" "0.0.27"
+    "@ai-sdk/provider" "0.0.15"
+    "@ai-sdk/provider-utils" "1.0.7"
+    "@ai-sdk/react" "0.0.38"
+    "@ai-sdk/solid" "0.0.29"
+    "@ai-sdk/svelte" "0.0.31"
+    "@ai-sdk/ui-utils" "0.0.26"
+    "@ai-sdk/vue" "0.0.30"
     "@opentelemetry/api" "1.9.0"
     eventsource-parser "1.1.2"
     json-schema "0.4.0"
