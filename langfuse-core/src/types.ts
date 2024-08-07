@@ -99,11 +99,26 @@ export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["g
 export type GetLangfuseSessionsResponse = FixTypes<
   paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfuseScoreResponse = FixTypes<
+  paths["/api/public/scores/{scoreId}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseScoresQuery = FixTypes<paths["/api/public/scores"]["get"]["parameters"]["query"]>;
+export type GetLangfuseScoresResponse = FixTypes<
+  paths["/api/public/scores"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfusePromptsQuery = FixTypes<paths["/api/public/v2/prompts"]["get"]["parameters"]["query"]>;
+export type GetLangfusePromptsResponse = FixTypes<
+  paths["/api/public/v2/prompts"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 export type GetLangfuseDatasetParams = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
 export type GetLangfuseDatasetResponse = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
+export type GetLangfuseDatasetsQuery = FixTypes<paths["/api/public/v2/datasets"]["get"]["parameters"]["query"]>;
+export type GetLangfuseDatasetsResponse = FixTypes<
+  paths["/api/public/v2/datasets"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type GetLangfuseDatasetItemsQuery = paths["/api/public/dataset-items"]["get"]["parameters"]["query"];
 export type GetLangfuseDatasetItemsResponse = FixTypes<

@@ -45,6 +45,13 @@ import {
   type ChatMessage,
   type GetLangfuseSessionsQuery,
   type GetLangfuseSessionsResponse,
+  type GetLangfuseScoresQuery,
+  type GetLangfuseScoresResponse,
+  type GetLangfusePromptsQuery,
+  type GetLangfusePromptsResponse,
+  type GetLangfuseDatasetsQuery,
+  type GetLangfuseDatasetsResponse,
+  type GetLangfuseScoreResponse,
 } from "./types";
 import {
   generateUUID,
@@ -338,6 +345,36 @@ abstract class LangfuseCoreStateless {
     return { data, meta };
   }
 
+  async fetchScore(scoreId: string): Promise<{ data: GetLangfuseScoreResponse }> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/scores?${scoreId}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const score = (await res.json()) as GetLangfuseScoreResponse;
+    return { data: score };
+  }
+
+  async fetchScores(query?: GetLangfuseScoresQuery): Promise<GetLangfuseScoresResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/scores?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfuseScoresResponse;
+    return { data, meta };
+  }
+
+  async fetchPrompts(query?: GetLangfusePromptsQuery): Promise<GetLangfusePromptsResponse> {
+    const res = await this.fetch(
+      `${this.baseUrl}/api/public/v2/prompts?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    );
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = (await res.json()) as GetLangfusePromptsResponse;
+    return { data, meta };
+  }
+
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
     const encodedDatasetName = encodeURIComponent(params.datasetName);
     const encodedRunName = encodeURIComponent(params.runName);
@@ -402,6 +439,13 @@ abstract class LangfuseCoreStateless {
     return this.fetch(`${this.baseUrl}/api/public/dataset-items/${id}`, this._getFetchOptions({ method: "GET" })).then(
       (res) => res.json()
     );
+  }
+
+  async getDatasetItems(query?: GetLangfuseDatasetItemsQuery): Promise<GetLangfuseDatasetItemsResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/dataset-items?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
   }
 
   protected _parsePayload(response: any): any {
@@ -863,6 +907,13 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   score(body: CreateLangfuseScoreBody): this {
     this.scoreStateless(body);
     return this;
+  }
+
+  async getDatasets(query?: GetLangfuseDatasetsQuery): Promise<GetLangfuseDatasetsResponse> {
+    return this.fetch(
+      `${this.baseUrl}/api/public/datasets?${encodeQueryParams(query)}`,
+      this._getFetchOptions({ method: "GET" })
+    ).then((res) => res.json());
   }
 
   async getDataset(
