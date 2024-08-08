@@ -172,7 +172,7 @@ abstract class LangfuseCoreStateless {
    *** Handlers for each object type
    ***/
   protected traceStateless(body: CreateLangfuseTraceBody): string {
-    const { id: bodyId, release: bodyRelease, ...rest } = body;
+    const { id: bodyId, timestamp: bodyTimestamp, release: bodyRelease, ...rest } = body;
 
     const id = bodyId ?? generateUUID();
     const release = bodyRelease ?? this.release;
@@ -180,6 +180,7 @@ abstract class LangfuseCoreStateless {
     const parsedBody: CreateLangfuseTraceBody = {
       id,
       release,
+      timestamp: bodyTimestamp ?? new Date(),
       ...rest,
     };
     this.enqueue("trace-create", parsedBody);

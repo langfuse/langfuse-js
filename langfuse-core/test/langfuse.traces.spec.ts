@@ -99,6 +99,7 @@ describe("Langfuse Core", () => {
             type: "trace-create",
             body: {
               id: "123456789",
+              timestamp: expect.any(String),
             },
           },
         ],
