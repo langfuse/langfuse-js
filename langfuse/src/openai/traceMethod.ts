@@ -21,14 +21,22 @@ const wrapMethod = async <T extends GenericMethod>(
   ...args: Parameters<T>
 ): Promise<ReturnType<T> | any> => {
   const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
+
+  const finalModelParams = { ...modelParameters, response_format: undefined };
+  const finalMetadata = {
+    ...config?.metadata,
+    response_format: "response_format" in modelParameters ? modelParameters.response_format : undefined,
+  };
+
   let observationData = {
     model,
     input,
-    modelParameters,
+    modelParameters: finalModelParams,
     name: config?.generationName,
     startTime: new Date(),
     promptName: config?.langfusePrompt?.name,
     promptVersion: config?.langfusePrompt?.version,
+    metadata: finalMetadata,
   };
 
   let langfuseParent: LangfuseParent;
