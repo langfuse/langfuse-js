@@ -424,7 +424,8 @@ abstract class LangfuseCoreStateless {
     name: string,
     version?: number,
     label?: string,
-    maxRetries?: number
+    maxRetries?: number,
+    fetchTimeout?: number
   ): Promise<GetLangfusePromptResponse> {
     const encodedName = encodeURIComponent(name);
     const params = new URLSearchParams();
@@ -451,9 +452,17 @@ abstract class LangfuseCoreStateless {
 
     return retriable(
       async () => {
-        const res = await this.fetch(url, this._getFetchOptions({ method: "GET" })).catch((e) => {
-          throw new LangfuseFetchNetworkError(e);
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), fetchTimeout ?? 5000);
+
+        const res = await this.fetch(url, this._getFetchOptions({ method: "GET", fetchTimeout: fetchTimeout }))
+          .catch((e) => {
+            if (e.name === "AbortError") {
+              throw new LangfuseFetchNetworkError("Fetch request timed out");
+            }
+            throw new LangfuseFetchNetworkError(e);
+          })
+          .finally(() => clearTimeout(timeoutId));
 
         const data = await res.json();
 
@@ -656,6 +665,7 @@ abstract class LangfuseCoreStateless {
   _getFetchOptions(p: {
     method: LangfuseFetchOptions["method"];
     body?: LangfuseFetchOptions["body"];
+    fetchTimeout?: number;
   }): LangfuseFetchOptions {
     const fetchOptions: LangfuseFetchOptions = {
       method: p.method,
@@ -669,6 +679,7 @@ abstract class LangfuseCoreStateless {
         ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
       },
       body: p.body,
+      ...(p.fetchTimeout !== undefined ? { signal: AbortSignal.timeout(p.fetchTimeout) } : {}),
     };
 
     return fetchOptions;
@@ -968,12 +979,26 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; fallback?: string; maxRetries?: number; type?: "text" }
+    options?: {
+      label?: string;
+      cacheTtlSeconds?: number;
+      fallback?: string;
+      maxRetries?: number;
+      type?: "text";
+      fetchTimeout?: number;
+    }
   ): Promise<TextPromptClient>;
   async getPrompt(
     name: string,
     version?: number,
-    options?: { label?: string; cacheTtlSeconds?: number; fallback?: ChatMessage[]; maxRetries?: number; type: "chat" }
+    options?: {
+      label?: string;
+      cacheTtlSeconds?: number;
+      fallback?: ChatMessage[];
+      maxRetries?: number;
+      type: "chat";
+      fetchTimeout?: number;
+    }
   ): Promise<ChatPromptClient>;
   async getPrompt(
     name: string,
@@ -984,6 +1009,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       fallback?: ChatMessage[] | string;
       maxRetries?: number;
       type?: "chat" | "text";
+      fetchTimeout?: number;
     }
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
@@ -997,6 +1023,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
           label: options?.label,
           cacheTtlSeconds: options?.cacheTtlSeconds,
           maxRetries: options?.maxRetries,
+          fetchTimeout: options?.fetchTimeout,
         });
       } catch (err) {
         if (options?.fallback) {
@@ -1074,13 +1101,14 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     cacheTtlSeconds?: number;
     label?: string;
     maxRetries?: number;
+    fetchTimeout?: number;
   }): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey(params);
 
     try {
-      const { name, version, cacheTtlSeconds, label, maxRetries } = params;
+      const { name, version, cacheTtlSeconds, label, maxRetries, fetchTimeout } = params;
 
-      const { data, fetchResult } = await this.getPromptStateless(name, version, label, maxRetries);
+      const { data, fetchResult } = await this.getPromptStateless(name, version, label, maxRetries, fetchTimeout);
       if (fetchResult === "failure") {
         throw Error(data.message ?? "Internal error while fetching prompt");
       }
