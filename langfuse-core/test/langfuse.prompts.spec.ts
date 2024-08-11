@@ -37,9 +37,8 @@ describe("Langfuse Core", () => {
     },
   };
 
-  jest.useFakeTimers();
-
   beforeEach(() => {
+    jest.useFakeTimers();
     delete process.env.LANGFUSE_RELEASE;
     [langfuse, mocks] = createTestClient({
       publicKey: "pk-lf-111",
@@ -168,6 +167,39 @@ describe("Langfuse Core", () => {
       const [url, options] = mocks.fetch.mock.calls[0];
       expect(url).toEqual("https://cloud.langfuse.com/api/public/v2/prompts/test-prompt?version=2");
       expect(options.method).toBe("GET");
+    });
+    it("should retry if custom request timeout is exceeded", async () => {
+      jest.useRealTimers();
+
+      const fetch = jest.spyOn(langfuse, "fetch").mockImplementation(async (url, options) => {
+        expect(options.signal).toBeInstanceOf(AbortSignal);
+        expect(options.signal?.aborted).toBe(false);
+
+        return new Promise((resolve, reject) => {
+          const startTime = Date.now();
+          options.signal?.addEventListener("abort", () => {
+            const elapsedTime = Date.now() - startTime;
+            console.log("Request aborted after", elapsedTime, "ms");
+            expect(elapsedTime).toBeGreaterThanOrEqual(250);
+            expect(elapsedTime).toBeLessThan(450); // Allow some buffer for timing variations
+            reject(new Error("AbortError: Request aborted"));
+          });
+
+          // Simulate a fetch delay
+          setTimeout(() => {
+            resolve({
+              status: 200,
+              json: async () => ({ status: "200" }),
+              text: async () => "ok",
+            });
+          }, 1000);
+        });
+      });
+
+      await expect(
+        langfuse.getPrompt("test-prompt", undefined, { fetchTimeoutMs: 300, maxRetries: 2 })
+      ).rejects.toThrow("Network error while fetching Langfuse");
+      expect(fetch).toHaveBeenCalledTimes(3);
     });
 
     it("should fetch and cache a prompt when not in cache", async () => {
