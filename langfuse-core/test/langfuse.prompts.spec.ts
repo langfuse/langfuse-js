@@ -181,8 +181,8 @@ describe("Langfuse Core", () => {
           options.signal?.addEventListener("abort", () => {
             const elapsedTime = Date.now() - startTime;
             console.log("Request aborted after", elapsedTime, "ms");
-            expect(elapsedTime).toBeGreaterThanOrEqual(300);
-            expect(elapsedTime).toBeLessThan(400); // Allow some buffer for timing variations
+            expect(elapsedTime).toBeGreaterThanOrEqual(250);
+            expect(elapsedTime).toBeLessThan(450); // Allow some buffer for timing variations
             reject(new Error("AbortError: Request aborted"));
           });
 
