@@ -170,18 +170,37 @@ describe("Langfuse Core", () => {
       expect(options.method).toBe("GET");
     });
     it("should retry if custom request timeout is exceeded", async () => {
-      const mockGetPromptStateless = jest
-        .spyOn(langfuse, "getPromptStateless")
-        .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(getPromptStatelessSuccess), 100)));
+      jest.useRealTimers();
 
-      await langfuse.getPrompt("test-prompt", undefined);
-      expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
-      // jest.advanceTimersByTime(DEFAULT_PROMPT_CACHE_TTL_SECONDS * 1000 + 1);
+      const fetch = jest.spyOn(langfuse, "fetch").mockImplementation(async (url, options) => {
+        expect(options.signal).toBeInstanceOf(AbortSignal);
+        expect(options.signal?.aborted).toBe(false);
 
-      const result = await langfuse.getPrompt("test-prompt", { fetchTimeout: 300 });
-      expect(mockGetPromptStateless).toHaveBeenCalledTimes(3);
+        return new Promise((resolve, reject) => {
+          const startTime = Date.now();
+          options.signal?.addEventListener("abort", () => {
+            const elapsedTime = Date.now() - startTime;
+            console.log("Request aborted after", elapsedTime, "ms");
+            expect(elapsedTime).toBeGreaterThanOrEqual(300);
+            expect(elapsedTime).toBeLessThan(400); // Allow some buffer for timing variations
+            reject(new Error("AbortError: Request aborted"));
+          });
 
-      expect(result).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
+          // Simulate a fetch delay
+          setTimeout(() => {
+            resolve({
+              status: 200,
+              json: async () => ({ status: "200" }),
+              text: async () => "ok",
+            });
+          }, 1000);
+        });
+      });
+
+      await expect(
+        langfuse.getPrompt("test-prompt", undefined, { fetchTimeoutMs: 300, maxRetries: 2 })
+      ).rejects.toThrow("Network error while fetching Langfuse");
+      expect(fetch).toHaveBeenCalledTimes(3);
     });
 
     it("should fetch and cache a prompt when not in cache", async () => {
