@@ -425,7 +425,7 @@ abstract class LangfuseCoreStateless {
     version?: number,
     label?: string,
     maxRetries?: number,
-    fetchTimeout?: number
+    requestTimeout?: number // this will override the default requestTimeout for fetching prompts. Together with maxRetries, it can be used to fetch prompts fast when the first fetch is slow.
   ): Promise<GetLangfusePromptResponse> {
     const encodedName = encodeURIComponent(name);
     const params = new URLSearchParams();
@@ -452,17 +452,14 @@ abstract class LangfuseCoreStateless {
 
     return retriable(
       async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), fetchTimeout ?? 5000);
-
-        const res = await this.fetch(url, this._getFetchOptions({ method: "GET", fetchTimeout: fetchTimeout }))
-          .catch((e) => {
+        const res = await this.fetch(url, this._getFetchOptions({ method: "GET", fetchTimeout: requestTimeout })).catch(
+          (e) => {
             if (e.name === "AbortError") {
               throw new LangfuseFetchNetworkError("Fetch request timed out");
             }
             throw new LangfuseFetchNetworkError(e);
-          })
-          .finally(() => clearTimeout(timeoutId));
+          }
+        );
 
         const data = await res.json();
 
@@ -721,7 +718,7 @@ abstract class LangfuseCoreStateless {
         let res: LangfuseFetchResponse<IngestionReturnType> | null = null;
         try {
           res = await this.fetch(url, {
-            signal: (AbortSignal as any).timeout(this.requestTimeout),
+            signal: AbortSignal.timeout(this.requestTimeout),
             ...options,
           });
         } catch (e) {
