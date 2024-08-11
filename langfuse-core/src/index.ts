@@ -452,7 +452,6 @@ abstract class LangfuseCoreStateless {
 
     return retriable(
       async () => {
-        console.log("Fetching prompt", url);
         const res = await this.fetch(url, this._getFetchOptions({ method: "GET", fetchTimeout: requestTimeout })).catch(
           (e) => {
             if (e.name === "AbortError") {
@@ -463,8 +462,6 @@ abstract class LangfuseCoreStateless {
         );
 
         const data = await res.json();
-
-        console.log("Fetched prompt", data);
 
         if (res.status >= 500) {
           throw new LangfuseFetchHttpError(res, JSON.stringify(data));
@@ -667,7 +664,6 @@ abstract class LangfuseCoreStateless {
     body?: LangfuseFetchOptions["body"];
     fetchTimeout?: number;
   }): LangfuseFetchOptions {
-    console.log("fetch options", p);
     const fetchOptions: LangfuseFetchOptions = {
       method: p.method,
       headers: {
@@ -1015,7 +1011,6 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
-    console.log("getPrompt", options);
     if (!cachedPrompt) {
       try {
         return await this._fetchPromptAndUpdateCache({
@@ -1027,7 +1022,6 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
           fetchTimeout: options?.fetchTimeoutMs,
         });
       } catch (err) {
-        console.error(`Error while fetching prompt '${cacheKey}`);
         if (options?.fallback) {
           const sharedFallbackParams = {
             name,
