@@ -169,6 +169,20 @@ describe("Langfuse Core", () => {
       expect(url).toEqual("https://cloud.langfuse.com/api/public/v2/prompts/test-prompt?version=2");
       expect(options.method).toBe("GET");
     });
+    it("should retry if custom request timeout is exceeded", async () => {
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(getPromptStatelessSuccess), 100)));
+
+      await langfuse.getPrompt("test-prompt", undefined);
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
+      // jest.advanceTimersByTime(DEFAULT_PROMPT_CACHE_TTL_SECONDS * 1000 + 1);
+
+      const result = await langfuse.getPrompt("test-prompt", { fetchTimeout: 300 });
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(3);
+
+      expect(result).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
+    });
 
     it("should fetch and cache a prompt when not in cache", async () => {
       const mockGetPromptStateless = jest
