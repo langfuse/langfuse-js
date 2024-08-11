@@ -37,9 +37,8 @@ describe("Langfuse Core", () => {
     },
   };
 
-  jest.useFakeTimers();
-
   beforeEach(() => {
+    jest.useFakeTimers();
     delete process.env.LANGFUSE_RELEASE;
     [langfuse, mocks] = createTestClient({
       publicKey: "pk-lf-111",
