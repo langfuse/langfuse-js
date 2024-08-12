@@ -42,7 +42,7 @@
     "docs": "yarn build && typedoc --options ./typedoc.config.cjs"
   },
   "devDependencies": {
-    "@ai-sdk/openai": "^0.0.40",
+    "@ai-sdk/openai": "^0.0.44",
     "@babel/core": "^7.24.7",
     "@babel/preset-env": "^7.25.3",
     "@babel/preset-react": "^7.24.7",
