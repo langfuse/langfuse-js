@@ -7,13 +7,23 @@
   resolved "https://registry.npmjs.org/@aashutoshrathi/word-wrap/-/word-wrap-1.2.6.tgz"
   integrity sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==
 
-"@ai-sdk/openai@^0.0.44":
-  version "0.0.44"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-0.0.44.tgz#8eb226dfd2dea98cf2ee9d288a78cb4cd3b2e55c"
-  integrity sha512-fIUypicSnuWIOdoRG+dgzAnZDWQrhzqyUvQaLC8hQB6UDAUXkn8sIPdsqKEV35vs3mNXDz/KZ4EEeLxSVGrzMg==
+"@ai-sdk/openai@^0.0.46":
+  version "0.0.46"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-0.0.46.tgz#3e1a45b0b7c89a6e2e051073910acb679cd15e9d"
+  integrity sha512-RdE/PjdGt5zeE19qd/aqEr6fz6lhA5IWzBMy+N3dkdGtijT+eJP7Kxta6lYwnevkr1yqRPXYkYX/6v/s6xVY4A==
   dependencies:
-    "@ai-sdk/provider" "0.0.17"
-    "@ai-sdk/provider-utils" "1.0.9"
+    "@ai-sdk/provider" "0.0.19"
+    "@ai-sdk/provider-utils" "1.0.11"
+
+"@ai-sdk/provider-utils@1.0.11":
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.11.tgz#91b5e855c93664a8f491107ae433fa3634a4ee8b"
+  integrity sha512-u3BmXKg4MeA5s5eN9bWP4ybGJuOTRC2H0YacMCag5fcZ14S6kfukGE8MzRsGU2wTv6A16zLY0XqVvwcqe13mUA==
+  dependencies:
+    "@ai-sdk/provider" "0.0.19"
+    eventsource-parser "1.1.2"
+    nanoid "3.3.6"
+    secure-json-parse "2.7.0"
 
 "@ai-sdk/provider-utils@1.0.9":
   version "1.0.9"
@@ -29,6 +39,13 @@
   version "0.0.17"
   resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.17.tgz#4d18b503c3f52ec90770def6c1d5053c1bdfa3bd"
   integrity sha512-f9j+P5yYRkqKFHxvWae5FI0j6nqROPCoPnMkpc2hc2vC7vKjqzrxBJucD8rpSaUjqiBnY/QuRJ0QeV717Uz5tg==
+  dependencies:
+    json-schema "0.4.0"
+
+"@ai-sdk/provider@0.0.19":
+  version "0.0.19"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.19.tgz#e962957b4cb7c55ec3c762a64d5eaf74e4cf518e"
+  integrity sha512-WXyyJ0Fqg0OHzUQ/spem4jRFPq+NkYB8YNTVbSQrE+Rpxtm7DqK1x9MrHtIEhoikCMg9wBOCbm7HuMnfsIR5GA==
   dependencies:
     json-schema "0.4.0"
 
