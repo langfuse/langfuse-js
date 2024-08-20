@@ -592,10 +592,10 @@ describe("Langfuse Node.js", () => {
     const scores = await langfuse.fetchScores();
     const score1 = scores.data[2];
     const score2 = scores.data[1];
-
+    console.log(score1.id);
     const fetchedScore1 = await langfuse.fetchScore(score1.id);
     console.log(fetchedScore1.data);
-    expect(fetchedScore1.data).toContainEqual(
+    expect(fetchedScore1.data[0]).toContainEqual(
       expect.objectContaining({ traceId: trace.id, name: "harmfulness", value: 0.5 })
     );
     const fetchedScore2 = await langfuse.fetchScore(score2.id);
