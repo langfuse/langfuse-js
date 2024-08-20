@@ -348,7 +348,7 @@ abstract class LangfuseCoreStateless {
 
   async fetchScore(scoreId: string): Promise<{ data: GetLangfuseScoreResponse }> {
     const res = await this.fetch(
-      `${this.baseUrl}/api/public/scores?${scoreId}`,
+      `${this.baseUrl}/api/public/scores/${scoreId}`,
       this._getFetchOptions({ method: "GET" })
     );
 
