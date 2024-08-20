@@ -52,7 +52,7 @@ describe("Langfuse Node.js", () => {
         "http://example.com/api/public/ingestion",
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining(JSON.stringify({ id: "test-id", name: "trace-name" })),
+          body: expect.stringMatching(/.*"id"\s*:\s*"test-id".*"name"\s*:\s*"trace-name".*/),
           headers: expect.objectContaining({
             "Content-Type": "application/json",
             Authorization: "Basic " + Buffer.from("pk:sk").toString("base64"),

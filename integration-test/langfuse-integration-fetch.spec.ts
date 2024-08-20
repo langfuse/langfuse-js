@@ -470,6 +470,12 @@ describe("Langfuse (fetch)", () => {
       expect(fetchedPrompt2.labels).toEqual(["dev", "latest"]);
       expect(fetchedPrompt2.name).toEqual(promptName);
       expect(fetchedPrompt2.version).toEqual(2);
+
+      // non-prod prompt fetched via version
+      const fetchedPrompt3 = await langfuse.getPrompt(promptName, 2);
+      expect(fetchedPrompt3.labels).toEqual(["dev", "latest"]);
+      expect(fetchedPrompt3.name).toEqual(promptName);
+      expect(fetchedPrompt3.version).toEqual(2);
     });
 
     it("create chat prompt", async () => {
