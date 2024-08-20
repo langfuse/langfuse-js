@@ -592,19 +592,27 @@ describe("Langfuse Node.js", () => {
     const scores = await langfuse.fetchScores();
     const score1 = scores.data[2];
     const score2 = scores.data[1];
-    console.log("ScoreId", score1.id);
+    const score3 = scores.data[0];
     const fetchedScore1 = await langfuse.fetchScore(score1.id);
-    console.log("ScoreData", fetchedScore1.data);
-    expect(fetchedScore1.data).toContainEqual(
+    expect(fetchedScore1.data).toMatchObject(
       expect.objectContaining({ traceId: trace.id, name: "harmfulness", value: 0.5 })
     );
     const fetchedScore2 = await langfuse.fetchScore(score2.id);
-    expect(fetchedScore2.data).toContainEqual(
+    expect(fetchedScore2.data).toMatchObject(
       expect.objectContaining({
         traceId: trace.id,
         name: "quality",
         value: 1,
         comment: "Factually correct",
+      })
+    );
+    const fetchedScore3 = await langfuse.fetchScore(score3.id);
+    expect(fetchedScore3.data).toMatchObject(
+      expect.objectContaining({
+        traceId: trace.id,
+        name: "relevance",
+        value: 0.8,
+        comment: "Mostly relevant",
       })
     );
   });
