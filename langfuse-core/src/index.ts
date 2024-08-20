@@ -362,8 +362,7 @@ abstract class LangfuseCoreStateless {
       this._getFetchOptions({ method: "GET" })
     );
     // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
-    const { data, meta } = (await res.json()) as GetLangfuseScoresResponse;
-    return { data, meta };
+    return (await res.json()) as GetLangfuseScoresResponse;
   }
 
   async fetchPrompts(query?: GetLangfusePromptsQuery): Promise<GetLangfusePromptsResponse> {
