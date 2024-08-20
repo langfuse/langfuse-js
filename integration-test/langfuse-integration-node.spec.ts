@@ -595,7 +595,7 @@ describe("Langfuse Node.js", () => {
     console.log(score1.id);
     const fetchedScore1 = await langfuse.fetchScore(score1.id);
     console.log(fetchedScore1.data);
-    expect(fetchedScore1.data[0]).toContainEqual(
+    expect(fetchedScore1.data).toContainEqual(
       expect.objectContaining({ traceId: trace.id, name: "harmfulness", value: 0.5 })
     );
     const fetchedScore2 = await langfuse.fetchScore(score2.id);
