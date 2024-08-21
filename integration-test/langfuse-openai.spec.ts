@@ -4,7 +4,9 @@ import OpenAI from "openai";
 import Langfuse, { observeOpenAI } from "../langfuse";
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
-import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
+import { LANGFUSE_BASEURL, getHeaders, fetchTraceById } from "./integration-utils";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
 
 jest.useFakeTimers({ doNotFake: ["Date"] });
 
@@ -18,21 +20,6 @@ const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => 
   return res;
 };
 
-const getTraceById = async (id: string): Promise<AxiosResponse<any, any>> => {
-  const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
-  const res = await axios.get(url, {
-    headers: getHeaders(),
-  });
-  return res;
-};
-
-const getTrace = async (id: string): Promise<AxiosResponse<any, any>> => {
-  const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
-  const res = await axios.get(url, {
-    headers: getHeaders(),
-  });
-  return res;
-};
 describe("Langfuse-OpenAI-Integation", () => {
   describe("Core Methods", () => {
     it("Chat-completion without streaming", async () => {
@@ -553,7 +540,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.statusMessage).toBeNull();
 
       const traceId = generation.traceId;
-      const resp = await getTrace(traceId);
+      const resp = await fetchTraceById(traceId);
       expect(resp.status).toBe(200);
       expect(resp.data).toBeDefined();
       const trace = resp.data;
@@ -601,7 +588,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         expect(generation.statusMessage).toBeDefined();
 
         const traceId = generation.traceId;
-        const resp = await getTrace(traceId);
+        const resp = await fetchTraceById(traceId);
         expect(resp.status).toBe(200);
         expect(resp.data).toBeDefined();
         const trace = resp.data;
@@ -640,7 +627,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     // Flushes the correct client
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
 
     expect(response.status).toBe(200);
     const trace_data = response.data;
@@ -709,7 +696,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     // Flushes the correct client
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
     expect(response.status).toBe(200);
 
     const trace_data = response.data;
@@ -789,7 +776,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(res).toBeDefined();
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
     expect(response.status).toBe(200);
 
     const trace_data = response.data;
@@ -955,7 +942,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(res).toBeDefined();
     await client.flushAsync();
 
-    const response = await getTraceById(traceId);
+    const response = await fetchTraceById(traceId);
     expect(response.status).toBe(200);
 
     const generation = response.data.observations[0];
@@ -994,5 +981,128 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(messages).toBeDefined();
 
     await client.flushAsync();
+  }, 10000);
+
+  it("should work with structured output parsing with response_format", async () => {
+    const traceId = randomUUID();
+    const client = observeOpenAI(openai, { traceId, metadata: { someKey: "someValue" } });
+    const response_format = {
+      type: "json_schema",
+      json_schema: {
+        name: "math_response",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            steps: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  explanation: { type: "string" },
+                  output: { type: "string" },
+                },
+                required: ["explanation", "output"],
+                additionalProperties: false,
+              },
+            },
+            final_answer: { type: "string" },
+          },
+          required: ["steps", "final_answer"],
+          additionalProperties: false,
+        },
+      },
+    } as any;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        { role: "system", content: "You are a helpful math tutor. Guide the user through the solution step by step." },
+        { role: "user", content: "how can I solve 8x + 7 = -23" },
+      ],
+      response_format,
+    });
+
+    await client.flushAsync();
+
+    const trace = await fetchTraceById(traceId);
+    expect(trace.status).toBe(200);
+
+    const generation = trace.data.observations[0];
+    expect(generation.input).toMatchObject({
+      messages: [
+        { role: "system", content: "You are a helpful math tutor. Guide the user through the solution step by step." },
+        { role: "user", content: "how can I solve 8x + 7 = -23" },
+      ],
+    });
+    expect(generation.output).toMatchObject(completion.choices[0].message);
+    expect(generation.metadata).toMatchObject({ someKey: "someValue", response_format });
+    expect(generation.model).toBe("gpt-4o-2024-08-06");
+  }, 10000);
+
+  it("should work with structured output parsing with beta API", async () => {
+    const traceId = randomUUID();
+    const client = observeOpenAI(openai, { traceId, metadata: { someKey: "someValue" } });
+    const Step = z.object({
+      explanation: z.string(),
+      output: z.string(),
+    });
+
+    const MathResponse = z.object({
+      steps: z.array(Step),
+      final_answer: z.string(),
+    });
+
+    const completion = await client.beta.chat.completions.parse({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        { role: "system", content: "You are a helpful math tutor. Guide the user through the solution step by step." },
+        { role: "user", content: "how can I solve 8x + 7 = -23" },
+      ],
+      response_format: zodResponseFormat(MathResponse, "math_response"),
+    });
+
+    await client.flushAsync();
+
+    const trace = await fetchTraceById(traceId);
+    expect(trace.status).toBe(200);
+
+    const generation = trace.data.observations[0];
+    expect(generation.input).toMatchObject({
+      messages: [
+        { role: "system", content: "You are a helpful math tutor. Guide the user through the solution step by step." },
+        { role: "user", content: "how can I solve 8x + 7 = -23" },
+      ],
+    });
+    expect(generation.output).toMatchObject(completion.choices[0].message);
+    expect(generation.metadata).toMatchObject({
+      someKey: "someValue",
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "math_response",
+          schema: {
+            type: "object",
+            $schema: "http://json-schema.org/draft-07/schema#",
+            required: ["steps", "final_answer"],
+            properties: {
+              steps: {
+                type: "array",
+                items: {
+                  type: "object",
+                  required: ["explanation", "output"],
+                  properties: { output: { type: "string" }, explanation: { type: "string" } },
+                  additionalProperties: false,
+                },
+              },
+              final_answer: { type: "string" },
+            },
+            additionalProperties: false,
+          },
+          strict: true,
+        },
+      },
+    });
+    expect(generation.model).toBe("gpt-4o-2024-08-06");
   }, 10000);
 });

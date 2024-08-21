@@ -1,5 +1,5 @@
 {
-  "name": "langfuse",
+  "name": "langfuse-vercel",
   "version": "3.19.0",
   "engines": {
     "node": ">=18"
@@ -25,16 +25,21 @@
   },
   "scripts": {
     "test": "jest -c jest.config.js",
-    "prepublishOnly": "cd .. && yarn build"
+    "prepublishOnly": "cd .. && yarn build",
+    "test:integration": "dotenv -- node --experimental-vm-modules ../node_modules/.bin/jest ./test/langfuse-integration.vercel.spec.ts"
   },
   "files": [
     "lib",
     "Readme.md"
   ],
+  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
   "dependencies": {
+    "langfuse": "^3.19.0",
     "langfuse-core": "^3.19.0"
   },
-  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
+  "peerDependencies": {
+    "ai": ">=3.2.44"
+  },
   "devDependencies": {
     "typedoc": "^0.26.5"
   }

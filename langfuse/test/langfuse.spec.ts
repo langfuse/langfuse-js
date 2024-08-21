@@ -52,12 +52,7 @@ describe("langfuseWeb", () => {
       langfuse.trace({ name: "test-trace-1", id: "test-id" });
 
       expect(fetch).toHaveBeenCalledWith(`${LANGFUSE_BASEURL}/api/public/ingestion`, {
-        body: expect.stringContaining(
-          JSON.stringify({
-            id: "test-id",
-            name: "test-trace-1",
-          })
-        ),
+        body: expect.stringMatching(/.*"id"\s*:\s*"test-id".*"name"\s*:\s*"test-trace-1".*/),
         method: "POST",
         headers: expect.objectContaining({
           "Content-Type": "application/json",
