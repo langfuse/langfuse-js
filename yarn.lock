@@ -7,20 +7,20 @@
   resolved "https://registry.npmjs.org/@aashutoshrathi/word-wrap/-/word-wrap-1.2.6.tgz"
   integrity sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==
 
-"@ai-sdk/openai@^0.0.48":
-  version "0.0.48"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-0.0.48.tgz#7a9dcfc84f6f781cea58b6eb0edfa6edd17e864f"
-  integrity sha512-buw9cT/55VGjvtcNvQGDljHQMan8C3/D1UvkcpY8XPfnimffrjAQa66fXldahhFQM20didNJawh0vlTM1MvRDw==
+"@ai-sdk/openai@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-0.0.51.tgz#96d38ec31249a93c7416fe6552916f8e35457829"
+  integrity sha512-e+badQnVzAuY0CXThjXZM4IdbztGnntz0Oo44jyklVsWjhJxnpr5m47ALR+0C/Wdakl5oHFGy4CZfiJ9K6ZyVw==
   dependencies:
-    "@ai-sdk/provider" "0.0.20"
-    "@ai-sdk/provider-utils" "1.0.13"
+    "@ai-sdk/provider" "0.0.21"
+    "@ai-sdk/provider-utils" "1.0.15"
 
-"@ai-sdk/provider-utils@1.0.13":
-  version "1.0.13"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.13.tgz#073feeeb4baefe9efb5106b99126d69b379f229b"
-  integrity sha512-NDQUUBDQoWk9aGn2pOA5wiM5CdO57KeYTEph7PpKGEU8IyqI0d+CiYKISOia6Omy17d+Dw/ZM6KP98F89BGJ5A==
+"@ai-sdk/provider-utils@1.0.15":
+  version "1.0.15"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.15.tgz#b60e0a2e698e8e3e61d62cc42c0b538eb96abac2"
+  integrity sha512-icZqf2kpV8XdSViei4pX9ylYcVn+pk9AnVquJJGjGQGnwZ/5OgShqnFcLYrMjQfQcSVkz0PxdQVsIhZHzlT9Og==
   dependencies:
-    "@ai-sdk/provider" "0.0.20"
+    "@ai-sdk/provider" "0.0.21"
     eventsource-parser "1.1.2"
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
@@ -42,10 +42,10 @@
   dependencies:
     json-schema "0.4.0"
 
-"@ai-sdk/provider@0.0.20":
-  version "0.0.20"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.20.tgz#a51a8e6f42ce251bf4517523d31652e3bcbca401"
-  integrity sha512-nCQZRUTi/+y+kf1ep9rujpbQEtsIwySzlQAudiFeVhzzDi9rYvWp5tOSVu8/ArT+i1xSc2tw40akxb1TX73ofQ==
+"@ai-sdk/provider@0.0.21":
+  version "0.0.21"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.21.tgz#1c4ad334efc3b9275164886262a950a31150b807"
+  integrity sha512-9j95uaPRxwYkzQdkl4XO/MmWWW5c5vcVSXtqvALpD9SMB9fzH46dO3UN4VbOJR2J3Z84CZAqgZu5tNlkptT9qQ==
   dependencies:
     json-schema "0.4.0"
 
