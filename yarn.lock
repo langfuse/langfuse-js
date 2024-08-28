@@ -8506,10 +8506,10 @@ open@^8.4.0:
     is-docker "^2.1.1"
     is-wsl "^2.2.0"
 
-openai@^4.41.1, openai@^4.49.1, openai@^4.55.4:
-  version "4.55.4"
-  resolved "https://registry.yarnpkg.com/openai/-/openai-4.55.4.tgz#2f188e718e668f478f40c03012d92394e0c3d1b1"
-  integrity sha512-TEC75Y6U/OKIJp9fHao3zkTYfKLYGqXdD2TI+xN2Zd5W8KNKvv6E4/OBTOW7jg7fySfrBrhy5fYzBbyBcdHEtQ==
+openai@^4.41.1, openai@^4.49.1, openai@^4.56.1:
+  version "4.56.1"
+  resolved "https://registry.yarnpkg.com/openai/-/openai-4.56.1.tgz#fc2160964d4c88a45b8f14dd6003ab7b09398eb3"
+  integrity sha512-XMsxdjrWBYgbP6EsDIwbhkQEgeyL2C41te/QrJm8kdfho22exhTUJ/cFJSmCTToam/RSOC1BlOylHvD6i/bmsA==
   dependencies:
     "@types/node" "^18.11.18"
     "@types/node-fetch" "^2.6.4"
