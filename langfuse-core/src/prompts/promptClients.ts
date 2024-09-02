@@ -11,6 +11,7 @@ abstract class BasePromptClient {
   public readonly version: number;
   public readonly config: unknown;
   public readonly labels: string[];
+  public readonly tags: string[];
   public readonly isFallback: boolean;
 
   constructor(prompt: CreateLangfusePromptResponse, isFallback = false) {
