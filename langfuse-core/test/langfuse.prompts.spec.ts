@@ -235,7 +235,7 @@ describe("Langfuse Core", () => {
       expect(result).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
     });
 
-    it("should refetch and return new prompt if cached one is expired according to custom TTL", async () => {
+    it("should return cached prompt if not expired according to custom TTL", async () => {
       const cacheTtlSeconds = Math.max(DEFAULT_PROMPT_CACHE_TTL_SECONDS - 20, 10);
       const mockGetPromptStateless = jest
         .spyOn(langfuse, "getPromptStateless")
@@ -243,27 +243,61 @@ describe("Langfuse Core", () => {
 
       await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
-      jest.advanceTimersByTime(cacheTtlSeconds * 1000 + 1);
+      jest.advanceTimersByTime(cacheTtlSeconds * 1000 - 1);
 
-      const result = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
-      expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
-
-      expect(result).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
+      const cachedResult = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds });
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(1); // Should not refetch
+      expect(cachedResult).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
     });
 
-    it("should refetch and return new prompt if cached one is expired according to default TTL", async () => {
+    it("should return stale prompt immediately if cached one is expired according to default TTL and add to refresh promise map", async () => {
       const mockGetPromptStateless = jest
         .spyOn(langfuse, "getPromptStateless")
         .mockResolvedValue(getPromptStatelessSuccess);
 
-      await langfuse.getPrompt("test-prompt", undefined);
+      const result = await langfuse.getPrompt("test-prompt", undefined);
+
+      // update the version of the returned mocked prompt
+      const updatedPrompt = {
+        ...getPromptStatelessSuccess,
+        data: {
+          ...getPromptStatelessSuccess.data,
+          version: getPromptStatelessSuccess.data.version + 1,
+        },
+      };
+      mockGetPromptStateless.mockResolvedValue(updatedPrompt);
+
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
       jest.advanceTimersByTime(DEFAULT_PROMPT_CACHE_TTL_SECONDS * 1000 + 1);
 
-      const result = await langfuse.getPrompt("test-prompt", undefined);
+      // Accessing private methods using a workaround
+      const cacheKey = langfuse["_getPromptCacheKey"]({ name: "test-prompt" });
+
+      const staleResult = await langfuse.getPrompt("test-prompt", undefined);
+      expect(langfuse["_promptCache"].isRefreshing(cacheKey)).toBe(true);
+
+      // create more stale requests to check that only one refresh is triggered
+      await langfuse.getPrompt("test-prompt", undefined);
+      await langfuse.getPrompt("test-prompt", undefined);
+      await langfuse.getPrompt("test-prompt", undefined);
+      await langfuse.getPrompt("test-prompt", undefined);
+
+      expect(staleResult.version).toBe(result.version);
+      expect(staleResult).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
+
+      // wait for the refresh to complete
+      await langfuse["_promptCache"]["_refreshingKeys"].get(cacheKey);
+      expect(langfuse["_promptCache"].isRefreshing(cacheKey)).toBe(false);
+
+      // check that the prompt has been updated
+      const updatedResult = await langfuse.getPrompt("test-prompt", undefined);
+      expect(updatedResult.version).toBe(result.version + 1);
+
+      // Should only have refetched once despite multiple calls
       expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
 
-      expect(result).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
+      // final check for returned prompt
+      expect(updatedResult).toEqual(new TextPromptClient(updatedPrompt.data));
     });
 
     it("should return expired prompt if refetch fails", async () => {
