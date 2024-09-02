@@ -1058,20 +1058,20 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     }
 
     if (cachedPrompt.isExpired) {
-      return await this._fetchPromptAndUpdateCache({
-        name,
-        version,
-        label: options?.label,
-        cacheTtlSeconds: options?.cacheTtlSeconds,
-        maxRetries: options?.maxRetries,
-        fetchTimeout: options?.fetchTimeoutMs,
-      }).catch(() => {
-        console.warn(
-          `Returning expired prompt cache for '${this._getPromptCacheKey({ name, version, label: options?.label })}' due to fetch error`
-        );
+      // If the cache is not currently being refreshed, start refreshing it and register the promise in the cache
+      if (!this._promptCache.isRefreshing(cacheKey)) {
+        const refreshPromptPromise = this._fetchPromptAndUpdateCache({
+          name,
+          version,
+          label: options?.label,
+          cacheTtlSeconds: options?.cacheTtlSeconds,
+          maxRetries: options?.maxRetries,
+          fetchTimeout: options?.fetchTimeoutMs,
+        });
+        this._promptCache.addRefreshingPromise(cacheKey, refreshPromptPromise);
+      }
 
-        return cachedPrompt.value;
-      });
+      return cachedPrompt.value;
     }
 
     return cachedPrompt.value;
