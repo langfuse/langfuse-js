@@ -1067,6 +1067,8 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
           cacheTtlSeconds: options?.cacheTtlSeconds,
           maxRetries: options?.maxRetries,
           fetchTimeout: options?.fetchTimeoutMs,
+        }).catch(() => {
+          console.warn(`Failed to refresh prompt cache '${cacheKey}'`);
         });
         this._promptCache.addRefreshingPromise(cacheKey, refreshPromptPromise);
       }

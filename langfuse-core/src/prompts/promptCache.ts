@@ -38,7 +38,13 @@ export class LangfusePromptCache {
 
   public addRefreshingPromise(key: string, promise: Promise<any>): void {
     this._refreshingKeys.set(key, promise);
-    promise.then(() => this._refreshingKeys.delete(key)).catch(() => this._refreshingKeys.delete(key));
+    promise
+      .then(() => {
+        this._refreshingKeys.delete(key);
+      })
+      .catch(() => {
+        this._refreshingKeys.delete(key);
+      });
   }
 
   public isRefreshing(key: string): boolean {
