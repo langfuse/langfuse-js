@@ -602,6 +602,7 @@ abstract class LangfuseCoreStateless {
       try {
         this.flush((err, data) => {
           if (err) {
+            this._events.emit("ingestion-error", err); // emit ingestion error event after flushing
             resolve();
           } else {
             resolve(data);
@@ -639,7 +640,7 @@ abstract class LangfuseCoreStateless {
 
     const done = (err?: any): void => {
       if (err) {
-        this._events.emit("ingestion-error", err);
+        this._events.emit("error", err);
       }
       callback?.(err, items);
       this._events.emit("flush", items);
