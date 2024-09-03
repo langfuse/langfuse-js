@@ -95,13 +95,13 @@ function isLangfuseFetchError(err: any): boolean {
 const updatePromptResponse =
   "Make sure to keep your SDK updated, refer to https://www.npmjs.com/package/langfuse for details.";
 const defaultErrorResponse =
-  "Unexpected error occurred. Please check your request or contact support: https://langfuse.com/support.";
+  "Unexpected error occurred. Please check your request and contact support: https://langfuse.com/support.";
 
 const errorResponseByCode = new Map<number, string>([
   // 5xx errors, 404 error
   [500, "Internal server error occurred. Please contact support: https://langfuse.com/support"],
   [501, "Not implemented. Please check your request or contact support: https://langfuse.com/support."],
-  [502, "Bad gateway. Please try again later."],
+  [502, "Bad gateway. Please try again later or contact support: https://langfuse.com/support."],
   [
     503,
     "Service unavailable. Please try again later or contact support if the error persists: https://langfuse.com/support.",
@@ -133,8 +133,12 @@ const errorResponseByCode = new Map<number, string>([
 
 // use function across all endpoints (ex. prompts)
 function getErrorResponseByCode(code: number | undefined): string {
-  const errorResponse = code ? errorResponseByCode.get(code) : defaultErrorResponse;
-  return code + ": " + errorResponse + " " + updatePromptResponse;
+  if (!code) {
+    return `${defaultErrorResponse} ${updatePromptResponse}`;
+  }
+
+  const errorResponse = errorResponseByCode.get(code) || defaultErrorResponse;
+  return `${code}: ${errorResponse} ${updatePromptResponse}`;
 }
 
 abstract class LangfuseCoreStateless {
@@ -186,7 +190,7 @@ abstract class LangfuseCoreStateless {
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
 
-    // error handling in ingestion queue 
+    // error handling in ingestion queue
     this._events.on("ingestion-error", (err) => {
       const code = err.response?.status;
       const errorResponse = getErrorResponseByCode(code);
@@ -603,7 +607,7 @@ abstract class LangfuseCoreStateless {
             resolve(data);
           }
         });
-      // safeguard against unexpected synchronous errors
+        // safeguard against unexpected synchronous errors
       } catch (e) {
         console.error("Error while flushing Langfuse", e);
       }
