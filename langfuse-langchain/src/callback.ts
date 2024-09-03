@@ -231,7 +231,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
       this.updateTrace(runId, parentRunId, action);
     } catch (e) {
-      this._log(e); // langchain errors
+      this._log(e);
     }
   }
 
