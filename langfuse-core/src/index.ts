@@ -120,7 +120,7 @@ const errorResponseByCode = new Map<number, string>([
     400,
     `Bad request. Please check your request for any missing or incorrect parameters. Refer to our API docs: ${API_DOCS_URL} for details.`,
   ],
-  [401, `Unauthorized. Please check your public/private host settings or reach out to support: ${SUPPORT_URL}.`],
+  [401, `Unauthorized. Please check your public/private host settings.`],
   [403, `Forbidden. Please check your access control settings. Refer to our RBAC docs: ${RBAC_DOCS_URL} for details.`],
   [
     429,
@@ -191,6 +191,9 @@ abstract class LangfuseCoreStateless {
     this._events.on("ingestion-error", (err) => {
       const code = err.response?.status;
       const errorResponse = getErrorResponseByCode(code);
+      if (this.debugMode) {
+        console.log("Langfuse Debug stack trace for ingestion error.", err);
+      }
       console.error("Error while flushing Langfuse.", errorResponse);
     });
   }
