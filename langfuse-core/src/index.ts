@@ -91,6 +91,32 @@ function isLangfuseFetchError(err: any): boolean {
   return typeof err === "object" && (err.name === "LangfuseFetchHttpError" || err.name === "LangfuseFetchNetworkError");
 }
 
+// Langfuse Error Responses 
+const updatePromptResponse = "Make sure to keep your SDK updated, refer to https://www.npmjs.com/package/langfuse for details.";
+const defaultErrorResponse = "Unexpected error occurred. Please check your request or contact support: https://langfuse.com/support."
+
+const errorResponseByCode = new Map<number, string>([
+  // 5xx errors, 404 error
+  [500, "Internal server error occurred. Please contact support: https://langfuse.com/support"],
+  [501, "Not implemented. Please check your request or contact support: https://langfuse.com/support."],
+  [502, "Bad gateway. Please try again later."],
+  [503, "Service unavailable. Please try again later or contact support if the error persists: https://langfuse.com/support."],
+  [504, "Gateway timeout. Please try again later."],
+  [404, "Internal error occurred. Likely caused by race condition, please escalate to support if seen in high volume: https://langfuse.com/support"], 
+
+  // 4xx errors
+  [400, "Bad request. Please check your request for any missing or incorrect parameters. Refer to our API docs: https://api.reference.langfuse.com for details."],
+  [401, "Unauthorized. Please check your public/private host settings or reach out to support: https://langfuse.com/support."],
+  [403, "Forbidden. Please check your access control settings. Refer to our RBAC docs: https://langfuse.com/docs/rbac for details."],
+  [429, "Rate limit exceeded. Please try again later. For more information on rate limits please see: https://langfuse.com/faq/all/api-limits"],
+]);
+
+// use function across all endpoints (ex. prompts)
+function getErrorResponseByCode(code: number | undefined): string {
+  const errorResponse = code ? errorResponseByCode.get(code) : defaultErrorResponse;
+  return code + ": " + errorResponse + " " + updatePromptResponse;
+}
+
 abstract class LangfuseCoreStateless {
   // options
   private secretKey: string | undefined;
@@ -545,7 +571,9 @@ abstract class LangfuseCoreStateless {
       try {
         this.flush((err, data) => {
           if (err) {
-            console.error("Error while flushing Langfuse", err);
+            const code = err.response?.status;
+            const errorResponse = getErrorResponseByCode(code);
+            console.error("Error while flushing Langfuse.", errorResponse)
             resolve();
           } else {
             resolve(data);
@@ -607,9 +635,11 @@ abstract class LangfuseCoreStateless {
       body: payload,
     });
 
+    // prompts: we have multiple ways: caching, local fallback, retries -> additional info string linking docs (multiple routes)
     const requestPromise = this.fetchWithRetry(url, fetchOptions)
-      .then(() => done())
+      .then(() => done()) 
       .catch((err) => {
+        // 207, replicate python SDK implementation in giving back errors to users 
         done(err);
       });
     this.pendingPromises[promiseUUID] = requestPromise;
