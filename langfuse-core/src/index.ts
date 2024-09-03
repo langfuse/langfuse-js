@@ -185,6 +185,13 @@ abstract class LangfuseCoreStateless {
     this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
+
+    // error handling in ingestion queue 
+    this._events.on("ingestion-error", (err) => {
+      const code = err.response?.status;
+      const errorResponse = getErrorResponseByCode(code);
+      console.error("Error while flushing Langfuse.", errorResponse);
+    });
   }
 
   getSdkIntegration(): string {
@@ -548,7 +555,7 @@ abstract class LangfuseCoreStateless {
         JSON.stringify(body);
       } catch (e) {
         console.error(`Event Body for ${type} is not JSON-serializable: ${e}`);
-        this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
+        this._events.emit("ingestion-error", `Event Body for ${type} is not JSON-serializable: ${e}`);
 
         return;
       }
@@ -575,7 +582,7 @@ abstract class LangfuseCoreStateless {
         this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval);
       }
     } catch (e) {
-      this._events.emit("error", e);
+      this._events.emit("ingestion-error", e);
     }
   }
 
@@ -591,14 +598,12 @@ abstract class LangfuseCoreStateless {
       try {
         this.flush((err, data) => {
           if (err) {
-            const code = err.response?.status;
-            const errorResponse = getErrorResponseByCode(code);
-            console.error("Error while flushing Langfuse.", errorResponse);
             resolve();
           } else {
             resolve(data);
           }
         });
+      // safeguard against unexpected synchronous errors
       } catch (e) {
         console.error("Error while flushing Langfuse", e);
       }
@@ -630,7 +635,7 @@ abstract class LangfuseCoreStateless {
 
     const done = (err?: any): void => {
       if (err) {
-        this._events.emit("error", err);
+        this._events.emit("ingestion-error", err);
       }
       callback?.(err, items);
       this._events.emit("flush", items);
@@ -657,9 +662,9 @@ abstract class LangfuseCoreStateless {
 
     // prompts: we have multiple ways: caching, local fallback, retries -> additional info string linking docs (multiple routes)
     const requestPromise = this.fetchWithRetry(url, fetchOptions)
+      // TODO: 207, replicate python SDK implementation in giving back errors to users
       .then(() => done())
       .catch((err) => {
-        // 207, replicate python SDK implementation in giving back errors to users
         done(err);
       });
     this.pendingPromises[promiseUUID] = requestPromise;
