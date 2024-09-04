@@ -52,12 +52,12 @@ yarn
 yarn build
 ```
 
-Run `npx lerna publish --force-publish --no-private`
+Run `npx lerna publish --force-publish --no-private --concurrency 1`
 
 - Bumps version number of langfuse and langfuse-node, ignores langfuse-core
 - Publishes to NPM, publishes also when there are no changes to keep the version numbers in sync
 - Confirm with npmjs OTP
 
-Alpha: `npx lerna publish prerelease --force-publish --no-private --dist-tag alpha --preid alpha`
+Alpha: `npx lerna publish prerelease --force-publish --no-private --dist-tag alpha --preid alpha --concurrency 1`
 
 Write release notes in GitHub releases.
