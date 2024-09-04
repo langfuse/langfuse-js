@@ -1,6 +1,6 @@
 {
   "name": "langfuse-core",
-  "version": "3.20.1-alpha.3",
+  "version": "3.20.1-alpha.4",
   "engines": {
     "node": ">=18"
   },
