@@ -138,6 +138,16 @@ function getErrorResponseByCode(code: number | undefined): string {
   return `${code}: ${errorResponse} ${updatePromptResponse}`;
 }
 
+function logIngestionError(error: unknown): void {
+  if (error instanceof Error && 'response' in error) {  
+    const code = (error as any).response.status;
+    const errorResponse = getErrorResponseByCode(code);
+    console.error("Error while flushing Langfuse.", errorResponse);
+  } else {
+    console.error("Unknown error while flushing Langfuse.", error);
+  }
+}
+
 abstract class LangfuseCoreStateless {
   // options
   private secretKey: string | undefined;
@@ -186,16 +196,6 @@ abstract class LangfuseCoreStateless {
     this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
-
-    // error handling in ingestion queue
-    this._events.on("ingestion-error", (err) => {
-      const code = err.response?.status;
-      const errorResponse = getErrorResponseByCode(code);
-      if (this.debugMode) {
-        console.log("Langfuse Debug stack trace for ingestion error.", err);
-      }
-      console.error("Error while flushing Langfuse.", errorResponse);
-    });
   }
 
   getSdkIntegration(): string {
@@ -559,7 +559,7 @@ abstract class LangfuseCoreStateless {
         JSON.stringify(body);
       } catch (e) {
         console.error(`Event Body for ${type} is not JSON-serializable: ${e}`);
-        this._events.emit("ingestion-error", `Event Body for ${type} is not JSON-serializable: ${e}`);
+        this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
 
         return;
       }
@@ -586,7 +586,8 @@ abstract class LangfuseCoreStateless {
         this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval);
       }
     } catch (e) {
-      this._events.emit("ingestion-error", e);
+      logIngestionError(e);
+      this._events.emit("error", e);
     }
   }
 
@@ -602,7 +603,7 @@ abstract class LangfuseCoreStateless {
       try {
         this.flush((err, data) => {
           if (err) {
-            this._events.emit("ingestion-error", err); // emit ingestion error event after flushing
+            logIngestionError(err);
             resolve();
           } else {
             resolve(data);
