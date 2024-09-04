@@ -793,6 +793,7 @@ abstract class LangfuseCoreStateless {
           });
         } catch (e) {
           // fetch will only throw on network errors or on timeouts
+          console.log("Error while fetching Langfuse", e);
           throw new LangfuseFetchNetworkError(e);
         }
 
