@@ -139,8 +139,8 @@ function getErrorResponseByCode(code: number | undefined): string {
 }
 
 function logIngestionError(error: unknown): void {
-  if (error instanceof Error && 'response' in error) {  
-    const code = (error as any).response.status;
+  if (error instanceof Error && 'response' in error && error.response instanceof Response) {  
+    const code = error.response.status;
     const errorResponse = getErrorResponseByCode(code);
     console.error("Error while flushing Langfuse.", errorResponse);
   } else {
