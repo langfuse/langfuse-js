@@ -138,8 +138,12 @@ function getErrorResponseByCode(code: number | undefined): string {
   return `${code}: ${errorResponse} ${updatePromptResponse}`;
 }
 
+function isErrorWithResponse(error: unknown): error is { response: { status: number } } {
+  return error instanceof Error && 'response' in error && error.response !== null && typeof error.response === 'object' && 'status' in error.response;
+}
+
 function logIngestionError(error: unknown): void {
-  if (error instanceof Error && 'response' in error && error.response instanceof Response) {  
+  if (isErrorWithResponse(error)) {  
     const code = error.response.status;
     const errorResponse = getErrorResponseByCode(code);
     console.error("Error while flushing Langfuse.", errorResponse);
