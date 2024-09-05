@@ -87,8 +87,16 @@ class LangfuseFetchNetworkError extends Error {
   }
 }
 
+function isLangfuseFetchHttpError(error: any): error is LangfuseFetchHttpError {
+  return typeof error === "object" && error.name === "LangfuseFetchHttpError";
+}
+
+function isLangfuseFetchNetworkError(error: any): error is LangfuseFetchNetworkError {
+  return typeof error === "object" && error.name === "LangfuseFetchNetworkError";
+}
+
 function isLangfuseFetchError(err: any): boolean {
-  return typeof err === "object" && (err.name === "LangfuseFetchHttpError" || err.name === "LangfuseFetchNetworkError");
+  return isLangfuseFetchHttpError(err) || isLangfuseFetchNetworkError(err);
 }
 
 // Constants for URLs
@@ -138,15 +146,7 @@ function getErrorResponseByCode(code: number | undefined): string {
   return `${code}: ${errorResponse} ${updatePromptResponse}`;
 }
 
-function isLangfuseFetchHttpError(error: any): error is LangfuseFetchHttpError {
-  return typeof error === "object" && error.name === "LangfuseFetchHttpError";
-}
-
-function isLangfuseFetchNetworkError(error: any): error is LangfuseFetchNetworkError {
-  return typeof error === "object" && error.name === "LangfuseFetchNetworkError";
-}
-
-function logIngestionError(error: unknown): void {
+function logIngestionError(error: any): void {
   if (isLangfuseFetchHttpError(error)) {
     const code = error.response.status;
     const errorResponse = getErrorResponseByCode(code);
