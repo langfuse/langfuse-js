@@ -142,12 +142,19 @@ function isLangfuseFetchHttpError(error: any): error is LangfuseFetchHttpError {
   return typeof error === "object" && error.name === "LangfuseFetchHttpError";
 }
 
+function isLangfuseFetchNetworkError(error: any): error is LangfuseFetchNetworkError {
+  return typeof error === "object" && error.name === "LangfuseFetchNetworkError";
+}
+
 function logIngestionError(error: unknown): void {
   if (isLangfuseFetchHttpError(error)) {
     const code = error.response.status;
     const errorResponse = getErrorResponseByCode(code);
     console.error("[Langfuse SDK] Error while flushing Langfuse.", errorResponse);
-  } else {
+  } else if (isLangfuseFetchNetworkError(error)) {
+    console.error("[Langfuse SDK] Network error while flushing Langfuse.", error);
+  } 
+  else {
     console.error("[Langfuse SDK] Unknown error while flushing Langfuse.", error);
   }
 }
@@ -671,7 +678,6 @@ abstract class LangfuseCoreStateless {
     });
 
     const requestPromise = this.fetchWithRetry(url, fetchOptions)
-      // TODO: 207, replicate python SDK implementation in giving back errors to users
       .then(() => done())
       .catch((err) => {
         done(err);
@@ -787,7 +793,6 @@ abstract class LangfuseCoreStateless {
           });
         } catch (e) {
           // fetch will only throw on network errors or on timeouts
-          console.log("Error while fetching Langfuse", e);
           throw new LangfuseFetchNetworkError(e);
         }
 
