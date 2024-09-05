@@ -153,8 +153,7 @@ function logIngestionError(error: unknown): void {
     console.error("[Langfuse SDK] Error while flushing Langfuse.", errorResponse);
   } else if (isLangfuseFetchNetworkError(error)) {
     console.error("[Langfuse SDK] Network error while flushing Langfuse.", error);
-  } 
-  else {
+  } else {
     console.error("[Langfuse SDK] Unknown error while flushing Langfuse.", error);
   }
 }
