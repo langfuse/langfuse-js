@@ -109,6 +109,7 @@ const NPM_PACKAGE_URL = "https://www.npmjs.com/package/langfuse";
 
 // Error messages
 const updatePromptResponse = `Make sure to keep your SDK updated, refer to ${NPM_PACKAGE_URL} for details.`;
+const defaultServerErrorPrompt = `This is an unusual occurrence and we are monitoring it closely. For help, please contact support: ${SUPPORT_URL}.`;
 const defaultErrorResponse = `Unexpected error occurred. Please check your request and contact support: ${SUPPORT_URL}.`;
 
 // Error response map
@@ -116,22 +117,10 @@ const errorResponseByCode = new Map<number, string>([
   // Internal error category: 5xx errors, 404 error
   [500, `Internal server error occurred. For help, please contact support: ${SUPPORT_URL}`],
   [501, `Not implemented. Please check your request and contact support for help: ${SUPPORT_URL}.`],
-  [
-    502,
-    `Bad gateway. This is an unusual occurrence and we are monitoring it closely. For help, please contact support: ${SUPPORT_URL}.`,
-  ],
-  [
-    503,
-    `Service unavailable. This is an unusual occurrence and we are monitoring it closely. For help, please contact support: ${SUPPORT_URL}.`,
-  ],
-  [
-    504,
-    `Gateway timeout. This is an unusual occurrence and we are monitoring it closely. For help, please contact support: ${SUPPORT_URL}.`,
-  ],
-  [
-    404,
-    `Internal error occurred. This is an unusual occurrence and we are monitoring it closely. For help, please contact support: ${SUPPORT_URL}`,
-  ],
+  [502, `Bad gateway. ${defaultServerErrorPrompt}`],
+  [503, `Service unavailable. ${defaultServerErrorPrompt}`],
+  [504, `Gateway timeout. ${defaultServerErrorPrompt}`],
+  [404, `Internal error occurred. ${defaultServerErrorPrompt}`],
 
   // Client error category: 4xx errors, excluding 404
   [
