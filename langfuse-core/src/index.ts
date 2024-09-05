@@ -596,7 +596,6 @@ abstract class LangfuseCoreStateless {
         this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval);
       }
     } catch (e) {
-      logIngestionError(e);
       this._events.emit("error", e);
     }
   }
