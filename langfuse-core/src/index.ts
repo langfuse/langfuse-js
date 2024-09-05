@@ -138,23 +138,17 @@ function getErrorResponseByCode(code: number | undefined): string {
   return `${code}: ${errorResponse} ${updatePromptResponse}`;
 }
 
-function isErrorWithResponse(error: unknown): error is { response: { status: number } } {
-  return (
-    error instanceof Error &&
-    "response" in error &&
-    error.response !== null &&
-    typeof error.response === "object" &&
-    "status" in error.response
-  );
+function isLangfuseFetchHttpError(error: any): error is LangfuseFetchHttpError {
+  return typeof error === "object" && error.name === "LangfuseFetchHttpError";
 }
 
 function logIngestionError(error: unknown): void {
-  if (isErrorWithResponse(error)) {
+  if (isLangfuseFetchHttpError(error)) {
     const code = error.response.status;
     const errorResponse = getErrorResponseByCode(code);
-    console.error("Error while flushing Langfuse.", errorResponse);
+    console.error("[Langfuse SDK] Error while flushing Langfuse.", errorResponse);
   } else {
-    console.error("Unknown error while flushing Langfuse.", error);
+    console.error("[Langfuse SDK] Unknown error while flushing Langfuse.", error);
   }
 }
 
@@ -568,7 +562,7 @@ abstract class LangfuseCoreStateless {
       try {
         JSON.stringify(body);
       } catch (e) {
-        console.error(`Event Body for ${type} is not JSON-serializable: ${e}`);
+        console.error(`[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
         this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
 
         return;
@@ -621,7 +615,7 @@ abstract class LangfuseCoreStateless {
         });
         // safeguard against unexpected synchronous errors
       } catch (e) {
-        console.error("Error while flushing Langfuse", e);
+        console.error("[Langfuse SDK] Error while flushing Langfuse", e);
       }
     });
   }
@@ -720,7 +714,7 @@ abstract class LangfuseCoreStateless {
         totalSize += itemSize;
         processedItems.push(queue[i]);
       } catch (error) {
-        console.error(error);
+        console.error(`[Langfuse SDK] ${error}`);
         remainingItems.push(...queue.slice(i));
         break;
       }
@@ -827,7 +821,7 @@ abstract class LangfuseCoreStateless {
       // flush again in case there are new events that were added while we were waiting for the pending promises to resolve
       await this.flushAsync();
     } catch (e) {
-      console.error("Error while shutting down Langfuse", e);
+      console.error("[Langfuse SDK] Error while shutting down Langfuse", e);
     }
   }
 
@@ -1196,7 +1190,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
       return prompt;
     } catch (error) {
-      console.error(`Error while fetching prompt '${cacheKey}':`, error);
+      console.error(`[Langfuse SDK] Error while fetching prompt '${cacheKey}':`, error);
 
       throw error;
     }
