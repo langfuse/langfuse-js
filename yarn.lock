@@ -25,22 +25,15 @@
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
 
-"@ai-sdk/provider-utils@1.0.9":
-  version "1.0.9"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.9.tgz#4582474991bf872f2e20a386ffc0a9e54cc6a558"
-  integrity sha512-yfdanjUiCJbtGoRGXrcrmXn0pTyDfRIeY6ozDG96D66f2wupZaZvAgKptUa3zDYXtUCQQvcNJ+tipBBfQD/UYA==
+"@ai-sdk/provider-utils@1.0.18":
+  version "1.0.18"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.18.tgz#bd30948d6b4ad73a3fbc94f3beeb92f4fa198ded"
+  integrity sha512-9u/XE/dB1gsIGcxiC5JfGOLzUz+EKRXt66T8KYWwDg4x8d02P+fI/EPOgkf+T4oLBrcQgvs4GPXPKoXGPJxBbg==
   dependencies:
-    "@ai-sdk/provider" "0.0.17"
+    "@ai-sdk/provider" "0.0.23"
     eventsource-parser "1.1.2"
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
-
-"@ai-sdk/provider@0.0.17":
-  version "0.0.17"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.17.tgz#4d18b503c3f52ec90770def6c1d5053c1bdfa3bd"
-  integrity sha512-f9j+P5yYRkqKFHxvWae5FI0j6nqROPCoPnMkpc2hc2vC7vKjqzrxBJucD8rpSaUjqiBnY/QuRJ0QeV717Uz5tg==
-  dependencies:
-    json-schema "0.4.0"
 
 "@ai-sdk/provider@0.0.20":
   version "0.0.20"
@@ -49,48 +42,57 @@
   dependencies:
     json-schema "0.4.0"
 
-"@ai-sdk/react@0.0.41":
-  version "0.0.41"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-0.0.41.tgz#abc29cf1b9aa052e949e09ca6d768462d9845bce"
-  integrity sha512-T4M/73Ye/5dU8Ub4qnqPPhAX+KGMj4bhbRNESEuWv/NQPK2OLhAU+1mmLl2LkRwgP6qfFcILWaYssULuJ7ihcQ==
+"@ai-sdk/provider@0.0.23":
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.23.tgz#a69a9103854bbfb500dddf0b44a399edf3db4735"
+  integrity sha512-oAc49O5+xypVrKM7EUU5P/Y4DUL4JZUWVxhejoAVOTOl3WZUEWsMbP3QZR+TrimQIsS0WR/n9UuF6U0jPdp0tQ==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.9"
-    "@ai-sdk/ui-utils" "0.0.29"
+    json-schema "0.4.0"
+
+"@ai-sdk/react@0.0.55":
+  version "0.0.55"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-0.0.55.tgz#77342e7f5936fe184e6a7839e8c3cc02e9aef8b3"
+  integrity sha512-9fUUEEEoH01M6ZhvyZ/2v0DI6tiYnSldBg6RaKoy+qx2tSeKvOpFNZhT/iOvQ7oqAyyp0Ocg5Rj7L/jcLXSMxw==
+  dependencies:
+    "@ai-sdk/provider-utils" "1.0.18"
+    "@ai-sdk/ui-utils" "0.0.41"
     swr "2.2.5"
 
-"@ai-sdk/solid@0.0.32":
-  version "0.0.32"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/solid/-/solid-0.0.32.tgz#3a0ea84d3f6b45c1d003ea70a713afa95354ddae"
-  integrity sha512-cYtidoiI6V0gFpUfF5223CUGz6TZJiJdbYDZta985dnT9aGKSIg0rVl+7E6FLoPPqGSclJ+Omh/TAMvXXTknyw==
+"@ai-sdk/solid@0.0.44":
+  version "0.0.44"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/solid/-/solid-0.0.44.tgz#948a5663ac88bec45303c6cf2ac60d6ffdafd562"
+  integrity sha512-3kMhxalepc78jWr2Qg1BAHbY04JKYxp8wRu3TACrRUdokxzwD5sbZYtTb7vu9tw2wx78rfu0DH44CESFWpSfZg==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.9"
-    "@ai-sdk/ui-utils" "0.0.29"
+    "@ai-sdk/provider-utils" "1.0.18"
+    "@ai-sdk/ui-utils" "0.0.41"
 
-"@ai-sdk/svelte@0.0.34":
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/svelte/-/svelte-0.0.34.tgz#975505902779e308a75d50995079b4f2d33cb4fd"
-  integrity sha512-9WlpChuCnVQgcqRuHIcDDFeswmaGUUzFddLqYTDo5bP/mmeWvFm5RD+fnJ6AiHrsALbrOnUusDwxXvW6ydTz2A==
+"@ai-sdk/svelte@0.0.46":
+  version "0.0.46"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/svelte/-/svelte-0.0.46.tgz#21b4258b211635e5f9d8bb6eab52c2609e54aec3"
+  integrity sha512-cokqS91vQkpqiRgf8xKwOONFb/RwkIbRg9jYVRb+z5NR9OsWXKMEfoCAf8+VgURfVbp8nqA+ddRXvtgYCwqQjQ==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.9"
-    "@ai-sdk/ui-utils" "0.0.29"
+    "@ai-sdk/provider-utils" "1.0.18"
+    "@ai-sdk/ui-utils" "0.0.41"
     sswr "2.1.0"
 
-"@ai-sdk/ui-utils@0.0.29":
-  version "0.0.29"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-0.0.29.tgz#811f278cce4f5be811a0f1b32211c07cd0f23691"
-  integrity sha512-1d+8ogA/xm8xiVdKQt2uJ5HDbkowMYUDS4a30kYkaGNXk7JHy65feEtDHQnnUZKqHdqAruyPB8sLNA75gi6OHQ==
+"@ai-sdk/ui-utils@0.0.41":
+  version "0.0.41"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-0.0.41.tgz#411d6764bb154689834cf13487917a37df729e2d"
+  integrity sha512-I0trJKWxVG8hXeG0MvKqLG54fZjdeGjXvcVZocaSnWMBhl9lpTQxrqAR6ZsQMFDXs5DbvXoKtQs488qu2Bzaiw==
   dependencies:
-    "@ai-sdk/provider" "0.0.17"
-    "@ai-sdk/provider-utils" "1.0.9"
+    "@ai-sdk/provider" "0.0.23"
+    "@ai-sdk/provider-utils" "1.0.18"
+    json-schema "0.4.0"
     secure-json-parse "2.7.0"
+    zod-to-json-schema "3.23.2"
 
-"@ai-sdk/vue@0.0.33":
-  version "0.0.33"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/vue/-/vue-0.0.33.tgz#43044fcfb2165580ab0fc2d756a41206ac4c2bfa"
-  integrity sha512-P+grVsbH/QoKiC/8Efc/bUdYpd8ySXXaeV8BAwp3Y2A6P745Kifw/J5MIirHBVSdZulcLcsMFIpnpm4Xc280IA==
+"@ai-sdk/vue@0.0.46":
+  version "0.0.46"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/vue/-/vue-0.0.46.tgz#4c67334c561128db2a2843513f794887be942438"
+  integrity sha512-H366ydskPbZP8uRs4sm3SAi97P3JVTRI5Q8xYTI6uTaY4UFBA6aOWdDxniYZNa67ebemfe11m7ksX4wHW6Wl8g==
   dependencies:
-    "@ai-sdk/provider-utils" "1.0.9"
-    "@ai-sdk/ui-utils" "0.0.29"
+    "@ai-sdk/provider-utils" "1.0.18"
+    "@ai-sdk/ui-utils" "0.0.41"
     swrv "1.0.4"
 
 "@ampproject/remapping@^2.2.0":
@@ -3755,25 +3757,25 @@ aggregate-error@^3.0.0:
     clean-stack "^2.0.0"
     indent-string "^4.0.0"
 
-ai@^3.3.5:
-  version "3.3.5"
-  resolved "https://registry.yarnpkg.com/ai/-/ai-3.3.5.tgz#0795ce28b4c7f6203791403763475fa886a6f5c2"
-  integrity sha512-aIWnEVL0BN/dSsQGYKoKsV9CInnl7bdKUsXLLFRfiAFfBH1Vu/azMCVRNf1PIS+MCR4GTtjN4c1URgMthfivdg==
+ai@^3.3.27:
+  version "3.3.27"
+  resolved "https://registry.yarnpkg.com/ai/-/ai-3.3.27.tgz#6bfb445354b494e2f60658561a4f9cbff7f24352"
+  integrity sha512-ARKVzndpE4ujlXWU7I72Ei7nlEcUGC84HvbduOFZW1jdTG0EU/pgT6meRLYCuY+khKfmsI7VCJcgyXuZrvwN5g==
   dependencies:
-    "@ai-sdk/provider" "0.0.17"
-    "@ai-sdk/provider-utils" "1.0.9"
-    "@ai-sdk/react" "0.0.41"
-    "@ai-sdk/solid" "0.0.32"
-    "@ai-sdk/svelte" "0.0.34"
-    "@ai-sdk/ui-utils" "0.0.29"
-    "@ai-sdk/vue" "0.0.33"
+    "@ai-sdk/provider" "0.0.23"
+    "@ai-sdk/provider-utils" "1.0.18"
+    "@ai-sdk/react" "0.0.55"
+    "@ai-sdk/solid" "0.0.44"
+    "@ai-sdk/svelte" "0.0.46"
+    "@ai-sdk/ui-utils" "0.0.41"
+    "@ai-sdk/vue" "0.0.46"
     "@opentelemetry/api" "1.9.0"
     eventsource-parser "1.1.2"
     json-schema "0.4.0"
     jsondiffpatch "0.6.0"
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
-    zod-to-json-schema "3.22.5"
+    zod-to-json-schema "3.23.2"
 
 ajv@^6.12.4:
   version "6.12.6"
@@ -9838,16 +9840,7 @@ string-length@^4.0.1:
     char-regex "^1.0.2"
     strip-ansi "^6.0.0"
 
-"string-width-cjs@npm:string-width@^4.2.0":
-  version "4.2.3"
-  resolved "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
-  integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
-  dependencies:
-    emoji-regex "^8.0.0"
-    is-fullwidth-code-point "^3.0.0"
-    strip-ansi "^6.0.1"
-
-"string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
+"string-width-cjs@npm:string-width@^4.2.0", "string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
   version "4.2.3"
   resolved "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
@@ -9960,14 +9953,7 @@ string_decoder@~1.1.1:
   dependencies:
     safe-buffer "~5.1.0"
 
-"strip-ansi-cjs@npm:strip-ansi@^6.0.1":
-  version "6.0.1"
-  resolved "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz"
-  integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
-  dependencies:
-    ansi-regex "^5.0.1"
-
-strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+"strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
   version "6.0.1"
   resolved "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz"
   integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
@@ -10743,7 +10729,7 @@ wordwrap@^1.0.0:
   resolved "https://registry.npmjs.org/wordwrap/-/wordwrap-1.0.0.tgz"
   integrity sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==
 
-"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0":
+"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
   version "7.0.0"
   resolved "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
@@ -10756,15 +10742,6 @@ wrap-ansi@^6.0.1:
   version "6.2.0"
   resolved "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-6.2.0.tgz"
   integrity sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==
-  dependencies:
-    ansi-styles "^4.0.0"
-    string-width "^4.1.0"
-    strip-ansi "^6.0.0"
-
-wrap-ansi@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz"
-  integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
   dependencies:
     ansi-styles "^4.0.0"
     string-width "^4.1.0"
@@ -10935,10 +10912,10 @@ yocto-queue@^0.1.0:
   resolved "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zod-to-json-schema@3.22.5:
-  version "3.22.5"
-  resolved "https://registry.yarnpkg.com/zod-to-json-schema/-/zod-to-json-schema-3.22.5.tgz#3646e81cfc318dbad2a22519e5ce661615418673"
-  integrity sha512-+akaPo6a0zpVCCseDed504KBJUQpEW5QZw7RMneNmKw+fGaML1Z9tUNLnHHAC8x6dzVRO1eB2oEMyZRnuBZg7Q==
+zod-to-json-schema@3.23.2:
+  version "3.23.2"
+  resolved "https://registry.yarnpkg.com/zod-to-json-schema/-/zod-to-json-schema-3.23.2.tgz#bc7e379c8050462538383e382964c03d8fe008f9"
+  integrity sha512-uSt90Gzc/tUfyNqxnjlfBs8W6WSGpNBv0rVsNxP/BVSMHMKGdthPYff4xtCHYloJGM0CFxFsb3NbC0eqPhfImw==
 
 zod-to-json-schema@^3.22.3, zod-to-json-schema@^3.22.5:
   version "3.23.0"
