@@ -1,6 +1,6 @@
 {
   "name": "langfuse-vercel",
-  "version": "3.20.0",
+  "version": "3.21.0",
   "engines": {
     "node": ">=18"
   },
@@ -34,8 +34,8 @@
   ],
   "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
   "dependencies": {
-    "langfuse": "^3.20.0",
-    "langfuse-core": "^3.20.0"
+    "langfuse": "^3.21.0",
+    "langfuse-core": "^3.21.0"
   },
   "peerDependencies": {
     "ai": ">=3.2.44"
