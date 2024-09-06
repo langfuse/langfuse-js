@@ -87,8 +87,74 @@ class LangfuseFetchNetworkError extends Error {
   }
 }
 
+function isLangfuseFetchHttpError(error: any): error is LangfuseFetchHttpError {
+  return typeof error === "object" && error.name === "LangfuseFetchHttpError";
+}
+
+function isLangfuseFetchNetworkError(error: any): error is LangfuseFetchNetworkError {
+  return typeof error === "object" && error.name === "LangfuseFetchNetworkError";
+}
+
 function isLangfuseFetchError(err: any): boolean {
-  return typeof err === "object" && (err.name === "LangfuseFetchHttpError" || err.name === "LangfuseFetchNetworkError");
+  return isLangfuseFetchHttpError(err) || isLangfuseFetchNetworkError(err);
+}
+
+// Constants for URLs
+const SUPPORT_URL = "https://langfuse.com/support";
+const API_DOCS_URL = "https://api.reference.langfuse.com";
+const RBAC_DOCS_URL = "https://langfuse.com/docs/rbac";
+const INSTALLATION_DOCS_URL = "https://langfuse.com/docs/sdk/typescript/guide";
+const RATE_LIMITS_URL = "https://langfuse.com/faq/all/api-limits";
+const NPM_PACKAGE_URL = "https://www.npmjs.com/package/langfuse";
+
+// Error messages
+const updatePromptResponse = `Make sure to keep your SDK updated, refer to ${NPM_PACKAGE_URL} for details.`;
+const defaultServerErrorPrompt = `This is an unusual occurrence and we are monitoring it closely. For help, please contact support: ${SUPPORT_URL}.`;
+const defaultErrorResponse = `Unexpected error occurred. Please check your request and contact support: ${SUPPORT_URL}.`;
+
+// Error response map
+const errorResponseByCode = new Map<number, string>([
+  // Internal error category: 5xx errors, 404 error
+  [500, `Internal server error occurred. For help, please contact support: ${SUPPORT_URL}`],
+  [501, `Not implemented. Please check your request and contact support for help: ${SUPPORT_URL}.`],
+  [502, `Bad gateway. ${defaultServerErrorPrompt}`],
+  [503, `Service unavailable. ${defaultServerErrorPrompt}`],
+  [504, `Gateway timeout. ${defaultServerErrorPrompt}`],
+  [404, `Internal error occurred. ${defaultServerErrorPrompt}`],
+
+  // Client error category: 4xx errors, excluding 404
+  [
+    400,
+    `Bad request. Please check your request for any missing or incorrect parameters. Refer to our API docs: ${API_DOCS_URL} for details.`,
+  ],
+  [
+    401,
+    `Unauthorized. Please check your public/private host settings. Refer to our installation and setup guide: ${INSTALLATION_DOCS_URL} for details on SDK configuration.`,
+  ],
+  [403, `Forbidden. Please check your access control settings. Refer to our RBAC docs: ${RBAC_DOCS_URL} for details.`],
+  [429, `Rate limit exceeded. For more information on rate limits please see: ${RATE_LIMITS_URL}`],
+]);
+
+// Returns a user-friendly error message based on the HTTP status code
+function getErrorResponseByCode(code: number | undefined): string {
+  if (!code) {
+    return `${defaultErrorResponse} ${updatePromptResponse}`;
+  }
+
+  const errorResponse = errorResponseByCode.get(code) || defaultErrorResponse;
+  return `${code}: ${errorResponse} ${updatePromptResponse}`;
+}
+
+function logIngestionError(error: any): void {
+  if (isLangfuseFetchHttpError(error)) {
+    const code = error.response.status;
+    const errorResponse = getErrorResponseByCode(code);
+    console.error("[Langfuse SDK] Error while flushing Langfuse.", errorResponse, `Error details: ${error}`);
+  } else if (isLangfuseFetchNetworkError(error)) {
+    console.error("[Langfuse SDK] Network error while flushing Langfuse.", `Error details: ${error}`);
+  } else {
+    console.error("[Langfuse SDK] Unknown error while flushing Langfuse.", `Error details: ${error}`);
+  }
 }
 
 abstract class LangfuseCoreStateless {
@@ -501,7 +567,7 @@ abstract class LangfuseCoreStateless {
       try {
         JSON.stringify(body);
       } catch (e) {
-        console.error(`Event Body for ${type} is not JSON-serializable: ${e}`);
+        console.error(`[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
         this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
 
         return;
@@ -545,14 +611,15 @@ abstract class LangfuseCoreStateless {
       try {
         this.flush((err, data) => {
           if (err) {
-            console.error("Error while flushing Langfuse", err);
+            logIngestionError(err);
             resolve();
           } else {
             resolve(data);
           }
         });
+        // safeguard against unexpected synchronous errors
       } catch (e) {
-        console.error("Error while flushing Langfuse", e);
+        console.error("[Langfuse SDK] Error while flushing Langfuse", e);
       }
     });
   }
@@ -650,7 +717,7 @@ abstract class LangfuseCoreStateless {
         totalSize += itemSize;
         processedItems.push(queue[i]);
       } catch (error) {
-        console.error(error);
+        console.error(`[Langfuse SDK] ${error}`);
         remainingItems.push(...queue.slice(i));
         break;
       }
@@ -756,7 +823,7 @@ abstract class LangfuseCoreStateless {
       // flush again in case there are new events that were added while we were waiting for the pending promises to resolve
       await this.flushAsync();
     } catch (e) {
-      console.error("Error while shutting down Langfuse", e);
+      console.error("[Langfuse SDK] Error while shutting down Langfuse", e);
     }
   }
 
@@ -1125,7 +1192,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
       return prompt;
     } catch (error) {
-      console.error(`Error while fetching prompt '${cacheKey}':`, error);
+      console.error(`[Langfuse SDK] Error while fetching prompt '${cacheKey}':`, error);
 
       throw error;
     }
