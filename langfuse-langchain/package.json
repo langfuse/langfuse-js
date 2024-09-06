@@ -32,7 +32,7 @@
     "lib",
     "Readme.md"
   ],
-  "gitHead": "0e8b983b42e6e9460d5de7514ece80d3954e3dd4",
+  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
   "dependencies": {
     "langfuse": "^3.21.0",
     "langfuse-core": "^3.21.0"
