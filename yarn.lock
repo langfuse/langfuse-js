@@ -7,23 +7,13 @@
   resolved "https://registry.npmjs.org/@aashutoshrathi/word-wrap/-/word-wrap-1.2.6.tgz"
   integrity sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==
 
-"@ai-sdk/openai@^0.0.48":
-  version "0.0.48"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-0.0.48.tgz#7a9dcfc84f6f781cea58b6eb0edfa6edd17e864f"
-  integrity sha512-buw9cT/55VGjvtcNvQGDljHQMan8C3/D1UvkcpY8XPfnimffrjAQa66fXldahhFQM20didNJawh0vlTM1MvRDw==
+"@ai-sdk/openai@^0.0.56":
+  version "0.0.56"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-0.0.56.tgz#1b181062c233a687638536811d5e92b909d87a1d"
+  integrity sha512-+S98OBeLMwDqGlPr2FEo/61wNxlwVdB1x7lZg5bfZArht1psVDhT5P5jrDMeQUXlRR7T2H29VyUjbSr5yarmhQ==
   dependencies:
-    "@ai-sdk/provider" "0.0.20"
-    "@ai-sdk/provider-utils" "1.0.13"
-
-"@ai-sdk/provider-utils@1.0.13":
-  version "1.0.13"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.13.tgz#073feeeb4baefe9efb5106b99126d69b379f229b"
-  integrity sha512-NDQUUBDQoWk9aGn2pOA5wiM5CdO57KeYTEph7PpKGEU8IyqI0d+CiYKISOia6Omy17d+Dw/ZM6KP98F89BGJ5A==
-  dependencies:
-    "@ai-sdk/provider" "0.0.20"
-    eventsource-parser "1.1.2"
-    nanoid "3.3.6"
-    secure-json-parse "2.7.0"
+    "@ai-sdk/provider" "0.0.23"
+    "@ai-sdk/provider-utils" "1.0.18"
 
 "@ai-sdk/provider-utils@1.0.18":
   version "1.0.18"
@@ -34,13 +24,6 @@
     eventsource-parser "1.1.2"
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
-
-"@ai-sdk/provider@0.0.20":
-  version "0.0.20"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.20.tgz#a51a8e6f42ce251bf4517523d31652e3bcbca401"
-  integrity sha512-nCQZRUTi/+y+kf1ep9rujpbQEtsIwySzlQAudiFeVhzzDi9rYvWp5tOSVu8/ArT+i1xSc2tw40akxb1TX73ofQ==
-  dependencies:
-    json-schema "0.4.0"
 
 "@ai-sdk/provider@0.0.23":
   version "0.0.23"
