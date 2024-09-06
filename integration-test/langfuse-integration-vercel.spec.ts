@@ -262,6 +262,7 @@ describe("langfuse-integration-vercel", () => {
       expect(generation.promptTokens).toBeGreaterThan(0);
       expect(generation.completionTokens).toBeGreaterThan(0);
       expect(generation.totalTokens).toBeGreaterThan(0);
+      expect(generation.timeToFirstToken).toBeGreaterThan(0);
     }
   }, 10_000);
 

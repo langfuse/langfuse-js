@@ -163,13 +163,18 @@ export class LangfuseExporter implements SpanExporter {
       name: span.name,
       startTime: this.hrTimeToDate(span.startTime),
       endTime: this.hrTimeToDate(span.endTime),
-
+      completionStartTime:
+        "ai.response.msToFirstChunk" in attributes
+          ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.response.msToFirstChunk"]))
+          : undefined,
       model:
-        "gen_ai.request.model" in attributes
-          ? attributes["gen_ai.request.model"]?.toString()
-          : "ai.model.id" in attributes
-            ? attributes["ai.model.id"]?.toString()
-            : undefined,
+        "ai.response.model" in attributes
+          ? attributes["ai.response.model"]?.toString()
+          : "gen_ai.request.model" in attributes
+            ? attributes["gen_ai.request.model"]?.toString()
+            : "ai.model.id" in attributes
+              ? attributes["ai.model.id"]?.toString()
+              : undefined,
       modelParameters: {
         maxTokens:
           "gen_ai.request.max_tokens" in attributes ? attributes["gen_ai.request.max_tokens"]?.toString() : undefined,
