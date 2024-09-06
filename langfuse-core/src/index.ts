@@ -1078,7 +1078,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
-    if (!cachedPrompt) {
+    if (!cachedPrompt || options?.cacheTtlSeconds === 0) {
       try {
         return await this._fetchPromptAndUpdateCache({
           name,
