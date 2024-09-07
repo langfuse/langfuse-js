@@ -149,11 +149,11 @@ function logIngestionError(error: any): void {
   if (isLangfuseFetchHttpError(error)) {
     const code = error.response.status;
     const errorResponse = getErrorResponseByCode(code);
-    console.error("[Langfuse SDK] Error while flushing Langfuse.", errorResponse, `Error details: ${error}`);
+    console.error("[Langfuse SDK]", errorResponse, `Error details: ${error}`);
   } else if (isLangfuseFetchNetworkError(error)) {
-    console.error("[Langfuse SDK] Network error while flushing Langfuse.", `Error details: ${error}`);
+    console.error("[Langfuse SDK] Network error: ", error);
   } else {
-    console.error("[Langfuse SDK] Unknown error while flushing Langfuse.", `Error details: ${error}`);
+    console.error("[Langfuse SDK] Unknown error:", error);
   }
 }
 
