@@ -336,7 +336,7 @@ abstract class LangfuseCoreStateless {
 
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
     const encodedName = encodeURIComponent(name);
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/v2/datasets/${encodedName}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
@@ -350,14 +350,14 @@ abstract class LangfuseCoreStateless {
       }
     });
 
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
 
   async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
-    const res = await this.request(
+    const res = await this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/traces?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     );
@@ -367,7 +367,7 @@ abstract class LangfuseCoreStateless {
   }
 
   async fetchTrace(traceId: string): Promise<{ data: GetLangfuseTraceResponse }> {
-    const res = await this.request(
+    const res = await this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/traces/${traceId}`,
       this._getFetchOptions({ method: "GET" })
     );
@@ -377,7 +377,7 @@ abstract class LangfuseCoreStateless {
   }
 
   async fetchObservations(query?: GetLangfuseObservationsQuery): Promise<GetLangfuseObservationsResponse> {
-    const res = await this.request(
+    const res = await this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/observations?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     );
@@ -387,7 +387,7 @@ abstract class LangfuseCoreStateless {
   }
 
   async fetchObservation(observationId: string): Promise<{ data: GetLangfuseObservationResponse }> {
-    const res = await this.request(
+    const res = await this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/observations/${observationId}`,
       this._getFetchOptions({ method: "GET" })
     );
@@ -396,7 +396,7 @@ abstract class LangfuseCoreStateless {
   }
 
   async fetchSessions(query?: GetLangfuseSessionsQuery): Promise<GetLangfuseSessionsResponse> {
-    const res = await this.request(
+    const res = await this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/sessions?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     );
@@ -408,7 +408,7 @@ abstract class LangfuseCoreStateless {
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
     const encodedDatasetName = encodeURIComponent(params.datasetName);
     const encodedRunName = encodeURIComponent(params.runName);
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/datasets/${encodedDatasetName}/runs/${encodedRunName}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
@@ -418,14 +418,14 @@ abstract class LangfuseCoreStateless {
     datasetName: string,
     query?: GetLangfuseDatasetRunsQuery
   ): Promise<GetLangfuseDatasetRunsResponse> {
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/datasets/${encodeURIComponent(datasetName)}/runs?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
   }
 
   async createDatasetRunItem(body: CreateLangfuseDatasetRunItemBody): Promise<CreateLangfuseDatasetRunItemResponse> {
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/dataset-run-items`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
@@ -447,7 +447,7 @@ abstract class LangfuseCoreStateless {
         }
   ): Promise<CreateLangfuseDatasetResponse> {
     const body: CreateLangfuseDatasetBody = typeof dataset === "string" ? { name: dataset } : dataset;
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/datasets`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
@@ -459,14 +459,14 @@ abstract class LangfuseCoreStateless {
    * @returns A promise that resolves to the response of the create operation.
    */
   async createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/dataset-items`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
   }
 
   async getDatasetItem(id: string): Promise<CreateLangfuseDatasetItemResponse> {
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/dataset-items/${id}`,
       this._getFetchOptions({ method: "GET" })
     ).then((res) => res.json());
@@ -481,7 +481,7 @@ abstract class LangfuseCoreStateless {
   }
 
   async createPromptStateless(body: CreateLangfusePromptBody): Promise<CreateLangfusePromptResponse> {
-    return this.request(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/v2/prompts`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
     ).then((res) => res.json());
@@ -810,7 +810,7 @@ abstract class LangfuseCoreStateless {
     );
   }
 
-  private async request(url: string, options: LangfuseFetchOptions): Promise<LangfuseFetchResponse> {
+  private async fetchAndLogErrors(url: string, options: LangfuseFetchOptions): Promise<LangfuseFetchResponse> {
     const res = await this.fetch(url, options);
     const data = await res.json();
 
