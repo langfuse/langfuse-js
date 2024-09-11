@@ -36,6 +36,12 @@ export class LangfuseExporter implements SpanExporter {
       const traceSpanMap = new Map<string, ReadableSpan[]>();
 
       for (const span of allSpans) {
+        if (!this.isAiSdkSpan(span)) {
+          this.logDebug("Ignoring non-AI SDK span", span.name);
+
+          continue;
+        }
+
         const traceId = span.spanContext().traceId;
 
         traceSpanMap.set(traceId, (traceSpanMap.get(traceId) ?? []).concat(span));
@@ -56,33 +62,21 @@ export class LangfuseExporter implements SpanExporter {
   }
 
   private processTraceSpans(traceId: string, spans: ReadableSpan[]): void {
-    const rootSpan = spans.find((span) => !span.parentSpanId);
+    const rootSpan = spans.find((span) => this.isRootAiSdkSpan(span, spans));
     if (!rootSpan) {
       throw Error("Root span not found");
     }
 
-    if (!spans.some((span) => span.name.startsWith("ai."))) {
-      this.logDebug("Ignoring trace with no 'ai.' span names", traceId);
-
-      return;
-    }
-
     const rootSpanAttributes = rootSpan.attributes;
-    const parsedMetadata = this.parseMetadata(rootSpan);
-    const finalTraceId =
-      "langfuseTraceId" in parsedMetadata ? parsedMetadata["langfuseTraceId"]?.toString() ?? traceId : traceId;
+    const userProvidedTraceId = this.parseTraceId(spans);
+    const finalTraceId = userProvidedTraceId ?? traceId;
 
     this.langfuse.trace({
       id: finalTraceId,
-      name: "resource.name" in rootSpanAttributes ? rootSpanAttributes["resource.name"]?.toString() : rootSpan?.name,
-      userId: "userId" in parsedMetadata ? parsedMetadata["userId"]?.toString() : undefined,
-      sessionId: "sessionId" in parsedMetadata ? parsedMetadata["sessionId"]?.toString() : undefined,
-      tags:
-        "tags" in parsedMetadata &&
-        Array.isArray(parsedMetadata["tags"]) &&
-        parsedMetadata["tags"].every((tag) => typeof tag === "string")
-          ? (parsedMetadata["tags"] as string[])
-          : [],
+      name: this.parseTraceName(spans) ?? rootSpan?.name,
+      userId: this.parseUserIdTraceAttribute(spans),
+      sessionId: this.parseSessionIdTraceAttribute(spans),
+      tags: this.parseTagsTraceAttribute(spans).length > 0 ? this.parseTagsTraceAttribute(spans) : undefined,
       input:
         "ai.prompt.messages" in rootSpanAttributes
           ? rootSpanAttributes["ai.prompt.messages"]
@@ -101,29 +95,25 @@ export class LangfuseExporter implements SpanExporter {
               : "ai.result.toolCalls" in rootSpanAttributes
                 ? rootSpanAttributes["ai.result.toolCalls"]
                 : undefined,
-      metadata: parsedMetadata,
+      metadata: this.filterTraceAttributes(this.parseMetadataTraceAttribute(spans)),
     });
 
     for (const span of spans) {
-      if (this.shouldIgnoreSpan(span)) {
-        continue;
-      }
-
       if (this.isGenerationSpan(span)) {
-        this.processSpanAsLangfuseGeneration(finalTraceId, span);
+        this.processSpanAsLangfuseGeneration(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
       } else {
-        this.processSpanAsLangfuseSpan(finalTraceId, span);
+        this.processSpanAsLangfuseSpan(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
       }
     }
   }
 
-  private processSpanAsLangfuseSpan(traceId: string, span: ReadableSpan): void {
+  private processSpanAsLangfuseSpan(traceId: string, span: ReadableSpan, isRootSpan: boolean): void {
     const spanContext = span.spanContext();
     const attributes = span.attributes;
 
     this.langfuse.span({
       traceId,
-      parentObservationId: span.parentSpanId,
+      parentObservationId: isRootSpan ? undefined : span.parentSpanId,
       id: spanContext.spanId,
       name: "ai.toolCall.name" in attributes ? "ai.toolCall " + attributes["ai.toolCall.name"]?.toString() : span.name,
       startTime: this.hrTimeToDate(span.startTime),
@@ -148,17 +138,17 @@ export class LangfuseExporter implements SpanExporter {
                 ? attributes["ai.result.toolCalls"]
                 : undefined,
 
-      metadata: this.parseMetadata(span),
+      metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
     });
   }
 
-  private processSpanAsLangfuseGeneration(traceId: string, span: ReadableSpan): void {
+  private processSpanAsLangfuseGeneration(traceId: string, span: ReadableSpan, isRootSpan: boolean): void {
     const spanContext = span.spanContext();
     const attributes = span.attributes;
 
     this.langfuse.generation({
       traceId,
-      parentObservationId: span.parentSpanId,
+      parentObservationId: isRootSpan ? undefined : span.parentSpanId,
       id: spanContext.spanId,
       name: span.name,
       startTime: this.hrTimeToDate(span.startTime),
@@ -220,11 +210,11 @@ export class LangfuseExporter implements SpanExporter {
                 ? attributes["ai.result.toolCalls"]
                 : undefined,
 
-      metadata: this.parseMetadata(span),
+      metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
     });
   }
 
-  private parseMetadata(span: ReadableSpan): Record<string, (typeof span.attributes)[0]> {
+  private parseSpanMetadata(span: ReadableSpan): Record<string, (typeof span.attributes)[0]> {
     return Object.entries(span.attributes).reduce(
       (acc, [key, value]) => {
         const metadataPrefix = "ai.telemetry.metadata.";
@@ -253,12 +243,22 @@ export class LangfuseExporter implements SpanExporter {
     return generationSpanNameParts.some((part) => span.name.includes(part));
   }
 
-  private shouldIgnoreSpan(span: ReadableSpan): boolean {
-    return Object.keys(span.attributes).some((key) => key.startsWith("http.")); // Ignore spans that are HTTP requests
+  private isAiSdkSpan(span: ReadableSpan): boolean {
+    return span.instrumentationLibrary.name === "ai";
   }
 
-  private logInfo(message: string, ...args: any[]): void {
-    console.log(`[${new Date().toISOString()}] [LangfuseExporter] ${message}`, ...args);
+  /**
+   * Checks if a given span is the root AI SDK span in a trace.
+   * The root AI span is the span that has no parent span or its parent span is not part of the AI SDK.
+   *
+   * @param span - The span to check.
+   * @param spans - The list of all spans in the trace.
+   * @returns A boolean indicating whether the span is the root AI SDK span.
+   */
+  private isRootAiSdkSpan(span: ReadableSpan, spans: ReadableSpan[]): boolean {
+    const spanIds = new Set(spans.map((span) => span.spanContext().spanId));
+
+    return !span.parentSpanId || !spanIds.has(span.parentSpanId);
   }
 
   private logDebug(message: string, ...args: any[]): void {
@@ -286,5 +286,76 @@ export class LangfuseExporter implements SpanExporter {
     this.logDebug("Shutting down Langfuse...");
 
     await this.langfuse.shutdownAsync();
+  }
+
+  private parseTraceId(spans: ReadableSpan[]): string | undefined {
+    return spans
+      .map((span) => this.parseSpanMetadata(span)["langfuseTraceId"])
+      .find((id) => Boolean(id))
+      ?.toString();
+  }
+
+  private parseTraceName(spans: ReadableSpan[]): string | undefined {
+    return spans
+      .map((span) => span.attributes["resource.name"])
+      .find((name) => Boolean(name))
+      ?.toString();
+  }
+
+  private parseUserIdTraceAttribute(spans: ReadableSpan[]): string | undefined {
+    return spans
+      .map((span) => this.parseSpanMetadata(span)["userId"])
+      .find((id) => Boolean(id))
+      ?.toString();
+  }
+
+  private parseSessionIdTraceAttribute(spans: ReadableSpan[]): string | undefined {
+    return spans
+      .map((span) => this.parseSpanMetadata(span)["sessionId"])
+      .find((id) => Boolean(id))
+      ?.toString();
+  }
+
+  private parseTagsTraceAttribute(spans: ReadableSpan[]): string[] {
+    return [
+      ...new Set(
+        spans
+          .map((span) => this.parseSpanMetadata(span)["tags"])
+          .filter((tags) => Array.isArray(tags) && tags.every((tag) => typeof tag === "string"))
+          .reduce((acc, tags) => acc.concat(tags as string[]), [])
+      ),
+    ];
+  }
+
+  private parseMetadataTraceAttribute(spans: ReadableSpan[]): Record<string, any> {
+    return spans.reduce(
+      (acc, span) => {
+        const metadata = this.parseSpanMetadata(span);
+
+        for (const [key, value] of Object.entries(metadata)) {
+          if (value) {
+            acc[key] = value;
+          }
+        }
+
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+  }
+
+  private filterTraceAttributes(obj: Record<string, any>): Record<string, any> {
+    const langfuseTraceAttributes = ["userId", "sessionId", "tags", "langfuseTraceId"];
+
+    return Object.entries(obj).reduce(
+      (acc, [key, value]) => {
+        if (!langfuseTraceAttributes.includes(key)) {
+          acc[key] = value;
+        }
+
+        return acc;
+      },
+      {} as Record<string, any>
+    );
   }
 }
