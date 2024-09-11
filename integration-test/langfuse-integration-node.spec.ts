@@ -5,6 +5,7 @@ import Langfuse from "../langfuse-node";
 import axios from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
 import { utils } from "../langfuse-core/src";
+import exp from "constants";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
@@ -551,6 +552,71 @@ describe("Langfuse Node.js", () => {
     });
   });
 
+  it("create and fetch scores", async () => {
+    const traceName = utils.generateUUID();
+    const trace = langfuse.trace({
+      name: traceName,
+    });
+    const score = trace.score({
+      name: "quality",
+      value: 1,
+      comment: "Factually correct",
+    });
+    await langfuse.flushAsync();
+
+    const scores = await langfuse.fetchScores({ name: "quality" });
+    expect(scores.data).toContainEqual(expect.objectContaining({ traceId: score.id, name: "quality" }));
+  });
+
+  it("create and fetch score by id", async () => {
+    const traceName = utils.generateUUID();
+    const trace = langfuse.trace({
+      name: traceName,
+    });
+    trace.score({
+      name: "harmfulness",
+      value: 0.5,
+    });
+    trace.score({
+      name: "quality",
+      value: 1,
+      comment: "Factually correct",
+    });
+    trace.score({
+      name: "relevance",
+      value: 0.8,
+      comment: "Mostly relevant",
+    });
+
+    await langfuse.flushAsync();
+    const scores = await langfuse.fetchScores();
+    const score1 = scores.data[2];
+    const score2 = scores.data[1];
+    const score3 = scores.data[0];
+    const fetchedScore1 = await langfuse.fetchScore(score1.id);
+    expect(fetchedScore1.data).toMatchObject(
+      expect.objectContaining({ traceId: trace.id, name: "harmfulness", value: 0.5 })
+    );
+    const fetchedScore2 = await langfuse.fetchScore(score2.id);
+    expect(fetchedScore2.data).toMatchObject(
+      expect.objectContaining({
+        traceId: trace.id,
+        name: "quality",
+        value: 1,
+        comment: "Factually correct",
+      })
+    );
+    const fetchedScore3 = await langfuse.fetchScore(score3.id);
+    expect(fetchedScore3.data).toMatchObject(
+      expect.objectContaining({
+        traceId: trace.id,
+        name: "relevance",
+        value: 0.8,
+        comment: "Mostly relevant",
+      })
+    );
+  });
+
   it("create 3 traces with different timestamps and fetch the middle one using to and from timestamp", async () => {
     const traceName = utils.generateUUID();
     const traceParams = [
@@ -626,5 +692,49 @@ describe("Langfuse Node.js", () => {
 
     const sessions = await langfuse.fetchSessions();
     expect(sessions.data).toContainEqual(expect.objectContaining({ id: sessionId }));
+  });
+
+  it("create and fetch prompts", async () => {
+    const promptName1 = utils.generateUUID();
+    const promptName2 = utils.generateUUID();
+    const promptName3 = utils.generateUUID();
+
+    // Create multiple prompts
+    await langfuse.createPrompt({
+      name: promptName1,
+      prompt: "This is prompt 1",
+    });
+    await langfuse.createPrompt({
+      name: promptName2,
+      prompt: "This is prompt 2",
+    });
+    await langfuse.createPrompt({
+      name: promptName3,
+      prompt: "This is prompt 3",
+    });
+
+    // Create multiple versions of the same prompt
+    await langfuse.createPrompt({
+      name: promptName1,
+      prompt: "This is prompt 1 version 2",
+    });
+    await langfuse.createPrompt({
+      name: promptName1,
+      prompt: "This is prompt 1 version 3",
+    });
+
+    const prompts = await langfuse.fetchPrompts();
+    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName1 }));
+    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName2 }));
+    expect(prompts.data).toContainEqual(expect.objectContaining({ name: promptName3 }));
+
+    // Fetch specific versions of the prompt
+    const prompt1Version1 = await langfuse.getPrompt(promptName1, 1);
+    const prompt1Version2 = await langfuse.getPrompt(promptName1, 2);
+    const prompt1Version3 = await langfuse.getPrompt(promptName1, 3);
+
+    expect(prompt1Version1.prompt).toEqual("This is prompt 1");
+    expect(prompt1Version2.prompt).toEqual("This is prompt 1 version 2");
+    expect(prompt1Version3.prompt).toEqual("This is prompt 1 version 3");
   });
 });
