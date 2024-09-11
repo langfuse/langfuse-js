@@ -87,8 +87,74 @@ class LangfuseFetchNetworkError extends Error {
   }
 }
 
+function isLangfuseFetchHttpError(error: any): error is LangfuseFetchHttpError {
+  return typeof error === "object" && error.name === "LangfuseFetchHttpError";
+}
+
+function isLangfuseFetchNetworkError(error: any): error is LangfuseFetchNetworkError {
+  return typeof error === "object" && error.name === "LangfuseFetchNetworkError";
+}
+
 function isLangfuseFetchError(err: any): boolean {
-  return typeof err === "object" && (err.name === "LangfuseFetchHttpError" || err.name === "LangfuseFetchNetworkError");
+  return isLangfuseFetchHttpError(err) || isLangfuseFetchNetworkError(err);
+}
+
+// Constants for URLs
+const SUPPORT_URL = "https://langfuse.com/support";
+const API_DOCS_URL = "https://api.reference.langfuse.com";
+const RBAC_DOCS_URL = "https://langfuse.com/docs/rbac";
+const INSTALLATION_DOCS_URL = "https://langfuse.com/docs/sdk/typescript/guide";
+const RATE_LIMITS_URL = "https://langfuse.com/faq/all/api-limits";
+const NPM_PACKAGE_URL = "https://www.npmjs.com/package/langfuse";
+
+// Error messages
+const updatePromptResponse = `Make sure to keep your SDK updated, refer to ${NPM_PACKAGE_URL} for details.`;
+const defaultServerErrorPrompt = `This is an unusual occurrence and we are monitoring it closely. For help, please contact support: ${SUPPORT_URL}.`;
+const defaultErrorResponse = `Unexpected error occurred. Please check your request and contact support: ${SUPPORT_URL}.`;
+
+// Error response map
+const errorResponseByCode = new Map<number, string>([
+  // Internal error category: 5xx errors, 404 error
+  [500, `Internal server error occurred. For help, please contact support: ${SUPPORT_URL}`],
+  [501, `Not implemented. Please check your request and contact support for help: ${SUPPORT_URL}.`],
+  [502, `Bad gateway. ${defaultServerErrorPrompt}`],
+  [503, `Service unavailable. ${defaultServerErrorPrompt}`],
+  [504, `Gateway timeout. ${defaultServerErrorPrompt}`],
+  [404, `Internal error occurred. ${defaultServerErrorPrompt}`],
+
+  // Client error category: 4xx errors, excluding 404
+  [
+    400,
+    `Bad request. Please check your request for any missing or incorrect parameters. Refer to our API docs: ${API_DOCS_URL} for details.`,
+  ],
+  [
+    401,
+    `Unauthorized. Please check your public/private host settings. Refer to our installation and setup guide: ${INSTALLATION_DOCS_URL} for details on SDK configuration.`,
+  ],
+  [403, `Forbidden. Please check your access control settings. Refer to our RBAC docs: ${RBAC_DOCS_URL} for details.`],
+  [429, `Rate limit exceeded. For more information on rate limits please see: ${RATE_LIMITS_URL}`],
+]);
+
+// Returns a user-friendly error message based on the HTTP status code
+function getErrorResponseByCode(code: number | undefined): string {
+  if (!code) {
+    return `${defaultErrorResponse} ${updatePromptResponse}`;
+  }
+
+  const errorResponse = errorResponseByCode.get(code) || defaultErrorResponse;
+  return `${code}: ${errorResponse} ${updatePromptResponse}`;
+}
+
+function logIngestionError(error: any): void {
+  if (isLangfuseFetchHttpError(error)) {
+    const code = error.response.status;
+    const errorResponse = getErrorResponseByCode(code);
+    console.error("[Langfuse SDK]", errorResponse, `Error details: ${error}`);
+  } else if (isLangfuseFetchNetworkError(error)) {
+    console.error("[Langfuse SDK] Network error: ", error);
+  } else {
+    console.error("[Langfuse SDK] Unknown error:", error);
+  }
 }
 
 abstract class LangfuseCoreStateless {
@@ -270,10 +336,10 @@ abstract class LangfuseCoreStateless {
 
   protected async _getDataset(name: GetLangfuseDatasetParams["datasetName"]): Promise<GetLangfuseDatasetResponse> {
     const encodedName = encodeURIComponent(name);
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/v2/datasets/${encodedName}`,
       this._getFetchOptions({ method: "GET" })
-    ).then((res) => res.json());
+    );
   }
 
   protected async _getDatasetItems(query: GetLangfuseDatasetItemsQuery): Promise<GetLangfuseDatasetItemsResponse> {
@@ -284,85 +350,82 @@ abstract class LangfuseCoreStateless {
       }
     });
 
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
-    ).then((res) => res.json());
+    );
   }
 
   async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
-    const res = await this.fetch(
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = await this.fetchAndLogErrors<GetLangfuseTracesResponse>(
       `${this.baseUrl}/api/public/traces?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     );
-    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
-    const { data, meta } = (await res.json()) as GetLangfuseTracesResponse;
     return { data, meta };
   }
 
   async fetchTrace(traceId: string): Promise<{ data: GetLangfuseTraceResponse }> {
-    const res = await this.fetch(
+    const res = await this.fetchAndLogErrors<GetLangfuseTraceResponse>(
       `${this.baseUrl}/api/public/traces/${traceId}`,
       this._getFetchOptions({ method: "GET" })
     );
-
-    const trace = (await res.json()) as GetLangfuseTraceResponse;
-    return { data: trace };
+    return { data: res };
   }
 
   async fetchObservations(query?: GetLangfuseObservationsQuery): Promise<GetLangfuseObservationsResponse> {
-    const res = await this.fetch(
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = await this.fetchAndLogErrors<GetLangfuseObservationsResponse>(
       `${this.baseUrl}/api/public/observations?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     );
-    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
-    const { data, meta } = (await res.json()) as GetLangfuseObservationsResponse;
+
     return { data, meta };
   }
 
   async fetchObservation(observationId: string): Promise<{ data: GetLangfuseObservationResponse }> {
-    const res = await this.fetch(
+    const res = await this.fetchAndLogErrors<GetLangfuseObservationResponse>(
       `${this.baseUrl}/api/public/observations/${observationId}`,
       this._getFetchOptions({ method: "GET" })
     );
-    const observation = (await res.json()) as GetLangfuseObservationResponse;
-    return { data: observation };
+
+    return { data: res };
   }
 
   async fetchSessions(query?: GetLangfuseSessionsQuery): Promise<GetLangfuseSessionsResponse> {
-    const res = await this.fetch(
+    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
+    const { data, meta } = await this.fetchAndLogErrors<GetLangfuseSessionsResponse>(
       `${this.baseUrl}/api/public/sessions?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
     );
-    // destructure the response into data and meta to be explicit about the shape of the response and add type-warnings in case the API changes
-    const { data, meta } = (await res.json()) as GetLangfuseSessionsResponse;
+
     return { data, meta };
   }
 
   async getDatasetRun(params: GetLangfuseDatasetRunParams): Promise<GetLangfuseDatasetRunResponse> {
     const encodedDatasetName = encodeURIComponent(params.datasetName);
     const encodedRunName = encodeURIComponent(params.runName);
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/datasets/${encodedDatasetName}/runs/${encodedRunName}`,
       this._getFetchOptions({ method: "GET" })
-    ).then((res) => res.json());
+    );
   }
 
   async getDatasetRuns(
     datasetName: string,
     query?: GetLangfuseDatasetRunsQuery
   ): Promise<GetLangfuseDatasetRunsResponse> {
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/datasets/${encodeURIComponent(datasetName)}/runs?${encodeQueryParams(query)}`,
       this._getFetchOptions({ method: "GET" })
-    ).then((res) => res.json());
+    );
   }
 
   async createDatasetRunItem(body: CreateLangfuseDatasetRunItemBody): Promise<CreateLangfuseDatasetRunItemResponse> {
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/dataset-run-items`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
-    ).then((res) => res.json());
+    );
   }
 
   /**
@@ -381,10 +444,10 @@ abstract class LangfuseCoreStateless {
         }
   ): Promise<CreateLangfuseDatasetResponse> {
     const body: CreateLangfuseDatasetBody = typeof dataset === "string" ? { name: dataset } : dataset;
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/datasets`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
-    ).then((res) => res.json());
+    );
   }
 
   /**
@@ -393,15 +456,16 @@ abstract class LangfuseCoreStateless {
    * @returns A promise that resolves to the response of the create operation.
    */
   async createDatasetItem(body: CreateLangfuseDatasetItemBody): Promise<CreateLangfuseDatasetItemResponse> {
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/dataset-items`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
-    ).then((res) => res.json());
+    );
   }
 
   async getDatasetItem(id: string): Promise<CreateLangfuseDatasetItemResponse> {
-    return this.fetch(`${this.baseUrl}/api/public/dataset-items/${id}`, this._getFetchOptions({ method: "GET" })).then(
-      (res) => res.json()
+    return this.fetchAndLogErrors(
+      `${this.baseUrl}/api/public/dataset-items/${id}`,
+      this._getFetchOptions({ method: "GET" })
     );
   }
 
@@ -414,10 +478,10 @@ abstract class LangfuseCoreStateless {
   }
 
   async createPromptStateless(body: CreateLangfusePromptBody): Promise<CreateLangfusePromptResponse> {
-    return this.fetch(
+    return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/v2/prompts`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
-    ).then((res) => res.json());
+    );
   }
 
   async getPromptStateless(
@@ -501,7 +565,7 @@ abstract class LangfuseCoreStateless {
       try {
         JSON.stringify(body);
       } catch (e) {
-        console.error(`Event Body for ${type} is not JSON-serializable: ${e}`);
+        console.error(`[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
         this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
 
         return;
@@ -545,14 +609,15 @@ abstract class LangfuseCoreStateless {
       try {
         this.flush((err, data) => {
           if (err) {
-            console.error("Error while flushing Langfuse", err);
+            logIngestionError(err);
             resolve();
           } else {
             resolve(data);
           }
         });
+        // safeguard against unexpected synchronous errors
       } catch (e) {
-        console.error("Error while flushing Langfuse", e);
+        console.error("[Langfuse SDK] Error while flushing Langfuse", e);
       }
     });
   }
@@ -650,7 +715,7 @@ abstract class LangfuseCoreStateless {
         totalSize += itemSize;
         processedItems.push(queue[i]);
       } catch (error) {
-        console.error(error);
+        console.error(`[Langfuse SDK] ${error}`);
         remainingItems.push(...queue.slice(i));
         break;
       }
@@ -742,6 +807,17 @@ abstract class LangfuseCoreStateless {
     );
   }
 
+  private async fetchAndLogErrors<T>(url: string, options: LangfuseFetchOptions): Promise<T> {
+    const res = await this.fetch(url, options);
+    const data = await res.json();
+
+    if (res.status < 200 || res.status >= 400) {
+      logIngestionError(new LangfuseFetchHttpError(res, JSON.stringify(data)));
+    }
+
+    return data;
+  }
+
   async shutdownAsync(): Promise<void> {
     clearTimeout(this._flushTimer);
     try {
@@ -756,7 +832,7 @@ abstract class LangfuseCoreStateless {
       // flush again in case there are new events that were added while we were waiting for the pending promises to resolve
       await this.flushAsync();
     } catch (e) {
-      console.error("Error while shutting down Langfuse", e);
+      console.error("[Langfuse SDK] Error while shutting down Langfuse", e);
     }
   }
 
@@ -1011,7 +1087,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   ): Promise<LangfusePromptClient> {
     const cacheKey = this._getPromptCacheKey({ name, version, label: options?.label });
     const cachedPrompt = this._promptCache.getIncludingExpired(cacheKey);
-    if (!cachedPrompt) {
+    if (!cachedPrompt || options?.cacheTtlSeconds === 0) {
       try {
         return await this._fetchPromptAndUpdateCache({
           name,
@@ -1125,7 +1201,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
       return prompt;
     } catch (error) {
-      console.error(`Error while fetching prompt '${cacheKey}':`, error);
+      console.error(`[Langfuse SDK] Error while fetching prompt '${cacheKey}':`, error);
 
       throw error;
     }

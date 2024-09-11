@@ -250,6 +250,59 @@ describe("Langfuse Core", () => {
       expect(cachedResult).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
     });
 
+    it("should always fetch latest version of prompt if cacheTtlSeconds is 0", async () => {
+      const mockGetPromptStateless = jest
+        .spyOn(langfuse, "getPromptStateless")
+        .mockResolvedValueOnce(getPromptStatelessSuccess);
+
+      // First call to getPrompt
+      const result1 = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds: 0 });
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(1);
+      expect(result1).toEqual(new TextPromptClient(getPromptStatelessSuccess.data));
+
+      // Mock a change in the prompt
+      const updatedPrompt = {
+        ...getPromptStatelessSuccess,
+        data: {
+          ...getPromptStatelessSuccess.data,
+          version: getPromptStatelessSuccess.data.version + 1,
+          prompt: "This is an updated prompt with a {{variable}}",
+        },
+      };
+      mockGetPromptStateless.mockResolvedValueOnce(updatedPrompt);
+
+      // Second call to getPrompt
+      const result2 = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds: 0 });
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(2);
+      expect(result2).toEqual(new TextPromptClient(updatedPrompt.data));
+
+      // Verify that the prompt has been updated
+      expect(result2.version).toBe(result1.version + 1);
+      expect(result2.prompt).not.toBe(result1.prompt);
+
+      // Mock another change in the prompt for the third call
+      const furtherUpdatedPrompt = {
+        ...updatedPrompt,
+        data: {
+          ...updatedPrompt.data,
+          version: 3,
+          prompt: "This is a further updated prompt with a {{variable}}",
+        },
+      };
+      mockGetPromptStateless.mockResolvedValueOnce(furtherUpdatedPrompt);
+
+      // Third call to getPrompt
+      const result3 = await langfuse.getPrompt("test-prompt", undefined, { cacheTtlSeconds: 0 });
+      expect(mockGetPromptStateless).toHaveBeenCalledTimes(3);
+      expect(result3).toEqual(new TextPromptClient(furtherUpdatedPrompt.data));
+
+      // Verify that the prompt has been updated to version 3
+      expect(result3.version).toBe(3);
+      expect(result3.prompt).toBe("This is a further updated prompt with a {{variable}}");
+      expect(result3.version).toBeGreaterThan(result2.version);
+      expect(result3.prompt).not.toBe(result2.prompt);
+    });
+
     it("should return stale prompt immediately if cached one is expired according to default TTL and add to refresh promise map", async () => {
       const mockGetPromptStateless = jest
         .spyOn(langfuse, "getPromptStateless")

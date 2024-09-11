@@ -1,6 +1,6 @@
 {
   "name": "langfuse",
-  "version": "3.21.0",
+  "version": "3.23.1",
   "engines": {
     "node": ">=18"
   },
@@ -32,7 +32,7 @@
     "Readme.md"
   ],
   "dependencies": {
-    "langfuse-core": "^3.21.0"
+    "langfuse-core": "^3.23.1"
   },
   "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
   "devDependencies": {
