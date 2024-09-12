@@ -45,6 +45,7 @@ import {
   type ChatMessage,
   type GetLangfuseSessionsQuery,
   type GetLangfuseSessionsResponse,
+  type EventBody,
 } from "./types";
 import {
   generateUUID,
@@ -66,6 +67,8 @@ export { LangfuseMemoryStorage } from "./storage-memory";
 
 export type IngestionBody = SingleIngestionEvent["body"];
 export * from "./prompts/promptClients";
+
+const MAX_EVENT_SIZE = 1_000_000;
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -556,14 +559,16 @@ abstract class LangfuseCoreStateless {
   /***
    *** QUEUEING AND FLUSHING
    ***/
-  protected enqueue(type: LangfuseObject, body: any): void {
+  protected enqueue(type: LangfuseObject, body: EventBody): void {
     try {
       if (!this.enabled) {
         return;
       }
 
+      const finalEventBody = this.truncateEventBody(body, MAX_EVENT_SIZE);
+
       try {
-        JSON.stringify(body);
+        JSON.stringify(finalEventBody);
       } catch (e) {
         console.error(`[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
         this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
@@ -577,12 +582,12 @@ abstract class LangfuseCoreStateless {
         id: generateUUID(),
         type,
         timestamp: currentISOTime(),
-        body,
+        body: finalEventBody as any, // TODO: fix typecast. EventBody is not correctly narrowed to the correct type dictated by the 'type' property. This should be part of a larger type cleanup.
         metadata: undefined,
       });
       this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
-      this._events.emit(type, body);
+      this._events.emit(type, finalEventBody);
 
       // Flush queued events if we meet the flushAt length
       if (queue.length >= this.flushAt) {
@@ -594,6 +599,54 @@ abstract class LangfuseCoreStateless {
       }
     } catch (e) {
       this._events.emit("error", e);
+    }
+  }
+
+  /**
+   * Truncates the event body if its byte size exceeds the specified maximum byte size.
+   * Emits a warning event if truncation occurs.
+   * The fields that may be truncated are: "input", "output", and "metadata".
+   * The fields are truncated in the order of their size, from largest to smallest until the total byte size is within the limit.
+   */
+  protected truncateEventBody(body: EventBody, maxByteSize: number): EventBody {
+    const bodySize = this.getByteSize(body);
+
+    if (bodySize <= maxByteSize) {
+      return body;
+    }
+
+    this._events.emit("warning", `Event Body is too large (${bodySize} bytes) and will be truncated`);
+
+    // Sort keys by size and truncate the largest keys first
+    const keysToCheck = ["input", "output", "metadata"] as const;
+    const keySizes = keysToCheck
+      .map((key) => ({ key, size: key in body ? this.getByteSize(body[key as keyof typeof body]) : 0 }))
+      .sort((a, b) => b.size - a.size);
+
+    let result = { ...body };
+    let currentSize = bodySize;
+
+    for (const { key, size } of keySizes) {
+      if (currentSize > maxByteSize && Object.prototype.hasOwnProperty.call(result, key)) {
+        result = { ...result, [key]: "<truncated due to size exceeding limit>" };
+
+        this._events.emit("warning", `Truncated ${key} due to total size exceeding limit`);
+
+        currentSize -= size;
+      }
+    }
+
+    return result;
+  }
+
+  private getByteSize(obj: any): number {
+    const serialized = JSON.stringify(obj);
+
+    // Use TextEncoder if available, otherwise fallback to encodeURIComponent
+    if (typeof TextEncoder !== "undefined") {
+      return new TextEncoder().encode(serialized).length;
+    } else {
+      return encodeURIComponent(serialized).replace(/%[A-F\d]{2}/g, "U").length;
     }
   }
 
