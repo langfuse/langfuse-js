@@ -24,6 +24,10 @@ export class LangfuseExporter implements SpanExporter {
         persistence: "memory",
         sdkIntegration: "vercel-ai-sdk",
       });
+
+      if (this.debug) {
+        LangfuseExporter.langfuse.debug();
+      }
     }
 
     this.langfuse = LangfuseExporter.langfuse; // store reference to singleton instance
