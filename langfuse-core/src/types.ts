@@ -73,6 +73,14 @@ export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEven
 
 export type CreateLangfuseSpanBody = FixTypes<components["schemas"]["CreateSpanBody"]>;
 export type UpdateLangfuseSpanBody = FixTypes<components["schemas"]["UpdateSpanBody"]>;
+export type EventBody =
+  | CreateLangfuseTraceBody
+  | CreateLangfuseEventBody
+  | CreateLangfuseSpanBody
+  | CreateLangfuseGenerationBody
+  | CreateLangfuseScoreBody
+  | UpdateLangfuseSpanBody
+  | UpdateLangfuseGenerationBody;
 
 export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
 export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
