@@ -20,7 +20,13 @@ import type { ChainValues } from "@langchain/core/utils/types";
 import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { Document } from "@langchain/core/documents";
 
-import type { components, LangfuseSpanClient, LangfuseTraceClient } from "langfuse-core";
+import type {
+  ChatPromptClient,
+  components,
+  LangfuseSpanClient,
+  LangfuseTraceClient,
+  TextPromptClient,
+} from "langfuse-core";
 
 export type LlmMessage = {
   role: string;
@@ -67,6 +73,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   updateRoot: boolean = false;
   debugEnabled: boolean = false;
   completionStartTimes: Record<string, Date> = {};
+  private promptToParentRunMap;
 
   constructor(params?: ConstructorParams) {
     super();
@@ -88,6 +95,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.tags = params?.tags;
     }
     this.version = params?.version;
+    this.promptToParentRunMap = new Map<string, TextPromptClient | ChatPromptClient>();
   }
 
   async flushAsync(): Promise<any> {
@@ -186,6 +194,8 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const runName = name ?? chain.id.at(-1)?.toString() ?? "Langchain Run";
 
+      this.registerLangfusePrompt(parentRunId, metadata);
+
       this.generateTrace(runName, runId, parentRunId, tags, metadata, inputs);
       this.langfuse.span({
         id: runId,
@@ -199,6 +209,23 @@ export class CallbackHandler extends BaseCallbackHandler {
     } catch (e) {
       this._log(e);
     }
+  }
+
+  private registerLangfusePrompt(parentRunId?: string, metadata?: Record<string, unknown>): void {
+    /*
+    Register a prompt for linking to a generation with the same parentRunId.
+
+    `parentRunId` must exist when we want to do any prompt linking to a generation. If it does not exist, it means the execution is solely a Prompt template formatting without any following LLM invocation, so no generation will be created to link to.
+    For the simplest chain, a parent run is always created to wrap the individual runs consisting of prompt template formatting and LLM invocation.
+    So, we do not need to register any prompt for linking if parentRunId is missing.
+    */
+    if (metadata && "langfusePrompt" in metadata && parentRunId) {
+      this.promptToParentRunMap.set(parentRunId, metadata.langfusePrompt as TextPromptClient | ChatPromptClient);
+    }
+  }
+
+  private deregisterLangfusePrompt(runId: string): void {
+    this.promptToParentRunMap.delete(runId);
   }
 
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
@@ -340,6 +367,11 @@ export class CallbackHandler extends BaseCallbackHandler {
       extractedModelName = params.model;
     }
 
+    const registeredPrompt = this.promptToParentRunMap.get(parentRunId ?? "root");
+    if (registeredPrompt && parentRunId) {
+      this.deregisterLangfusePrompt(parentRunId);
+    }
+
     this.langfuse.generation({
       id: runId,
       traceId: this.traceId,
@@ -350,6 +382,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       model: extractedModelName,
       modelParameters: modelParameters,
       version: this.version,
+      prompt: registeredPrompt,
     });
   }
 
@@ -386,6 +419,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         version: this.version,
       });
       this.updateTrace(runId, parentRunId, outputs);
+      this.deregisterLangfusePrompt(runId);
     } catch (e) {
       this._log(e);
     }
@@ -642,7 +676,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata1?: Record<string, unknown> | undefined,
     metadata2?: Record<string, unknown> | undefined
-  ): Record<string, unknown> {
+  ): Record<string, unknown> | undefined {
     const finalDict: Record<string, unknown> = {};
     if (tags && tags.length > 0) {
       finalDict.tags = tags;
@@ -653,6 +687,16 @@ export class CallbackHandler extends BaseCallbackHandler {
     if (metadata2) {
       Object.assign(finalDict, metadata2);
     }
-    return finalDict;
+    return this.stripLangfuseKeysFromMetadata(finalDict);
+  }
+
+  private stripLangfuseKeysFromMetadata(metadata?: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!metadata) {
+      return;
+    }
+
+    const langfuseKeys = ["langfusePrompt"];
+
+    return Object.fromEntries(Object.entries(metadata).filter(([key, _]) => !langfuseKeys.includes(key)));
   }
 }

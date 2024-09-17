@@ -1,15 +1,16 @@
+import { randomUUID } from "crypto";
 import { ConversationChain } from "langchain/chains";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
+import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI, OpenAI } from "@langchain/openai";
 
 import { CallbackHandler, Langfuse, type LlmMessage } from "../langfuse-langchain";
-import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
-
-import { getHeaders, getTrace, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import { getTrace } from "./integration-utils";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
@@ -604,6 +605,78 @@ describe("Langchain", () => {
       expect(returnedNewGeneration?.length).toBe(2);
       // Returned observations within traces are currently not sorted, so we can't guarantee the order of the returned observations
       expect(returnedNewGeneration?.some((gen) => gen.id === handler.getLangchainRunId())).toBe(true);
+    });
+
+    it("links a langfuse prompt to a langchain run", async () => {
+      const langfuse = new Langfuse();
+      const traceName = "test-link-prompt-to-lc-run";
+
+      // Create prompts
+      const jokePromptName = "joke-prompt" + randomUUID().slice(0, 5);
+      const explainPromptName = "explain-prompt" + randomUUID().slice(0, 5);
+
+      const jokePromptString = "Tell me a one-line joke about {{topic}}";
+      const explainPromptString = "Explain the following joke: {{joke}}";
+
+      await Promise.all([
+        langfuse.createPrompt({
+          name: jokePromptName,
+          prompt: jokePromptString,
+          labels: ["production"],
+        }),
+        langfuse.createPrompt({
+          name: explainPromptName,
+          prompt: explainPromptString,
+          labels: ["production"],
+        }),
+      ]);
+
+      // Fetch prompts
+      const [langfuseJokePrompt, langfuseExplainPrompt] = await Promise.all([
+        langfuse.getPrompt(jokePromptName),
+        langfuse.getPrompt(explainPromptName),
+      ]);
+
+      const langchainJokePrompt = PromptTemplate.fromTemplate(langfuseJokePrompt.getLangchainPrompt()).withConfig({
+        metadata: { langfusePrompt: langfuseJokePrompt },
+      });
+      const langchainExplainPrompt = PromptTemplate.fromTemplate(langfuseExplainPrompt.getLangchainPrompt()).withConfig(
+        {
+          metadata: { langfusePrompt: langfuseExplainPrompt },
+        }
+      );
+
+      const model = new OpenAI();
+      const chain = langchainJokePrompt
+        .pipe(model)
+        .pipe(new StringOutputParser())
+        .pipe((input: string) => ({ joke: input }))
+        .pipe(langchainExplainPrompt)
+        .pipe(model);
+
+      const handler = new CallbackHandler();
+
+      await chain.invoke({ topic: "vacation" }, { callbacks: [handler], runName: traceName });
+      await handler.shutdownAsync();
+
+      if (!handler.traceId) {
+        throw Error("No traceId on handler");
+      }
+
+      const dbTrace = await getTrace(handler.traceId);
+
+      const generations = dbTrace.observations
+        .filter((o) => o.type === "GENERATION")
+        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+      expect(generations.length).toBe(2);
+      const [jokeGeneration, explainGeneration] = generations;
+
+      expect((jokeGeneration as any)["promptName"]).toBe(langfuseJokePrompt.name);
+      expect((jokeGeneration as any)["promptVersion"]).toBe(langfuseJokePrompt.version);
+
+      expect((explainGeneration as any)["promptName"]).toBe(langfuseExplainPrompt.name);
+      expect((explainGeneration as any)["promptVersion"]).toBe(langfuseExplainPrompt.version);
     });
   });
 });
