@@ -212,16 +212,20 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   private registerLangfusePrompt(parentRunId?: string, metadata?: Record<string, unknown>): void {
-    if (metadata && "langfusePrompt" in metadata) {
-      this.promptToParentRunMap.set(
-        parentRunId ?? "root",
-        metadata.langfusePrompt as TextPromptClient | ChatPromptClient
-      );
+    /*
+    Register a prompt for linking to a generation with the same parentRunId.
+
+    `parentRunId` must exist when we want to do any prompt linking to a generation. If it does not exist, it means the execution is solely a Prompt template formatting without any following LLM invocation, so no generation will be created to link to.
+    For the simplest chain, a parent run is always created to wrap the individual runs consisting of prompt template formatting and LLM invocation.
+    So, we do not need to register any prompt for linking if parentRunId is missing.
+    */
+    if (metadata && "langfusePrompt" in metadata && parentRunId) {
+      this.promptToParentRunMap.set(parentRunId, metadata.langfusePrompt as TextPromptClient | ChatPromptClient);
     }
   }
 
-  private deregisterLangfusePrompt(runId?: string): void {
-    this.promptToParentRunMap.delete(runId ?? "root");
+  private deregisterLangfusePrompt(runId: string): void {
+    this.promptToParentRunMap.delete(runId);
   }
 
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
@@ -364,7 +368,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
 
     const registeredPrompt = this.promptToParentRunMap.get(parentRunId ?? "root");
-    if (registeredPrompt) {
+    if (registeredPrompt && parentRunId) {
       this.deregisterLangfusePrompt(parentRunId);
     }
 
