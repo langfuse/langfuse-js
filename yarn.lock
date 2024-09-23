@@ -1751,6 +1751,23 @@
     zod "^3.22.4"
     zod-to-json-schema "^3.22.3"
 
+"@langchain/core@^0.3.3":
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.3.3.tgz#af12fd767ff2fcedb0a71bd79e6588d7dd52b6b6"
+  integrity sha512-WAtkmhbdl2T41qzimTzhb3pXCHQxO4onqxzPxgdf3KftQdTwLq0YYBDhozRMZLNAd/+cfH0ymZGaZSsnc9Ogsg==
+  dependencies:
+    ansi-styles "^5.0.0"
+    camelcase "6"
+    decamelize "1.2.0"
+    js-tiktoken "^1.0.12"
+    langsmith "^0.1.56"
+    mustache "^4.2.0"
+    p-queue "^6.6.2"
+    p-retry "4"
+    uuid "^10.0.0"
+    zod "^3.22.4"
+    zod-to-json-schema "^3.22.3"
+
 "@langchain/openai@>=0.1.0 <0.3.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@langchain/openai/-/openai-0.2.0.tgz#342e49d15b946fa01128d1bb81357e688e7cf567"
@@ -7537,7 +7554,7 @@ langchainhub@~0.0.8:
   resolved "https://registry.yarnpkg.com/langchainhub/-/langchainhub-0.0.11.tgz#2ce22def9c84699dcbd4fd4b78270d34bd2a9ae9"
   integrity sha512-WnKI4g9kU2bHQP136orXr2bcRdgz9iiTBpTN0jWt9IlScUKnJBoD0aa2HOzHURQKeQDnt2JwqVmQ6Depf5uDLQ==
 
-langsmith@^0.1.56-rc.1:
+langsmith@^0.1.56, langsmith@^0.1.56-rc.1:
   version "0.1.59"
   resolved "https://registry.yarnpkg.com/langsmith/-/langsmith-0.1.59.tgz#5fbf6a7e1adc10caf922f0cfa86aa3b5a0408ee7"
   integrity sha512-dW+z6s538zBswFFP2w/xzvVef7y2+yNt6GkmRCeLtwfpbMaM4di7JboK3vmnZ+0/LjNb2ukiMmgsTNKu/Y43cg==
