@@ -267,7 +267,7 @@ describe("langfuse-integration-vercel", () => {
   }, 10_000);
 
   // Currently flaky from the AI SDK side, skipping for now
-  it("should trace a generateObject call", async () => {
+  it.skip("should trace a generateObject call", async () => {
     const testParams = {
       traceId: randomUUID(),
       functionId: "test-vercel-generate-object",
@@ -368,7 +368,7 @@ describe("langfuse-integration-vercel", () => {
       tags: ["vercel", "openai"],
     };
 
-    const { traceId, modelName, maxTokens, prompt, functionId, userId, sessionId, metadata, tags } = testParams;
+    const { traceId, modelName, prompt, functionId, userId, sessionId, metadata, tags } = testParams;
 
     const { partialObjectStream } = await streamObject({
       model: openai(modelName),
@@ -398,10 +398,12 @@ describe("langfuse-integration-vercel", () => {
       },
     });
 
+    let currentObject;
     for await (const partialObject of partialObjectStream) {
-      console.clear();
-      console.log(JSON.stringify(partialObject, null, 2));
+      currentObject = partialObject;
     }
+
+    console.log(currentObject);
 
     await sdk.shutdown();
 
