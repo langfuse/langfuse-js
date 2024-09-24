@@ -363,8 +363,11 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     let extractedModelName: string | undefined;
     if (extraParams) {
-      const params = extraParams.invocation_params as InvocationParams;
-      extractedModelName = params.model;
+      const invocationParamsModelName = (extraParams.invocation_params as InvocationParams).model;
+      const metadataModelName =
+        metadata && "ls_model_name" in metadata ? (metadata["ls_model_name"] as string) : undefined;
+
+      extractedModelName = invocationParamsModelName ?? metadataModelName;
     }
 
     const registeredPrompt = this.promptToParentRunMap.get(parentRunId ?? "root");
