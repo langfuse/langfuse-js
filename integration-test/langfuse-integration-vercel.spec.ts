@@ -1,4 +1,4 @@
-import { embed, embedMany, generateObject, generateText, streamObject, streamText, tool } from "ai";
+import { embed, embedMany, generateObject, generateText, streamObject, streamText, streamToResponse, tool } from "ai";
 import { randomUUID } from "crypto";
 import z from "zod";
 
@@ -350,6 +350,97 @@ describe("langfuse-integration-vercel", () => {
       expect(generation.totalTokens).toBeGreaterThan(0);
     }
   }, 30_000);
+
+  // Currently flaky from the AI SDK side, skipping for now
+  it("should trace a streamObject call", async () => {
+    const testParams = {
+      traceId: randomUUID(),
+      functionId: "test-vercel-streamObject",
+      modelName: "gpt-4-turbo",
+      maxTokens: 512,
+      prompt: "Generate a lasagna recipe.",
+      userId: "some-user-id",
+      sessionId: "some-session-id",
+      metadata: {
+        something: "custom",
+        someOtherThing: "other-value",
+      },
+      tags: ["vercel", "openai"],
+    };
+
+    const { traceId, modelName, prompt, functionId, userId, sessionId, metadata, tags } = testParams;
+
+    const { partialObjectStream } = await streamObject({
+      model: openai(modelName),
+      schema: z.object({
+        recipe: z.object({
+          name: z.string(),
+          ingredients: z.array(
+            z.object({
+              name: z.string(),
+              amount: z.string(),
+            })
+          ),
+          steps: z.array(z.string()),
+        }),
+      }),
+      prompt,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId,
+        metadata: {
+          langfuseTraceId: traceId,
+          userId,
+          sessionId,
+          tags,
+          ...metadata,
+        },
+      },
+    });
+
+    let currentObject;
+    for await (const partialObject of partialObjectStream) {
+      currentObject = partialObject;
+    }
+
+    console.log(currentObject);
+
+    await sdk.shutdown();
+
+    // Fetch trace
+    const traceFetchResult = await fetchTraceById(traceId);
+    expect(traceFetchResult.status).toBe(200);
+
+    // Validate trace
+    const trace = traceFetchResult.data;
+
+    expect(trace.id).toBe(traceId);
+    expect(trace.name).toBe(functionId);
+    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.output.length).toBeGreaterThan(100);
+    expect(trace.userId).toBe(userId);
+    expect(trace.sessionId).toBe(sessionId);
+    expect(trace.tags).toEqual(tags.sort());
+    expect(trace.metadata).toMatchObject(metadata);
+
+    // Validate generations
+    expect(trace.observations.length).toBeGreaterThan(0);
+    const generations = trace.observations.filter((o: any) => o.type === "GENERATION");
+
+    for (const generation of generations) {
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.model).toBe(modelName);
+      expect(generation.calculatedInputCost).toBeGreaterThan(0);
+      expect(generation.calculatedOutputCost).toBeGreaterThan(0);
+      expect(generation.calculatedTotalCost).toBeGreaterThan(0);
+      expect(generation.promptTokens).toBeGreaterThan(0);
+      expect(generation.completionTokens).toBeGreaterThan(0);
+      expect(generation.totalTokens).toBeGreaterThan(0);
+      expect(generation.timeToFirstToken).toBeGreaterThan(0);
+    }
+  }, 30_000);
+
   it("should trace a embed call", async () => {
     const testParams = {
       traceId: randomUUID(),
