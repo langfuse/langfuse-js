@@ -160,7 +160,9 @@ export class LangfuseExporter implements SpanExporter {
       completionStartTime:
         "ai.response.msToFirstChunk" in attributes
           ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.response.msToFirstChunk"]))
-          : undefined,
+          : "ai.stream.msToFirstChunk" in attributes
+            ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.stream.msToFirstChunk"]))
+            : undefined,
       model:
         "ai.response.model" in attributes
           ? attributes["ai.response.model"]?.toString()
@@ -185,14 +187,18 @@ export class LangfuseExporter implements SpanExporter {
       },
       usage: {
         input:
-          "gen_ai.usage.prompt_tokens" in attributes
+          "gen_ai.usage.prompt_tokens" in attributes // Backward compat, input_tokens used in latest ai SDK versions
             ? parseInt(attributes["gen_ai.usage.prompt_tokens"]?.toString() ?? "0")
-            : undefined,
+            : "gen_ai.usage.input_tokens" in attributes
+              ? parseInt(attributes["gen_ai.usage.input_tokens"]?.toString() ?? "0")
+              : undefined,
 
         output:
-          "gen_ai.usage.completion_tokens" in attributes
+          "gen_ai.usage.completion_tokens" in attributes // Backward compat, output_tokens used in latest ai SDK versions
             ? parseInt(attributes["gen_ai.usage.completion_tokens"]?.toString() ?? "0")
-            : undefined,
+            : "gen_ai.usage.output_tokens" in attributes
+              ? parseInt(attributes["gen_ai.usage.output_tokens"]?.toString() ?? "0")
+              : undefined,
         total: "ai.usage.tokens" in attributes ? parseInt(attributes["ai.usage.tokens"]?.toString() ?? "0") : undefined,
       },
       input:
