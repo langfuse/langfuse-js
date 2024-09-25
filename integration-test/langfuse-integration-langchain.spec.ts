@@ -610,6 +610,8 @@ describe("Langchain", () => {
     it("links a langfuse prompt to a langchain run", async () => {
       const langfuse = new Langfuse();
       const traceName = "test-link-prompt-to-lc-run";
+      const sessionId = "session_" + randomUUID().slice(0, 8);
+      const userId = "user_" + randomUUID().slice(0, 8);
 
       // Create prompts
       const jokePromptName = "joke-prompt" + randomUUID().slice(0, 5);
@@ -656,7 +658,15 @@ describe("Langchain", () => {
 
       const handler = new CallbackHandler();
 
-      await chain.invoke({ topic: "vacation" }, { callbacks: [handler], runName: traceName });
+      await chain.invoke(
+        { topic: "vacation" },
+        {
+          callbacks: [handler],
+          runName: traceName,
+          tags: ["langchain-tag"],
+          metadata: { langfuseUserId: userId, langfuseSessionId: sessionId },
+        }
+      );
       await handler.shutdownAsync();
 
       if (!handler.traceId) {
@@ -664,6 +674,10 @@ describe("Langchain", () => {
       }
 
       const dbTrace = await getTrace(handler.traceId);
+
+      expect(dbTrace.tags).toEqual(["langchain-tag"]);
+      expect(dbTrace.userId).toBe(userId);
+      expect(dbTrace.sessionId).toBe(sessionId);
 
       const generations = dbTrace.observations
         .filter((o) => o.type === "GENERATION")
