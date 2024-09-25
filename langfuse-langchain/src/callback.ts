@@ -74,6 +74,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   debugEnabled: boolean = false;
   completionStartTimes: Record<string, Date> = {};
   private promptToParentRunMap;
+  private traceUpdates;
 
   constructor(params?: ConstructorParams) {
     super();
@@ -96,6 +97,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
     this.version = params?.version;
     this.promptToParentRunMap = new Map<string, TextPromptClient | ChatPromptClient>();
+    this.traceUpdates = new Map<string, { userId?: string; sessionId?: string; tags?: string[] }>();
   }
 
   async flushAsync(): Promise<any> {
@@ -206,6 +208,23 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: inputs,
         version: this.version,
       });
+
+      // If there's no parent run, this is a top-level chain execution.
+      // We store trace-level metadata (tags, userId, sessionId) for later use.
+      // This information will be used to update on handleChainEnd
+      if (!parentRunId) {
+        this.traceUpdates.set(runId, {
+          tags,
+          userId:
+            metadata && "langfuseUserId" in metadata && typeof metadata["langfuseUserId"] === "string"
+              ? metadata["langfuseUserId"]
+              : undefined,
+          sessionId:
+            metadata && "langfuseSessionId" in metadata && typeof metadata["langfuseSessionId"] === "string"
+              ? metadata["langfuseSessionId"]
+              : undefined,
+        });
+      }
     } catch (e) {
       this._log(e);
     }
@@ -662,15 +681,18 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   updateTrace(runId: string, parentRunId: string | undefined, output: any): void {
+    const traceUpdates = this.traceUpdates.get(runId);
+    this.traceUpdates.delete(runId);
+
     if (!parentRunId && this.traceId && this.traceId === runId) {
-      this.langfuse.trace({ id: this.traceId, output: output });
+      this.langfuse.trace({ id: this.traceId, output: output, ...traceUpdates });
     }
 
     if (!parentRunId && this.traceId && this.rootProvided && this.updateRoot) {
       if (this.rootObservationId) {
         this.langfuse._updateSpan({ id: this.rootObservationId, output });
       } else {
-        this.langfuse.trace({ id: this.traceId, output });
+        this.langfuse.trace({ id: this.traceId, output, ...traceUpdates });
       }
     }
   }
@@ -698,7 +720,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       return;
     }
 
-    const langfuseKeys = ["langfusePrompt"];
+    const langfuseKeys = ["langfusePrompt", "langfuseUserId", "langfuseSessionId"];
 
     return Object.fromEntries(Object.entries(metadata).filter(([key, _]) => !langfuseKeys.includes(key)));
   }
