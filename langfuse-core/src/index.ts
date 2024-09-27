@@ -908,9 +908,7 @@ export abstract class LangfuseWebStateless extends LangfuseCoreStateless {
     const { flushAt, flushInterval, publicKey, enabled, ...rest } = params;
     let isObservabilityEnabled = enabled === false ? false : true;
 
-    if (!isObservabilityEnabled) {
-      console.warn("Langfuse is disabled. No observability data will be sent to Langfuse.");
-    } else if (!publicKey) {
+    if (isObservabilityEnabled && !publicKey) {
       isObservabilityEnabled = false;
       console.warn(
         "Langfuse public key not passed to constructor and not set as 'LANGFUSE_PUBLIC_KEY' environment variable. No observability data will be sent to Langfuse."
