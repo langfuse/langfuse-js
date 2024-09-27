@@ -31,7 +31,7 @@
     "langfuse-core": "^3.26.0"
   },
   "devDependencies": {
-    "@types/node": "^22.2.0",
+    "@types/node": "^22.7.3",
     "commander": "^12.1.0",
     "typedoc": "^0.26.5"
   },
