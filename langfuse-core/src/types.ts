@@ -1,3 +1,4 @@
+import { type LangfuseObjectClient } from "./index";
 import { type LangfusePromptClient } from "./prompts/promptClients";
 import { type components, type paths } from "./openapi/server";
 
@@ -217,3 +218,15 @@ export type DeferRuntime = {
     }[]
   ) => void;
 };
+
+// Datasets
+export type DatasetItemData = GetLangfuseDatasetItemsResponse["data"][number];
+export type LinkDatasetItem = (
+  obj: LangfuseObjectClient,
+  runName: string,
+  runArgs?: {
+    description?: string;
+    metadata?: any;
+  }
+) => Promise<{ id: string }>;
+export type DatasetItem = DatasetItemData & { link: LinkDatasetItem };

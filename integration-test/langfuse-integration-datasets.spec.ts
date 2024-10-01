@@ -1,5 +1,10 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import Langfuse from "../langfuse-node";
+import { createDatasetItemHandler } from "../langfuse-langchain";
+import { randomUUID } from "crypto";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { ChatOpenAI } from "@langchain/openai";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
@@ -323,5 +328,84 @@ describe("Langfuse Node.js", () => {
         totalPages: 5,
       });
     }, 10000);
+
+    it("createDatasetItemHandler", async () => {
+      // Create simple Langchain chain
+      const prompt = new PromptTemplate({
+        template: "What is the capital of {country}? Give ONLY the name of the capital.",
+        inputVariables: ["country"],
+      });
+      const llm = new ChatOpenAI();
+      const parser = new StringOutputParser();
+      const chain = prompt.pipe(llm).pipe(parser);
+
+      // Create a dataset
+      const datasetName = randomUUID().slice(0, 8);
+      await langfuse.createDataset(datasetName);
+
+      // Add two items to the dataset
+      await Promise.all([
+        langfuse.createDatasetItem({
+          datasetName: datasetName,
+          input: "Germany",
+          expectedOutput: "Berlin",
+        }),
+
+        langfuse.createDatasetItem({
+          datasetName: datasetName,
+          input: "France",
+          expectedOutput: "Paris",
+        }),
+      ]);
+
+      // Execute chain on dataset items
+      const dataset = await langfuse.getDataset(datasetName);
+      const runName = "test-run-" + new Date().toISOString();
+      const runDescription = "test-run-description";
+      const runMetadata = { test: "test" };
+      const traceIds: string[] = [];
+
+      for (const item of dataset.items) {
+        const { handler, trace } = await createDatasetItemHandler({
+          item,
+          runName,
+          langfuseClient: langfuse,
+          options: {
+            runDescription,
+            runMetadata,
+          },
+        });
+
+        await chain.invoke({ country: item.input }, { callbacks: [handler] });
+
+        trace.score({
+          name: "test-score",
+          value: 0.5,
+        });
+
+        // Add trace id to list
+        traceIds.push(trace.id);
+      }
+
+      await langfuse.flushAsync();
+
+      // Verify that the dataset item is updated with the run name
+      const getRun = await langfuse.getDatasetRun({ datasetName, runName });
+
+      expect(getRun).toMatchObject({
+        name: runName,
+        description: "test-run-description", // from second link
+        metadata: { test: "test" }, // from second link
+        datasetId: dataset.id,
+        datasetRunItems: expect.arrayContaining([
+          expect.objectContaining({
+            traceId: traceIds[0],
+          }),
+          expect.objectContaining({
+            traceId: traceIds[1],
+          }),
+        ]),
+      });
+    }, 15000);
   });
 });

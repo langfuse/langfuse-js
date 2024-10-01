@@ -84,6 +84,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.traceId = params.root.traceId;
       this.rootProvided = true;
       this.updateRoot = params.updateRoot ?? false;
+      this.metadata = params.metadata;
     } else {
       this.langfuse = new Langfuse({
         ...params,
