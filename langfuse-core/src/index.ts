@@ -46,6 +46,7 @@ import {
   type GetLangfuseSessionsQuery,
   type GetLangfuseSessionsResponse,
   type EventBody,
+  type DatasetItem,
 } from "./types";
 import {
   generateUUID,
@@ -1012,21 +1013,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     description?: string;
     metadata?: any;
     projectId: string;
-    items: Array<{
-      id: string;
-      input?: any;
-      expectedOutput?: any;
-      metadata?: any;
-      sourceObservationId?: string | null;
-      link: (
-        obj: LangfuseObjectClient,
-        runName: string,
-        runArgs?: {
-          description?: string;
-          metadata?: any;
-        }
-      ) => Promise<{ id: string }>;
-    }>;
+    items: DatasetItem[];
   }> {
     const dataset = await this._getDataset(name);
     const items: GetLangfuseDatasetItemsResponse["data"] = [];
