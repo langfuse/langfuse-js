@@ -52,7 +52,7 @@
     "@opentelemetry/sdk-node": "^0.53.0",
     "@opentelemetry/sdk-trace-node": "^1.25.1",
     "@rollup/plugin-babel": "^6.0.3",
-    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-commonjs": "^28.0.0",
     "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.1.0",
     "@types/jest": "^29.5.12",
