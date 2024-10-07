@@ -33,7 +33,7 @@
   "devDependencies": {
     "@types/node": "^22.7.4",
     "commander": "^12.1.0",
-    "typedoc": "^0.26.5"
+    "typedoc": "^0.26.8"
   },
   "files": [
     "lib",

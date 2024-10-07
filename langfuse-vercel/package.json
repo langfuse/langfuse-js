@@ -41,6 +41,6 @@
     "ai": ">=3.2.44"
   },
   "devDependencies": {
-    "typedoc": "^0.26.5"
+    "typedoc": "^0.26.8"
   }
 }
