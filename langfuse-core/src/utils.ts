@@ -114,16 +114,16 @@ export function configLangfuseSDK(params?: LangfuseCoreOptions, secretRequired: 
 }
 
 export const encodeQueryParams = (params?: { [key: string]: any }): string => {
-  const queryParams = new URLSearchParams();
-  Object.entries(params ?? {}).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      // check for date
-      if (value instanceof Date) {
-        queryParams.append(key, value.toISOString());
-      } else {
-        queryParams.append(key, value.toString());
+  return Object.entries(params ?? {})
+    .map(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        const encodedKey = encodeURIComponent(key);
+        const encodedValue =
+          value instanceof Date ? encodeURIComponent(value.toISOString()) : encodeURIComponent(value);
+        return `${encodedKey}=${encodedValue}`;
       }
-    }
-  });
-  return queryParams.toString();
+      return null;
+    })
+    .filter((param) => param !== null)
+    .join("&");
 };
