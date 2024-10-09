@@ -5,6 +5,7 @@ import {
   currentISOTime,
   currentTimestamp,
   configLangfuseSDK,
+  encodeQueryParams,
 } from "../src/utils";
 
 describe("utils", () => {
@@ -42,6 +43,38 @@ describe("utils", () => {
       expect(currentTimestamp()).toEqual(Date.now());
     });
   });
+  describe("encodeQueryParams", () => {
+    it("should encode query parameters correctly", () => {
+      const params = {
+        name: "John Doe",
+        age: 30,
+        active: true,
+        date: new Date("2022-01-01T00:00:00.000Z"),
+        empty: null,
+        undefinedValue: undefined,
+      };
+      const expected = "name=John%20Doe&age=30&active=true&date=2022-01-01T00%3A00%3A00.000Z";
+      expect(encodeQueryParams(params)).toEqual(expected);
+    });
+
+    it("should encode query params with arrays correctly", () => {
+      const params = {
+        tags: ["tag-one", "tag-two"],
+      };
+      const expected = "tags=tag-one%2Ctag-two";
+      expect(encodeQueryParams(params)).toEqual(expected);
+    });
+
+    it("should handle special characters in keys and values", () => {
+      const params = {
+        "key with spaces": "value/with/slash",
+        "key&with&special": "value?with=query",
+      };
+      const expected = "key%20with%20spaces=value%2Fwith%2Fslash&key%26with%26special=value%3Fwith%3Dquery";
+      expect(encodeQueryParams(params)).toEqual(expected);
+    });
+  });
+
   describe("currentISOTime", () => {
     it("should get the iso time", () => {
       jest.setSystemTime(new Date("2022-01-01"));

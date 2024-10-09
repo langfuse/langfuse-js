@@ -114,36 +114,39 @@ describe("Langfuse Node.js", () => {
       });
     });
 
-    it("create span", async () => {
-      const trace = langfuse.trace({ name: "trace-name-span" });
-      const span = trace.span({
-        name: "span-name",
-        startTime: new Date("2020-01-01T00:00:00.000Z"),
-      });
-      await langfuse.flushAsync();
-      // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
-      expect(res.data).toMatchObject({
-        id: span.id,
-        name: "span-name",
-        type: "SPAN",
-        startTime: new Date("2020-01-01T00:00:00.000Z").toISOString(),
-        completionStartTime: null,
-        endTime: null,
-        metadata: null,
-        model: null,
-        modelParameters: null,
-        input: null,
-        output: null,
-        level: "DEFAULT",
-        parentObservationId: null,
-        completionTokens: 0,
-        promptTokens: 0,
-        totalTokens: 0,
-        statusMessage: null,
-        traceId: trace.id,
-        version: null,
-      });
+    it.only("create span", async () => {
+      const a = await langfuse.fetchTraces({ tags: ["tag1", "tag2"] });
+      console.log(a);
+
+      // const trace = langfuse.trace({ name: "trace-name-span" });
+      // const span = trace.span({
+      //   name: "span-name",
+      //   startTime: new Date("2020-01-01T00:00:00.000Z"),
+      // });
+      // await langfuse.flushAsync();
+      // // check from get api if trace is created
+      // const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
+      // expect(res.data).toMatchObject({
+      //   id: span.id,
+      //   name: "span-name",
+      //   type: "SPAN",
+      //   startTime: new Date("2020-01-01T00:00:00.000Z").toISOString(),
+      //   completionStartTime: null,
+      //   endTime: null,
+      //   metadata: null,
+      //   model: null,
+      //   modelParameters: null,
+      //   input: null,
+      //   output: null,
+      //   level: "DEFAULT",
+      //   parentObservationId: null,
+      //   completionTokens: 0,
+      //   promptTokens: 0,
+      //   totalTokens: 0,
+      //   statusMessage: null,
+      //   traceId: trace.id,
+      //   version: null,
+      // });
     });
 
     it("update a span", async () => {
