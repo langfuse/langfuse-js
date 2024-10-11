@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@ai-sdk/openai": "^0.0.48",
-    "@babel/core": "^7.25.2",
+    "@babel/core": "^7.25.8",
     "@babel/preset-env": "^7.25.3",
     "@babel/preset-react": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
