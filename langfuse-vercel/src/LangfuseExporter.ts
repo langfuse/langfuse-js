@@ -68,7 +68,9 @@ export class LangfuseExporter implements SpanExporter {
   private processTraceSpans(traceId: string, spans: ReadableSpan[]): void {
     const rootSpan = spans.find((span) => this.isRootAiSdkSpan(span, spans));
     if (!rootSpan) {
-      throw Error("Root span not found");
+      this.logDebug("No root span found with AI SDK spans, skipping trace");
+
+      return;
     }
 
     const rootSpanAttributes = rootSpan.attributes;
