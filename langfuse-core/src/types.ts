@@ -25,6 +25,8 @@ export type LangfuseCoreOptions = {
   sdkIntegration?: string; // DEFAULT, LANGCHAIN, or any other custom value
   // Enabled switch for the SDK. If disabled, no observability data will be sent to Langfuse. Defaults to true.
   enabled?: boolean;
+  // Mask function to mask data in the event body
+  mask?: MaskFunction;
 };
 
 export enum LangfusePersistedProperty {
@@ -230,3 +232,5 @@ export type LinkDatasetItem = (
   }
 ) => Promise<{ id: string }>;
 export type DatasetItem = DatasetItemData & { link: LinkDatasetItem };
+
+export type MaskFunction = (params: { data: any }) => any;

@@ -3,6 +3,7 @@ import Langfuse from "../langfuse";
 
 import axios from "axios";
 import { getHeaders, LANGFUSE_BASEURL } from "./integration-utils";
+import { randomUUID } from "crypto";
 
 describe("Langfuse (fetch)", () => {
   let langfuse: Langfuse;
@@ -596,6 +597,48 @@ describe("Langfuse (fetch)", () => {
         name: "event-name",
         type: "EVENT",
       });
+    });
+
+    it("should mask data in the event body", async () => {
+      const mask = ({ data }: { data: any }): string =>
+        typeof data === "string" && data.includes("confidential") ? "MASKED" : data;
+
+      const langfuse = new Langfuse({ mask });
+      const traceId = randomUUID();
+
+      const trace = langfuse.trace({ id: traceId, input: "confidential data" });
+      trace.update({ output: "confidential data" });
+
+      const spanId = randomUUID();
+      const span = trace.span({ id: spanId, input: "confidential data" });
+      span.update({ output: "confidential data" });
+
+      const generationId = randomUUID();
+      const generation = trace.generation({ id: generationId, input: "confidential data" });
+      generation.update({ output: "confidential data" });
+
+      await langfuse.flushAsync();
+
+      const fetchedTrace = await await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
+        headers: getHeaders(),
+      });
+
+      expect(fetchedTrace.data.input).toEqual("MASKED");
+      expect(fetchedTrace.data.output).toEqual("MASKED");
+
+      const fetchedSpan = await await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${spanId}`, {
+        headers: getHeaders(),
+      });
+
+      expect(fetchedSpan.data.input).toEqual("MASKED");
+      expect(fetchedSpan.data.output).toEqual("MASKED");
+
+      const fetchedGeneration = await await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generationId}`, {
+        headers: getHeaders(),
+      });
+
+      expect(fetchedGeneration.data.input).toEqual("MASKED");
+      expect(fetchedGeneration.data.output).toEqual("MASKED");
     });
   });
 });

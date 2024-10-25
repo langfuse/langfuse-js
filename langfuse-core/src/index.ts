@@ -47,6 +47,7 @@ import {
   type GetLangfuseSessionsResponse,
   type EventBody,
   type DatasetItem,
+  type MaskFunction,
 } from "./types";
 import {
   generateUUID,
@@ -175,6 +176,7 @@ abstract class LangfuseCoreStateless {
   private release: string | undefined;
   private sdkIntegration: string;
   private enabled: boolean;
+  private mask: MaskFunction | undefined;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -200,6 +202,7 @@ abstract class LangfuseCoreStateless {
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 15;
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
+    this.mask = options?.mask;
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
@@ -566,6 +569,7 @@ abstract class LangfuseCoreStateless {
         return;
       }
 
+      this.maskEventBodyInPlace(body);
       const finalEventBody = this.truncateEventBody(body, MAX_EVENT_SIZE);
 
       try {
@@ -600,6 +604,25 @@ abstract class LangfuseCoreStateless {
       }
     } catch (e) {
       this._events.emit("error", e);
+    }
+  }
+
+  private maskEventBodyInPlace(body: EventBody): void {
+    if (!this.mask) {
+      return;
+    }
+
+    const maskableKeys = ["input", "output"] as const;
+
+    for (const key of maskableKeys) {
+      if (key in body) {
+        try {
+          body[key as keyof EventBody] = this.mask({ data: body[key as keyof EventBody] });
+        } catch (e) {
+          this._events.emit("error", `Error masking ${key}: ${e}`);
+          body[key as keyof EventBody] = "<fully masked due to failed mask function>";
+        }
+      }
     }
   }
 
