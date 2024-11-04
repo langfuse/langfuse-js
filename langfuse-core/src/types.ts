@@ -1,5 +1,5 @@
-import { LangfusePromptClient } from "langfuse-core/lib";
 import { type LangfuseObjectClient } from "./index";
+import { type LangfusePromptClient } from "./prompts/promptClients";
 import { type components, type paths } from "./openapi/server";
 
 export type LangfuseCoreOptions = {

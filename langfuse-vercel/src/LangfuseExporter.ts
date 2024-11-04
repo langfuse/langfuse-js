@@ -349,7 +349,7 @@ export class LangfuseExporter implements SpanExporter {
         const parsedPrompt = JSON.parse(jsonPrompt.toString());
 
         if (
-          typeof parsedPrompt !== "object" &&
+          typeof parsedPrompt !== "object" ||
           !(parsedPrompt["name"] && parsedPrompt["version"] && parsedPrompt["isFallback"])
         ) {
           throw Error("Invalid langfusePrompt");
