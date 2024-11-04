@@ -263,8 +263,18 @@ export class LangfuseExporter implements SpanExporter {
     const attributes = span.attributes;
     const tools = "ai.prompt.tools" in attributes ? attributes["ai.prompt.tools"] : [];
 
+    let chatMessages: any[] = [];
+    if ("ai.prompt.messages" in attributes) {
+      chatMessages = [attributes["ai.prompt.messages"]];
+      try {
+        chatMessages = JSON.parse(attributes["ai.prompt.messages"] as string);
+      } catch (e) {
+        console.error("Error parsing ai.prompt.messages", e);
+      }
+    }
+
     return "ai.prompt.messages" in attributes
-      ? [...JSON.parse(attributes["ai.prompt.messages"] as string), ...(Array.isArray(tools) ? tools : [])]
+      ? [...chatMessages, ...(Array.isArray(tools) ? tools : [])]
       : "ai.prompt" in attributes
         ? attributes["ai.prompt"]
         : "ai.toolCall.args" in attributes
