@@ -1,3 +1,4 @@
+import { LangfusePromptClient } from "langfuse-core/lib";
 import { type LangfuseObjectClient } from "./index";
 import { type components, type paths } from "./openapi/server";
 
@@ -178,7 +179,7 @@ export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptReque
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 
 export type PromptInput = {
-  prompt?: LangfusePromptRecord;
+  prompt?: LangfusePromptRecord | LangfusePromptClient;
 };
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
