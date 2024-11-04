@@ -350,7 +350,7 @@ export class LangfuseExporter implements SpanExporter {
 
         if (
           typeof parsedPrompt !== "object" ||
-          !(parsedPrompt["name"] && parsedPrompt["version"] && parsedPrompt["isFallback"])
+          !(parsedPrompt["name"] && parsedPrompt["version"] && typeof parsedPrompt["isFallback"] === "boolean")
         ) {
           throw Error("Invalid langfusePrompt");
         }
