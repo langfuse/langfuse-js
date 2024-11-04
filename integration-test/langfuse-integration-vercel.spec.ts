@@ -9,6 +9,7 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 
 import { LangfuseExporter } from "../langfuse-vercel";
 import { fetchTraceById } from "./integration-utils";
+import { Langfuse } from "langfuse";
 
 jest.useRealTimers();
 
@@ -497,6 +498,99 @@ describe("langfuse-integration-vercel", () => {
       expect(generation.model).toBe(modelName);
       expect(generation.calculatedTotalCost).toBeGreaterThan(0);
       expect(generation.totalTokens).toBeGreaterThan(0);
+    }
+  }, 10_000);
+
+  it("should trace a streamText call with linked prompts", async () => {
+    const promptName = randomUUID();
+
+    const langfuse = new Langfuse();
+    await langfuse.createPrompt({
+      name: promptName,
+      type: "text",
+      prompt: "Invent a new holiday and describe its traditions.",
+      labels: ["production"],
+    });
+
+    const fetchedPrompt = await langfuse.getPrompt(promptName);
+
+    const testParams = {
+      traceId: randomUUID(),
+      functionId: "test-vercel-stream-text",
+      modelName: "gpt-3.5-turbo",
+      maxTokens: 512,
+      prompt: fetchedPrompt.prompt,
+      userId: "some-user-id",
+      sessionId: "some-session-id",
+      metadata: {
+        something: "custom",
+        someOtherThing: "other-value",
+      },
+      tags: ["vercel", "openai"],
+    };
+
+    const { traceId, modelName, maxTokens, prompt, functionId, userId, sessionId, metadata, tags } = testParams;
+
+    const stream = await streamText({
+      model: openai(modelName),
+      maxTokens,
+      prompt,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId,
+        metadata: {
+          langfuseTraceId: traceId,
+          langfusePrompt: fetchedPrompt.toJSON(),
+          userId,
+          sessionId,
+          tags,
+          ...metadata,
+        } as any,
+      },
+    });
+
+    let result = "";
+
+    for await (const chunk of stream.textStream) {
+      result += chunk;
+    }
+
+    await sdk.shutdown();
+
+    // Fetch trace
+    const traceFetchResult = await fetchTraceById(traceId);
+    expect(traceFetchResult.status).toBe(200);
+
+    // Validate trace
+    const trace = traceFetchResult.data;
+
+    expect(trace.id).toBe(traceId);
+    expect(trace.name).toBe(functionId);
+    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.output).toBe(result);
+    expect(trace.userId).toBe(userId);
+    expect(trace.sessionId).toBe(sessionId);
+    expect(trace.tags).toEqual(tags.sort());
+    expect(trace.metadata).toMatchObject(metadata);
+
+    // Validate generations
+    expect(trace.observations.length).toBeGreaterThan(0);
+    const generations = trace.observations.filter((o: any) => o.type === "GENERATION");
+
+    for (const generation of generations) {
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.model).toBe(modelName);
+      expect(generation.modelParameters).toMatchObject({ maxTokens: maxTokens.toString() });
+      expect(generation.calculatedInputCost).toBeGreaterThan(0);
+      expect(generation.calculatedOutputCost).toBeGreaterThan(0);
+      expect(generation.calculatedTotalCost).toBeGreaterThan(0);
+      expect(generation.promptTokens).toBeGreaterThan(0);
+      expect(generation.completionTokens).toBeGreaterThan(0);
+      expect(generation.totalTokens).toBeGreaterThan(0);
+      expect(generation.timeToFirstToken).toBeGreaterThan(0);
+      expect(generation.promptName).toBe(promptName);
+      expect(generation.promptVersion).toBe(fetchedPrompt.version);
     }
   }, 10_000);
 });

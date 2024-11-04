@@ -66,7 +66,7 @@ import { getCommonReleaseEnvs } from "./release-env";
 import { ChatPromptClient, TextPromptClient, type LangfusePromptClient } from "./prompts/promptClients";
 import { LangfusePromptCache } from "./prompts/promptCache";
 export { LangfuseMemoryStorage } from "./storage-memory";
-
+export type { LangfusePromptRecord } from "./types";
 export type IngestionBody = SingleIngestionEvent["body"];
 export * from "./prompts/promptClients";
 

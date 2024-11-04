@@ -179,7 +179,7 @@ export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptReque
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 
 export type PromptInput = {
-  prompt?: LangfusePromptClient;
+  prompt?: LangfusePromptRecord | LangfusePromptClient;
 };
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
@@ -234,3 +234,5 @@ export type LinkDatasetItem = (
 export type DatasetItem = DatasetItemData & { link: LinkDatasetItem };
 
 export type MaskFunction = (params: { data: any }) => any;
+
+export type LangfusePromptRecord = (TextPrompt | ChatPrompt) & { isFallback: boolean };
