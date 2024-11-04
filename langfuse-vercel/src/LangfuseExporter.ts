@@ -1,5 +1,5 @@
 import type { SpanExporter, ReadableSpan } from "@opentelemetry/sdk-trace-base";
-import { Langfuse, type LangfuseOptions } from "langfuse";
+import { Langfuse, type LangfusePromptRecord, type LangfuseOptions } from "langfuse";
 
 import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
@@ -106,7 +106,12 @@ export class LangfuseExporter implements SpanExporter {
 
     for (const span of spans) {
       if (this.isGenerationSpan(span)) {
-        this.processSpanAsLangfuseGeneration(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
+        this.processSpanAsLangfuseGeneration(
+          finalTraceId,
+          span,
+          this.isRootAiSdkSpan(span, spans),
+          this.parseLangfusePromptTraceAttribute(spans)
+        );
       } else {
         this.processSpanAsLangfuseSpan(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
       }
@@ -148,7 +153,12 @@ export class LangfuseExporter implements SpanExporter {
     });
   }
 
-  private processSpanAsLangfuseGeneration(traceId: string, span: ReadableSpan, isRootSpan: boolean): void {
+  private processSpanAsLangfuseGeneration(
+    traceId: string,
+    span: ReadableSpan,
+    isRootSpan: boolean,
+    langfusePrompt: LangfusePromptRecord | undefined
+  ): void {
     const spanContext = span.spanContext();
     const attributes = span.attributes;
 
@@ -223,6 +233,7 @@ export class LangfuseExporter implements SpanExporter {
                 : undefined,
 
       metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
+      prompt: langfusePrompt,
     });
   }
 
@@ -328,6 +339,29 @@ export class LangfuseExporter implements SpanExporter {
       ?.toString();
   }
 
+  private parseLangfusePromptTraceAttribute(spans: ReadableSpan[]): LangfusePromptRecord | undefined {
+    const jsonPrompt = spans
+      .map((span) => this.parseSpanMetadata(span)["langfusePrompt"])
+      .find((prompt) => Boolean(prompt));
+
+    try {
+      if (jsonPrompt) {
+        const parsedPrompt = JSON.parse(jsonPrompt.toString());
+
+        if (
+          typeof parsedPrompt !== "object" &&
+          !(parsedPrompt["name"] && parsedPrompt["version"] && parsedPrompt["isFallback"])
+        ) {
+          throw Error("Invalid langfusePrompt");
+        }
+
+        return parsedPrompt;
+      }
+    } catch (e) {
+      return undefined;
+    }
+  }
+
   private parseTagsTraceAttribute(spans: ReadableSpan[]): string[] {
     return [
       ...new Set(
@@ -357,7 +391,7 @@ export class LangfuseExporter implements SpanExporter {
   }
 
   private filterTraceAttributes(obj: Record<string, any>): Record<string, any> {
-    const langfuseTraceAttributes = ["userId", "sessionId", "tags", "langfuseTraceId"];
+    const langfuseTraceAttributes = ["userId", "sessionId", "tags", "langfuseTraceId", "langfusePrompt"];
 
     return Object.entries(obj).reduce(
       (acc, [key, value]) => {

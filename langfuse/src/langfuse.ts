@@ -10,7 +10,7 @@ import { type LangfuseStorage, getStorage } from "./storage";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
 
-export type { LangfusePromptClient, ChatPromptClient, TextPromptClient } from "langfuse-core";
+export type { LangfusePromptClient, ChatPromptClient, TextPromptClient, LangfusePromptRecord } from "langfuse-core";
 
 // Required when users pass these as typed arguments
 export {
