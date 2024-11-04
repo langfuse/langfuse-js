@@ -73,9 +73,9 @@ export class LangfuseExporter implements SpanExporter {
       return;
     }
 
-    const rootSpanAttributes = rootSpan.attributes;
     const userProvidedTraceId = this.parseTraceId(spans);
     const finalTraceId = userProvidedTraceId ?? traceId;
+    const langfusePrompt = this.parseLangfusePromptTraceAttribute(spans);
 
     this.langfuse.trace({
       id: finalTraceId,
@@ -83,35 +83,14 @@ export class LangfuseExporter implements SpanExporter {
       userId: this.parseUserIdTraceAttribute(spans),
       sessionId: this.parseSessionIdTraceAttribute(spans),
       tags: this.parseTagsTraceAttribute(spans).length > 0 ? this.parseTagsTraceAttribute(spans) : undefined,
-      input:
-        "ai.prompt.messages" in rootSpanAttributes
-          ? rootSpanAttributes["ai.prompt.messages"]
-          : "ai.prompt" in rootSpanAttributes
-            ? rootSpanAttributes["ai.prompt"]
-            : "ai.toolCall.args" in rootSpanAttributes
-              ? rootSpanAttributes["ai.toolCall.args"]
-              : undefined,
-      output:
-        "ai.result.text" in rootSpanAttributes
-          ? rootSpanAttributes["ai.result.text"]
-          : "ai.toolCall.result" in rootSpanAttributes
-            ? rootSpanAttributes["ai.toolCall.result"]
-            : "ai.result.object" in rootSpanAttributes
-              ? rootSpanAttributes["ai.result.object"]
-              : "ai.result.toolCalls" in rootSpanAttributes
-                ? rootSpanAttributes["ai.result.toolCalls"]
-                : undefined,
+      input: this.parseInput(rootSpan),
+      output: this.parseOutput(rootSpan),
       metadata: this.filterTraceAttributes(this.parseMetadataTraceAttribute(spans)),
     });
 
     for (const span of spans) {
       if (this.isGenerationSpan(span)) {
-        this.processSpanAsLangfuseGeneration(
-          finalTraceId,
-          span,
-          this.isRootAiSdkSpan(span, spans),
-          this.parseLangfusePromptTraceAttribute(spans)
-        );
+        this.processSpanAsLangfuseGeneration(finalTraceId, span, this.isRootAiSdkSpan(span, spans), langfusePrompt);
       } else {
         this.processSpanAsLangfuseSpan(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
       }
@@ -130,24 +109,8 @@ export class LangfuseExporter implements SpanExporter {
       startTime: this.hrTimeToDate(span.startTime),
       endTime: this.hrTimeToDate(span.endTime),
 
-      input:
-        "ai.prompt.messages" in attributes
-          ? attributes["ai.prompt.messages"]
-          : "ai.prompt" in attributes
-            ? attributes["ai.prompt"]
-            : "ai.toolCall.args" in attributes
-              ? attributes["ai.toolCall.args"]
-              : undefined,
-      output:
-        "ai.result.text" in attributes
-          ? attributes["ai.result.text"]
-          : "ai.toolCall.result" in attributes
-            ? attributes["ai.toolCall.result"]
-            : "ai.result.object" in attributes
-              ? attributes["ai.result.object"]
-              : "ai.result.toolCalls" in attributes
-                ? attributes["ai.result.toolCalls"]
-                : undefined,
+      input: this.parseInput(span),
+      output: this.parseOutput(span),
 
       metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
     });
@@ -184,6 +147,7 @@ export class LangfuseExporter implements SpanExporter {
               ? attributes["ai.model.id"]?.toString()
               : undefined,
       modelParameters: {
+        toolChoice: "ai.prompt.toolChoice" in attributes ? attributes["ai.prompt.toolChoice"]?.toString() : undefined,
         maxTokens:
           "gen_ai.request.max_tokens" in attributes ? attributes["gen_ai.request.max_tokens"]?.toString() : undefined,
         finishReason: "gen_ai.system" in attributes ? attributes["gen_ai.finishReason"]?.toString() : undefined,
@@ -213,24 +177,8 @@ export class LangfuseExporter implements SpanExporter {
               : undefined,
         total: "ai.usage.tokens" in attributes ? parseInt(attributes["ai.usage.tokens"]?.toString() ?? "0") : undefined,
       },
-      input:
-        "ai.prompt.messages" in attributes
-          ? attributes["ai.prompt.messages"]
-          : "ai.prompt" in attributes
-            ? attributes["ai.prompt"]
-            : "ai.toolCall.args" in attributes
-              ? attributes["ai.toolCall.args"]
-              : undefined,
-      output:
-        "ai.result.text" in attributes
-          ? attributes["ai.result.text"]
-          : "ai.toolCall.result" in attributes
-            ? attributes["ai.toolCall.result"]
-            : "ai.result.object" in attributes
-              ? attributes["ai.result.object"]
-              : "ai.result.toolCalls" in attributes
-                ? attributes["ai.result.toolCalls"]
-                : undefined,
+      input: this.parseInput(span),
+      output: this.parseOutput(span),
 
       metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
       prompt: langfusePrompt,
@@ -309,6 +257,33 @@ export class LangfuseExporter implements SpanExporter {
     this.logDebug("Shutting down Langfuse...");
 
     await this.langfuse.shutdownAsync();
+  }
+
+  private parseInput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
+    const attributes = span.attributes;
+    const tools = "ai.prompt.tools" in attributes ? attributes["ai.prompt.tools"] : [];
+
+    return "ai.prompt.messages" in attributes
+      ? [...JSON.parse(attributes["ai.prompt.messages"] as string), ...(Array.isArray(tools) ? tools : [])]
+      : "ai.prompt" in attributes
+        ? attributes["ai.prompt"]
+        : "ai.toolCall.args" in attributes
+          ? attributes["ai.toolCall.args"]
+          : undefined;
+  }
+
+  private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
+    const attributes = span.attributes;
+
+    return "ai.result.text" in attributes
+      ? attributes["ai.result.text"]
+      : "ai.toolCall.result" in attributes
+        ? attributes["ai.toolCall.result"]
+        : "ai.result.object" in attributes
+          ? attributes["ai.result.object"]
+          : "ai.result.toolCalls" in attributes
+            ? attributes["ai.result.toolCalls"]
+            : undefined;
   }
 
   private parseTraceId(spans: ReadableSpan[]): string | undefined {
