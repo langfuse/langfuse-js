@@ -74,9 +74,14 @@ const wrapMethod = async <T extends GenericMethod>(
         const textChunks: string[] = [];
         const toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] = [];
         let completionStartTime: Date | null = null;
+        let usage: OpenAI.CompletionUsage | null = null;
 
         for await (const rawChunk of response as AsyncIterable<unknown>) {
           completionStartTime = completionStartTime ?? new Date();
+
+          if (typeof rawChunk === "object" && rawChunk != null && "usage" in rawChunk) {
+            usage = rawChunk.usage as OpenAI.CompletionUsage | null;
+          }
 
           const processedChunk = parseChunk(rawChunk);
 
@@ -96,6 +101,13 @@ const wrapMethod = async <T extends GenericMethod>(
           output,
           endTime: new Date(),
           completionStartTime,
+          usage: usage
+            ? {
+                input: "prompt_tokens" in usage ? usage.prompt_tokens : undefined,
+                output: "completion_tokens" in usage ? usage.completion_tokens : undefined,
+                total: "total_tokens" in usage ? usage.total_tokens : undefined,
+              }
+            : undefined,
         });
 
         if (!hasUserProvidedParent) {
