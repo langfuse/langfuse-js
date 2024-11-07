@@ -305,7 +305,7 @@ export class LangfuseExporter implements SpanExporter {
 
   private parseTraceName(spans: ReadableSpan[]): string | undefined {
     return spans
-      .map((span) => span.attributes["resource.name"])
+      .map((span) => this.parseSpanMetadata(span)["langfuseSpanName"] || span.attributes["resource.name"])
       .find((name) => Boolean(name))
       ?.toString();
   }
@@ -376,7 +376,7 @@ export class LangfuseExporter implements SpanExporter {
   }
 
   private filterTraceAttributes(obj: Record<string, any>): Record<string, any> {
-    const langfuseTraceAttributes = ["userId", "sessionId", "tags", "langfuseTraceId", "langfusePrompt"];
+    const langfuseTraceAttributes = ["userId", "sessionId", "tags", "langfuseTraceId", "langfusePrompt", "langfuseSpanName"];
 
     return Object.entries(obj).reduce(
       (acc, [key, value]) => {
