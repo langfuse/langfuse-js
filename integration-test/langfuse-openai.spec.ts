@@ -4,7 +4,7 @@ import OpenAI from "openai";
 import Langfuse, { observeOpenAI } from "../langfuse";
 import { randomUUID } from "crypto";
 import axios, { type AxiosResponse } from "axios";
-import { LANGFUSE_BASEURL, getHeaders, fetchTraceById } from "./integration-utils";
+import { LANGFUSE_BASEURL, getHeaders, fetchTraceById, encodeFile } from "./integration-utils";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
@@ -1105,4 +1105,136 @@ describe("Langfuse-OpenAI-Integation", () => {
     });
     expect(generation.model).toBe("gpt-4o-2024-08-06");
   }, 10000);
+
+  it("should work with vision input", async () => {
+    const traceId = randomUUID();
+    const client = observeOpenAI(openai, { traceId, metadata: { someKey: "someValue" } });
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        { role: "system", content: "You are a helpful math tutor. Guide the user through the solution step by step." },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "What’s in this image?",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${await encodeFile("./static/puton.jpg")}`,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await client.flushAsync();
+
+    const trace = await fetchTraceById(traceId);
+    expect(trace.status).toBe(200);
+
+    const generation = trace.data.observations[0];
+    expect(generation.model).toBe("gpt-4o-2024-08-06");
+    expect(generation.input).toMatchObject({
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful math tutor. Guide the user through the solution step by step.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              text: "What’s in this image?",
+              type: "text",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: expect.stringMatching(/^@@@langfuseMedia:type=image\/jpeg\|id=.+\|source=base64_data_uri@@@$/),
+              },
+            },
+          ],
+        },
+      ],
+    });
+  }, 10_000);
+
+  it("should work with audio input and output", async () => {
+    const traceId = randomUUID();
+    const client = observeOpenAI(openai, { traceId, metadata: { someKey: "someValue" } });
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-audio-preview",
+      modalities: ["text", "audio"],
+      audio: { voice: "alloy", format: "wav" },
+      messages: [
+        { role: "system", content: "You are a hilarious comedian. Make the user laugh." },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Do what this recording says.",
+            },
+            {
+              type: "input_audio",
+              input_audio: {
+                data: await encodeFile("./static/joke_prompt.wav"),
+                format: "wav",
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await client.flushAsync();
+
+    const trace = await fetchTraceById(traceId);
+    expect(trace.status).toBe(200);
+
+    const generation = trace.data.observations[0];
+    expect(generation.model).toBe("gpt-4o-2024-08-06");
+    expect(generation.input).toMatchObject({
+      messages: [
+        {
+          role: "system",
+          content: "You are a hilarious comedian. Make the user laugh.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              text: "Do what this recording says.",
+              type: "text",
+            },
+            {
+              type: "input_audio",
+              input_audio: {
+                data: expect.stringMatching(/^@@@langfuseMedia:type=audio\/wav\|id=.+\|source=base64_data_uri@@@$/),
+                format: "wav",
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(generation.output).toMatchObject({
+      role: "assistant",
+      audio: {
+        id: expect.any(String),
+        data: expect.stringMatching(/^@@@langfuseMedia:type=audio\/wav\|id=.+\|source=base64_data_uri@@@$/),
+        expires_at: expect.any(Number),
+        transcript: expect.any(String),
+      },
+      content: null,
+      refusal: null,
+    });
+  }, 20_000);
 });

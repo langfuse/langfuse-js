@@ -32,4 +32,5 @@ export type LangfuseConfig = (LangfuseNewTraceConfig | LangfuseWithParentConfig)
   generationName?: string;
   langfusePrompt?: LangfusePromptClient;
 };
-export type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync">;
+export type LangfuseExtension = OpenAI &
+  Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync" | "shutdownAsync">;

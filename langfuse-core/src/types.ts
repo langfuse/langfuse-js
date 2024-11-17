@@ -38,7 +38,7 @@ export enum LangfusePersistedProperty {
 export type LangfuseFetchOptions = {
   method: "GET" | "POST" | "PUT" | "PATCH";
   headers: { [key: string]: string };
-  body?: string;
+  body?: string | Buffer;
   signal?: AbortSignal;
 };
 
@@ -171,6 +171,10 @@ export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
 
+export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
+export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;
+export type MediaContentType = components["schemas"]["MediaContentType"];
+export type PatchMediaBody = FixTypes<components["schemas"]["PatchMediaBody"]>;
 type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
 type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
 export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility

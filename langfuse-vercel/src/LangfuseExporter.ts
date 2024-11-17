@@ -1,5 +1,5 @@
-import type { SpanExporter, ReadableSpan } from "@opentelemetry/sdk-trace-base";
-import { Langfuse, type LangfusePromptRecord, type LangfuseOptions } from "langfuse";
+import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
+import { Langfuse, type LangfuseOptions, type LangfusePromptRecord } from "langfuse";
 
 import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
