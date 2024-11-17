@@ -15,7 +15,8 @@
   "dependencies": {
     "@langchain/community": "^0.2",
     "dotenv": "^16.4.5",
-    "langchain": "^0.2",
+    "langchain": "^0.3.6",
+    "openai": "^4.72.0",
     "langfuse-langchain": "*"
   },
   "devDependencies": {
