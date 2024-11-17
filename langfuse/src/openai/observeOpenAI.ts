@@ -54,6 +54,20 @@ export const observeOpenAI = <SDKType extends object>(
         return langfuseClient.flushAsync.bind(langfuseClient);
       }
 
+      // Add a shutdownAsync method to the OpenAI SDK that flushes the Langfuse client
+      if (propKey === "shutdownAsync") {
+        let langfuseClient: LangfuseCore;
+
+        // Flush the correct client depending on whether a parent client is provided
+        if (langfuseConfig && "parent" in langfuseConfig) {
+          langfuseClient = langfuseConfig.parent.client;
+        } else {
+          langfuseClient = LangfuseSingleton.getInstance();
+        }
+
+        return langfuseClient.shutdownAsync.bind(langfuseClient);
+      }
+
       // Trace methods of the OpenAI SDK
       if (typeof originalProperty === "function") {
         return withTracing(originalProperty.bind(wrappedSdk), config);
