@@ -4,6 +4,41 @@
  */
 
 export interface paths {
+  "/api/public/comments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all comments */
+    get: operations["comments_get"];
+    put?: never;
+    /** @description Create a comment. Comments may be attached to different object types (trace, observation, session, prompt). */
+    post: operations["comments_create"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/comments/{commentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a comment by id */
+    get: operations["comments_get-by-id"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/public/dataset-items": {
     parameters: {
       query?: never;
@@ -164,6 +199,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/public/media/{mediaId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a media record */
+    get: operations["media_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** @description Patch a media record */
+    patch: operations["media_patch"];
+    trace?: never;
+  };
+  "/api/public/media": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** @description Get a presigned upload URL for a media record */
+    post: operations["media_getUploadUrl"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/public/metrics/daily": {
     parameters: {
       query?: never;
@@ -295,7 +365,7 @@ export interface paths {
     /** @description Get a list of prompt names with versions and labels */
     get: operations["prompts_list"];
     put?: never;
-    /** @description Create a prompt */
+    /** @description Create a new version for the prompt with the given `name` */
     post: operations["prompts_create"];
     delete?: never;
     options?: never;
@@ -381,7 +451,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get sessions. */
+    /** @description Get sessions */
     get: operations["sessions_list"];
     put?: never;
     post?: never;
@@ -432,7 +502,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get list of traces. */
+    /** @description Get list of traces */
     get: operations["trace_list"];
     put?: never;
     post?: never;
@@ -446,20 +516,55 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** CreateCommentRequest */
+    CreateCommentRequest: {
+      /** @description The id of the project to attach the comment to. */
+      projectId: string;
+      /** @description The type of the object to attach the comment to (trace, observation, session, prompt). */
+      objectType: string;
+      /** @description The id of the object to attach the comment to. If this does not reference a valid existing object, an error will be thrown. */
+      objectId: string;
+      /** @description The content of the comment. May include markdown. Currently limited to 500 characters. */
+      content: string;
+      /** @description The id of the user who created the comment. */
+      authorUserId?: string | null;
+    };
+    /** CreateCommentResponse */
+    CreateCommentResponse: {
+      /** @description The id of the created object in Langfuse */
+      id: string;
+    };
+    /** GetCommentsResponse */
+    GetCommentsResponse: {
+      data: components["schemas"]["Comment"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
     /** Trace */
     Trace: {
       /** @description The unique identifier of a trace */
       id: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The timestamp when the trace was created
+       */
       timestamp: string;
+      /** @description The name of the trace */
       name?: string | null;
+      /** @description The input data of the trace. Can be any JSON. */
       input?: unknown;
+      /** @description The output data of the trace. Can be any JSON. */
       output?: unknown;
+      /** @description The session identifier associated with the trace */
       sessionId?: string | null;
+      /** @description The release version of the application when the trace was created */
       release?: string | null;
+      /** @description The version of the trace */
       version?: string | null;
+      /** @description The user identifier associated with the trace */
       userId?: string | null;
+      /** @description The metadata associated with the trace. Can be any JSON. */
       metadata?: unknown;
+      /** @description The tags associated with the trace. Can be an array of strings or null. */
       tags?: string[] | null;
       /** @description Public traces are accessible via url without login */
       public?: boolean | null;
@@ -515,48 +620,101 @@ export interface components {
     } & components["schemas"]["Session"];
     /** Observation */
     Observation: {
+      /** @description The unique identifier of the observation */
       id: string;
+      /** @description The trace ID associated with the observation */
       traceId?: string | null;
+      /** @description The type of the observation */
       type: string;
+      /** @description The name of the observation */
       name?: string | null;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The start time of the observation
+       */
       startTime: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The end time of the observation.
+       */
       endTime?: string | null;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The completion start time of the observation
+       */
       completionStartTime?: string | null;
+      /** @description The model used for the observation */
       model?: string | null;
+      /** @description The parameters of the model used for the observation */
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
+      /** @description The input data of the observation */
       input?: unknown;
+      /** @description The version of the observation */
       version?: string | null;
+      /** @description Additional metadata of the observation */
       metadata?: unknown;
+      /** @description The output data of the observation */
       output?: unknown;
+      /** @description The usage data of the observation */
       usage?: components["schemas"]["Usage"];
+      /** @description The level of the observation */
       level: components["schemas"]["ObservationLevel"];
+      /** @description The status message of the observation */
       statusMessage?: string | null;
+      /** @description The parent observation ID */
       parentObservationId?: string | null;
+      /** @description The prompt ID associated with the observation */
       promptId?: string | null;
     };
     /** ObservationsView */
     ObservationsView: {
+      /** @description The name of the prompt associated with the observation */
+      promptName?: string | null;
+      /** @description The version of the prompt associated with the observation */
+      promptVersion?: number | null;
+      /** @description The unique identifier of the model */
       modelId?: string | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The price of the input in USD
+       */
       inputPrice?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The price of the output in USD.
+       */
       outputPrice?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The total price in USD.
+       */
       totalPrice?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The calculated cost of the input in USD
+       */
       calculatedInputCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The calculated cost of the output in USD
+       */
       calculatedOutputCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The calculated total cost in USD
+       */
       calculatedTotalCost?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The latency in seconds.
+       */
       latency?: number | null;
-      /** Format: double */
+      /**
+       * Format: double
+       * @description The time to the first token in seconds
+       */
       timeToFirstToken?: number | null;
     } & components["schemas"]["Observation"];
     /**
@@ -639,6 +797,8 @@ export interface components {
       comment?: string | null;
       /** @description Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
       configId?: string | null;
+      /** @description Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
+      queueId?: string | null;
     };
     /** NumericScore */
     NumericScore: {
@@ -687,6 +847,19 @@ export interface components {
      * @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores
      */
     CreateScoreValue: number | string;
+    /** Comment */
+    Comment: {
+      id: string;
+      projectId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      objectType: components["schemas"]["CommentObjectType"];
+      objectId: string;
+      content: string;
+      authorUserId?: string | null;
+    };
     /** Dataset */
     Dataset: {
       id: string;
@@ -730,15 +903,27 @@ export interface components {
     };
     /** DatasetRun */
     DatasetRun: {
+      /** @description Unique identifier of the dataset run */
       id: string;
+      /** @description Name of the dataset run */
       name: string;
+      /** @description Description of the run */
       description?: string | null;
+      /** @description Metadata of the dataset run */
       metadata?: unknown;
+      /** @description Id of the associated dataset */
       datasetId: string;
+      /** @description Name of the associated dataset */
       datasetName: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The date and time when the dataset run was created
+       */
       createdAt: string;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description The date and time when the dataset run was last updated
+       */
       updatedAt: string;
     };
     /** DatasetRunWithItems */
@@ -755,7 +940,10 @@ export interface components {
       modelName: string;
       /** @description Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
       matchPattern: string;
-      /** @description Apply only to generations which are newer than this ISO date. */
+      /**
+       * Format: date
+       * @description Apply only to generations which are newer than this ISO date.
+       */
       startDate?: string | null;
       /** @description Unit used by this model. */
       unit: components["schemas"]["ModelUsageUnit"];
@@ -794,6 +982,11 @@ export interface components {
     /** MapValue */
     MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
     /**
+     * CommentObjectType
+     * @enum {string}
+     */
+    CommentObjectType: "TRACE" | "OBSERVATION" | "SESSION" | "PROMPT";
+    /**
      * DatasetStatus
      * @enum {string}
      */
@@ -816,7 +1009,7 @@ export interface components {
       metadata?: unknown;
       sourceTraceId?: string | null;
       sourceObservationId?: string | null;
-      /** @description Dataset items are upserted on their id. Id needs to be globally unique and cannot be reused across datasets. */
+      /** @description Dataset items are upserted on their id. Id needs to be unique (project-level) and cannot be reused across datasets. */
       id?: string | null;
       /** @description Defaults to ACTIVE for newly created items */
       status?: components["schemas"]["DatasetStatus"];
@@ -960,7 +1153,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
       promptName?: string | null;
@@ -972,7 +1165,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
       promptName?: string | null;
@@ -992,7 +1185,7 @@ export interface components {
       completionStartTime?: string | null;
       model?: string | null;
       modelParameters?: {
-        [key: string]: components["schemas"]["MapValue"] | undefined;
+        [key: string]: components["schemas"]["MapValue"];
       } | null;
       input?: unknown;
       version?: string | null;
@@ -1106,6 +1299,74 @@ export interface components {
       successes: components["schemas"]["IngestionSuccess"][];
       errors: components["schemas"]["IngestionError"][];
     };
+    /** GetMediaResponse */
+    GetMediaResponse: {
+      /** @description The unique langfuse identifier of a media record */
+      mediaId: string;
+      /** @description The MIME type of the media record */
+      contentType: string;
+      /** @description The size of the media record in bytes */
+      contentLength: number;
+      /**
+       * Format: date-time
+       * @description The date and time when the media record was uploaded
+       */
+      uploadedAt: string;
+      /** @description The download URL of the media record */
+      url: string;
+      /** @description The expiry date and time of the media record download URL */
+      urlExpiry: string;
+    };
+    /** PatchMediaBody */
+    PatchMediaBody: {
+      /**
+       * Format: date-time
+       * @description The date and time when the media record was uploaded
+       */
+      uploadedAt: string;
+      /** @description The HTTP status code of the upload */
+      uploadHttpStatus: number;
+      /** @description The HTTP error message of the upload */
+      uploadHttpError?: string | null;
+      /** @description The time in milliseconds it took to upload the media record */
+      uploadTimeMs?: number | null;
+    };
+    /** GetMediaUploadUrlRequest */
+    GetMediaUploadUrlRequest: {
+      /** @description The trace ID associated with the media record */
+      traceId: string;
+      /** @description The observation ID associated with the media record. If the media record is associated directly with a trace, this will be null. */
+      observationId?: string | null;
+      contentType: components["schemas"]["MediaContentType"];
+      /** @description The size of the media record in bytes */
+      contentLength: number;
+      /** @description The SHA-256 hash of the media record */
+      sha256Hash: string;
+      /** @description The trace / observation field the media record is associated with. This can be one of `input`, `output`, `metadata` */
+      field: string;
+    };
+    /** GetMediaUploadUrlResponse */
+    GetMediaUploadUrlResponse: {
+      /** @description The presigned upload URL. If the asset is already uploaded, this will be null */
+      uploadUrl?: string | null;
+      /** @description The unique langfuse identifier of a media record */
+      mediaId: string;
+    };
+    /**
+     * MediaContentType
+     * @description The MIME type of the media record
+     * @enum {string}
+     */
+    MediaContentType:
+      | "image/png"
+      | "image/jpeg"
+      | "image/jpg"
+      | "image/webp"
+      | "audio/mpeg"
+      | "audio/mp3"
+      | "audio/wav"
+      | "text/plain"
+      | "application/pdf";
     /** DailyMetrics */
     DailyMetrics: {
       /** @description A list of daily metrics, only days with ingested data are included. */
@@ -1114,6 +1375,7 @@ export interface components {
     };
     /** DailyMetricsDetails */
     DailyMetricsDetails: {
+      /** Format: date */
       date: string;
       countTraces: number;
       countObservations: number;
@@ -1155,7 +1417,10 @@ export interface components {
       modelName: string;
       /** @description Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
       matchPattern: string;
-      /** @description Apply only to generations which are newer than this ISO date. */
+      /**
+       * Format: date-time
+       * @description Apply only to generations which are newer than this ISO date.
+       */
       startDate?: string | null;
       /** @description Unit used by this model. */
       unit: components["schemas"]["ModelUsageUnit"];
@@ -1209,6 +1474,10 @@ export interface components {
       versions: number[];
       labels: string[];
       tags: string[];
+      /** Format: date-time */
+      lastUpdatedAt: string;
+      /** @description Config object of the most recent prompt version that matches the filters (if any are provided) */
+      lastConfig: unknown;
     };
     /** CreatePromptRequest */
     CreatePromptRequest:
@@ -1318,9 +1587,42 @@ export interface components {
       /** @description The id of the created object in Langfuse */
       id: string;
     };
-    /** Scores */
-    Scores: {
-      data: components["schemas"]["Score"][];
+    /** GetScoresResponseTraceData */
+    GetScoresResponseTraceData: {
+      /** @description The user ID associated with the trace referenced by score */
+      userId?: string | null;
+      /** @description A list of tags associated with the trace referenced by score */
+      tags?: string[] | null;
+    };
+    /** GetScoresResponseDataNumeric */
+    GetScoresResponseDataNumeric: {
+      trace: components["schemas"]["GetScoresResponseTraceData"];
+    } & components["schemas"]["NumericScore"];
+    /** GetScoresResponseDataCategorical */
+    GetScoresResponseDataCategorical: {
+      trace: components["schemas"]["GetScoresResponseTraceData"];
+    } & components["schemas"]["CategoricalScore"];
+    /** GetScoresResponseDataBoolean */
+    GetScoresResponseDataBoolean: {
+      trace: components["schemas"]["GetScoresResponseTraceData"];
+    } & components["schemas"]["BooleanScore"];
+    /** GetScoresResponseData */
+    GetScoresResponseData:
+      | ({
+          /** @enum {string} */
+          dataType: "NUMERIC";
+        } & components["schemas"]["GetScoresResponseDataNumeric"])
+      | ({
+          /** @enum {string} */
+          dataType: "CATEGORICAL";
+        } & components["schemas"]["GetScoresResponseDataCategorical"])
+      | ({
+          /** @enum {string} */
+          dataType: "BOOLEAN";
+        } & components["schemas"]["GetScoresResponseDataBoolean"]);
+    /** GetScoresResponse */
+    GetScoresResponse: {
+      data: components["schemas"]["GetScoresResponseData"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
     /** PaginatedSessions */
@@ -1357,6 +1659,201 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  comments_get: {
+    parameters: {
+      query?: {
+        /** @description Page number, starts at 1. */
+        page?: number | null;
+        /** @description Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
+        limit?: number | null;
+        /** @description Filter comments by object type (trace, observation, session, prompt). */
+        objectType?: string | null;
+        /** @description Filter comments by object id. If objectType is not provided, an error will be thrown. */
+        objectId?: string | null;
+        /** @description Filter comments by author user id. */
+        authorUserId?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetCommentsResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  comments_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateCommentRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreateCommentResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  "comments_get-by-id": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique langfuse identifier of a comment */
+        commentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Comment"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   datasetItems_list: {
     parameters: {
       query?: {
@@ -2060,6 +2557,195 @@ export interface operations {
       };
     };
   };
+  media_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique langfuse identifier of a media record */
+        mediaId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetMediaResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  media_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique langfuse identifier of a media record */
+        mediaId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PatchMediaBody"];
+      };
+    };
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  media_getUploadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetMediaUploadUrlRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GetMediaUploadUrlResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   metrics_daily: {
     parameters: {
       query?: {
@@ -2073,9 +2759,9 @@ export interface operations {
         userId?: string | null;
         /** @description Optional filter for metrics where traces include all of these tags */
         tags?: (string | null)[];
-        /** @description Optional filter to only include traces on or after a certain datetime (ISO 8601) */
+        /** @description Optional filter to only include traces and observations on or after a certain datetime (ISO 8601) */
         fromTimestamp?: string | null;
-        /** @description Optional filter to only include traces before a certain datetime (ISO 8601) */
+        /** @description Optional filter to only include traces and observations before a certain datetime (ISO 8601) */
         toTimestamp?: string | null;
       };
       header?: never;
@@ -2459,6 +3145,8 @@ export interface operations {
         fromStartTime?: string | null;
         /** @description Retrieve only observations with a start_time before this datetime (ISO 8601). */
         toStartTime?: string | null;
+        /** @description Optional filter to only include observations with a certain version. */
+        version?: string | null;
       };
       header?: never;
       path?: never;
@@ -2652,6 +3340,10 @@ export interface operations {
         page?: number | null;
         /** @description limit of items per page */
         limit?: number | null;
+        /** @description Optional filter to only include prompt versions created/updated on or after a certain datetime (ISO 8601) */
+        fromUpdatedAt?: string | null;
+        /** @description Optional filter to only include prompt versions created/updated before a certain datetime (ISO 8601) */
+        toUpdatedAt?: string | null;
       };
       header?: never;
       path?: never;
@@ -2986,8 +3678,12 @@ export interface operations {
         scoreIds?: string | null;
         /** @description Retrieve only scores with a specific configId. */
         configId?: string | null;
+        /** @description Retrieve only scores with a specific annotation queueId. */
+        queueId?: string | null;
         /** @description Retrieve only scores with a specific dataType. */
         dataType?: components["schemas"]["ScoreDataType"];
+        /** @description Only scores linked to traces that include all of these tags will be returned. */
+        traceTags?: (string | null)[];
       };
       header?: never;
       path?: never;
@@ -3000,7 +3696,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Scores"];
+          "application/json": components["schemas"]["GetScoresResponse"];
         };
       };
       400: {
@@ -3440,6 +4136,10 @@ export interface operations {
         orderBy?: string | null;
         /** @description Only traces that include all of these tags will be returned. */
         tags?: (string | null)[];
+        /** @description Optional filter to only include traces with a certain version. */
+        version?: string | null;
+        /** @description Optional filter to only include traces with a certain release. */
+        release?: string | null;
       };
       header?: never;
       path?: never;
