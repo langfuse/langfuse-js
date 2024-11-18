@@ -85,7 +85,7 @@ jobs:
           cp .env.dev.example .env
           pnpm run db:migrate          
           pnpm run db:seed
-          echo "::endgroup::"
+          rm -rf node_modules
 
           echo "::group::Run server"
           TELEMETRY_ENABLED=false CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000 LANGFUSE_ASYNC_INGESTION_PROCESSING=false LANGFUSE_ASYNC_CLICKHOUSE_INGESTION_PROCESSING=false docker compose -f docker-compose.v3preview.yml up -d
