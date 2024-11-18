@@ -688,7 +688,9 @@ abstract class LangfuseCoreStateless {
   }
 
   protected async processMediaInEvent(type: LangfuseObject, body: EventBody): Promise<void> {
-    if (!body) return;
+    if (!body) {
+      return;
+    }
 
     const traceId = "traceId" in body ? body.traceId : type.includes("trace") ? body.id : undefined;
 

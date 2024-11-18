@@ -14,7 +14,7 @@ try {
   // Fail gracefully in environments without fs/crypto support
   crypto = undefined;
 }
-import { MediaContentType } from "../types";
+import { type MediaContentType } from "../types";
 
 interface ParsedMediaReference {
   mediaId: string;

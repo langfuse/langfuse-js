@@ -1,4 +1,4 @@
-import { LangfuseMedia, MediaContentType } from "../src/media/LangfuseMedia";
+import { LangfuseMedia, type MediaContentType } from "../src/media/LangfuseMedia";
 
 describe("LangfuseMedia", () => {
   describe("constructor", () => {
