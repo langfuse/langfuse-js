@@ -24,6 +24,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       // check headers

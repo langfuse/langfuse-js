@@ -1,10 +1,12 @@
 // uses the compiled node.js version, run yarn build after making changes to the SDKs
 import Langfuse from "../langfuse-node";
+import fs from "fs";
 
 // import { wait } from '../langfuse-core/test/test-utils/test-utils'
 import axios from "axios";
 import { LANGFUSE_BASEURL, getHeaders } from "./integration-utils";
 import { utils } from "../langfuse-core/src";
+import { LangfuseMedia } from "../langfuse-core/src/media/LangfuseMedia";
 
 describe("Langfuse Node.js", () => {
   let langfuse: Langfuse;
@@ -627,4 +629,35 @@ describe("Langfuse Node.js", () => {
     const sessions = await langfuse.fetchSessions();
     expect(sessions.data).toContainEqual(expect.objectContaining({ id: sessionId }));
   });
+
+  it("traces multimodal metadata", async () => {
+    const trace = langfuse.trace({
+      name: "test-trace-10",
+      metadata: {
+        context: {
+          nested: new LangfuseMedia({
+            contentBytes: fs.readFileSync("./static/bitcoin.pdf"),
+            contentType: "application/pdf",
+          }),
+        },
+      },
+    });
+    trace.update({
+      version: "1.0.0",
+    });
+    await langfuse.flushAsync();
+
+    const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, { headers: getHeaders() });
+
+    expect(res.data).toMatchObject({
+      id: trace.id,
+      name: "test-trace-10",
+      version: "1.0.0",
+      metadata: {
+        context: {
+          nested: expect.stringMatching(/^@@@langfuseMedia:type=application\/pdf\|id=.+\|source=bytes@@@$/),
+        },
+      },
+    });
+  }, 10_000);
 });

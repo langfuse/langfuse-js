@@ -81,6 +81,7 @@ describe("Langfuse Core", () => {
       for (let i = 0; i < 2; i++) {
         langfuse.trace({ name: `test-trace-succeeding-${i}` });
       }
+      await jest.advanceTimersByTimeAsync(1);
 
       mocks.fetch.mockImplementation(() => {
         if (index < 3) {
@@ -117,11 +118,14 @@ describe("Langfuse Core", () => {
       });
 
       langfuse.trace({ name: "test-trace-1" });
+      await jest.advanceTimersByTimeAsync(1);
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       langfuse.trace({ name: "test-trace-2" });
       langfuse.trace({ name: "test-trace-3" });
       langfuse.trace({ name: "test-trace-4" });
       langfuse.trace({ name: "test-trace-5" });
+      await jest.advanceTimersByTimeAsync(1);
+
       expect(mocks.fetch).toHaveBeenCalledTimes(5);
     });
 
@@ -136,10 +140,12 @@ describe("Langfuse Core", () => {
       for (let i = 0; i < 20_004; i++) {
         langfuse.trace({ name: `test-trace-${i}` });
       }
+      await jest.advanceTimersByTimeAsync(1);
+
       expect(mocks.fetch).toHaveBeenCalledTimes(4_000);
 
       // wait for the last flush
-      jest.advanceTimersByTime(200);
+      await jest.advanceTimersByTimeAsync(200);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(4_001);
     });
@@ -180,6 +186,7 @@ describe("Langfuse Core", () => {
       }
 
       // before flush
+      await jest.advanceTimersByTimeAsync(1);
       expect(mocks.fetch).toHaveBeenCalledTimes(4_000);
 
       // after flush
@@ -228,7 +235,8 @@ describe("Langfuse Core", () => {
       langfuse.trace({ name: "test-trace-3" });
       expect(mocks.fetch).toHaveBeenCalledTimes(0);
 
-      jest.advanceTimersByTime(300);
+      await jest.advanceTimersByTimeAsync(300);
+
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
     });
   });

@@ -333,7 +333,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     if (this.rootProvided && this.updateRoot) {
       if (this.rootObservationId) {
-        this.langfuse._updateSpan({ id: this.rootObservationId, ...params });
+        this.langfuse._updateSpan({ id: this.rootObservationId, traceId: this.traceId, ...params });
       } else {
         this.langfuse.trace({ id: this.traceId, ...params });
       }
@@ -691,7 +691,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     if (!parentRunId && this.traceId && this.rootProvided && this.updateRoot) {
       if (this.rootObservationId) {
-        this.langfuse._updateSpan({ id: this.rootObservationId, output });
+        this.langfuse._updateSpan({ id: this.rootObservationId, traceId: this.traceId, output });
       } else {
         this.langfuse.trace({ id: this.traceId, output, ...traceUpdates });
       }

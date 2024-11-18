@@ -1,6 +1,7 @@
-import axios, { type AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
+import fs from "fs/promises";
 
-import { type components } from "../langfuse-core/src/openapi/server";
+import { components } from "../langfuse-core/src/openapi/server";
 
 export const LANGFUSE_BASEURL = String(process.env.LANGFUSE_BASEURL);
 export const LANGFUSE_PUBLIC_KEY = String(process.env.LANGFUSE_PUBLIC_KEY);
@@ -33,4 +34,11 @@ export const fetchTraceById = async (id: string): Promise<AxiosResponse<any, any
     headers: getHeaders(),
   });
   return res;
+};
+
+export const encodeFile = async (filePath: string): Promise<string> => {
+  const file = await fs.readFile(filePath);
+  const encoded = Buffer.from(file).toString("base64");
+
+  return encoded;
 };

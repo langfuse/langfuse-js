@@ -142,7 +142,7 @@ describe("langfuseWeb", () => {
         comment: "test comment",
         observationId: "test-observation-id",
       });
-
+      await jest.advanceTimersByTimeAsync(1);
       const scoreCategoricalId = utils.generateUUID();
       const scoreCategorical = langfuse.score({
         id: scoreCategoricalId,
@@ -152,6 +152,7 @@ describe("langfuseWeb", () => {
         comment: "test comment",
         observationId: "test-observation-id",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const scoreBooleanId = utils.generateUUID();
       const scoreBoolean = langfuse.score({
@@ -163,6 +164,7 @@ describe("langfuseWeb", () => {
         observationId: "test-observation-id",
         dataType: "BOOLEAN",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(scoreNumeric).toBeInstanceOf(Promise);
       expect(scoreCategorical).toBeInstanceOf(Promise);
