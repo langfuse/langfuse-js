@@ -594,7 +594,8 @@ abstract class LangfuseCoreStateless {
     try {
       JSON.stringify(finalEventBody);
     } catch (e) {
-      throw Error(`[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
+      this._events.emit("error", `[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
+      return;
     }
 
     const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];

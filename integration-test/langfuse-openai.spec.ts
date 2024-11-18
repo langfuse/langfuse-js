@@ -981,7 +981,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(messages).toBeDefined();
 
     await client.flushAsync();
-  }, 10000);
+  }, 20_000);
 
   it("should work with structured output parsing with response_format", async () => {
     const traceId = randomUUID();
