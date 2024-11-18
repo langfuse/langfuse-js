@@ -690,7 +690,7 @@ abstract class LangfuseCoreStateless {
   protected async processMediaInEvent(type: LangfuseObject, body: EventBody): Promise<void> {
     if (!body) return;
 
-    const traceId = "traceId" in body ? body.traceId : undefined ?? (type.includes("trace") ? body.id : undefined);
+    const traceId = "traceId" in body ? body.traceId : type.includes("trace") ? body.id : undefined;
 
     if (!traceId) {
       throw new Error("traceId is required for media upload");
@@ -701,14 +701,15 @@ abstract class LangfuseCoreStateless {
     await Promise.all(
       (["input", "output", "metadata"] as const).map(async (field) => {
         if (body[field as keyof EventBody]) {
-          body[field as keyof EventBody] = await this.findAndProcessMedia({
-            data: body[field as keyof EventBody],
-            traceId,
-            observationId,
-            field,
-          }).catch((e) => {
-            this._events.emit("error", `Error processing multimodal event: ${e}`);
-          });
+          body[field as keyof EventBody] =
+            (await this.findAndProcessMedia({
+              data: body[field as keyof EventBody],
+              traceId,
+              observationId,
+              field,
+            }).catch((e) => {
+              this._events.emit("error", `Error processing multimodal event: ${e}`);
+            })) ?? body[field as keyof EventBody];
         }
       })
     );
@@ -729,7 +730,6 @@ abstract class LangfuseCoreStateless {
     const maxLevels = 10;
 
     const processRecursively = async (data: any, level: number): Promise<any> => {
-      // For non-primitive values, use WeakMap to detect cycles
       if (typeof data === "string" && data.startsWith("data:")) {
         const media = new LangfuseMedia({ base64DataUri: data });
         await this.processMediaItem({ media, traceId, observationId, field });
@@ -740,6 +740,7 @@ abstract class LangfuseCoreStateless {
         return data;
       }
 
+      // Use WeakMap to detect cycles
       if (seenObjects.has(data) || level > maxLevels) {
         return data;
       }
@@ -791,6 +792,7 @@ abstract class LangfuseCoreStateless {
           };
         }
 
+        // Recursively process nested objects
         return Object.fromEntries(
           await Promise.all(
             Object.entries(data).map(async ([key, value]) => [key, await processRecursively(value, level + 1)])
@@ -884,8 +886,6 @@ abstract class LangfuseCoreStateless {
   async flushAsync(): Promise<void> {
     await Promise.all(Object.values(this.pendingEventProcessingPromises)).catch((e) => {
       logIngestionError(e);
-
-      return;
     });
 
     return new Promise((resolve, _reject) => {

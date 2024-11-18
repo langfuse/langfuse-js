@@ -45,7 +45,7 @@ describe("Langfuse Node.js", () => {
       langfuse.trace({ id: "test-id", name: "trace-name" });
       expect(mockedFetch).toHaveBeenCalledTimes(0);
 
-      await langfuse.flushAsync();
+      await jest.runAllTimersAsync();
       expect(mockedFetch).toHaveBeenCalledTimes(1);
 
       expect(mockedFetch).toHaveBeenCalledWith(
