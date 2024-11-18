@@ -34,6 +34,7 @@ describe("Langfuse Core", () => {
           hello: "world",
         },
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
@@ -67,6 +68,7 @@ describe("Langfuse Core", () => {
       jest.setSystemTime(new Date("2022-01-01"));
 
       langfuse.trace();
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -88,6 +90,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         id: "123456789",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -129,6 +132,7 @@ describe("Langfuse Core", () => {
         version: "1.0.0",
         tags: ["tag1", "tag2"],
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const body = parseBody(mocks.fetch.mock.calls[0]);
@@ -163,6 +167,7 @@ describe("Langfuse Core", () => {
       trace.update({
         userId: "123456789",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(2);
       const body = parseBody(mocks.fetch.mock.calls[1]);
@@ -194,6 +199,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -223,6 +229,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -253,6 +260,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -281,6 +289,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -303,6 +312,7 @@ describe("Langfuse Core", () => {
         name: "test-trace",
         release: "v5",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -324,6 +334,8 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
+
       const body = parseBody(mocks.fetch.mock.calls[0]);
       expect(body["batch"][0]).not.toHaveProperty("release");
     });
@@ -340,6 +352,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -370,6 +383,7 @@ describe("Langfuse Core", () => {
         name: "test-trace",
         release: "v3",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 

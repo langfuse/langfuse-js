@@ -573,7 +573,7 @@ abstract class LangfuseCoreStateless {
       return;
     }
 
-    const promise = this.process_enqueue_event(type, body);
+    const promise = this.processEnqueueEvent(type, body);
     const promiseId = generateUUID();
     this.pendingEventProcessingPromises[promiseId] = promise;
 
@@ -586,7 +586,7 @@ abstract class LangfuseCoreStateless {
       });
   }
 
-  protected async process_enqueue_event(type: LangfuseObject, body: EventBody): Promise<void> {
+  protected async processEnqueueEvent(type: LangfuseObject, body: EventBody): Promise<void> {
     this.maskEventBodyInPlace(body);
     await this.processMediaInEvent(type, body);
     const finalEventBody = this.truncateEventBody(body, MAX_EVENT_SIZE);
@@ -725,27 +725,31 @@ abstract class LangfuseCoreStateless {
     observationId?: string;
     field: "input" | "output" | "metadata";
   }): Promise<any> {
-    const seen = new Set<number>();
+    const seenObjects = new WeakMap();
     const maxLevels = 10;
 
     const processRecursively = async (data: any, level: number): Promise<any> => {
-      if (seen.has(data) || level > maxLevels) {
-        return data;
-      }
-
-      seen.add(data);
-
-      if (data instanceof LangfuseMedia || Object.prototype.toString.call(data) === "[object LangfuseMedia]") {
-        await this.processMediaItem({ media: data, traceId, observationId, field });
-
-        return data;
-      }
-
+      // For non-primitive values, use WeakMap to detect cycles
       if (typeof data === "string" && data.startsWith("data:")) {
         const media = new LangfuseMedia({ base64DataUri: data });
         await this.processMediaItem({ media, traceId, observationId, field });
 
         return media;
+      }
+      if (typeof data !== "object" || data === null) {
+        return data;
+      }
+
+      if (seenObjects.has(data) || level > maxLevels) {
+        return data;
+      }
+
+      seenObjects.set(data, true);
+
+      if (data instanceof LangfuseMedia || Object.prototype.toString.call(data) === "[object LangfuseMedia]") {
+        await this.processMediaItem({ media: data, traceId, observationId, field });
+
+        return data;
       }
 
       if (Array.isArray(data)) {
@@ -811,58 +815,62 @@ abstract class LangfuseCoreStateless {
     observationId?: string;
     field: string;
   }): Promise<void> {
-    if (!media.contentLength || !media._contentType || !media.contentSha256Hash || !media._contentBytes) {
-      return;
-    }
+    try {
+      if (!media.contentLength || !media._contentType || !media.contentSha256Hash || !media._contentBytes) {
+        return;
+      }
 
-    const getUploadUrlBody: GetMediaUploadUrlRequest = {
-      contentLength: media.contentLength,
-      traceId,
-      observationId,
-      field,
-      contentType: media._contentType,
-      sha256Hash: media.contentSha256Hash,
-    };
-
-    const fetchResponse = await this.fetch(
-      `${this.baseUrl}/api/public/media`,
-      this._getFetchOptions({
-        method: "POST",
-        body: JSON.stringify(getUploadUrlBody),
-      })
-    );
-
-    const uploadUrlResponse = (await fetchResponse.json()) as GetMediaUploadUrlResponse;
-
-    const { uploadUrl, mediaId } = uploadUrlResponse;
-    media._mediaId = mediaId;
-
-    if (uploadUrl) {
-      this._events.emit("debug", `Uploading media ${mediaId}`);
-      const startTime = Date.now();
-      const uploadResponse = await this.fetch(uploadUrl, {
-        method: "PUT",
-        body: media._contentBytes,
-        headers: {
-          "Content-Type": media._contentType,
-          "x-amz-checksum-sha256": media.contentSha256Hash,
-        },
-      });
-
-      const patchMediaBody: PatchMediaBody = {
-        uploadedAt: new Date().toISOString(),
-        uploadHttpStatus: uploadResponse.status,
-        uploadHttpError: await uploadResponse.text(),
-        uploadTimeMs: Date.now() - startTime,
+      const getUploadUrlBody: GetMediaUploadUrlRequest = {
+        contentLength: media.contentLength,
+        traceId,
+        observationId,
+        field,
+        contentType: media._contentType,
+        sha256Hash: media.contentSha256Hash,
       };
 
-      await this.fetch(
-        `${this.baseUrl}/api/public/media/${mediaId}`,
-        this._getFetchOptions({ method: "PATCH", body: JSON.stringify(patchMediaBody) })
+      const fetchResponse = await this.fetch(
+        `${this.baseUrl}/api/public/media`,
+        this._getFetchOptions({
+          method: "POST",
+          body: JSON.stringify(getUploadUrlBody),
+        })
       );
-      this._events.emit("debug", `Media upload status reported for ${mediaId}`);
-    } else {
-      this._events.emit("debug", `Media ${mediaId} already uploaded`);
+
+      const uploadUrlResponse = (await fetchResponse.json()) as GetMediaUploadUrlResponse;
+
+      const { uploadUrl, mediaId } = uploadUrlResponse;
+      media._mediaId = mediaId;
+
+      if (uploadUrl) {
+        this._events.emit("debug", `Uploading media ${mediaId}`);
+        const startTime = Date.now();
+        const uploadResponse = await this.fetch(uploadUrl, {
+          method: "PUT",
+          body: media._contentBytes,
+          headers: {
+            "Content-Type": media._contentType,
+            "x-amz-checksum-sha256": media.contentSha256Hash,
+          },
+        });
+
+        const patchMediaBody: PatchMediaBody = {
+          uploadedAt: new Date().toISOString(),
+          uploadHttpStatus: uploadResponse.status,
+          uploadHttpError: await uploadResponse.text(),
+          uploadTimeMs: Date.now() - startTime,
+        };
+
+        await this.fetch(
+          `${this.baseUrl}/api/public/media/${mediaId}`,
+          this._getFetchOptions({ method: "PATCH", body: JSON.stringify(patchMediaBody) })
+        );
+        this._events.emit("debug", `Media upload status reported for ${mediaId}`);
+      } else {
+        this._events.emit("debug", `Media ${mediaId} already uploaded`);
+      }
+    } catch (err) {
+      this._events.emit("error", `Error processing media item: ${err}`);
     }
   }
 

@@ -1199,7 +1199,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(trace.status).toBe(200);
 
     const generation = trace.data.observations[0];
-    expect(generation.model).toBe("gpt-4o-2024-08-06");
+    expect(generation.model).toBe("gpt-4o-audio-preview");
     expect(generation.input).toMatchObject({
       messages: [
         {

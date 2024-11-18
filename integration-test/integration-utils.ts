@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import fs from "fs";
+import fs from "fs/promises";
 
 import { components } from "../langfuse-core/src/openapi/server";
 
@@ -37,7 +37,7 @@ export const fetchTraceById = async (id: string): Promise<AxiosResponse<any, any
 };
 
 export const encodeFile = async (filePath: string): Promise<string> => {
-  const file = fs.readFileSync(filePath);
+  const file = await fs.readFile(filePath);
   const encoded = Buffer.from(file).toString("base64");
 
   return encoded;
