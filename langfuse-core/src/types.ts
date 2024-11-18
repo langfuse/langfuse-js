@@ -27,6 +27,8 @@ export type LangfuseCoreOptions = {
   enabled?: boolean;
   // Mask function to mask data in the event body
   mask?: MaskFunction;
+  // Project ID to use for the SDK in admin mode. This should never be set by users.
+  _projectId?: string;
 };
 
 export enum LangfusePersistedProperty {

@@ -181,6 +181,9 @@ abstract class LangfuseCoreStateless {
   private release: string | undefined;
   private sdkIntegration: string;
   private enabled: boolean;
+  private adminEnabled: boolean;
+  private adminIngestionEvents: SingleIngestionEvent[] = [];
+  private projectId: string | undefined;
   private mask: MaskFunction | undefined;
 
   // internal
@@ -198,7 +201,7 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params: LangfuseCoreOptions) {
-    const { publicKey, secretKey, enabled, ...options } = params;
+    const { publicKey, secretKey, enabled, _projectId, ...options } = params;
 
     this.enabled = enabled === false ? false : true;
     this.publicKey = publicKey ?? "";
@@ -217,6 +220,18 @@ abstract class LangfuseCoreStateless {
     this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
+    this.adminEnabled = getEnv("LANGFUSE_SDK_ADMIN_ENABLED") === "true";
+
+    if (this.adminEnabled && !_projectId) {
+      this._events.emit("error", "LANGFUSE_SDK_ADMIN_ENABLED is true, but no project ID was provided.");
+      return;
+    }
+    if (!this.adminEnabled && _projectId) {
+      this._events.emit("error", "LANGFUSE_SDK_ADMIN_ENABLED is false, but a project ID was provided.");
+      return;
+    }
+
+    this.projectId = _projectId;
   }
 
   getSdkIntegration(): string {
@@ -940,6 +955,14 @@ abstract class LangfuseCoreStateless {
       this._events.emit("flush", items);
     };
 
+    // If admin mode is enabled, we don't send the events to the server, but instead store them in the adminIngestionEvents array
+    if (this.adminEnabled) {
+      this.adminIngestionEvents.push(...items);
+
+      done();
+      return;
+    }
+
     const payload = JSON.stringify({
       batch: items,
       metadata: {
@@ -1121,6 +1144,13 @@ abstract class LangfuseCoreStateless {
     } catch (e) {
       console.error("[Langfuse SDK] Error while shutting down Langfuse", e);
     }
+  }
+
+  async _shutdownAdmin(): Promise<{ events: SingleIngestionEvent[]; projectId: string } | undefined> {
+    if (this.adminEnabled && this.projectId) {
+      return { events: this.adminIngestionEvents, projectId: this.projectId };
+    }
+    return;
   }
 
   shutdown(): void {
