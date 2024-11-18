@@ -695,7 +695,8 @@ abstract class LangfuseCoreStateless {
     const traceId = "traceId" in body ? body.traceId : type.includes("trace") ? body.id : undefined;
 
     if (!traceId) {
-      throw new Error("traceId is required for media upload");
+      this._events.emit("warning", "traceId is required for media upload");
+      return;
     }
 
     const observationId = (type.includes("generation") || type.includes("span")) && body.id ? body.id : undefined;
