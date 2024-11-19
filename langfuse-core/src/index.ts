@@ -181,9 +181,8 @@ abstract class LangfuseCoreStateless {
   private release: string | undefined;
   private sdkIntegration: string;
   private enabled: boolean;
-  private adminEnabled: boolean;
+  protected adminEnabled: boolean;
   private adminIngestionEvents: SingleIngestionEvent[] = [];
-  private projectId: string | undefined;
   private mask: MaskFunction | undefined;
 
   // internal
@@ -201,7 +200,7 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params: LangfuseCoreOptions) {
-    const { publicKey, secretKey, enabled, _projectId, ...options } = params;
+    const { publicKey, secretKey, enabled, ...options } = params;
 
     this.enabled = enabled === false ? false : true;
     this.publicKey = publicKey ?? "";
@@ -221,17 +220,6 @@ abstract class LangfuseCoreStateless {
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
     this.adminEnabled = getEnv("LANGFUSE_SDK_ADMIN_ENABLED") === "true";
-
-    if (this.adminEnabled && !_projectId) {
-      this._events.emit("error", "LANGFUSE_SDK_ADMIN_ENABLED is true, but no project ID was provided.");
-      return;
-    }
-    if (!this.adminEnabled && _projectId) {
-      this._events.emit("error", "LANGFUSE_SDK_ADMIN_ENABLED is false, but a project ID was provided.");
-      return;
-    }
-
-    this.projectId = _projectId;
   }
 
   getSdkIntegration(): string {
@@ -1146,11 +1134,19 @@ abstract class LangfuseCoreStateless {
     }
   }
 
-  async _shutdownAdmin(): Promise<{ events: SingleIngestionEvent[]; projectId: string } | undefined> {
-    if (this.adminEnabled && this.projectId) {
-      return { events: this.adminIngestionEvents, projectId: this.projectId };
+  async _shutdownAdmin(): Promise<SingleIngestionEvent[] | undefined> {
+    if (this.adminEnabled) {
+      clearTimeout(this._flushTimer);
+      await this.flushAsync();
+
+      const events = [...this.adminIngestionEvents];
+      this.adminIngestionEvents = [];
+
+      return events;
+    } else {
+      this._events.emit("error", "LANGFUSE_SDK_ADMIN_ENABLED is false, but _shutdownAdmin() was called.");
+      return undefined;
     }
-    return;
   }
 
   shutdown(): void {
@@ -1202,7 +1198,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     const { publicKey, secretKey, enabled } = params;
     let isObservabilityEnabled = enabled === false ? false : true;
 
-    if (!isObservabilityEnabled) {
+    if (getEnv("LANGFUSE_SDK_ADMIN_ENABLED") === "true") {
+      isObservabilityEnabled = true;
+    } else if (!isObservabilityEnabled) {
       console.warn("Langfuse is disabled. No observability data will be sent to Langfuse.");
     } else if (!secretKey) {
       isObservabilityEnabled = false;

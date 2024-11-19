@@ -697,7 +697,6 @@ describe("Langchain", () => {
       process.env.LANGFUSE_SDK_ADMIN_ENABLED = "true";
 
       try {
-        const projectId = randomUUID();
         const handler = new CallbackHandler({
           sessionId: "test-session",
           userId: "test-user",
@@ -707,7 +706,6 @@ describe("Langchain", () => {
           },
           tags: ["test-tag", "test-tag-2"],
           version: "1.0.0",
-          _projectId: projectId,
         });
 
         handler.debug(true);
@@ -725,9 +723,8 @@ describe("Langchain", () => {
 
         console.log(JSON.stringify(shutdownResult, null, 2));
 
-        const { events, projectId: eventsProjectId } = shutdownResult;
+        const events = shutdownResult;
 
-        expect(projectId).toBe(eventsProjectId);
         expect(events.length).toBe(4);
         const [traceCreate, generationCreate, generationUpdate, traceUpdate] = events;
 
