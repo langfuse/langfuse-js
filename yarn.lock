@@ -7,23 +7,13 @@
   resolved "https://registry.npmjs.org/@aashutoshrathi/word-wrap/-/word-wrap-1.2.6.tgz"
   integrity sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==
 
-"@ai-sdk/openai@^0.0.48":
-  version "0.0.48"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-0.0.48.tgz#7a9dcfc84f6f781cea58b6eb0edfa6edd17e864f"
-  integrity sha512-buw9cT/55VGjvtcNvQGDljHQMan8C3/D1UvkcpY8XPfnimffrjAQa66fXldahhFQM20didNJawh0vlTM1MvRDw==
+"@ai-sdk/openai@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-1.0.0.tgz#4dd7bd9106dfac1e6b53ca0a3d141d68c22d1521"
+  integrity sha512-EZ2UDxTBb3v3e2eexKTFGXF9MEy7rEcfIrkdD3yo8RCpwIkwRjyxCfs6wzh8KAW6XQZRu3Rp0kqw1S4FQcQgJA==
   dependencies:
-    "@ai-sdk/provider" "0.0.20"
-    "@ai-sdk/provider-utils" "1.0.13"
-
-"@ai-sdk/provider-utils@1.0.13":
-  version "1.0.13"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.13.tgz#073feeeb4baefe9efb5106b99126d69b379f229b"
-  integrity sha512-NDQUUBDQoWk9aGn2pOA5wiM5CdO57KeYTEph7PpKGEU8IyqI0d+CiYKISOia6Omy17d+Dw/ZM6KP98F89BGJ5A==
-  dependencies:
-    "@ai-sdk/provider" "0.0.20"
-    eventsource-parser "1.1.2"
-    nanoid "3.3.6"
-    secure-json-parse "2.7.0"
+    "@ai-sdk/provider" "1.0.0"
+    "@ai-sdk/provider-utils" "2.0.0"
 
 "@ai-sdk/provider-utils@1.0.18":
   version "1.0.18"
@@ -35,12 +25,15 @@
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
 
-"@ai-sdk/provider@0.0.20":
-  version "0.0.20"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.20.tgz#a51a8e6f42ce251bf4517523d31652e3bcbca401"
-  integrity sha512-nCQZRUTi/+y+kf1ep9rujpbQEtsIwySzlQAudiFeVhzzDi9rYvWp5tOSVu8/ArT+i1xSc2tw40akxb1TX73ofQ==
+"@ai-sdk/provider-utils@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-2.0.0.tgz#dc4da55bde547e5098566761547950cb278c60bb"
+  integrity sha512-uITgVJByhtzuQU2ZW+2CidWRmQqTUTp6KADevy+4aRnmILZxY2LCt+UZ/ZtjJqq0MffwkuQPPY21ExmFAQ6kKA==
   dependencies:
-    json-schema "0.4.0"
+    "@ai-sdk/provider" "1.0.0"
+    eventsource-parser "^3.0.0"
+    nanoid "^5.0.8"
+    secure-json-parse "^2.7.0"
 
 "@ai-sdk/provider@0.0.23":
   version "0.0.23"
@@ -48,6 +41,13 @@
   integrity sha512-oAc49O5+xypVrKM7EUU5P/Y4DUL4JZUWVxhejoAVOTOl3WZUEWsMbP3QZR+TrimQIsS0WR/n9UuF6U0jPdp0tQ==
   dependencies:
     json-schema "0.4.0"
+
+"@ai-sdk/provider@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-1.0.0.tgz#f4e2eeca4e1feeebc02f6335c5b699071fca2b04"
+  integrity sha512-Sj29AzooJ7SYvhPd+AAWt/E7j63E9+AzRnoMHUaJPRYzOd/WDrVNxxv85prF9gDcQ7XPVlSk9j6oAZV9/DXYpA==
+  dependencies:
+    json-schema "^0.4.0"
 
 "@ai-sdk/react@0.0.55":
   version "0.0.55"
@@ -5644,6 +5644,11 @@ eventsource-parser@1.1.2:
   resolved "https://registry.yarnpkg.com/eventsource-parser/-/eventsource-parser-1.1.2.tgz#ed6154a4e3dbe7cda9278e5e35d2ffc58b309f89"
   integrity sha512-v0eOBUbiaFojBu2s2NPBfYUoRR9GjcDNvCXVaqEf5vVfpIAh9f8RCo4vXTP8c63QRKCFwoLpMpTdPwwhEKVgzA==
 
+eventsource-parser@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/eventsource-parser/-/eventsource-parser-3.0.0.tgz#9303e303ef807d279ee210a17ce80f16300d9f57"
+  integrity sha512-T1C0XCUimhxVQzW4zFipdx0SficT651NnkR0ZSH3yQwh+mFMdLfgjABVi4YtMTtaL4s168593DaoaRLMqryavA==
+
 execa@5.0.0:
   version "5.0.0"
   resolved "https://registry.npmjs.org/execa/-/execa-5.0.0.tgz"
@@ -7532,7 +7537,7 @@ json-schema-traverse@^1.0.0:
   resolved "https://registry.yarnpkg.com/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz#ae7bcb3656ab77a73ba5c49bf654f38e6b6860e2"
   integrity sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==
 
-json-schema@0.4.0:
+json-schema@0.4.0, json-schema@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/json-schema/-/json-schema-0.4.0.tgz#f7de4cf6efab838ebaeb3236474cbba5a1930ab5"
   integrity sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==
@@ -7678,6 +7683,28 @@ langchainhub@~0.0.8:
   version "0.0.11"
   resolved "https://registry.yarnpkg.com/langchainhub/-/langchainhub-0.0.11.tgz#2ce22def9c84699dcbd4fd4b78270d34bd2a9ae9"
   integrity sha512-WnKI4g9kU2bHQP136orXr2bcRdgz9iiTBpTN0jWt9IlScUKnJBoD0aa2HOzHURQKeQDnt2JwqVmQ6Depf5uDLQ==
+
+langfuse-core@^3.29.1:
+  version "3.29.1"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-3.29.1.tgz#6aeaf5ad991293cb7328c5faf8881bfc472b6231"
+  integrity sha512-sH+clcJA4xdhGxeJhJ/EqdZQk2z8zMwt1tw5zTyndUUaMfhNMIr5g4UR91nE37vbQtilWwXW0b3FInJJinriNw==
+  dependencies:
+    mustache "^4.2.0"
+
+langfuse-langchain@*:
+  version "3.29.1"
+  resolved "https://registry.yarnpkg.com/langfuse-langchain/-/langfuse-langchain-3.29.1.tgz#21c97f874529e90c043b066b200a0da1ef5feb1d"
+  integrity sha512-IuCDC8J9MajpjyJwkuAP0Jp3AqPMOlrAbUoRc0nRVbi9ltxWBZkrASZMORpI0Ocp1vUW4v4wt8py3I7LqE8LyQ==
+  dependencies:
+    langfuse "^3.29.1"
+    langfuse-core "^3.29.1"
+
+langfuse@^3.29.1:
+  version "3.29.1"
+  resolved "https://registry.yarnpkg.com/langfuse/-/langfuse-3.29.1.tgz#84054a4a2199f58d8e20115b0cf1ee4046413271"
+  integrity sha512-lGh/4yUdjpHcCnp2zNZiyAxgDHbFGD3te6ONjuL7I9REf++49k+gpycMTNEAo6sQHFbhiuB1FO345pAOR2+R8A==
+  dependencies:
+    langfuse-core "^3.29.1"
 
 langsmith@^0.1.56:
   version "0.1.59"
@@ -8394,6 +8421,11 @@ nanoid@3.3.6:
   version "3.3.6"
   resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.6.tgz#443380c856d6e9f9824267d960b4236ad583ea4c"
   integrity sha512-BGcqMMJuToF7i1rt+2PWSNVnWIkGCU78jBG3RxO/bZlnZPK2Cmi2QaffxGO/2RvWi9sL+FAiRiXMgsyxQ1DIDA==
+
+nanoid@^5.0.8:
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-5.0.8.tgz#7610003f6b3b761b5c244bb342c112c5312512bf"
+  integrity sha512-TcJPw+9RV9dibz1hHUzlLVy8N4X9TnwirAjrU08Juo6BNKggzVfP2ZJ/3ZUSq15Xl5i85i+Z89XBO90pB2PghQ==
 
 natural-compare@^1.4.0:
   version "1.4.0"
@@ -9880,7 +9912,7 @@ saxes@^6.0.0:
   dependencies:
     xmlchars "^2.2.0"
 
-secure-json-parse@2.7.0:
+secure-json-parse@2.7.0, secure-json-parse@^2.7.0:
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/secure-json-parse/-/secure-json-parse-2.7.0.tgz#5a5f9cd6ae47df23dba3151edd06855d47e09862"
   integrity sha512-6aU+Rwsezw7VR8/nyvKTx8QpWH9FrcYiXXlqC4z5d5XQBDRqtbfsRjnwGyqbi3gddNtWHuEk9OANUotL26qKUw==
