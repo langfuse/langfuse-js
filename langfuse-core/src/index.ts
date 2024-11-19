@@ -1134,7 +1134,7 @@ abstract class LangfuseCoreStateless {
     }
   }
 
-  async _shutdownAdmin(): Promise<SingleIngestionEvent[] | undefined> {
+  async _shutdownAdmin(): Promise<SingleIngestionEvent[]> {
     if (this.adminEnabled) {
       clearTimeout(this._flushTimer);
       await this.flushAsync();
@@ -1145,7 +1145,7 @@ abstract class LangfuseCoreStateless {
       return events;
     } else {
       this._events.emit("error", "LANGFUSE_SDK_ADMIN_ENABLED is false, but _shutdownAdmin() was called.");
-      return undefined;
+      return [];
     }
   }
 
