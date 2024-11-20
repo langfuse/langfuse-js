@@ -697,6 +697,7 @@ describe("Langchain", () => {
       process.env.LANGFUSE_SDK_ADMIN_ENABLED = "true";
 
       try {
+        const projectId = "test-project-id";
         const handler = new CallbackHandler({
           sessionId: "test-session",
           userId: "test-user",
@@ -705,6 +706,7 @@ describe("Langchain", () => {
             array: ["a", "b"],
           },
           tags: ["test-tag", "test-tag-2"],
+          _projectId: projectId,
           version: "1.0.0",
         });
 
@@ -716,7 +718,7 @@ describe("Langchain", () => {
         await llm.invoke(messages, { callbacks: [handler] });
 
         await handler.flushAsync();
-        const shutdownResult = await handler.langfuse._shutdownAdmin();
+        const shutdownResult = await handler.langfuse._shutdownAdmin(projectId);
         if (!shutdownResult) {
           throw new Error("No shutdown result");
         }

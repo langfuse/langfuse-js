@@ -182,7 +182,8 @@ abstract class LangfuseCoreStateless {
   private sdkIntegration: string;
   private enabled: boolean;
   protected adminEnabled: boolean;
-  private adminIngestionEvents: SingleIngestionEvent[] = [];
+  private adminIngestionEvents: Map<string, SingleIngestionEvent[]> = new Map();
+  private projectId: string | undefined;
   private mask: MaskFunction | undefined;
 
   // internal
@@ -200,7 +201,7 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params: LangfuseCoreOptions) {
-    const { publicKey, secretKey, enabled, ...options } = params;
+    const { publicKey, secretKey, enabled, _projectId, ...options } = params;
 
     this.enabled = enabled === false ? false : true;
     this.publicKey = publicKey ?? "";
@@ -219,7 +220,26 @@ abstract class LangfuseCoreStateless {
     this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
+
     this.adminEnabled = getEnv("LANGFUSE_SDK_ADMIN_ENABLED") === "true";
+
+    if (this.adminEnabled && !_projectId) {
+      this._events.emit(
+        "error",
+        "LANGFUSE_SDK_ADMIN_ENABLED is true, but no project ID was provided. Admin mode will not be enabled."
+      );
+      this.adminEnabled = false;
+      return;
+    } else if (!this.adminEnabled && _projectId) {
+      this._events.emit(
+        "error",
+        "LANGFUSE_SDK_ADMIN_ENABLED is false, but a project ID was provided. Admin mode will not be enabled."
+      );
+      this.adminEnabled = false;
+      return;
+    } else {
+      this.projectId = _projectId;
+    }
   }
 
   getSdkIntegration(): string {
@@ -944,8 +964,12 @@ abstract class LangfuseCoreStateless {
     };
 
     // If admin mode is enabled, we don't send the events to the server, but instead store them in the adminIngestionEvents array
-    if (this.adminEnabled) {
-      this.adminIngestionEvents.push(...items);
+    if (this.adminEnabled && this.projectId) {
+      if (!this.adminIngestionEvents.has(this.projectId)) {
+        this.adminIngestionEvents.set(this.projectId, [...items]);
+      } else {
+        this.adminIngestionEvents.get(this.projectId)?.push(...items);
+      }
 
       done();
       return;
@@ -1134,13 +1158,13 @@ abstract class LangfuseCoreStateless {
     }
   }
 
-  async _shutdownAdmin(): Promise<SingleIngestionEvent[]> {
+  async _shutdownAdmin(projectId: string): Promise<SingleIngestionEvent[]> {
     if (this.adminEnabled) {
       clearTimeout(this._flushTimer);
       await this.flushAsync();
 
-      const events = [...this.adminIngestionEvents];
-      this.adminIngestionEvents = [];
+      const events = this.adminIngestionEvents.get(projectId) ?? [];
+      this.adminIngestionEvents.delete(projectId);
 
       return events;
     } else {

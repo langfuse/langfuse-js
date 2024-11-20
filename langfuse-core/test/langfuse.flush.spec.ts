@@ -246,6 +246,7 @@ describe("Langfuse Core", () => {
         [langfuse, mocks] = createTestClient({
           publicKey: "pk-lf-111",
           secretKey: "sk-lf-111",
+          _projectId: "test-project-id",
           flushAt: 5,
           flushInterval: 200,
         });
