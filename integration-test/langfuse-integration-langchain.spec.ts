@@ -694,7 +694,7 @@ describe("Langchain", () => {
     });
 
     it("should export events in admin mode", async () => {
-      process.env.LANGFUSE_SDK_ADMIN_ENABLED = "true";
+      process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = "true";
 
       try {
         const projectId = "test-project-id";
@@ -816,7 +816,7 @@ describe("Langchain", () => {
         expect((generationUpdate.body as any).traceId).toBe(traceId);
         expect((traceUpdate.body as any).id).toBe(traceId);
       } finally {
-        process.env.LANGFUSE_SDK_ADMIN_ENABLED = undefined;
+        process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = undefined;
       }
     });
   });

@@ -241,7 +241,7 @@ describe("Langfuse Core", () => {
     });
 
     it("should not send events in admin mode", async () => {
-      process.env.LANGFUSE_SDK_ADMIN_ENABLED = "true";
+      process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = "true";
       try {
         [langfuse, mocks] = createTestClient({
           publicKey: "pk-lf-111",
@@ -261,7 +261,7 @@ describe("Langfuse Core", () => {
 
         expect(mocks.fetch).not.toHaveBeenCalled();
       } finally {
-        process.env.LANGFUSE_SDK_ADMIN_ENABLED = undefined;
+        process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = undefined;
       }
     });
   });
