@@ -182,7 +182,7 @@ abstract class LangfuseCoreStateless {
   private sdkIntegration: string;
   private enabled: boolean;
   protected isLocalEventExportEnabled: boolean;
-  private adminIngestionEvents: Map<string, SingleIngestionEvent[]> = new Map();
+  private localEventExportMap: Map<string, SingleIngestionEvent[]> = new Map();
   private projectId: string | undefined;
   private mask: MaskFunction | undefined;
 
@@ -201,7 +201,7 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params: LangfuseCoreOptions) {
-    const { publicKey, secretKey, enabled, _projectId, ...options } = params;
+    const { publicKey, secretKey, enabled, _projectId, _isLocalEventExportEnabled, ...options } = params;
 
     this.enabled = enabled === false ? false : true;
     this.publicKey = publicKey ?? "";
@@ -221,19 +221,19 @@ abstract class LangfuseCoreStateless {
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
 
-    this.isLocalEventExportEnabled = getEnv("LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED") === "true";
+    this.isLocalEventExportEnabled = _isLocalEventExportEnabled ?? false;
 
     if (this.isLocalEventExportEnabled && !_projectId) {
       this._events.emit(
         "error",
-        "LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED is true, but no project ID was provided. Local export mode will not be enabled."
+        "Local event export is enabled, but no project ID was provided. Disabling local export."
       );
       this.isLocalEventExportEnabled = false;
       return;
     } else if (!this.isLocalEventExportEnabled && _projectId) {
       this._events.emit(
         "error",
-        "LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED is false, but a project ID was provided. Local export mode will not be enabled."
+        "Local event export is disabled, but a project ID was provided. Disabling local export."
       );
       this.isLocalEventExportEnabled = false;
       return;
@@ -963,12 +963,12 @@ abstract class LangfuseCoreStateless {
       this._events.emit("flush", items);
     };
 
-    // If admin mode is enabled, we don't send the events to the server, but instead store them in the adminIngestionEvents array
+    // If local event export is enabled, we don't send the events to the server, but instead store them in the localEventExportMap
     if (this.isLocalEventExportEnabled && this.projectId) {
-      if (!this.adminIngestionEvents.has(this.projectId)) {
-        this.adminIngestionEvents.set(this.projectId, [...items]);
+      if (!this.localEventExportMap.has(this.projectId)) {
+        this.localEventExportMap.set(this.projectId, [...items]);
       } else {
-        this.adminIngestionEvents.get(this.projectId)?.push(...items);
+        this.localEventExportMap.get(this.projectId)?.push(...items);
       }
 
       done();
@@ -1158,20 +1158,17 @@ abstract class LangfuseCoreStateless {
     }
   }
 
-  async _shutdownAdmin(projectId: string): Promise<SingleIngestionEvent[]> {
+  async _exportLocalEvents(projectId: string): Promise<SingleIngestionEvent[]> {
     if (this.isLocalEventExportEnabled) {
       clearTimeout(this._flushTimer);
       await this.flushAsync();
 
-      const events = this.adminIngestionEvents.get(projectId) ?? [];
-      this.adminIngestionEvents.delete(projectId);
+      const events = this.localEventExportMap.get(projectId) ?? [];
+      this.localEventExportMap.delete(projectId);
 
       return events;
     } else {
-      this._events.emit(
-        "error",
-        "LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED is false, but _shutdownAdmin() was called."
-      );
+      this._events.emit("error", "Local event exports are disabled, but _exportLocalEvents() was called.");
       return [];
     }
   }
@@ -1222,10 +1219,10 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   private _promptCache: LangfusePromptCache;
 
   constructor(params: LangfuseCoreOptions) {
-    const { publicKey, secretKey, enabled } = params;
+    const { publicKey, secretKey, enabled, _isLocalEventExportEnabled } = params;
     let isObservabilityEnabled = enabled === false ? false : true;
 
-    if (getEnv("LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED") === "true") {
+    if (_isLocalEventExportEnabled) {
       isObservabilityEnabled = true;
     } else if (!isObservabilityEnabled) {
       console.warn("Langfuse is disabled. No observability data will be sent to Langfuse.");

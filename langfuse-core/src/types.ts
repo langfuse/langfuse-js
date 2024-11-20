@@ -29,6 +29,8 @@ export type LangfuseCoreOptions = {
   mask?: MaskFunction;
   // Project ID to use for the SDK in admin mode. This should never be set by users.
   _projectId?: string;
+  // Whether to enable local event export. Defaults to false.
+  _isLocalEventExportEnabled?: boolean;
 };
 
 export enum LangfusePersistedProperty {
