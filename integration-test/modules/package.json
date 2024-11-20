@@ -13,7 +13,7 @@
     "test:tsc-cjs": "tsc --noEmit -p ts-cjs/tsconfig.json"
   },
   "dependencies": {
-    "@langchain/community": "^0.2",
+    "@langchain/community": "^0.3",
     "dotenv": "^16.4.5",
     "langchain": "^0.3.6",
     "openai": "^4.72.0",
