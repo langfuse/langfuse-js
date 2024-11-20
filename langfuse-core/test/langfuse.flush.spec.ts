@@ -239,5 +239,30 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
     });
+
+    it("should not send events in admin mode", async () => {
+      process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = "true";
+      try {
+        [langfuse, mocks] = createTestClient({
+          publicKey: "pk-lf-111",
+          secretKey: "sk-lf-111",
+          _projectId: "test-project-id",
+          flushAt: 5,
+          flushInterval: 200,
+        });
+
+        // Create multiple traces
+        const traces = ["test-trace-1", "test-trace-2", "test-trace-3"];
+        traces.forEach((name) => langfuse.trace({ name }));
+
+        expect(mocks.fetch).not.toHaveBeenCalled();
+
+        await jest.runAllTimersAsync();
+
+        expect(mocks.fetch).not.toHaveBeenCalled();
+      } finally {
+        process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = undefined;
+      }
+    });
   });
 });

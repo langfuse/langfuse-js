@@ -692,6 +692,133 @@ describe("Langchain", () => {
       expect((explainGeneration as any)["promptName"]).toBe(langfuseExplainPrompt.name);
       expect((explainGeneration as any)["promptVersion"]).toBe(langfuseExplainPrompt.version);
     });
+
+    it("should export events in admin mode", async () => {
+      process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = "true";
+
+      try {
+        const projectId = "test-project-id";
+        const handler = new CallbackHandler({
+          sessionId: "test-session",
+          userId: "test-user",
+          metadata: {
+            foo: "bar",
+            array: ["a", "b"],
+          },
+          tags: ["test-tag", "test-tag-2"],
+          _projectId: projectId,
+          version: "1.0.0",
+        });
+
+        handler.debug(true);
+
+        const messages = [new SystemMessage("You are an excellent Comedian"), new HumanMessage("Tell me a joke")];
+
+        const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
+        await llm.invoke(messages, { callbacks: [handler] });
+
+        await handler.flushAsync();
+        const shutdownResult = await handler.langfuse._shutdownAdmin(projectId);
+        if (!shutdownResult) {
+          throw new Error("No shutdown result");
+        }
+
+        console.log(JSON.stringify(shutdownResult, null, 2));
+
+        const events = shutdownResult;
+
+        expect(events.length).toBe(4);
+        const [traceCreate, generationCreate, generationUpdate, traceUpdate] = events;
+
+        // Check trace create event
+        expect(traceCreate.type).toBe("trace-create");
+        expect(traceCreate.body).toMatchObject({
+          name: "ChatOpenAI",
+          metadata: {
+            ls_provider: "openai",
+            ls_model_name: "gpt-4-turbo-preview",
+            ls_model_type: "chat",
+            ls_temperature: 1,
+            foo: "bar",
+            array: ["a", "b"],
+          },
+          userId: "test-user",
+          version: "1.0.0",
+          sessionId: "test-session",
+          input: [
+            {
+              content: "You are an excellent Comedian",
+              role: "system",
+            },
+            {
+              content: "Tell me a joke",
+              role: "user",
+            },
+          ],
+          tags: ["test-tag", "test-tag-2"],
+        });
+
+        // Check generation create event
+        expect(generationCreate.type).toBe("generation-create");
+        expect(generationCreate.body).toMatchObject({
+          name: "ChatOpenAI",
+          metadata: {
+            ls_provider: "openai",
+            ls_model_name: "gpt-4-turbo-preview",
+            ls_model_type: "chat",
+            ls_temperature: 1,
+          },
+          input: [
+            {
+              content: "You are an excellent Comedian",
+              role: "system",
+            },
+            {
+              content: "Tell me a joke",
+              role: "user",
+            },
+          ],
+          model: "gpt-4-turbo-preview",
+          modelParameters: {
+            temperature: 1,
+            top_p: 1,
+            frequency_penalty: 0,
+            presence_penalty: 0,
+          },
+          version: "1.0.0",
+        });
+
+        // Check generation update event
+        expect(generationUpdate.type).toBe("generation-update");
+        expect(generationUpdate.body).toMatchObject({
+          output: {
+            role: "assistant",
+          },
+          usage: {
+            completionTokens: expect.any(Number),
+            promptTokens: expect.any(Number),
+            totalTokens: expect.any(Number),
+          },
+          version: "1.0.0",
+        });
+
+        // Check trace update event
+        expect(traceUpdate.type).toBe("trace-create");
+        expect(traceUpdate.body).toMatchObject({
+          output: {
+            role: "assistant",
+          },
+        });
+
+        // Check IDs match between events
+        const traceId = (traceCreate.body as any).id;
+        expect((generationCreate.body as any).traceId).toBe(traceId);
+        expect((generationUpdate.body as any).traceId).toBe(traceId);
+        expect((traceUpdate.body as any).id).toBe(traceId);
+      } finally {
+        process.env.LANGFUSE_JS_SDK_LOCAL_EVENT_EXPORT_ENABLED = undefined;
+      }
+    });
   });
 });
 
