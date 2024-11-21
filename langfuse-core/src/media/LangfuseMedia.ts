@@ -1,11 +1,13 @@
-let fs: typeof import("fs") | undefined;
-let crypto: typeof import("crypto") | undefined;
+let fs: any;
+let crypto: any;
 
+// Fail gracefully in environments without fs/crypto support
 try {
   fs = require("fs");
+  crypto = require("crypto");
 } catch {
-  // Fail gracefully in environments without fs/crypto support
   fs = undefined;
+  crypto = undefined;
 }
 
 try {
