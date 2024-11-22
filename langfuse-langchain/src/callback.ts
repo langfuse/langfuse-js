@@ -199,14 +199,27 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       this.registerLangfusePrompt(parentRunId, metadata);
 
-      this.generateTrace(runName, runId, parentRunId, tags, metadata, inputs);
+      // In chains, inputs can be a string or an array of BaseMessage
+      let finalInput: string | ChainValues = inputs;
+      if (
+        typeof inputs === "object" &&
+        "input" in inputs &&
+        Array.isArray(inputs["input"]) &&
+        inputs["input"].every((m) => m instanceof BaseMessage)
+      ) {
+        finalInput = inputs["input"].map((m) => this.extractChatMessageContent(m));
+      } else if (typeof inputs === "object" && "content" in inputs && typeof inputs["content"] === "string") {
+        finalInput = inputs["content"];
+      }
+
+      this.generateTrace(runName, runId, parentRunId, tags, metadata, finalInput);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
         parentObservationId: parentRunId ?? this.rootObservationId,
         name: runName,
         metadata: this.joinTagsAndMetaData(tags, metadata),
-        input: inputs,
+        input: finalInput,
         version: this.version,
       });
 
@@ -434,14 +447,19 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chain end with ID: ${runId}`);
 
+      let finalOutput: ChainValues | string = outputs;
+      if (typeof outputs === "object" && "output" in outputs && typeof outputs["output"] === "string") {
+        finalOutput = outputs["output"];
+      }
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
-        output: outputs,
+        output: finalOutput,
         endTime: new Date(),
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, outputs);
+      this.updateTrace(runId, parentRunId, finalOutput);
       this.deregisterLangfusePrompt(runId);
     } catch (e) {
       this._log(e);
