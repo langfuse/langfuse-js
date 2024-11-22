@@ -9,6 +9,8 @@ export type LangfuseCoreOptions = {
   secretKey?: string;
   // Langfuse API baseUrl (https://cloud.langfuse.com by default)
   baseUrl?: string;
+  // Additional HTTP headers to send with each request
+  additionalHeaders?: Record<string, string>;
   // The number of events to queue before sending to Langfuse (flushing)
   flushAt?: number;
   // The interval in milliseconds between periodic flushes
