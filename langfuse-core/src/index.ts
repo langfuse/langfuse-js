@@ -171,6 +171,7 @@ abstract class LangfuseCoreStateless {
   private secretKey: string | undefined;
   private publicKey: string;
   baseUrl: string;
+  additionalHeaders: Record<string, string> = {};
   private flushAt: number;
   private flushInterval: number;
   private requestTimeout: number;
@@ -207,6 +208,7 @@ abstract class LangfuseCoreStateless {
     this.publicKey = publicKey ?? "";
     this.secretKey = secretKey;
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
+    this.additionalHeaders = options?.additionalHeaders || {};
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 15;
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
@@ -1061,6 +1063,7 @@ abstract class LangfuseCoreStateless {
         "X-Langfuse-Sdk-Variant": this.getLibraryId(),
         "X-Langfuse-Sdk-Integration": this.sdkIntegration,
         "X-Langfuse-Public-Key": this.publicKey,
+        ...this.additionalHeaders,
         ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
       },
       body: p.body,
