@@ -654,7 +654,7 @@ describe("langfuse-integration-vercel", () => {
 
     const rootObservations = fetchedTrace.observations
       .filter((o: any) => !Boolean(o.parentObservationId))
-      .sort((a: any, b: any) => a.name - b.name);
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
     for (let i = 0; i < NESTED_RUN_COUNT; i++) {
       const obs = rootObservations[i];
