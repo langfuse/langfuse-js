@@ -880,6 +880,7 @@ abstract class LangfuseCoreStateless {
           headers: {
             "Content-Type": media._contentType,
             "x-amz-checksum-sha256": media.contentSha256Hash,
+            "x-ms-blob-type": "BlockBlob",
           },
         });
 
