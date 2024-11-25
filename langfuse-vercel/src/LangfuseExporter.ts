@@ -77,27 +77,45 @@ export class LangfuseExporter implements SpanExporter {
     const finalTraceId = userProvidedTraceId ?? traceId;
     const langfusePrompt = this.parseLangfusePromptTraceAttribute(spans);
 
-    this.langfuse.trace({
+    const traceUpdate = {
       id: finalTraceId,
-      name: this.parseTraceName(spans) ?? rootSpan?.name,
       userId: this.parseUserIdTraceAttribute(spans),
       sessionId: this.parseSessionIdTraceAttribute(spans),
       tags: this.parseTagsTraceAttribute(spans).length > 0 ? this.parseTagsTraceAttribute(spans) : undefined,
+    };
+
+    const traceCreate = {
+      name: this.parseTraceName(spans) ?? rootSpan?.name,
       input: this.parseInput(rootSpan),
       output: this.parseOutput(rootSpan),
       metadata: this.filterTraceAttributes(this.parseMetadataTraceAttribute(spans)),
+    };
+
+    this.langfuse.trace({
+      ...traceUpdate,
+      ...(!userProvidedTraceId ? traceCreate : {}),
     });
 
     for (const span of spans) {
       if (this.isGenerationSpan(span)) {
         this.processSpanAsLangfuseGeneration(finalTraceId, span, this.isRootAiSdkSpan(span, spans), langfusePrompt);
       } else {
-        this.processSpanAsLangfuseSpan(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
+        this.processSpanAsLangfuseSpan(
+          finalTraceId,
+          span,
+          this.isRootAiSdkSpan(span, spans),
+          userProvidedTraceId ? this.parseTraceName(spans) : undefined
+        );
       }
     }
   }
 
-  private processSpanAsLangfuseSpan(traceId: string, span: ReadableSpan, isRootSpan: boolean): void {
+  private processSpanAsLangfuseSpan(
+    traceId: string,
+    span: ReadableSpan,
+    isRootSpan: boolean,
+    rootSpanName?: string
+  ): void {
     const spanContext = span.spanContext();
     const attributes = span.attributes;
 
@@ -105,7 +123,12 @@ export class LangfuseExporter implements SpanExporter {
       traceId,
       parentObservationId: isRootSpan ? undefined : span.parentSpanId,
       id: spanContext.spanId,
-      name: "ai.toolCall.name" in attributes ? "ai.toolCall " + attributes["ai.toolCall.name"]?.toString() : span.name,
+      name:
+        isRootSpan && rootSpanName
+          ? rootSpanName
+          : "ai.toolCall.name" in attributes
+            ? "ai.toolCall " + attributes["ai.toolCall.name"]?.toString()
+            : span.name,
       startTime: this.hrTimeToDate(span.startTime),
       endTime: this.hrTimeToDate(span.endTime),
 
