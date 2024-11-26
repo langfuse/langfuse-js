@@ -1,21 +1,26 @@
 let fs: any;
-let crypto: any;
+let cryptoModule: any;
 
-// Fail gracefully in environments without fs/crypto support
-try {
-  fs = require("fs");
-  crypto = require("crypto");
-} catch {
+// Fail gracefully and handle different environments
+if (typeof crypto !== "undefined") {
+  // Cloudflare Workers, Vercel Edge Runtime have direct global crypto
+  cryptoModule = crypto;
   fs = undefined;
-  crypto = undefined;
+} else if (typeof process !== "undefined" && process.versions?.node) {
+  // Node
+  try {
+    cryptoModule = require("crypto");
+    fs = require("fs");
+  } catch {
+    cryptoModule = undefined;
+    fs = undefined;
+  }
+} else {
+  // Other runtimes
+  cryptoModule = undefined;
+  fs = undefined;
 }
 
-try {
-  crypto = require("crypto");
-} catch {
-  // Fail gracefully in environments without fs/crypto support
-  crypto = undefined;
-}
 import { type MediaContentType } from "../types";
 
 interface ParsedMediaReference {
@@ -135,7 +140,7 @@ class LangfuseMedia {
       return undefined;
     }
 
-    const sha256Hash = crypto.createHash("sha256").update(this._contentBytes).digest("base64");
+    const sha256Hash = cryptoModule.createHash("sha256").update(this._contentBytes).digest("base64");
     return sha256Hash;
   }
 
