@@ -92,11 +92,7 @@ class LangfuseFetchNetworkError extends Error {
   name = "LangfuseFetchNetworkError";
 
   constructor(public error: unknown) {
-    super(
-      error instanceof Error
-        ? `Network error while fetching Langfuse: ${error.message}`
-        : "Network error while fetching Langfuse"
-    );
+    super("Network error while fetching Langfuse", error instanceof Error ? { cause: error } : {});
   }
 }
 
