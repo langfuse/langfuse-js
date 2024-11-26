@@ -1,24 +1,25 @@
-let fs: any;
-let cryptoModule: any;
+let fs: any = null;
+let cryptoModule: any = null;
 
-// Fail gracefully and handle different environments
-if (typeof crypto !== "undefined") {
-  // Cloudflare Workers, Vercel Edge Runtime have direct global crypto
-  cryptoModule = crypto;
-  fs = undefined;
-} else if (typeof process !== "undefined" && process.versions?.node) {
+if (typeof process !== "undefined" && process.versions?.node) {
+  // Node
+  try {
+    fs = require("fs");
+  } catch (error) {
+    console.error("Error loading fs module", error);
+  }
+}
+
+if (typeof process !== "undefined" && process.versions?.node) {
   // Node
   try {
     cryptoModule = require("crypto");
-    fs = require("fs");
-  } catch {
-    cryptoModule = undefined;
-    fs = undefined;
+  } catch (error) {
+    console.error("Error loading crypto module", error);
   }
-} else {
-  // Other runtimes
-  cryptoModule = undefined;
-  fs = undefined;
+} else if (typeof crypto !== "undefined") {
+  // Edge Runtime, Cloudflare Workers, etc.
+  cryptoModule = crypto;
 }
 
 import { type MediaContentType } from "../types";
