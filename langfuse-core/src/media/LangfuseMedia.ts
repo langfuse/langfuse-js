@@ -1,21 +1,19 @@
-let fs: any;
-let crypto: any;
+let fs: any = null;
+let cryptoModule: any = null;
 
-// Fail gracefully in environments without fs/crypto support
-try {
-  fs = require("fs");
-  crypto = require("crypto");
-} catch {
-  fs = undefined;
-  crypto = undefined;
+if (typeof process !== "undefined" && process.versions?.node) {
+  // Node
+  try {
+    fs = require("fs");
+    cryptoModule = require("crypto");
+  } catch (error) {
+    console.error("Error loading crypto or fs module", error);
+  }
+} else if (typeof crypto !== "undefined") {
+  // Edge Runtime, Cloudflare Workers, etc.
+  cryptoModule = crypto;
 }
 
-try {
-  crypto = require("crypto");
-} catch {
-  // Fail gracefully in environments without fs/crypto support
-  crypto = undefined;
-}
 import { type MediaContentType } from "../types";
 
 interface ParsedMediaReference {
@@ -130,12 +128,12 @@ class LangfuseMedia {
       return undefined;
     }
 
-    if (!crypto) {
+    if (!cryptoModule) {
       console.error("Crypto support is not available in this environment");
       return undefined;
     }
 
-    const sha256Hash = crypto.createHash("sha256").update(this._contentBytes).digest("base64");
+    const sha256Hash = cryptoModule.createHash("sha256").update(this._contentBytes).digest("base64");
     return sha256Hash;
   }
 
