@@ -128,7 +128,7 @@ class LangfuseMedia {
       return undefined;
     }
 
-    if (!crypto) {
+    if (!cryptoModule) {
       console.error("Crypto support is not available in this environment");
       return undefined;
     }
