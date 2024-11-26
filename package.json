@@ -42,7 +42,7 @@
     "docs": "yarn build && typedoc --options ./typedoc.config.cjs"
   },
   "devDependencies": {
-    "@ai-sdk/openai": "^0.0.48",
+    "@ai-sdk/openai": "^1.0.5",
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/preset-react": "^7.24.7",
@@ -59,7 +59,7 @@
     "@types/node": "^22.7.4",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^6.21.0",
-    "ai": "^3.3.27",
+    "ai": "^4.0.6",
     "axios": "^1.7.4",
     "babel-jest": "^29.7.0",
     "dotenv-cli": "^7.4.2",

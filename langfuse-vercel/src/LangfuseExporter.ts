@@ -157,9 +157,11 @@ export class LangfuseExporter implements SpanExporter {
       completionStartTime:
         "ai.response.msToFirstChunk" in attributes
           ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.response.msToFirstChunk"]))
-          : "ai.stream.msToFirstChunk" in attributes
-            ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.stream.msToFirstChunk"]))
-            : undefined,
+          : "ai.response.msToFirstChunk" in attributes
+            ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.response.msToFirstChunk"]))
+            : "ai.stream.msToFirstChunk" in attributes //  Legacy support for ai SDK versions < 4.0.0
+              ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.stream.msToFirstChunk"]))
+              : undefined,
       model:
         "ai.response.model" in attributes
           ? attributes["ai.response.model"]?.toString()
@@ -172,7 +174,12 @@ export class LangfuseExporter implements SpanExporter {
         toolChoice: "ai.prompt.toolChoice" in attributes ? attributes["ai.prompt.toolChoice"]?.toString() : undefined,
         maxTokens:
           "gen_ai.request.max_tokens" in attributes ? attributes["gen_ai.request.max_tokens"]?.toString() : undefined,
-        finishReason: "gen_ai.system" in attributes ? attributes["gen_ai.finishReason"]?.toString() : undefined,
+        finishReason:
+          "gai.response.finishReason" in attributes
+            ? attributes["ai.response.finishReason"]?.toString()
+            : "gen_ai.finishReason" in attributes //  Legacy support for ai SDK versions < 4.0.0
+              ? attributes["gen_ai.finishReason"]?.toString()
+              : undefined,
         system:
           "gen_ai.system" in attributes
             ? attributes["gen_ai.system"]?.toString()
@@ -307,15 +314,21 @@ export class LangfuseExporter implements SpanExporter {
   private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
     const attributes = span.attributes;
 
-    return "ai.result.text" in attributes
-      ? attributes["ai.result.text"]
-      : "ai.toolCall.result" in attributes
-        ? attributes["ai.toolCall.result"]
-        : "ai.result.object" in attributes
-          ? attributes["ai.result.object"]
-          : "ai.result.toolCalls" in attributes
-            ? attributes["ai.result.toolCalls"]
-            : undefined;
+    return "ai.response.text" in attributes
+      ? attributes["ai.response.text"]
+      : "ai.result.text" in attributes // Legacy support for ai SDK versions < 4.0.0
+        ? attributes["ai.result.text"]
+        : "ai.toolCall.result" in attributes
+          ? attributes["ai.toolCall.result"]
+          : "ai.response.object" in attributes
+            ? attributes["ai.response.object"]
+            : "ai.result.object" in attributes // Legacy support for ai SDK versions < 4.0.0
+              ? attributes["ai.result.object"]
+              : "ai.response.toolCalls" in attributes
+                ? attributes["ai.response.toolCalls"]
+                : "ai.result.toolCalls" in attributes // Legacy support for ai SDK versions < 4.0.0
+                  ? attributes["ai.result.toolCalls"]
+                  : undefined;
   }
 
   private parseTraceId(spans: ReadableSpan[]): string | undefined {
