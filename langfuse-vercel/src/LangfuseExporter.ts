@@ -170,8 +170,7 @@ export class LangfuseExporter implements SpanExporter {
               : undefined,
       modelParameters: {
         toolChoice: "ai.prompt.toolChoice" in attributes ? attributes["ai.prompt.toolChoice"]?.toString() : undefined,
-        maxTokens:
-          "gen_ai.request.max_tokens" in attributes ? attributes["gen_ai.request.max_tokens"]?.toString() : undefined,
+        maxTokens: this.parseNumberAttribute(attributes, "gen_ai.request.max_tokens"),
         finishReason: "gen_ai.system" in attributes ? attributes["gen_ai.finishReason"]?.toString() : undefined,
         system:
           "gen_ai.system" in attributes
@@ -205,6 +204,17 @@ export class LangfuseExporter implements SpanExporter {
       metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
       prompt: langfusePrompt,
     });
+  }
+
+  private parseNumberAttribute(attributes: Record<string, any>, key: string): number | undefined {
+    if (!(key in attributes)) {
+      return undefined;
+    }
+    const value = attributes[key];
+    if (typeof value !== "number" || isNaN(value)) {
+      return undefined;
+    }
+    return value;
   }
 
   private parseSpanMetadata(span: ReadableSpan): Record<string, (typeof span.attributes)[0]> {
@@ -306,16 +316,20 @@ export class LangfuseExporter implements SpanExporter {
 
   private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
     const attributes = span.attributes;
+    const outputKeys = [
+      "ai.response.text",
+      "ai.toolCall.result", 
+      "ai.response.object",
+      "ai.response.toolCalls"
+    ];
 
-    return "ai.result.text" in attributes
-      ? attributes["ai.result.text"]
-      : "ai.toolCall.result" in attributes
-        ? attributes["ai.toolCall.result"]
-        : "ai.result.object" in attributes
-          ? attributes["ai.result.object"]
-          : "ai.result.toolCalls" in attributes
-            ? attributes["ai.result.toolCalls"]
-            : undefined;
+    for (const key of outputKeys) {
+      if (key in attributes) {
+        return attributes[key];
+      }
+    }
+
+    return undefined;
   }
 
   private parseTraceId(spans: ReadableSpan[]): string | undefined {

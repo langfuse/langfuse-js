@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { embed, embedMany, generateObject, generateText, streamObject, streamText, streamToResponse, tool } from "ai";
 import { randomUUID } from "crypto";
 import z from "zod";
@@ -662,4 +663,69 @@ describe("langfuse-integration-vercel", () => {
       expect(obs.name).toBe(`${baseRootSpanName}-${i}`);
     }
   }, 15_000);
+
+  it("should correctly map Vercel AI SDK attributes to trace observations", async () => {
+    const testParams = {
+      traceId: randomUUID(),
+      modelName: "gpt-3.5-turbo",
+      maxTokens: 50,
+      prompt: "Test prompt",
+      functionId: "test-vercel-attributes",
+      userId: "test-user",
+      sessionId: "test-session",
+      metadata: { custom: "value" },
+      tags: ["test"],
+    };
+
+    const { traceId, modelName, maxTokens, prompt, functionId, userId, sessionId, metadata, tags } = testParams;
+
+    const result = await generateText({
+      model: openai(modelName),
+      maxTokens,
+      prompt,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId,
+        metadata: {
+          langfuseTraceId: traceId,
+          userId,
+          sessionId,
+          tags,
+          ...metadata,
+        },
+      },
+    });
+
+    await sdk.shutdown();
+
+    const traceFetchResult = await fetchTraceById(traceId);
+    expect(traceFetchResult.status).toBe(200);
+
+    const trace = traceFetchResult.data;
+    const generation = trace.observations.find((o: any) => o.type === "GENERATION");
+
+    // Verify AI SDK specific attributes are mapped correctly
+    expect(generation.model).toBe(modelName);
+    expect(generation.modelParameters).toMatchObject({
+      maxTokens,
+    });
+
+    // Verify request attributes
+    expect(generation.input).toBeDefined();
+    expect(generation.output).toBeDefined();
+    expect(generation.output).toBe(result.text);
+
+    // Verify usage attributes
+    expect(generation.promptTokens).toBeGreaterThan(0);
+    expect(generation.completionTokens).toBeGreaterThan(0);
+    expect(generation.totalTokens).toBeGreaterThan(0);
+    expect(generation.calculatedInputCost).toBeGreaterThan(0);
+    expect(generation.calculatedOutputCost).toBeGreaterThan(0);
+    expect(generation.calculatedTotalCost).toBeGreaterThan(0);
+
+    // Verify custom metadata is preserved
+    expect(generation.metadata).toMatchObject({
+      custom: "value",
+    });
+  }, 10_000);
 });
