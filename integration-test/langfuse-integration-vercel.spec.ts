@@ -1,4 +1,4 @@
-import { embed, embedMany, generateObject, generateText, streamObject, streamText, streamToResponse, tool } from "ai";
+import { embed, embedMany, generateObject, generateText, streamObject, streamText, tool } from "ai";
 import { randomUUID } from "crypto";
 import z from "zod";
 
@@ -46,7 +46,7 @@ describe("langfuse-integration-vercel", () => {
   it("should trace a generateText call", async () => {
     const testParams = {
       traceId: randomUUID(),
-      modelName: "gpt-3.5-turbo",
+      modelName: "gpt-3.5-turbo-0125",
       maxTokens: 50,
       prompt: "Invent a new holiday and describe its traditions.",
       functionId: "test-vercel-generate-text",
@@ -118,7 +118,7 @@ describe("langfuse-integration-vercel", () => {
     const testParams = {
       traceId: randomUUID(),
       functionId: "test-vercel-tool-call",
-      modelName: "gpt-3.5-turbo",
+      modelName: "gpt-3.5-turbo-0125",
       maxTokens: 512,
       prompt: "What is the weather in San Francisco?",
       userId: "some-user-id",
@@ -136,7 +136,7 @@ describe("langfuse-integration-vercel", () => {
       model: openai(modelName),
       maxTokens,
       prompt,
-      maxToolRoundtrips: 3,
+      maxSteps: 3,
       tools: {
         weather: weatherTool,
       },
@@ -193,7 +193,7 @@ describe("langfuse-integration-vercel", () => {
     const testParams = {
       traceId: randomUUID(),
       functionId: "test-vercel-stream-text",
-      modelName: "gpt-3.5-turbo",
+      modelName: "gpt-3.5-turbo-0125",
       maxTokens: 512,
       prompt: "Invent a new holiday and describe its traditions.",
       userId: "some-user-id",
@@ -272,7 +272,7 @@ describe("langfuse-integration-vercel", () => {
     const testParams = {
       traceId: randomUUID(),
       functionId: "test-vercel-generate-object",
-      modelName: "gpt-4-turbo",
+      modelName: "gpt-4-turbo-2024-04-09",
       maxTokens: 512,
       prompt: "Generate a lasagna recipe.",
       userId: "some-user-id",
@@ -357,7 +357,7 @@ describe("langfuse-integration-vercel", () => {
     const testParams = {
       traceId: randomUUID(),
       functionId: "test-vercel-streamObject",
-      modelName: "gpt-4-turbo",
+      modelName: "gpt-4-turbo-2024-04-09",
       maxTokens: 512,
       prompt: "Generate a lasagna recipe.",
       userId: "some-user-id",
@@ -517,7 +517,7 @@ describe("langfuse-integration-vercel", () => {
     const testParams = {
       traceId: randomUUID(),
       functionId: "test-vercel-stream-text",
-      modelName: "gpt-3.5-turbo",
+      modelName: "gpt-3.5-turbo-0125",
       maxTokens: 512,
       prompt: fetchedPrompt.prompt,
       userId: "some-user-id",
@@ -608,7 +608,7 @@ describe("langfuse-integration-vercel", () => {
     for (let i = 0; i < NESTED_RUN_COUNT; i++) {
       const testParams = {
         traceId: parentTraceId,
-        modelName: "gpt-3.5-turbo",
+        modelName: "gpt-3.5-turbo-0125",
         maxTokens: 50,
         prompt: "Invent a new holiday and describe its traditions.",
         functionId: `${baseRootSpanName}-${i}`,
