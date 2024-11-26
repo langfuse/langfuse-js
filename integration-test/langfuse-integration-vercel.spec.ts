@@ -593,4 +593,73 @@ describe("langfuse-integration-vercel", () => {
       expect(generation.promptVersion).toBe(fetchedPrompt.version);
     }
   }, 10_000);
+
+  it("should nest multiple generateText call under a trace", async () => {
+    const langfuse = new Langfuse();
+    const traceName = "parent_generate_text_multiple";
+
+    // Create parent trace
+    const parentTraceId = randomUUID();
+    langfuse.trace({ id: parentTraceId, name: traceName });
+    const baseRootSpanName = "root-span";
+
+    const NESTED_RUN_COUNT = 3;
+
+    for (let i = 0; i < NESTED_RUN_COUNT; i++) {
+      const testParams = {
+        traceId: parentTraceId,
+        modelName: "gpt-3.5-turbo",
+        maxTokens: 50,
+        prompt: "Invent a new holiday and describe its traditions.",
+        functionId: `${baseRootSpanName}-${i}`,
+        userId: "some-user-id",
+        sessionId: "some-session-id",
+        metadata: {
+          something: "custom",
+          someOtherThing: "other-value",
+        },
+        tags: ["vercel", "openai"],
+      };
+
+      const { traceId, modelName, maxTokens, prompt, functionId, userId, sessionId, metadata, tags } = testParams;
+
+      await generateText({
+        model: openai(modelName),
+        maxTokens,
+        prompt,
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId,
+          metadata: {
+            langfuseTraceId: traceId,
+            langfuseUpdateParent: false,
+            userId,
+            sessionId,
+            tags,
+            ...metadata,
+          },
+        },
+      });
+    }
+
+    await langfuse.flushAsync();
+    await sdk.shutdown();
+
+    // Fetch trace
+    const traceFetchResult = await fetchTraceById(parentTraceId);
+    expect(traceFetchResult.status).toBe(200);
+
+    // Validate trace
+    const fetchedTrace = traceFetchResult.data;
+    expect(fetchedTrace.name).toBe(traceName);
+
+    const rootObservations = fetchedTrace.observations
+      .filter((o: any) => !Boolean(o.parentObservationId))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+
+    for (let i = 0; i < NESTED_RUN_COUNT; i++) {
+      const obs = rootObservations[i];
+      expect(obs.name).toBe(`${baseRootSpanName}-${i}`);
+    }
+  }, 15_000);
 });
