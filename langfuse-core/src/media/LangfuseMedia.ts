@@ -5,17 +5,9 @@ if (typeof process !== "undefined" && process.versions?.node) {
   // Node
   try {
     fs = require("fs");
-  } catch (error) {
-    console.error("Error loading fs module", error);
-  }
-}
-
-if (typeof process !== "undefined" && process.versions?.node) {
-  // Node
-  try {
     cryptoModule = require("crypto");
   } catch (error) {
-    console.error("Error loading crypto module", error);
+    console.error("Error loading crypto or fs module", error);
   }
 } else if (typeof crypto !== "undefined") {
   // Edge Runtime, Cloudflare Workers, etc.
