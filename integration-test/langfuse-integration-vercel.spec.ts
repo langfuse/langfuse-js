@@ -632,6 +632,7 @@ describe("langfuse-integration-vercel", () => {
           functionId,
           metadata: {
             langfuseTraceId: traceId,
+            langfuseUpdateParent: false,
             userId,
             sessionId,
             tags,

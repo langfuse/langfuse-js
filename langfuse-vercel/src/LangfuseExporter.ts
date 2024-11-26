@@ -76,25 +76,24 @@ export class LangfuseExporter implements SpanExporter {
     const userProvidedTraceId = this.parseTraceId(spans);
     const finalTraceId = userProvidedTraceId ?? traceId;
     const langfusePrompt = this.parseLangfusePromptTraceAttribute(spans);
+    const updateParent = this.parseLangfuseUpdateParentTraceAttribute(spans);
 
-    const traceUpdate = {
-      id: finalTraceId,
+    const traceParams = {
       userId: this.parseUserIdTraceAttribute(spans),
       sessionId: this.parseSessionIdTraceAttribute(spans),
       tags: this.parseTagsTraceAttribute(spans).length > 0 ? this.parseTagsTraceAttribute(spans) : undefined,
-    };
-
-    const traceCreate = {
       name: this.parseTraceName(spans) ?? rootSpan?.name,
       input: this.parseInput(rootSpan),
       output: this.parseOutput(rootSpan),
       metadata: this.filterTraceAttributes(this.parseMetadataTraceAttribute(spans)),
     };
 
-    this.langfuse.trace({
-      ...traceUpdate,
-      ...(!userProvidedTraceId ? traceCreate : {}),
-    });
+    const finalTraceParams = {
+      id: finalTraceId,
+      ...(updateParent ? traceParams : {}),
+    };
+
+    this.langfuse.trace(finalTraceParams);
 
     for (const span of spans) {
       if (this.isGenerationSpan(span)) {
@@ -213,7 +212,7 @@ export class LangfuseExporter implements SpanExporter {
       (acc, [key, value]) => {
         const metadataPrefix = "ai.telemetry.metadata.";
 
-        if (key.startsWith(metadataPrefix) && value) {
+        if (key.startsWith(metadataPrefix) && value != null) {
           const strippedKey = key.slice(metadataPrefix.length);
 
           acc[strippedKey] = value;
@@ -221,7 +220,7 @@ export class LangfuseExporter implements SpanExporter {
 
         const spanKeysToAdd = ["ai.settings.maxToolRoundtrips", "ai.prompt.format", "ai.toolCall.id", "ai.schema"];
 
-        if (spanKeysToAdd.includes(key) && value) {
+        if (spanKeysToAdd.includes(key) && value != null) {
           acc[key] = value;
         }
 
@@ -370,6 +369,12 @@ export class LangfuseExporter implements SpanExporter {
     }
   }
 
+  private parseLangfuseUpdateParentTraceAttribute(spans: ReadableSpan[]): boolean {
+    return Boolean(
+      spans.map((span) => this.parseSpanMetadata(span)["langfuseUpdateParent"]).find((val) => val != null) ?? true // default to true if no attribute is set
+    );
+  }
+
   private parseTagsTraceAttribute(spans: ReadableSpan[]): string[] {
     return [
       ...new Set(
@@ -399,7 +404,14 @@ export class LangfuseExporter implements SpanExporter {
   }
 
   private filterTraceAttributes(obj: Record<string, any>): Record<string, any> {
-    const langfuseTraceAttributes = ["userId", "sessionId", "tags", "langfuseTraceId", "langfusePrompt"];
+    const langfuseTraceAttributes = [
+      "userId",
+      "sessionId",
+      "tags",
+      "langfuseTraceId",
+      "langfusePrompt",
+      "langfuseUpdateParent",
+    ];
 
     return Object.entries(obj).reduce(
       (acc, [key, value]) => {
