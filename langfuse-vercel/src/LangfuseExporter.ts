@@ -211,10 +211,12 @@ export class LangfuseExporter implements SpanExporter {
       return undefined;
     }
     const value = attributes[key];
-    if (typeof value !== "number" || isNaN(value) || !Number.isFinite(value)) {
+    // Try to convert strings to numbers
+    const numValue = typeof value === 'string' ? Number(value) : value;
+    if (typeof numValue !== "number" || isNaN(numValue) || !Number.isFinite(numValue)) {
       return undefined;
     }
-    return value;
+    return numValue;
   }
 
   private parseSpanMetadata(span: ReadableSpan): Record<string, (typeof span.attributes)[0]> {
