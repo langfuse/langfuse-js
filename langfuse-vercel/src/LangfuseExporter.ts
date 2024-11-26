@@ -211,7 +211,7 @@ export class LangfuseExporter implements SpanExporter {
       return undefined;
     }
     const value = attributes[key];
-    if (typeof value !== "number" || isNaN(value)) {
+    if (typeof value !== "number" || isNaN(value) || !Number.isFinite(value)) {
       return undefined;
     }
     return value;
