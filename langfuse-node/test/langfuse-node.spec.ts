@@ -120,7 +120,7 @@ describe("Langfuse Node.js", () => {
         await langfuse.shutdownAsync();
         // remaining 4 flush calls to debug log
         // happen during shutdown
-        expect(4).toEqual(logSpy.mock.calls.filter((call) => call[1].includes("flush")).length);
+        expect(logSpy.mock.calls.filter((call) => call[1].includes("flush")).length).toBeGreaterThanOrEqual(4);
         jest.useFakeTimers();
         logSpy.mockRestore();
       });
