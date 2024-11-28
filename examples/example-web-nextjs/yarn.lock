@@ -451,12 +451,12 @@ axe-core@^4.6.2:
   resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.7.2.tgz#040a7342b20765cb18bb50b628394c21bccc17a0"
   integrity sha512-zIURGIS1E1Q4pcrMjp+nnEh+16G56eG/MUllJH8yEvw7asDo7Ac9uhC9KIH5jzpITueEZolfYglnCGIuSBz39g==
 
-axios@^1.6.4:
-  version "1.6.5"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.5.tgz#2c090da14aeeab3770ad30c3a1461bc970fb0cd8"
-  integrity sha512-Ii012v05KEVuUoFWmMW/UQv9aRIc3ZwkWDcM+h5Il8izZCtRVpDUfwpoFf7eOtajT3QiGR4yDUx7lPqHJULgbg==
+axios@^1.7.4:
+  version "1.7.8"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.7.8.tgz#1997b1496b394c21953e68c14aaa51b7b5de3d6e"
+  integrity sha512-Uu0wb7KNqK2t5K+YQyVCLM76prD5sRFjKHbJYCP1J7JFGEQ6nN7HWn9+04LAeiJ3ji54lgS/gZCH1oxyrf1SPw==
   dependencies:
-    follow-redirects "^1.15.4"
+    follow-redirects "^1.15.6"
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
@@ -1071,10 +1071,10 @@ flatted@^3.1.0:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.7.tgz#609f39207cb614b89d0765b477cb2d437fbf9787"
   integrity sha512-5nqDSxl8nn5BSNxyR3n4I6eDmbolI6WT+QqR547RwxQapgjQBmtktdP+HTBb/a/zLsbzERTONyUB5pefh5TtjQ==
 
-follow-redirects@^1.15.4:
-  version "1.15.4"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.4.tgz#cdc7d308bf6493126b17ea2191ea0ccf3e535adf"
-  integrity sha512-Cr4D/5wlrb0z9dgERpUL3LrmPKVDsETIJhaCMeDfuFYcqa5bldGV6wBsAN6X/vxlXQtFBMrXdXxdL8CbDTGniw==
+follow-redirects@^1.15.6:
+  version "1.15.9"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.9.tgz#a604fa10e443bf98ca94228d9eebcc2e8a2c8ee1"
+  integrity sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==
 
 for-each@^0.3.3:
   version "0.3.3"
@@ -1550,28 +1550,28 @@ jsonfile@^4.0.0:
     object.assign "^4.1.4"
     object.values "^1.1.6"
 
-langfuse-core@^2.6.0:
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-2.6.0.tgz#acdf4233f89cb8206a028e477dddf6a3b6571ffd"
-  integrity sha512-HGesAV0bnZ10g1F109i0VYCqacCGMPIO3ijoPHSsKyZC83YL2Gqhn4HzOXDZI+gQUNQC1qu3bKl8DLbqOhmyOA==
+langfuse-core@^3.31.0:
+  version "3.31.0"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-3.31.0.tgz#2bffd0182c110fa80597d3bdc2b14d599d827946"
+  integrity sha512-aJ8dNp1Oh8e+XLJb5M+1lzluqi4oLBFxuSh56e8852WOifPs4Q3HPVblvf2YtyhpYqj0x+0cwhVP+iO2AAsh6Q==
   dependencies:
     mustache "^4.2.0"
 
 "langfuse-core@file:.yalc/langfuse-core":
-  version "2.6.0"
+  version "3.31.0"
   dependencies:
     mustache "^4.2.0"
 
 "langfuse-node@file:.yalc/langfuse-node":
-  version "2.6.0"
+  version "3.31.0"
   dependencies:
-    axios "^1.6.4"
-    langfuse-core "^2.6.0"
+    axios "^1.7.4"
+    langfuse-core "^3.31.0"
 
 "langfuse@file:.yalc/langfuse":
-  version "2.6.0"
+  version "3.31.0"
   dependencies:
-    langfuse-core "^2.6.0"
+    langfuse-core "^3.31.0"
 
 language-subtag-registry@~0.3.2:
   version "0.3.22"
