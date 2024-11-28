@@ -2,8 +2,15 @@ let fs: any = null;
 let crypto: any = null;
 
 if (typeof process !== "undefined" && process.versions?.node) {
+  // Use wrapper to prevent bundlers from trying to resolve the dynamic import
+  // Otherwise, the import will be incorrectly resolved as a static import even though it's dynamic
+  // Test for browser environment would fail because the import will be incorrectly resolved as a static import and fs and crypto will be unavailable
+  const dynamicImport = (module: string): Promise<any> => {
+    return import(module);
+  };
+
   // Node
-  Promise.all([import("fs"), import("crypto")])
+  Promise.all([dynamicImport("fs"), dynamicImport("crypto")])
     .then(([fsModule, cryptoModule]) => {
       fs = fsModule;
       crypto = cryptoModule;
