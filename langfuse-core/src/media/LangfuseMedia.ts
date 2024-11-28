@@ -1,5 +1,5 @@
 let fs: any = null;
-let crypto: any = null;
+let cryptoModule: any = null;
 
 if (typeof process !== "undefined" && process.versions?.node) {
   // Use wrapper to prevent bundlers from trying to resolve the dynamic import
@@ -11,11 +11,13 @@ if (typeof process !== "undefined" && process.versions?.node) {
 
   // Node
   Promise.all([dynamicImport("fs"), dynamicImport("crypto")])
-    .then(([fsModule, cryptoModule]) => {
-      fs = fsModule;
-      crypto = cryptoModule;
+    .then(([importedFs, importedCrypto]) => {
+      fs = importedFs;
+      cryptoModule = importedCrypto;
     })
     .catch(); // Errors are handled on runtime
+} else if (typeof crypto !== "undefined") {
+  cryptoModule = crypto;
 }
 
 import { type MediaContentType } from "../types";
@@ -132,12 +134,12 @@ class LangfuseMedia {
       return undefined;
     }
 
-    if (!crypto) {
+    if (!cryptoModule) {
       console.error("Crypto support is not available in this environment");
       return undefined;
     }
 
-    const sha256Hash = crypto.createHash("sha256").update(this._contentBytes).digest("base64");
+    const sha256Hash = cryptoModule.createHash("sha256").update(this._contentBytes).digest("base64");
     return sha256Hash;
   }
 
