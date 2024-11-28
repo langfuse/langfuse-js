@@ -6,7 +6,7 @@ if (typeof process !== "undefined" && process.versions?.node) {
   // Otherwise, the import will be incorrectly resolved as a static import even though it's dynamic
   // Test for browser environment would fail because the import will be incorrectly resolved as a static import and fs and crypto will be unavailable
   const dynamicImport = (module: string): Promise<any> => {
-    return import(module);
+    return import(`${module}`);
   };
 
   // Node
@@ -15,7 +15,7 @@ if (typeof process !== "undefined" && process.versions?.node) {
       fs = fsModule;
       crypto = cryptoModule;
     })
-    .catch();
+    .catch(); // Errors are handled on runtime
 }
 
 import { type MediaContentType } from "../types";
