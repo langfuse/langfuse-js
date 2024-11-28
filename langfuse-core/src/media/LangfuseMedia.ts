@@ -1,17 +1,21 @@
 let fs: any = null;
-let cryptoModule: any = null;
+let crypto: any = null;
 
 if (typeof process !== "undefined" && process.versions?.node) {
+  // Use wrapper to prevent bundlers from trying to resolve the dynamic import
+  // Otherwise, the import will be incorrectly resolved as a static import even though it's dynamic
+  // Test for browser environment would fail because the import will be incorrectly resolved as a static import and fs and crypto will be unavailable
+  const dynamicImport = (module: string): Promise<any> => {
+    return import(/* webpackIgnore: true */ module);
+  };
+
   // Node
-  try {
-    fs = require("fs");
-    cryptoModule = require("crypto");
-  } catch (error) {
-    console.error("Error loading crypto or fs module", error);
-  }
-} else if (typeof crypto !== "undefined") {
-  // Edge Runtime, Cloudflare Workers, etc.
-  cryptoModule = crypto;
+  Promise.all([dynamicImport("fs"), dynamicImport("crypto")])
+    .then(([fsModule, cryptoModule]) => {
+      fs = fsModule;
+      crypto = cryptoModule;
+    })
+    .catch(); // Errors are handled on runtime
 }
 
 import { type MediaContentType } from "../types";
@@ -128,12 +132,12 @@ class LangfuseMedia {
       return undefined;
     }
 
-    if (!cryptoModule) {
+    if (!crypto) {
       console.error("Crypto support is not available in this environment");
       return undefined;
     }
 
-    const sha256Hash = cryptoModule.createHash("sha256").update(this._contentBytes).digest("base64");
+    const sha256Hash = crypto.createHash("sha256").update(this._contentBytes).digest("base64");
     return sha256Hash;
   }
 
