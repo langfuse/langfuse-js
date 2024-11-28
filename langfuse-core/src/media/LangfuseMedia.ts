@@ -15,9 +15,7 @@ if (typeof process !== "undefined" && process.versions?.node) {
       fs = fsModule;
       crypto = cryptoModule;
     })
-    .catch((error) => {
-      console.error("Error loading crypto or fs module", error);
-    });
+    .catch();
 }
 
 import { type MediaContentType } from "../types";
