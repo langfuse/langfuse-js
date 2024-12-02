@@ -1,5 +1,5 @@
 {
-  "name": "langfuse-js",
+  "name": "langfuse-core",
   "description": "Modular monorepo for all Langfuse JS/TS SDKs",
   "engines": {
     "node": ">=18"
