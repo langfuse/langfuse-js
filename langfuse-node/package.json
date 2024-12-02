@@ -7,6 +7,7 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "repository": "https://github.com/langfuse/langfuse-js",
   "license": "MIT",
   "author": {
     "name": "Langfuse",

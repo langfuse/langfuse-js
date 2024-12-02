@@ -1,9 +1,10 @@
 {
-  "name": "langfuse-core",
+  "name": "langfuse-monorepo",
   "description": "Modular monorepo for all Langfuse JS/TS SDKs",
   "engines": {
     "node": ">=18"
   },
+  "repository": "https://github.com/langfuse/langfuse-js",
   "workspaces": [
     "langfuse-core",
     "langfuse-node",
