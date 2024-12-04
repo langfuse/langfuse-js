@@ -10,6 +10,11 @@
     "url": "https://langfuse.com"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/langfuse/langfuse-js.git",
+    "directory": "langfuse"
+  },
   "main": "lib/index.cjs.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
