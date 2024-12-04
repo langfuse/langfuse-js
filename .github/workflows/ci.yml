@@ -70,11 +70,11 @@ jobs:
           cd ./langfuse-server
 
           echo "::group::Run langfuse server"
-          TELEMETRY_ENABLED=false docker compose -f docker-compose.yml up -d postgres
+          TELEMETRY_ENABLED=false docker compose up -d postgres
           echo "::endgroup::"
 
           echo "::group::Logs from langfuse server"
-          TELEMETRY_ENABLED=false docker compose -f docker-compose.yml logs
+          TELEMETRY_ENABLED=false docker compose logs
           echo "::endgroup::"
 
           echo "::group::Install dependencies (necessary to run seeder)"
@@ -89,7 +89,7 @@ jobs:
           rm -rf .env
 
           echo "::group::Run server"
-          TELEMETRY_ENABLED=false CLICKHOUSE_CLUSTER_ENABLED=false LANGFUSE_ASYNC_INGESTION_PROCESSING=false LANGFUSE_ASYNC_CLICKHOUSE_INGESTION_PROCESSING=false LANGFUSE_READ_FROM_POSTGRES_ONLY=true LANGFUSE_READ_FROM_CLICKHOUSE_ONLY=false docker compose -f docker-compose.yml up -d
+          TELEMETRY_ENABLED=false LANGFUSE_CLICKHOUSE_INGESTION_ENABLED=false LANGFUSE_READ_FROM_POSTGRES_ONLY=true LANGFUSE_READ_FROM_CLICKHOUSE_ONLY=false REDIS_HOST="" docker compose up -d
           echo "::endgroup::"
 
       # Add this step to check the health of the container
