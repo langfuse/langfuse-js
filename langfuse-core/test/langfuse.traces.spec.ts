@@ -402,8 +402,6 @@ describe("Langfuse Core", () => {
       });
     });
     it("should return the correct traceId", async () => {
-      jest.setSystemTime(new Date("2022-01-01"));
-
       const traceId = randomUUID();
       const trace = langfuse.trace({
         id: traceId,
@@ -416,7 +414,6 @@ describe("Langfuse Core", () => {
           hello: "world",
         },
       });
-      await jest.advanceTimersByTimeAsync(1);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = mocks.fetch.mock.calls[0];
