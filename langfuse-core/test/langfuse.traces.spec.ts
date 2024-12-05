@@ -4,6 +4,7 @@ import {
   type LangfuseCoreTestClient,
   type LangfuseCoreTestClientMocks,
 } from "./test-utils/LangfuseCoreTestClient";
+import { randomUUID } from "crypto";
 
 describe("Langfuse Core", () => {
   let langfuse: LangfuseCoreTestClient;
@@ -399,6 +400,70 @@ describe("Langfuse Core", () => {
           },
         ],
       });
+    });
+    it("should return the correct traceId", async () => {
+      jest.setSystemTime(new Date("2022-01-01"));
+
+      const traceId = randomUUID();
+      const trace = langfuse.trace({
+        id: traceId,
+        name: "test-trace",
+        sessionId: "123456789",
+        input: {
+          hello: "world",
+        },
+        output: {
+          hello: "world",
+        },
+      });
+      await jest.advanceTimersByTimeAsync(1);
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      const [url, options] = mocks.fetch.mock.calls[0];
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/ingestion$/);
+      expect(options.method).toBe("POST");
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        batch: [
+          {
+            id: expect.any(String),
+            timestamp: expect.any(String),
+            type: "trace-create",
+            body: {
+              id: traceId,
+              name: "test-trace",
+              sessionId: "123456789",
+              input: {
+                hello: "world",
+              },
+              output: {
+                hello: "world",
+              },
+            },
+          },
+        ],
+      });
+
+      mocks.fetch.mockResolvedValueOnce({
+        status: 200,
+        text: async () => "ok",
+        json: async () => ({
+          data: [
+            {
+              id: "test-project-id",
+              name: "test-project",
+            },
+          ],
+        }),
+      });
+
+      expect(trace.getTraceUrl()).toBe(`http://localhost:3000/test-project-id/traces/${traceId}`);
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(2);
+      const [url2, options2] = mocks.fetch.mock.calls[1];
+      expect(url2).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/projects$/);
+      expect(options2.method).toBe("GET");
     });
   });
 });

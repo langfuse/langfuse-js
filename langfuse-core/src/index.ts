@@ -25,7 +25,6 @@ import {
   type CreatePromptBody,
   type CreateTextPromptBody,
   type DatasetItem,
-  type DeferRuntime,
   type EventBody,
   type GetLangfuseDatasetItemsQuery,
   type GetLangfuseDatasetItemsResponse,
@@ -55,6 +54,7 @@ import {
   type SingleIngestionEvent,
   type UpdateLangfuseGenerationBody,
   type UpdateLangfuseSpanBody,
+  type GetLangfuseProjectsResponse,
 } from "./types";
 import { LangfuseMedia } from "./media/LangfuseMedia";
 import {
@@ -391,6 +391,9 @@ abstract class LangfuseCoreStateless {
       `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
     );
+  }
+  async fetchProjects(): Promise<GetLangfuseProjectsResponse> {
+    return this.fetchAndLogErrors(`${this.baseUrl}/api/public/projects`, this._getFetchOptions({ method: "GET" }));
   }
 
   async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
@@ -1248,22 +1251,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
   trace(body?: CreateLangfuseTraceBody): LangfuseTraceClient {
     const id = this.traceStateless(body ?? {});
-    const t = new LangfuseTraceClient(this, id);
-    if (getEnv("DEFER") && body) {
-      try {
-        const deferRuntime = getEnv<DeferRuntime>("__deferRuntime");
-        if (deferRuntime) {
-          deferRuntime.langfuseTraces([
-            {
-              id: id,
-              name: body.name || "",
-              url: t.getTraceUrl(),
-            },
-          ]);
-        }
-      } catch {}
-    }
-    return t;
+    return new LangfuseTraceClient(this, id);
   }
 
   span(body: CreateLangfuseSpanBody): LangfuseSpanClient {
@@ -1549,6 +1537,7 @@ export abstract class LangfuseObjectClient {
   public readonly client: LangfuseCore;
   public readonly id: string; // id of item itself
   public readonly traceId: string; // id of trace, if traceClient this is the same as id
+  public projectId: string | null; // id of project associated with the API keys
   public readonly observationId: string | null; // id of observation, if observationClient this is the same as id, if traceClient this is null
 
   constructor({
@@ -1556,15 +1545,18 @@ export abstract class LangfuseObjectClient {
     id,
     traceId,
     observationId,
+    projectId,
   }: {
     client: LangfuseCore;
     id: string;
     traceId: string;
     observationId: string | null;
+    projectId: string | null;
   }) {
     this.client = client;
     this.id = id;
     this.traceId = traceId;
+    this.projectId = projectId;
     this.observationId = observationId;
   }
 
@@ -1604,14 +1596,23 @@ export abstract class LangfuseObjectClient {
     return this;
   }
 
-  getTraceUrl(): string {
-    return `${this.client.baseUrl}/trace/${this.traceId}`;
+  async getTraceUrl(): Promise<string> {
+    if (!this.projectId) {
+      const project = await this.client.fetchProjects();
+
+      if (project.data.length > 0) {
+        this.projectId = project.data[0].id;
+      } else {
+        return `${this.client.baseUrl}/trace/${this.traceId}`;
+      }
+    }
+    return `${this.client.baseUrl}/${this.projectId}/traces/${this.traceId}`;
   }
 }
 
 export class LangfuseTraceClient extends LangfuseObjectClient {
   constructor(client: LangfuseCore, traceId: string) {
-    super({ client, id: traceId, traceId, observationId: null });
+    super({ client, id: traceId, traceId, observationId: null, projectId: null });
   }
 
   update(body: Omit<CreateLangfuseTraceBody, "id">): this {
@@ -1625,7 +1626,7 @@ export class LangfuseTraceClient extends LangfuseObjectClient {
 
 abstract class LangfuseObservationClient extends LangfuseObjectClient {
   constructor(client: LangfuseCore, id: string, traceId: string) {
-    super({ client, id, traceId, observationId: id });
+    super({ client, id, traceId, observationId: id, projectId: null });
   }
 }
 

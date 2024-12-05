@@ -116,6 +116,9 @@ export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["g
 export type GetLangfuseSessionsResponse = FixTypes<
   paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
+export type GetLangfuseProjectsResponse = FixTypes<
+  paths["/api/public/projects"]["get"]["responses"]["200"]["content"]["application/json"]
+>;
 export type GetLangfuseDatasetParams = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["parameters"]["path"]
 >;
@@ -220,16 +223,6 @@ type FixTypes<T> = T extends undefined
       },
       "externalId" | "traceIdType"
     >;
-
-export type DeferRuntime = {
-  langfuseTraces: (
-    traces: {
-      id: string;
-      name: string;
-      url: string;
-    }[]
-  ) => void;
-};
 
 // Datasets
 export type DatasetItemData = GetLangfuseDatasetItemsResponse["data"][number];
