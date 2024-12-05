@@ -1606,7 +1606,7 @@ export abstract class LangfuseObjectClient {
         return `${this.client.baseUrl}/trace/${this.traceId}`;
       }
     }
-    return `${this.client.baseUrl}/${this.projectId}/traces/${this.traceId}`;
+    return `${this.client.baseUrl}/project/${this.projectId}/traces/${this.traceId}`;
   }
 }
 
