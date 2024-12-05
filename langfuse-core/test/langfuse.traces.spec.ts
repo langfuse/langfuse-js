@@ -457,7 +457,7 @@ describe("Langfuse Core", () => {
         }),
       });
 
-      expect(await trace.getTraceUrl()).toBe(`http://localhost:3000/project/test-project-id/traces/${traceId}`);
+      expect(await trace.getTraceUrl()).toBe(`https://cloud.langfuse.com/project/test-project-id/traces/${traceId}`);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(2);
       const [url2, options2] = mocks.fetch.mock.calls[1];
