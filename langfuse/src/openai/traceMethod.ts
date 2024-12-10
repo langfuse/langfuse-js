@@ -2,7 +2,15 @@ import type OpenAI from "openai";
 import type { LangfuseParent } from "./types";
 
 import { LangfuseSingleton } from "./LangfuseSingleton";
-import { getToolCallOutput, parseChunk, parseCompletionOutput, parseInputArgs, parseUsage } from "./parseOpenAI";
+import {
+  getToolCallOutput,
+  parseChunk,
+  parseCompletionOutput,
+  parseInputArgs,
+  parseUsage,
+  parseUsageDetails,
+  parseUsageDetailsFromResponse,
+} from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
 import type { LangfuseConfig } from "./types";
 
@@ -108,6 +116,7 @@ const wrapMethod = async <T extends GenericMethod>(
                 total: "total_tokens" in usage ? usage.total_tokens : undefined,
               }
             : undefined,
+          usageDetails: usage ? parseUsageDetails(usage) : undefined,
         });
 
         if (!hasUserProvidedParent) {
@@ -120,12 +129,14 @@ const wrapMethod = async <T extends GenericMethod>(
 
     const output = parseCompletionOutput(res);
     const usage = parseUsage(res);
+    const usageDetails = parseUsageDetailsFromResponse(res);
 
     langfuseParent.generation({
       ...observationData,
       output,
       endTime: new Date(),
       usage,
+      usageDetails,
     });
 
     if (!hasUserProvidedParent) {
@@ -143,6 +154,11 @@ const wrapMethod = async <T extends GenericMethod>(
         inputCost: 0,
         outputCost: 0,
         totalCost: 0,
+      },
+      costDetails: {
+        input: 0,
+        output: 0,
+        total: 0,
       },
     });
 

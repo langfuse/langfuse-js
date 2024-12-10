@@ -93,6 +93,7 @@ export type EventBody =
   | UpdateLangfuseGenerationBody;
 
 export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
+export type UsageDetails = FixTypes<components["schemas"]["UsageDetails"]>;
 export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
 export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
 
