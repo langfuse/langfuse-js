@@ -278,7 +278,7 @@ class LangfuseMedia {
         );
 
         for (const [referenceString, base64MediaContent] of referenceStringToMediaContentMap.entries()) {
-          result = result.replace(referenceString, base64MediaContent) as T & string;
+          result = result.replaceAll(referenceString, base64MediaContent) as T & string;
         }
 
         return result;
