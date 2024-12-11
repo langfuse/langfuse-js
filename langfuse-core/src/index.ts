@@ -1557,6 +1557,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
    * @param params.obj - The object to process. Can be a primitive value, array, or nested object
    * @param params.langfuseClient - Langfuse client instance used to fetch media content
    * @param params.resolveWith - Optional. Default is "base64DataUri". The type of data to replace the media reference string with. Currently only "base64DataUri" is supported.
+   * @param params.maxDepth - Optional. Default is 10. The maximum depth to traverse the object.
    *
    * @returns A deep copy of the input object with all media references replaced with base64 data URIs where possible
    *
