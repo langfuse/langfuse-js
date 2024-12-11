@@ -269,6 +269,10 @@ class LangfuseMedia {
               const parsedMediaReference = LangfuseMedia.parseReferenceString(referenceString);
               const mediaData = await langfuseClient.getMediaById(parsedMediaReference.mediaId);
               const mediaContent = await langfuseClient.fetch(mediaData.url, { method: "GET", headers: {} });
+              if (mediaContent.status !== 200) {
+                throw new Error("Failed to fetch media content");
+              }
+
               const base64MediaContent = Buffer.from(await mediaContent.arrayBuffer()).toString("base64");
               const base64DataUri = `data:${mediaData.contentType};base64,${base64MediaContent}`;
 
