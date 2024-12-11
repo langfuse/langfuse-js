@@ -41,6 +41,7 @@ describe("Langfuse Core", () => {
           status: 400,
           text: async () => "err",
           json: async () => ({ status: "err" }),
+          arrayBuffer: async () => new Uint8Array(),
         });
       });
 
@@ -59,6 +60,7 @@ describe("Langfuse Core", () => {
           status: 207,
           text: async () => "err",
           json: async () => ({ successes: [], errors: [{ id: trace.id, message: "Something failed" }] }),
+          arrayBuffer: async () => new Uint8Array(),
         });
       });
 
@@ -90,6 +92,7 @@ describe("Langfuse Core", () => {
             status: 207,
             text: async () => "err",
             json: async () => ({ successes: [], errors: [{ id: "someId", message: "Something failed" }] }),
+            arrayBuffer: async () => new Uint8Array(),
           });
         } else {
           index++;
@@ -97,6 +100,7 @@ describe("Langfuse Core", () => {
             status: 200,
             text: async () => "ok",
             json: async () => ({ successes: [], errors: [] }),
+            arrayBuffer: async () => new Uint8Array(),
           });
         }
       });
@@ -168,6 +172,7 @@ describe("Langfuse Core", () => {
                   status: 200,
                   text: async () => "ok",
                   json: async () => ({ status: "ok" }),
+                  arrayBuffer: async () => new Uint8Array(),
                 });
               }, 500); // add delay to simulate network request
             });

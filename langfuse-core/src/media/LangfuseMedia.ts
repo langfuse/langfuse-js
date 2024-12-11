@@ -33,7 +33,7 @@ interface ParsedMediaReference {
 export type LangfuseMediaResolveMediaReferencesParams<T> = {
   obj: T;
   langfuseClient: LangfuseCore;
-  resolveWith?: "base64DataUri";
+  resolveWith: "base64DataUri";
   maxDepth?: number;
 };
 
@@ -216,7 +216,7 @@ class LangfuseMedia {
    * @param params - Configuration object
    * @param params.obj - The object to process. Can be a primitive value, array, or nested object
    * @param params.langfuseClient - Langfuse client instance used to fetch media content
-   * @param params.resolveWith - Optional. Default is "base64DataUri". The type of data to replace the media reference string with. Currently only "base64DataUri" is supported.
+   * @param params.resolveWith - The representation of the media content to replace the media reference string with. Currently only "base64DataUri" is supported.
    * @param params.maxDepth - Optional. Default is 10. The maximum depth to traverse the object.
    *
    * @returns A deep copy of the input object with all media references replaced with base64 data URIs where possible
