@@ -395,7 +395,7 @@ abstract class LangfuseCoreStateless {
     );
   }
 
-  protected async _getMediaById(id: string): Promise<GetMediaResponse> {
+  protected async _fetchMediaById(id: string): Promise<GetMediaResponse> {
     return this.fetchAndLogErrors(`${this.baseUrl}/api/public/media/${id}`, this._getFetchOptions({ method: "GET" }));
   }
 
@@ -1540,8 +1540,8 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     }
   }
 
-  public async getMediaById(id: string): Promise<GetMediaResponse> {
-    return await this._getMediaById(id);
+  public async fetchMediaById(id: string): Promise<GetMediaResponse> {
+    return await this._fetchMediaById(id);
   }
 
   /**

@@ -671,8 +671,8 @@ describe("Langfuse (fetch)", () => {
     });
 
     const mediaReplacedTrace = await langfuse.resolveMediaReferences({
-      obj: res.data,
       resolveWith: "base64DataUri",
+      obj: res.data,
     });
 
     // Check that the replaced base64 data is the same as the original

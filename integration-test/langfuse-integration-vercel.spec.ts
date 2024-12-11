@@ -30,7 +30,7 @@ describe("langfuse-integration-vercel", () => {
 
   beforeEach(() => {
     sdk = new NodeSDK({
-      traceExporter: new LangfuseExporter({ debug: true }),
+      traceExporter: new LangfuseExporter({ debug: false }),
       instrumentations: [getNodeAutoInstrumentations()],
     });
 
