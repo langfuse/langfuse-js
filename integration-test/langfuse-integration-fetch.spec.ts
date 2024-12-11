@@ -1,9 +1,10 @@
-// uses the compiled fetch version, run yarn build after making changes to the SDKs
-import Langfuse from "../langfuse";
-
 import axios from "axios";
-import { getHeaders, LANGFUSE_BASEURL } from "./integration-utils";
 import { randomUUID } from "crypto";
+import fs from "fs";
+
+// uses the compiled fetch version, run yarn build after making changes to the SDKs
+import Langfuse, { LangfuseMedia } from "../langfuse";
+import { getHeaders, LANGFUSE_BASEURL } from "./integration-utils";
 
 describe("Langfuse (fetch)", () => {
   let langfuse: Langfuse;
@@ -641,4 +642,65 @@ describe("Langfuse (fetch)", () => {
       expect(fetchedGeneration.data.output).toEqual("MASKED");
     });
   });
+  it("replace media reference string in object", async () => {
+    const mockTraceName = "test-trace-with-audio" + Math.random().toString(36);
+    const mockAudioBytes = fs.readFileSync("./static/joke_prompt.wav"); // Simple mock audio bytes
+
+    const trace = langfuse.trace({
+      name: mockTraceName,
+      metadata: {
+        context: {
+          nested: new LangfuseMedia({
+            base64DataUri: `data:audio/wav;base64,${Buffer.from(mockAudioBytes).toString("base64")}`,
+          }),
+        },
+      },
+    });
+
+    await langfuse.flushAsync();
+    const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, { headers: getHeaders() });
+
+    expect(res.data).toMatchObject({
+      id: trace.id,
+      name: mockTraceName,
+      metadata: {
+        context: {
+          nested: expect.stringMatching(/^@@@langfuseMedia:type=audio\/wav\|id=.+\|source=base64_data_uri@@@$/),
+        },
+      },
+    });
+
+    const mediaReplacedTrace = await LangfuseMedia.resolveMediaReferences({
+      obj: res.data,
+      langfuseClient: langfuse,
+    });
+
+    // Check that the replaced base64 data is the same as the original
+    expect(mediaReplacedTrace.metadata.context.nested).toEqual(
+      `data:audio/wav;base64,${Buffer.from(mockAudioBytes).toString("base64")}`
+    );
+
+    // Double check: reference strings must be the same if data URI is reused
+    const trace2 = langfuse.trace({
+      name: "2-" + mockTraceName,
+      metadata: {
+        context: {
+          nested: mediaReplacedTrace.metadata.context.nested,
+        },
+      },
+    });
+
+    await langfuse.flushAsync();
+
+    const res2 = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace2.id}`, { headers: getHeaders() });
+    expect(res2.data).toMatchObject({
+      id: trace2.id,
+      name: "2-" + mockTraceName,
+      metadata: {
+        context: {
+          nested: res.data.metadata.context.nested,
+        },
+      },
+    });
+  }, 20_000);
 });

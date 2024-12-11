@@ -18,6 +18,7 @@ export {
   type LangfuseSpanClient,
   type LangfuseEventClient,
   type LangfuseGenerationClient,
+  LangfuseMedia,
 } from "langfuse-core";
 
 export class Langfuse extends LangfuseCore {

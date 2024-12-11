@@ -68,6 +68,7 @@ export const createTestClient = (
       status: 200,
       text: () => Promise.resolve("ok"),
       json: () => Promise.resolve({ status: "ok" }),
+      arrayBuffer: () => Promise.resolve(new Uint8Array()),
     })
   );
 

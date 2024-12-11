@@ -55,6 +55,7 @@ import {
   type SingleIngestionEvent,
   type UpdateLangfuseGenerationBody,
   type UpdateLangfuseSpanBody,
+  type GetMediaResponse,
 } from "./types";
 import { LangfuseMedia } from "./media/LangfuseMedia";
 import {
@@ -69,6 +70,7 @@ import {
 } from "./utils";
 
 export * from "./prompts/promptClients";
+export * from "./media/LangfuseMedia";
 export { LangfuseMemoryStorage } from "./storage-memory";
 export type { LangfusePromptRecord } from "./types";
 export * as utils from "./utils";
@@ -391,6 +393,10 @@ abstract class LangfuseCoreStateless {
       `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
     );
+  }
+
+  protected async _getMediaById(id: string): Promise<GetMediaResponse> {
+    return this.fetchAndLogErrors(`${this.baseUrl}/api/public/media/${id}`, this._getFetchOptions({ method: "GET" }));
   }
 
   async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
@@ -1532,6 +1538,10 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
       throw error;
     }
+  }
+
+  public async getMediaById(id: string): Promise<GetMediaResponse> {
+    return await this._getMediaById(id);
   }
 
   _updateSpan(body: UpdateLangfuseSpanBody): this {
