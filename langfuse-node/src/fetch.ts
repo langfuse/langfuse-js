@@ -18,6 +18,6 @@ export const fetch = async (url: string, options: LangfuseFetchOptions): Promise
     status: res.status,
     text: async () => res.data,
     json: async () => res.data,
-    arrayBuffer: async () => res.data,
+    arrayBuffer: async () => Buffer.from(res.data),
   };
 };
