@@ -1,3 +1,5 @@
+import { type LangfuseCore } from "../index";
+
 let fs: any = null;
 let cryptoModule: any = null;
 
@@ -27,6 +29,13 @@ interface ParsedMediaReference {
   source: string;
   contentType: MediaContentType;
 }
+
+export type LangfuseMediaResolveMediaReferencesParams<T> = {
+  obj: T;
+  langfuseClient: LangfuseCore;
+  resolveWith: "base64DataUri";
+  maxDepth?: number;
+};
 
 /**
  * A class for wrapping media objects for upload to Langfuse.
@@ -193,6 +202,111 @@ class LangfuseMedia {
       source: parsedData["source"],
       contentType: parsedData["type"] as MediaContentType,
     };
+  }
+
+  /**
+   * Replaces the media reference strings in an object with base64 data URIs for the media content.
+   *
+   * This method recursively traverses an object (up to a maximum depth of 10) looking for media reference strings
+   * in the format "@@@langfuseMedia:...@@@". When found, it fetches the actual media content using the provided
+   * Langfuse client and replaces the reference string with a base64 data URI.
+   *
+   * If fetching media content fails for a reference string, a warning is logged and the reference string is left unchanged.
+   *
+   * @param params - Configuration object
+   * @param params.obj - The object to process. Can be a primitive value, array, or nested object
+   * @param params.langfuseClient - Langfuse client instance used to fetch media content
+   * @param params.resolveWith - The representation of the media content to replace the media reference string with. Currently only "base64DataUri" is supported.
+   * @param params.maxDepth - Optional. Default is 10. The maximum depth to traverse the object.
+   *
+   * @returns A deep copy of the input object with all media references replaced with base64 data URIs where possible
+   *
+   * @example
+   * ```typescript
+   * const obj = {
+   *   image: "@@@langfuseMedia:type=image/jpeg|id=123|source=bytes@@@",
+   *   nested: {
+   *     pdf: "@@@langfuseMedia:type=application/pdf|id=456|source=bytes@@@"
+   *   }
+   * };
+   *
+   * const result = await LangfuseMedia.resolveMediaReferences({
+   *   obj,
+   *   langfuseClient
+   * });
+   *
+   * // Result:
+   * // {
+   * //   image: "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+   * //   nested: {
+   * //     pdf: "data:application/pdf;base64,JVBERi0xLjcK..."
+   * //   }
+   * // }
+   * ```
+   */
+  public static async resolveMediaReferences<T>(params: LangfuseMediaResolveMediaReferencesParams<T>): Promise<T> {
+    const { obj, langfuseClient, maxDepth = 10 } = params;
+
+    async function traverse<T>(obj: T, depth: number): Promise<T> {
+      if (depth > maxDepth) {
+        return obj;
+      }
+
+      // Handle string with potential media references
+      if (typeof obj === "string") {
+        const regex = /@@@langfuseMedia:.+?@@@/g;
+        const referenceStringMatches = obj.match(regex);
+        if (!referenceStringMatches) {
+          return obj;
+        }
+
+        let result = obj;
+        const referenceStringToMediaContentMap = new Map<string, string>();
+
+        await Promise.all(
+          referenceStringMatches.map(async (referenceString) => {
+            try {
+              const parsedMediaReference = LangfuseMedia.parseReferenceString(referenceString);
+              const mediaData = await langfuseClient.fetchMedia(parsedMediaReference.mediaId);
+              const mediaContent = await langfuseClient.fetch(mediaData.url, { method: "GET", headers: {} });
+              if (mediaContent.status !== 200) {
+                throw new Error("Failed to fetch media content");
+              }
+
+              const base64MediaContent = Buffer.from(await mediaContent.arrayBuffer()).toString("base64");
+              const base64DataUri = `data:${mediaData.contentType};base64,${base64MediaContent}`;
+
+              referenceStringToMediaContentMap.set(referenceString, base64DataUri);
+            } catch (error) {
+              console.warn("Error fetching media content for reference string", referenceString, error);
+              // Do not replace the reference string if there's an error
+            }
+          })
+        );
+
+        for (const [referenceString, base64MediaContent] of referenceStringToMediaContentMap.entries()) {
+          result = result.replaceAll(referenceString, base64MediaContent) as T & string;
+        }
+
+        return result;
+      }
+
+      // Handle arrays
+      if (Array.isArray(obj)) {
+        return Promise.all(obj.map(async (item) => await traverse(item, depth + 1))) as Promise<T>;
+      }
+
+      // Handle objects
+      if (typeof obj === "object" && obj !== null) {
+        return Object.fromEntries(
+          await Promise.all(Object.entries(obj).map(async ([key, value]) => [key, await traverse(value, depth + 1)]))
+        );
+      }
+
+      return obj;
+    }
+
+    return traverse(obj, 0);
   }
 }
 

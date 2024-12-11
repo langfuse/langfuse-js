@@ -52,6 +52,7 @@ export type LangfuseFetchResponse<T = any> = {
   status: number;
   text: () => Promise<string>;
   json: () => Promise<T>;
+  arrayBuffer: () => Promise<ArrayBuffer>;
 };
 
 export type LangfuseObject = SingleIngestionEvent["type"];
@@ -177,10 +178,13 @@ export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
 
+// Media
 export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
 export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;
 export type MediaContentType = components["schemas"]["MediaContentType"];
 export type PatchMediaBody = FixTypes<components["schemas"]["PatchMediaBody"]>;
+export type GetMediaResponse = FixTypes<components["schemas"]["GetMediaResponse"]>;
+
 type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
 type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
 export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility

@@ -191,6 +191,7 @@ describe("Langfuse Core", () => {
               status: 200,
               json: async () => ({ status: "200" }),
               text: async () => "ok",
+              arrayBuffer: async () => new Uint8Array(),
             });
           }, 1000);
         });

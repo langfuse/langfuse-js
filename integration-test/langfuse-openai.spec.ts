@@ -1038,7 +1038,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(generation.output).toMatchObject(completion.choices[0].message);
     expect(generation.metadata).toMatchObject({ someKey: "someValue", response_format });
     expect(generation.model).toBe("gpt-4o-2024-08-06");
-  }, 10000);
+  }, 15_000);
 
   it("should work with structured output parsing with beta API", async () => {
     const traceId = randomUUID();

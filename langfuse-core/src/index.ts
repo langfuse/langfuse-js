@@ -55,8 +55,9 @@ import {
   type SingleIngestionEvent,
   type UpdateLangfuseGenerationBody,
   type UpdateLangfuseSpanBody,
+  type GetMediaResponse,
 } from "./types";
-import { LangfuseMedia } from "./media/LangfuseMedia";
+import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
 import {
   currentISOTime,
   encodeQueryParams,
@@ -69,6 +70,7 @@ import {
 } from "./utils";
 
 export * from "./prompts/promptClients";
+export * from "./media/LangfuseMedia";
 export { LangfuseMemoryStorage } from "./storage-memory";
 export type { LangfusePromptRecord } from "./types";
 export * as utils from "./utils";
@@ -391,6 +393,10 @@ abstract class LangfuseCoreStateless {
       `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
     );
+  }
+
+  protected async _fetchMedia(id: string): Promise<GetMediaResponse> {
+    return this.fetchAndLogErrors(`${this.baseUrl}/api/public/media/${id}`, this._getFetchOptions({ method: "GET" }));
   }
 
   async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
@@ -1534,6 +1540,57 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     }
   }
 
+  public async fetchMedia(id: string): Promise<GetMediaResponse> {
+    return await this._fetchMedia(id);
+  }
+
+  /**
+   * Replaces the media reference strings in an object with base64 data URIs for the media content.
+   *
+   * This method recursively traverses an object (up to a maximum depth of 10) looking for media reference strings
+   * in the format "@@@langfuseMedia:...@@@". When found, it fetches the actual media content using the provided
+   * Langfuse client and replaces the reference string with a base64 data URI.
+   *
+   * If fetching media content fails for a reference string, a warning is logged and the reference string is left unchanged.
+   *
+   * @param params - Configuration object
+   * @param params.obj - The object to process. Can be a primitive value, array, or nested object
+   * @param params.langfuseClient - Langfuse client instance used to fetch media content
+   * @param params.resolveWith - The representation of the media content to replace the media reference string with. Currently only "base64DataUri" is supported.
+   * @param params.maxDepth - Optional. Default is 10. The maximum depth to traverse the object.
+   *
+   * @returns A deep copy of the input object with all media references replaced with base64 data URIs where possible
+   *
+   * @example
+   * ```typescript
+   * const obj = {
+   *   image: "@@@langfuseMedia:type=image/jpeg|id=123|source=bytes@@@",
+   *   nested: {
+   *     pdf: "@@@langfuseMedia:type=application/pdf|id=456|source=bytes@@@"
+   *   }
+   * };
+   *
+   * const result = await LangfuseMedia.resolveMediaReferences({
+   *   obj,
+   *   langfuseClient
+   * });
+   *
+   * // Result:
+   * // {
+   * //   image: "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+   * //   nested: {
+   * //     pdf: "data:application/pdf;base64,JVBERi0xLjcK..."
+   * //   }
+   * // }
+   * ```
+   */
+  public async resolveMediaReferences<T>(
+    params: Omit<LangfuseMediaResolveMediaReferencesParams<T>, "langfuseClient">
+  ): Promise<T> {
+    const { obj, ...rest } = params;
+
+    return LangfuseMedia.resolveMediaReferences<T>({ ...rest, langfuseClient: this, obj });
+  }
   _updateSpan(body: UpdateLangfuseSpanBody): this {
     this.updateSpanStateless(body);
     return this;
