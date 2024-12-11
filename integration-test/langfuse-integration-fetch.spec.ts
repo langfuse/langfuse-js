@@ -677,7 +677,7 @@ describe("Langfuse (fetch)", () => {
 
     // Check that the replaced base64 data is the same as the original
     expect(mediaReplacedTrace.metadata.context.nested).toEqual(
-      `data:audio/wav;base64,${Buffer.from(mockAudioBytes).toString("base64")}`
+      "data:audio/wav;base64," + Buffer.from(mockAudioBytes).toString("base64")
     );
 
     // Double check: reference strings must be the same if data URI is reused
