@@ -57,7 +57,7 @@ import {
   type UpdateLangfuseSpanBody,
   type GetMediaResponse,
 } from "./types";
-import { LangfuseMedia } from "./media/LangfuseMedia";
+import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
 import {
   currentISOTime,
   encodeQueryParams,
@@ -1544,6 +1544,52 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return await this._getMediaById(id);
   }
 
+  /**
+   * Replaces the media reference strings in an object with base64 data URIs for the media content.
+   *
+   * This method recursively traverses an object (up to a maximum depth of 10) looking for media reference strings
+   * in the format "@@@langfuseMedia:...@@@". When found, it fetches the actual media content using the provided
+   * Langfuse client and replaces the reference string with a base64 data URI.
+   *
+   * If fetching media content fails for a reference string, a warning is logged and the reference string is left unchanged.
+   *
+   * @param params - Configuration object
+   * @param params.obj - The object to process. Can be a primitive value, array, or nested object
+   * @param params.langfuseClient - Langfuse client instance used to fetch media content
+   * @param params.resolveWith - Optional. Default is "base64DataUri". The type of data to replace the media reference string with. Currently only "base64DataUri" is supported.
+   *
+   * @returns A deep copy of the input object with all media references replaced with base64 data URIs where possible
+   *
+   * @example
+   * ```typescript
+   * const obj = {
+   *   image: "@@@langfuseMedia:type=image/jpeg|id=123|source=bytes@@@",
+   *   nested: {
+   *     pdf: "@@@langfuseMedia:type=application/pdf|id=456|source=bytes@@@"
+   *   }
+   * };
+   *
+   * const result = await LangfuseMedia.resolveMediaReferences({
+   *   obj,
+   *   langfuseClient
+   * });
+   *
+   * // Result:
+   * // {
+   * //   image: "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+   * //   nested: {
+   * //     pdf: "data:application/pdf;base64,JVBERi0xLjcK..."
+   * //   }
+   * // }
+   * ```
+   */
+  public async resolveMediaReferences<T>(
+    params: Omit<LangfuseMediaResolveMediaReferencesParams<T>, "langfuseClient">
+  ): Promise<T> {
+    const { obj, ...rest } = params;
+
+    return LangfuseMedia.resolveMediaReferences<T>({ ...rest, langfuseClient: this, obj });
+  }
   _updateSpan(body: UpdateLangfuseSpanBody): this {
     this.updateSpanStateless(body);
     return this;

@@ -30,6 +30,12 @@ interface ParsedMediaReference {
   contentType: MediaContentType;
 }
 
+export type LangfuseMediaResolveMediaReferencesParams<T> = {
+  obj: T;
+  langfuseClient: LangfuseCore;
+  resolveWith?: "base64DataUri";
+};
+
 /**
  * A class for wrapping media objects for upload to Langfuse.
  *
@@ -236,11 +242,7 @@ class LangfuseMedia {
    * // }
    * ```
    */
-  public static async resolveMediaReferences<T>(params: {
-    obj: T;
-    langfuseClient: LangfuseCore;
-    resolveWith?: "base64DataUri";
-  }): Promise<T> {
+  public static async resolveMediaReferences<T>(params: LangfuseMediaResolveMediaReferencesParams<T>): Promise<T> {
     const { obj, langfuseClient } = params;
     const MAX_DEPTH = 10;
 
