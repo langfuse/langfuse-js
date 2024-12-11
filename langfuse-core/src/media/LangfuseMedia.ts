@@ -251,7 +251,7 @@ class LangfuseMedia {
 
       // Handle string with potential media references
       if (typeof obj === "string") {
-        const regex = /@@@langfuseMedia:.+@@@/g;
+        const regex = /@@@langfuseMedia:.+?@@@/g;
         const referenceStringMatches = obj.match(regex);
         if (!referenceStringMatches) {
           return obj;

@@ -658,7 +658,7 @@ describe("Langfuse (fetch)", () => {
     });
 
     await langfuse.flushAsync();
-    const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, { headers: getHeaders() });
+    const res = await langfuse.fetchTrace(trace.id);
 
     expect(res.data).toMatchObject({
       id: trace.id,
