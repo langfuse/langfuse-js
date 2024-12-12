@@ -643,8 +643,7 @@ describe("Langfuse (fetch)", () => {
     });
   });
 
-  // TODO: enable this test once networking issue is fixed
-  it.skip("replace media reference string in object", async () => {
+  it("replace media reference string in object", async () => {
     const langfuse = new Langfuse();
     const mockTraceName = "test-trace-with-audio" + Math.random().toString(36);
     const mockAudioBytes = fs.readFileSync("./static/joke_prompt.wav"); // Simple mock audio bytes
