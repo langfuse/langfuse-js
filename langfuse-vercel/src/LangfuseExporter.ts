@@ -163,7 +163,7 @@ export class LangfuseExporter implements SpanExporter {
               ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.stream.msToFirstChunk"]))
               : undefined,
       model:
-        "ai.response.model" in attributes
+        "ai.response.model" in attributes && attributes["ai.response.model"]?.toString()
           ? attributes["ai.response.model"]?.toString()
           : "gen_ai.request.model" in attributes
             ? attributes["gen_ai.request.model"]?.toString()
