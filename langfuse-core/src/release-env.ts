@@ -19,7 +19,7 @@ const common_release_envs = [
   // Heroku
   "SOURCE_VERSION",
   // Trigger.dev
-  "TRIGGER_DEPLOYMENT_ID"
+  "TRIGGER_DEPLOYMENT_ID",
 ] as const;
 
 export function getCommonReleaseEnvs(): string | undefined {
