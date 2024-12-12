@@ -24,7 +24,7 @@ type LangfuseGenerationConfig = Pick<
   "metadata" | "version" | "promptName" | "promptVersion"
 >;
 
-export type LangfuseNewTraceConfig = LangfuseTraceConfig & { traceId?: string; clientInitParams?: LangfuseInitParams };
+export type LangfuseNewTraceConfig = LangfuseTraceConfig & { traceId?: string; traceName?: string; clientInitParams?: LangfuseInitParams };
 export type LangfuseParent = LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient;
 export type LangfuseWithParentConfig = LangfuseGenerationConfig & { parent: LangfuseParent };
 
