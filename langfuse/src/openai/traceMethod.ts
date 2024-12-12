@@ -74,13 +74,13 @@ const wrapMethod = async <T extends GenericMethod>(
         const textChunks: string[] = [];
         const toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] = [];
         let completionStartTime: Date | null = null;
-        let usage: OpenAI.CompletionUsage | null = null;
+        let usage: OpenAI.CompletionUsage | OpenAI.CreateEmbeddingResponse.Usage | null = null;
 
         for await (const rawChunk of response as AsyncIterable<unknown>) {
           completionStartTime = completionStartTime ?? new Date();
 
           if (typeof rawChunk === "object" && rawChunk != null && "usage" in rawChunk) {
-            usage = rawChunk.usage as OpenAI.CompletionUsage | null;
+            usage = rawChunk.usage as OpenAI.CompletionUsage | OpenAI.CreateEmbeddingResponse.Usage  | null;
           }
 
           const processedChunk = parseChunk(rawChunk);
