@@ -793,9 +793,9 @@ describe("Langchain", () => {
           role: "assistant",
         },
         usage: {
-          completionTokens: expect.any(Number),
-          promptTokens: expect.any(Number),
-          totalTokens: expect.any(Number),
+          input: expect.any(Number),
+          output: expect.any(Number),
+          total: expect.any(Number),
         },
         version: "1.0.0",
       });
