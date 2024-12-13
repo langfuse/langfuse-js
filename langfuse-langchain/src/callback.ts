@@ -10,6 +10,7 @@ import {
   HumanMessage,
   SystemMessage,
   ToolMessage,
+  type UsageMetadata,
   type BaseMessageFields,
   type MessageContent,
 } from "@langchain/core/messages";
@@ -20,13 +21,7 @@ import type { ChainValues } from "@langchain/core/utils/types";
 import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { Document } from "@langchain/core/documents";
 
-import type {
-  ChatPromptClient,
-  components,
-  LangfuseSpanClient,
-  LangfuseTraceClient,
-  TextPromptClient,
-} from "langfuse-core";
+import type { ChatPromptClient, LangfuseSpanClient, LangfuseTraceClient, TextPromptClient } from "langfuse-core";
 
 export type LlmMessage = {
   role: string;
@@ -599,8 +594,26 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
+      const llmUsage =
+        (output.llmOutput?.["tokenUsage"] as UsageMetadata | undefined) ?? this.extractUsageMetadata(lastResponse);
 
-      const llmUsage = output.llmOutput?.["tokenUsage"] ?? this.extractUsageMetadata(lastResponse);
+      const usageDetails: Record<string, any> = {
+        input: llmUsage?.input_tokens,
+        output: llmUsage?.output_tokens,
+        total: llmUsage?.total_tokens,
+      };
+
+      if (llmUsage && "input_token_details" in llmUsage) {
+        for (const [key, val] of Object.entries(llmUsage["input_token_details"] ?? {})) {
+          usageDetails[`input_${key}`] = val;
+        }
+      }
+
+      if (llmUsage && "output_token_details" in llmUsage) {
+        for (const [key, val] of Object.entries(llmUsage["output_token_details"] ?? {})) {
+          usageDetails[`output_${key}`] = val;
+        }
+      }
 
       const extractedOutput =
         "message" in lastResponse && lastResponse["message"] instanceof BaseMessage
@@ -613,7 +626,8 @@ export class CallbackHandler extends BaseCallbackHandler {
         output: extractedOutput,
         endTime: new Date(),
         completionStartTime: runId in this.completionStartTimes ? this.completionStartTimes[runId] : undefined,
-        usage: llmUsage,
+        usage: usageDetails,
+        usageDetails: usageDetails,
         version: this.version,
       });
 
@@ -628,7 +642,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   /** Not all models supports tokenUsage in llmOutput, can use AIMessage.usage_metadata instead */
-  private extractUsageMetadata(generation: Generation): components["schemas"]["IngestionUsage"] | undefined {
+  private extractUsageMetadata(generation: Generation): UsageMetadata | undefined {
     try {
       const usageMetadata =
         "message" in generation &&
@@ -636,15 +650,7 @@ export class CallbackHandler extends BaseCallbackHandler {
           ? generation["message"].usage_metadata
           : undefined;
 
-      if (!usageMetadata) {
-        return;
-      }
-
-      return {
-        promptTokens: usageMetadata.input_tokens,
-        completionTokens: usageMetadata.output_tokens,
-        totalTokens: usageMetadata.total_tokens,
-      };
+      return usageMetadata;
     } catch (err) {
       this._log(`Error extracting usage metadata: ${err}`);
 
