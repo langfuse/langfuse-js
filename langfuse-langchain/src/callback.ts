@@ -594,13 +594,12 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
-      const llmUsage =
-        (output.llmOutput?.["tokenUsage"] as UsageMetadata | undefined) ?? this.extractUsageMetadata(lastResponse);
+      const llmUsage = this.extractUsageMetadata(lastResponse) ?? output.llmOutput?.["tokenUsage"];
 
       const usageDetails: Record<string, any> = {
-        input: llmUsage?.input_tokens,
-        output: llmUsage?.output_tokens,
-        total: llmUsage?.total_tokens,
+        input: llmUsage?.input_tokens ?? ("promptTokens" in llmUsage ? llmUsage?.promptTokens : undefined),
+        output: llmUsage?.output_tokens ?? ("completionTokens" in llmUsage ? llmUsage?.completionTokens : undefined),
+        total: llmUsage?.total_tokens ?? ("totalTokens" in llmUsage ? llmUsage?.totalTokens : undefined),
       };
 
       if (llmUsage && "input_token_details" in llmUsage) {
