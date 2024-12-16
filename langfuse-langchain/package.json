@@ -1,6 +1,6 @@
 {
   "name": "langfuse-langchain",
-  "version": "3.31.3",
+  "version": "3.32.0",
   "engines": {
     "node": ">=18"
   },
@@ -39,8 +39,8 @@
   ],
   "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed",
   "dependencies": {
-    "langfuse": "^3.31.3",
-    "langfuse-core": "^3.31.3"
+    "langfuse": "^3.32.0",
+    "langfuse-core": "^3.32.0"
   },
   "peerDependencies": {
     "langchain": ">=0.0.157 <0.4.0"
