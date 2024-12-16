@@ -38,7 +38,8 @@ export const observeOpenAI = <SDKType extends object>(
 
       const defaultGenerationName = `${sdk.constructor?.name}.${propKey.toString()}`;
       const generationName = langfuseConfig?.generationName ?? defaultGenerationName;
-      const config = { ...langfuseConfig, generationName };
+      const traceName = langfuseConfig && 'traceName' in langfuseConfig ? langfuseConfig.traceName : generationName;
+      const config = { ...langfuseConfig, generationName, traceName};      
 
       // Add a flushAsync method to the OpenAI SDK that flushes the Langfuse client
       if (propKey === "flushAsync") {
