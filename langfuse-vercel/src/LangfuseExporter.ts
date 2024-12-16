@@ -190,28 +190,33 @@ export class LangfuseExporter implements SpanExporter {
           "ai.settings.maxRetries" in attributes ? attributes["ai.settings.maxRetries"]?.toString() : undefined,
         mode: "ai.settings.mode" in attributes ? attributes["ai.settings.mode"]?.toString() : undefined,
       },
-      usage: {
-        input:
-          "gen_ai.usage.prompt_tokens" in attributes // Backward compat, input_tokens used in latest ai SDK versions
-            ? parseInt(attributes["gen_ai.usage.prompt_tokens"]?.toString() ?? "0")
-            : "gen_ai.usage.input_tokens" in attributes
-              ? parseInt(attributes["gen_ai.usage.input_tokens"]?.toString() ?? "0")
-              : undefined,
-
-        output:
-          "gen_ai.usage.completion_tokens" in attributes // Backward compat, output_tokens used in latest ai SDK versions
-            ? parseInt(attributes["gen_ai.usage.completion_tokens"]?.toString() ?? "0")
-            : "gen_ai.usage.output_tokens" in attributes
-              ? parseInt(attributes["gen_ai.usage.output_tokens"]?.toString() ?? "0")
-              : undefined,
-        total: "ai.usage.tokens" in attributes ? parseInt(attributes["ai.usage.tokens"]?.toString() ?? "0") : undefined,
-      },
+      usage: this.parseUsageDetails(attributes),
+      usageDetails: this.parseUsageDetails(attributes),
       input: this.parseInput(span),
       output: this.parseOutput(span),
 
       metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
       prompt: langfusePrompt,
     });
+  }
+
+  private parseUsageDetails(attributes: Record<string, any>): Record<string, any> {
+    return {
+      input:
+        "gen_ai.usage.prompt_tokens" in attributes // Backward compat, input_tokens used in latest ai SDK versions
+          ? parseInt(attributes["gen_ai.usage.prompt_tokens"]?.toString() ?? "0")
+          : "gen_ai.usage.input_tokens" in attributes
+            ? parseInt(attributes["gen_ai.usage.input_tokens"]?.toString() ?? "0")
+            : undefined,
+
+      output:
+        "gen_ai.usage.completion_tokens" in attributes // Backward compat, output_tokens used in latest ai SDK versions
+          ? parseInt(attributes["gen_ai.usage.completion_tokens"]?.toString() ?? "0")
+          : "gen_ai.usage.output_tokens" in attributes
+            ? parseInt(attributes["gen_ai.usage.output_tokens"]?.toString() ?? "0")
+            : undefined,
+      total: "ai.usage.tokens" in attributes ? parseInt(attributes["ai.usage.tokens"]?.toString() ?? "0") : undefined,
+    };
   }
 
   private parseSpanMetadata(span: ReadableSpan): Record<string, (typeof span.attributes)[0]> {

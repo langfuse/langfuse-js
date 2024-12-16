@@ -146,7 +146,7 @@ describe("Langchain", () => {
 
     it("should execute simple non chat llm call", async () => {
       const handler = new CallbackHandler({});
-      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20 });
+      const llm = new OpenAI({ modelName: "gpt-3.5-turbo-instruct", maxTokens: 20 });
       const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
       const traceId = handler.traceId;
       await handler.flushAsync();
@@ -169,7 +169,7 @@ describe("Langchain", () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const singleGeneration = generation![0];
 
-      expect(singleGeneration.name).toBe("OpenAIChat");
+      expect(singleGeneration.name).toBe("OpenAI");
       expect(singleGeneration.input).toMatchObject(["Tell me a joke on a non chat api"]);
       expect(singleGeneration.usage?.input).toBeDefined();
       expect(singleGeneration.usage?.output).toBeDefined();
@@ -793,9 +793,9 @@ describe("Langchain", () => {
           role: "assistant",
         },
         usage: {
-          completionTokens: expect.any(Number),
-          promptTokens: expect.any(Number),
-          totalTokens: expect.any(Number),
+          input: expect.any(Number),
+          output: expect.any(Number),
+          total: expect.any(Number),
         },
         version: "1.0.0",
       });

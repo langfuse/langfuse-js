@@ -524,7 +524,7 @@ export interface components {
       objectType: string;
       /** @description The id of the object to attach the comment to. If this does not reference a valid existing object, an error will be thrown. */
       objectId: string;
-      /** @description The content of the comment. May include markdown. Currently limited to 500 characters. */
+      /** @description The content of the comment. May include markdown. Currently limited to 3000 characters. */
       content: string;
       /** @description The id of the user who created the comment. */
       authorUserId?: string | null;
@@ -657,7 +657,7 @@ export interface components {
       metadata?: unknown;
       /** @description The output data of the observation */
       output?: unknown;
-      /** @description The usage data of the observation */
+      /** @description (Deprecated. Use usageDetails and costDetails instead.) The usage data of the observation */
       usage?: components["schemas"]["Usage"];
       /** @description The level of the observation */
       level: components["schemas"]["ObservationLevel"];
@@ -667,6 +667,14 @@ export interface components {
       parentObservationId?: string | null;
       /** @description The prompt ID associated with the observation */
       promptId?: string | null;
+      /** @description The usage details of the observation. Key is the name of the usage metric, value is the number of units consumed. The total key is the sum of all (non-total) usage metrics or the total value ingested. */
+      usageDetails?: {
+        [key: string]: number;
+      } | null;
+      /** @description The cost details of the observation. Key is the name of the cost metric, value is the cost in USD. The total key is the sum of all (non-total) cost metrics or the total value ingested. */
+      costDetails?: {
+        [key: string]: number;
+      } | null;
     };
     /** ObservationsView */
     ObservationsView: {
@@ -693,17 +701,17 @@ export interface components {
       totalPrice?: number | null;
       /**
        * Format: double
-       * @description The calculated cost of the input in USD
+       * @description (Deprecated. Use usageDetails and costDetails instead.) The calculated cost of the input in USD
        */
       calculatedInputCost?: number | null;
       /**
        * Format: double
-       * @description The calculated cost of the output in USD
+       * @description (Deprecated. Use usageDetails and costDetails instead.) The calculated cost of the output in USD
        */
       calculatedOutputCost?: number | null;
       /**
        * Format: double
-       * @description The calculated total cost in USD
+       * @description (Deprecated. Use usageDetails and costDetails instead.) The calculated total cost in USD
        */
       calculatedTotalCost?: number | null;
       /**
@@ -719,7 +727,7 @@ export interface components {
     } & components["schemas"]["Observation"];
     /**
      * Usage
-     * @description Standard interface for usage and cost
+     * @description (Deprecated. Use usageDetails and costDetails instead.) Standard interface for usage and cost
      */
     Usage: {
       /** @description Number of input units (e.g. tokens) */
@@ -1156,6 +1164,10 @@ export interface components {
         [key: string]: components["schemas"]["MapValue"];
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
+      usageDetails?: components["schemas"]["UsageDetails"];
+      costDetails?: {
+        [key: string]: number;
+      } | null;
       promptName?: string | null;
       promptVersion?: number | null;
     } & components["schemas"]["CreateSpanBody"];
@@ -1169,6 +1181,10 @@ export interface components {
       } | null;
       usage?: components["schemas"]["IngestionUsage"];
       promptName?: string | null;
+      usageDetails?: components["schemas"]["UsageDetails"];
+      costDetails?: {
+        [key: string]: number;
+      } | null;
       promptVersion?: number | null;
     } & components["schemas"]["UpdateSpanBody"];
     /** ObservationBody */
@@ -1299,6 +1315,24 @@ export interface components {
       successes: components["schemas"]["IngestionSuccess"][];
       errors: components["schemas"]["IngestionError"][];
     };
+    /** OpenAIUsageSchema */
+    OpenAIUsageSchema: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+      prompt_tokens_details?: {
+        [key: string]: number;
+      } | null;
+      completion_tokens_details?: {
+        [key: string]: number;
+      } | null;
+    };
+    /** UsageDetails */
+    UsageDetails:
+      | {
+          [key: string]: number;
+        }
+      | components["schemas"]["OpenAIUsageSchema"];
     /** GetMediaResponse */
     GetMediaResponse: {
       /** @description The unique langfuse identifier of a media record */
@@ -1362,11 +1396,31 @@ export interface components {
       | "image/jpeg"
       | "image/jpg"
       | "image/webp"
+      | "image/gif"
+      | "image/svg+xml"
+      | "image/tiff"
+      | "image/bmp"
       | "audio/mpeg"
       | "audio/mp3"
       | "audio/wav"
+      | "audio/ogg"
+      | "audio/oga"
+      | "audio/aac"
+      | "audio/mp4"
+      | "audio/flac"
+      | "video/mp4"
+      | "video/webm"
       | "text/plain"
-      | "application/pdf";
+      | "text/html"
+      | "text/css"
+      | "text/csv"
+      | "application/pdf"
+      | "application/msword"
+      | "application/vnd.ms-excel"
+      | "application/zip"
+      | "application/json"
+      | "application/xml"
+      | "application/octet-stream";
     /** DailyMetrics */
     DailyMetrics: {
       /** @description A list of daily metrics, only days with ingested data are included. */
