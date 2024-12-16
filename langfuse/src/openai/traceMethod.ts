@@ -68,6 +68,7 @@ const wrapMethod = async <T extends GenericMethod>(
       ...config,
       ...observationData,
       id: config?.traceId,
+      name: config?.traceName,
       timestamp: observationData.startTime,
     });
   }
