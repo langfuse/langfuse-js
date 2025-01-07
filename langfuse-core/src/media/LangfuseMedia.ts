@@ -3,14 +3,22 @@ import { type LangfuseCore } from "../index";
 let fs: any = null;
 let cryptoModule: any = null;
 
-if (typeof process !== "undefined" && process.versions?.node) {
-  // Use wrapper to prevent bundlers from trying to resolve the dynamic import
-  // Otherwise, the import will be incorrectly resolved as a static import even though it's dynamic
-  // Test for browser environment would fail because the import will be incorrectly resolved as a static import and fs and crypto will be unavailable
-  const dynamicImport = (module: string): Promise<any> => {
-    return import(/* webpackIgnore: true */ module);
-  };
+// Use wrapper to prevent bundlers from trying to resolve the dynamic import
+// Otherwise, the import will be incorrectly resolved as a static import even though it's dynamic
+// Test for browser environment would fail because the import will be incorrectly resolved as a static import and fs and crypto will be unavailable
+const dynamicImport = (module: string): Promise<any> => {
+  return import(/* webpackIgnore: true */ module);
+};
 
+if (typeof (globalThis as any).Deno !== "undefined") {
+  // Deno
+  Promise.all([dynamicImport("node:fs"), dynamicImport("node:crypto")])
+    .then(([importedFs, importedCrypto]) => {
+      fs = importedFs;
+      cryptoModule = importedCrypto;
+    })
+    .catch(); // Errors are handled on runtime
+} else if (typeof process !== "undefined" && process.versions?.node) {
   // Node
   Promise.all([dynamicImport("fs"), dynamicImport("crypto")])
     .then(([importedFs, importedCrypto]) => {
@@ -19,6 +27,7 @@ if (typeof process !== "undefined" && process.versions?.node) {
     })
     .catch(); // Errors are handled on runtime
 } else if (typeof crypto !== "undefined") {
+  // Edge runtime (Cloudflare Workers, Vercel Cloud Function)
   cryptoModule = crypto;
 }
 
