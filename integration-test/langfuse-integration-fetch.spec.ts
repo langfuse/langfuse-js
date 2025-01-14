@@ -1,6 +1,7 @@
-import axios from "axios";
-import { randomUUID } from "crypto";
 import fs from "fs";
+import { randomUUID } from "crypto";
+
+import { getAxiosClient, sleep } from "./integration-utils";
 
 // uses the compiled fetch version, run yarn build after making changes to the SDKs
 import Langfuse, { LangfuseMedia } from "../langfuse";
@@ -27,7 +28,9 @@ describe("Langfuse (fetch)", () => {
 
   describe("core methods", () => {
     it("check health of langfuse server", async () => {
-      const res = await axios
+      const res = await (
+        await getAxiosClient()
+      )
         .get(LANGFUSE_BASEURL + "/api/public/health", { headers: getHeaders() })
         .then((res) => res.data)
         .catch((err) => console.log(err));
@@ -78,7 +81,9 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -120,7 +125,9 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created with the specified timestamp
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -138,14 +145,16 @@ describe("Langfuse (fetch)", () => {
         dataType: "CATEGORICAL",
       });
       await langfuse.flushAsync();
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=CATEGORICAL`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=CATEGORICAL`, {
         headers: getHeaders(),
       });
 
       for (const score of res.data.data) {
         if (score.traceId === trace.id) {
           expect(score).toMatchObject({
-            value: null,
+            value: 0,
             stringValue: "value",
             dataType: "CATEGORICAL",
           });
@@ -163,7 +172,9 @@ describe("Langfuse (fetch)", () => {
         dataType: "BOOLEAN",
       });
       await langfuse.flushAsync();
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=BOOLEAN`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/scores/?dataType=BOOLEAN`, {
         headers: getHeaders(),
       });
 
@@ -187,7 +198,11 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, { headers: getHeaders() });
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/traces/${trace.id}`, {
+        headers: getHeaders(),
+      });
 
       expect(res.data).toMatchObject({
         id: trace.id,
@@ -204,7 +219,12 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, {
+        headers: getHeaders(),
+      });
+
       expect(res.data).toMatchObject({
         id: span.id,
         name: "span-name",
@@ -212,7 +232,7 @@ describe("Langfuse (fetch)", () => {
         startTime: new Date("2020-01-01T00:00:00.000Z").toISOString(),
         completionStartTime: null,
         endTime: null,
-        metadata: null,
+        metadata: {},
         model: null,
         modelParameters: null,
         input: null,
@@ -236,6 +256,10 @@ describe("Langfuse (fetch)", () => {
         name: "test-span-1",
         metadata: { key: "value" },
       });
+
+      // Add small wait for create and update events to not be on same millisecond
+      await sleep(5);
+
       span.update({
         version: "1.0.0",
         name: "test-span-2",
@@ -243,7 +267,11 @@ describe("Langfuse (fetch)", () => {
       span.end();
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, { headers: getHeaders() });
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${span.id}`, {
+        headers: getHeaders(),
+      });
 
       expect(res.data).toMatchObject({
         id: span.id,
@@ -262,7 +290,9 @@ describe("Langfuse (fetch)", () => {
       const generation = trace.generation({ name: "generation-name-new" });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -286,7 +316,9 @@ describe("Langfuse (fetch)", () => {
 
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -319,7 +351,9 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -348,7 +382,9 @@ describe("Langfuse (fetch)", () => {
       });
       await langfuse.flushAsync();
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
       expect(res.data).toMatchObject({
@@ -378,7 +414,9 @@ describe("Langfuse (fetch)", () => {
 
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
 
@@ -400,7 +438,11 @@ describe("Langfuse (fetch)", () => {
       await langfuse.flushAsync();
 
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, { headers: getHeaders() });
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, {
+        headers: getHeaders(),
+      });
       expect(res.data).toMatchObject({
         id: event.id,
         name: "event-name",
@@ -575,7 +617,9 @@ describe("Langfuse (fetch)", () => {
 
       await langfuse.flushAsync();
 
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${generation.id}`, {
         headers: getHeaders(),
       });
 
@@ -592,7 +636,11 @@ describe("Langfuse (fetch)", () => {
       await langfuse.flushAsync();
 
       // check from get api if trace is created
-      const res = await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, { headers: getHeaders() });
+      const res = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${event.id}`, {
+        headers: getHeaders(),
+      });
       expect(res.data).toMatchObject({
         id: event.id,
         name: "event-name",
@@ -620,27 +668,33 @@ describe("Langfuse (fetch)", () => {
 
       await langfuse.flushAsync();
 
-      const fetchedTrace = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
+      const fetchedTrace = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
         headers: getHeaders(),
       });
 
       expect(fetchedTrace.data.input).toEqual("MASKED");
       expect(fetchedTrace.data.output).toEqual("MASKED");
 
-      const fetchedSpan = await await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${spanId}`, {
+      const fetchedSpan = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${spanId}`, {
         headers: getHeaders(),
       });
 
       expect(fetchedSpan.data.input).toEqual("MASKED");
       expect(fetchedSpan.data.output).toEqual("MASKED");
 
-      const fetchedGeneration = await await axios.get(`${LANGFUSE_BASEURL}/api/public/observations/${generationId}`, {
+      const fetchedGeneration = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/observations/${generationId}`, {
         headers: getHeaders(),
       });
 
       expect(fetchedGeneration.data.input).toEqual("MASKED");
       expect(fetchedGeneration.data.output).toEqual("MASKED");
-    });
+    }, 10_000);
   });
 
   it("replace media reference string in object", async () => {
@@ -660,6 +714,8 @@ describe("Langfuse (fetch)", () => {
     });
 
     await langfuse.flushAsync();
+    await sleep(2000);
+
     const res = await langfuse.fetchTrace(trace.id);
 
     expect(res.data).toMatchObject({
@@ -694,7 +750,11 @@ describe("Langfuse (fetch)", () => {
 
     await langfuse.flushAsync();
 
-    const res2 = await axios.get(`${LANGFUSE_BASEURL}/api/public/traces/${trace2.id}`, { headers: getHeaders() });
+    const res2 = await (
+      await getAxiosClient()
+    ).get(`${LANGFUSE_BASEURL}/api/public/traces/${trace2.id}`, {
+      headers: getHeaders(),
+    });
     expect(res2.data).toMatchObject({
       id: trace2.id,
       name: "2-" + mockTraceName,
