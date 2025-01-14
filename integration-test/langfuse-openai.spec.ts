@@ -3,20 +3,23 @@ import "dotenv/config";
 import OpenAI from "openai";
 import Langfuse, { observeOpenAI } from "../langfuse";
 import { randomUUID } from "crypto";
-import axios, { type AxiosResponse } from "axios";
-import { LANGFUSE_BASEURL, getHeaders, fetchTraceById, encodeFile } from "./integration-utils";
+import { type AxiosResponse } from "axios";
+import { LANGFUSE_BASEURL, getHeaders, fetchTraceById, encodeFile, getAxiosClient } from "./integration-utils";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-jest.useFakeTimers({ doNotFake: ["Date"] });
+jest.useFakeTimers({ doNotFake: ["Date", "setTimeout"] });
 
 const openai = new OpenAI();
 
 const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => {
   const url = `${LANGFUSE_BASEURL}/api/public/observations?name=${name}&type=GENERATION`;
-  const res = await axios.get(url, {
+  const res = await (
+    await getAxiosClient()
+  ).get(url, {
     headers: getHeaders(),
   });
+
   return res;
 };
 
@@ -1104,7 +1107,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       },
     });
     expect(generation.model).toBe("gpt-4o-2024-08-06");
-  }, 10000);
+  }, 15_000);
 
   it("should work with vision input", async () => {
     const traceId = randomUUID();

@@ -89,7 +89,7 @@ describe("langfuse-integration-vercel", () => {
 
     expect(trace.id).toBe(traceId);
     expect(trace.name).toBe(functionId);
-    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.input).toEqual({ prompt });
     expect(trace.output).toBe(result.text);
     expect(trace.userId).toBe(userId);
     expect(trace.sessionId).toBe(sessionId);
@@ -164,7 +164,7 @@ describe("langfuse-integration-vercel", () => {
 
     expect(trace.id).toBe(traceId);
     expect(trace.name).toBe(functionId);
-    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.input).toEqual({ prompt });
     expect(trace.output).toBe(result.text);
     expect(trace.userId).toBe(userId);
     expect(trace.sessionId).toBe(sessionId);
@@ -241,7 +241,7 @@ describe("langfuse-integration-vercel", () => {
 
     expect(trace.id).toBe(traceId);
     expect(trace.name).toBe(functionId);
-    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.input).toEqual({ prompt });
     expect(trace.output).toBe(result);
     expect(trace.userId).toBe(userId);
     expect(trace.sessionId).toBe(sessionId);
@@ -327,7 +327,7 @@ describe("langfuse-integration-vercel", () => {
 
     expect(trace.id).toBe(traceId);
     expect(trace.name).toBe(functionId);
-    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.input).toEqual({ prompt });
     expect(trace.output.length).toBeGreaterThan(100);
     expect(trace.userId).toBe(userId);
     expect(trace.sessionId).toBe(sessionId);
@@ -417,8 +417,8 @@ describe("langfuse-integration-vercel", () => {
 
     expect(trace.id).toBe(traceId);
     expect(trace.name).toBe(functionId);
-    expect(JSON.parse(trace.input)).toEqual({ prompt });
-    expect(trace.output.length).toBeGreaterThan(100);
+    expect(trace.input).toEqual({ prompt });
+    expect(JSON.stringify(trace.output).length).toBeGreaterThan(100);
     expect(trace.userId).toBe(userId);
     expect(trace.sessionId).toBe(sessionId);
     expect(trace.tags).toEqual(tags.sort());
@@ -566,7 +566,7 @@ describe("langfuse-integration-vercel", () => {
 
     expect(trace.id).toBe(traceId);
     expect(trace.name).toBe(functionId);
-    expect(JSON.parse(trace.input)).toEqual({ prompt });
+    expect(trace.input).toEqual({ prompt });
     expect(trace.output).toBe(result);
     expect(trace.userId).toBe(userId);
     expect(trace.sessionId).toBe(sessionId);

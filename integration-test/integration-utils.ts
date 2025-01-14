@@ -19,7 +19,8 @@ export type TraceAndObservations = components["schemas"]["Trace"] & {
 };
 
 export async function getTrace(traceId: string): Promise<TraceAndObservations> {
-  sleep(2000);
+  await sleep(2000);
+
   const res = await axios.get<TraceAndObservations>(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
     headers: getHeaders(),
   });
@@ -30,6 +31,8 @@ export async function getTrace(traceId: string): Promise<TraceAndObservations> {
 }
 
 export const fetchTraceById = async (id: string): Promise<AxiosResponse<any, any>> => {
+  await sleep(2000);
+
   const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
   const res = await axios.get(url, {
     headers: getHeaders(),
