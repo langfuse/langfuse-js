@@ -154,7 +154,7 @@ describe("Langfuse (fetch)", () => {
       for (const score of res.data.data) {
         if (score.traceId === trace.id) {
           expect(score).toMatchObject({
-            value: null,
+            value: 0,
             stringValue: "value",
             dataType: "CATEGORICAL",
           });
