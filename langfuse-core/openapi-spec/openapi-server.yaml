@@ -2827,7 +2827,6 @@ components:
           description: Defaults to input+output if not set
         unit:
           $ref: "#/components/schemas/ModelUsageUnit"
-          nullable: true
         inputCost:
           type: number
           format: double
@@ -3261,7 +3260,6 @@ components:
           description: Apply only to generations which are newer than this ISO date.
         unit:
           $ref: "#/components/schemas/ModelUsageUnit"
-          nullable: true
           description: Unit used by this model.
         inputPrice:
           type: number
@@ -4349,7 +4347,6 @@ components:
           description: Apply only to generations which are newer than this ISO date.
         unit:
           $ref: "#/components/schemas/ModelUsageUnit"
-          nullable: true
           description: Unit used by this model.
         inputPrice:
           type: number
