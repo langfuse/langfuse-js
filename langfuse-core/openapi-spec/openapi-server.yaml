@@ -1492,7 +1492,7 @@ paths:
                     type: string
                   description: >-
                     New labels for the prompt version. Labels are unique across
-                    versions. The 'latest' label is reserved and managed by
+                    versions. The "latest" label is reserved and managed by
                     Langfuse.
               required:
                 - newLabels
@@ -1519,7 +1519,7 @@ paths:
         - name: label
           in: query
           description: >-
-            Label of the prompt to be retrieved. Defaults to 'production' if no
+            Label of the prompt to be retrieved. Defaults to "production" if no
             label or version is set.
           required: false
           schema:
@@ -2827,6 +2827,7 @@ components:
           description: Defaults to input+output if not set
         unit:
           $ref: '#/components/schemas/ModelUsageUnit'
+          nullable: true
         inputCost:
           type: number
           format: double
@@ -2978,13 +2979,13 @@ components:
           type: number
           format: double
           description: >-
-            The numeric value of the score. Equals 1 for 'True' and 0 for
-            'False'
+            The numeric value of the score. Equals 1 for "True" and 0 for
+            "False"
         stringValue:
           type: string
           description: >-
             The string representation of the score value. Is inferred from the
-            numeric value and equals 'True' or 'False'
+            numeric value and equals "True" or "False"
       required:
         - value
         - stringValue
@@ -3260,6 +3261,7 @@ components:
           description: Apply only to generations which are newer than this ISO date.
         unit:
           $ref: '#/components/schemas/ModelUsageUnit'
+          nullable: true
           description: Unit used by this model.
         inputPrice:
           type: number
@@ -3295,7 +3297,6 @@ components:
         - id
         - modelName
         - matchPattern
-        - unit
         - isLangfuseManaged
     ModelUsageUnit:
       title: ModelUsageUnit
@@ -4348,6 +4349,7 @@ components:
           description: Apply only to generations which are newer than this ISO date.
         unit:
           $ref: '#/components/schemas/ModelUsageUnit'
+          nullable: true
           description: Unit used by this model.
         inputPrice:
           type: number
@@ -4379,7 +4381,6 @@ components:
             JSON. See docs for more details.
       required:
         - modelName
-        - unit
         - matchPattern
     Observations:
       title: Observations
