@@ -3295,6 +3295,7 @@ components:
         - id
         - modelName
         - matchPattern
+        - unit
         - isLangfuseManaged
     ModelUsageUnit:
       title: ModelUsageUnit
@@ -4378,6 +4379,7 @@ components:
             JSON. See docs for more details.
       required:
         - modelName
+        - unit
         - matchPattern
     Observations:
       title: Observations
