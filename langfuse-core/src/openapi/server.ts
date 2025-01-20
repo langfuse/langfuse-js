@@ -838,10 +838,10 @@ export interface components {
     BooleanScore: {
       /**
        * Format: double
-       * @description The numeric value of the score. Equals 1 for 'True' and 0 for 'False'
+       * @description The numeric value of the score. Equals 1 for "True" and 0 for "False"
        */
       value: number;
-      /** @description The string representation of the score value. Is inferred from the numeric value and equals 'True' or 'False' */
+      /** @description The string representation of the score value. Is inferred from the numeric value and equals "True" or "False" */
       stringValue: string;
     } & components["schemas"]["BaseScore"];
     /** CategoricalScore */
@@ -972,7 +972,7 @@ export interface components {
        */
       startDate?: string | null;
       /** @description Unit used by this model. */
-      unit: components["schemas"]["ModelUsageUnit"];
+      unit?: components["schemas"]["ModelUsageUnit"];
       /**
        * Format: double
        * @description Price (USD) per input unit
@@ -1495,7 +1495,7 @@ export interface components {
        */
       startDate?: string | null;
       /** @description Unit used by this model. */
-      unit: components["schemas"]["ModelUsageUnit"];
+      unit?: components["schemas"]["ModelUsageUnit"];
       /**
        * Format: double
        * @description Price (USD) per input unit
@@ -3350,7 +3350,7 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": {
-          /** @description New labels for the prompt version. Labels are unique across versions. The 'latest' label is reserved and managed by Langfuse. */
+          /** @description New labels for the prompt version. Labels are unique across versions. The "latest" label is reserved and managed by Langfuse. */
           newLabels: string[];
         };
       };
@@ -3411,7 +3411,7 @@ export interface operations {
       query?: {
         /** @description Version of the prompt to be retrieved. */
         version?: number | null;
-        /** @description Label of the prompt to be retrieved. Defaults to 'production' if no label or version is set. */
+        /** @description Label of the prompt to be retrieved. Defaults to "production" if no label or version is set. */
         label?: string | null;
       };
       header?: never;
