@@ -972,7 +972,7 @@ export interface components {
        */
       startDate?: string | null;
       /** @description Unit used by this model. */
-      unit?: components["schemas"]["ModelUsageUnit"];
+      unit: components["schemas"]["ModelUsageUnit"];
       /**
        * Format: double
        * @description Price (USD) per input unit
@@ -1006,7 +1006,7 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) | undefined;
     /**
      * CommentObjectType
      * @enum {string}
@@ -1495,7 +1495,7 @@ export interface components {
        */
       startDate?: string | null;
       /** @description Unit used by this model. */
-      unit?: components["schemas"]["ModelUsageUnit"];
+      unit: components["schemas"]["ModelUsageUnit"];
       /**
        * Format: double
        * @description Price (USD) per input unit
