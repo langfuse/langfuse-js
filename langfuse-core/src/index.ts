@@ -533,7 +533,7 @@ abstract class LangfuseCoreStateless {
   ): Promise<LangfusePromptClient> {
     return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/v2/prompts/${encodeURIComponent(body.name)}/versions/${encodeURIComponent(body.version)}`,
-      this._getFetchOptions({ method: "PUT", body: JSON.stringify(body) })
+      this._getFetchOptions({ method: "PATCH", body: JSON.stringify(body) })
     );
   }
 
