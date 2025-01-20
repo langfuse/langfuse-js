@@ -432,6 +432,26 @@ describe("Langfuse Node.js", () => {
         version: expect.any(Number),
       });
     });
+
+    it("update a prompt", async () => {
+      const promptName = "test-prompt" + Math.random().toString(36);
+      await langfuse.createPrompt({
+        name: promptName,
+        prompt: "This is a prompt with a {{variable}}",
+        isActive: true,
+        labels: ["john"],
+      });
+
+      const updatedPrompt = await langfuse.updatePrompt({
+        name: promptName,
+        version: 1,
+        newLabels: ["john", "doe"],
+      });
+
+      const prompt = await langfuse.getPrompt(promptName);
+      expect(prompt.labels).toEqual(expect.arrayContaining(["john", "doe"]));
+      expect(updatedPrompt.labels).toEqual(expect.arrayContaining(["john", "doe"]));
+    });
   });
 
   it("link prompt to generation", async () => {

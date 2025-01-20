@@ -50,4 +50,12 @@ export class LangfusePromptCache {
   public isRefreshing(key: string): boolean {
     return this._refreshingKeys.has(key);
   }
+
+  public invalidate(promptName: string): void {
+    for (const key of this._cache.keys()) {
+      if (key.startsWith(promptName)) {
+        this._cache.delete(key);
+      }
+    }
+  }
 }

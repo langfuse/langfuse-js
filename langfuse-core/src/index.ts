@@ -56,6 +56,7 @@ import {
   type UpdateLangfuseGenerationBody,
   type UpdateLangfuseSpanBody,
   type GetMediaResponse,
+  UpdatePromptBody,
 } from "./types";
 import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
 import {
@@ -524,6 +525,15 @@ abstract class LangfuseCoreStateless {
     return this.fetchAndLogErrors(
       `${this.baseUrl}/api/public/v2/prompts`,
       this._getFetchOptions({ method: "POST", body: JSON.stringify(body) })
+    );
+  }
+
+  async updatePromptStateless(
+    body: UpdatePromptBody & { name: string; version: number }
+  ): Promise<LangfusePromptClient> {
+    return this.fetchAndLogErrors(
+      `${this.baseUrl}/api/public/v2/prompts/${encodeURIComponent(body.name)}/versions/${encodeURIComponent(body.version)}`,
+      this._getFetchOptions({ method: "PUT", body: JSON.stringify(body) })
     );
   }
 
@@ -1380,6 +1390,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     }
 
     return new TextPromptClient(promptResponse);
+  }
+
+  async updatePrompt(body: { name: string; version: number; newLabels: string[] }): Promise<LangfusePromptClient> {
+    const newPrompt = await this.updatePromptStateless(body);
+    this._promptCache.invalidate(body.name);
+    return newPrompt;
   }
 
   async getPrompt(

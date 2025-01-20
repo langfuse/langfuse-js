@@ -161,6 +161,9 @@ export type GetLangfuseDatasetRunsResponse = FixTypes<
 export type CreateLangfusePromptBody = FixTypes<
   paths["/api/public/v2/prompts"]["post"]["requestBody"]["content"]["application/json"]
 >;
+export type UpdatePromptBody = FixTypes<
+  paths["/api/public/v2/prompts/{promptName}/version/{version}"]["patch"]["requestBody"]["content"]["application/json"]
+>;
 export type CreateLangfusePromptResponse =
   paths["/api/public/v2/prompts"]["post"]["responses"]["200"]["content"]["application/json"];
 
