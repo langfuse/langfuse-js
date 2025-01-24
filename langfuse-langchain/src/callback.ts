@@ -23,6 +23,8 @@ import type { Document } from "@langchain/core/documents";
 
 import type { ChatPromptClient, LangfuseSpanClient, LangfuseTraceClient, TextPromptClient } from "langfuse-core";
 
+const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
+
 export type LlmMessage = {
   role: string;
   content: BaseMessageFields["content"];
@@ -216,6 +218,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         metadata: this.joinTagsAndMetaData(tags, metadata),
         input: finalInput,
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
 
       // If there's no parent run, this is a top-level chain execution.
@@ -414,6 +417,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       modelParameters: modelParameters,
       version: this.version,
       prompt: registeredPrompt,
+      level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
     });
   }
 
@@ -500,6 +504,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
     } catch (e) {
       this._log(e);
@@ -526,6 +531,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
     } catch (e) {
       this._log(e);

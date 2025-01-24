@@ -55,6 +55,9 @@ export class LangfuseExporter implements SpanExporter {
         this.processTraceSpans(traceId, spans);
       }
 
+      // Schedule a flush. Necessary to ensure event delivery in Vercel Cloud Functions with streaming responses
+      this.langfuse.flushAsync();
+
       const successCode: ExportResultCode.SUCCESS = 0; // Do not use enum directly to avoid adding a dependency on the enum
 
       resultCallback({ code: successCode });
