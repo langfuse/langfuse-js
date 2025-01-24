@@ -314,8 +314,6 @@ describe("langfuse-integration-vercel", () => {
       },
     });
 
-    console.log(JSON.stringify(result.object.recipe, null, 2));
-
     await sdk.shutdown();
 
     // Fetch trace
@@ -403,8 +401,6 @@ describe("langfuse-integration-vercel", () => {
     for await (const partialObject of partialObjectStream) {
       currentObject = partialObject;
     }
-
-    console.log(currentObject);
 
     await sdk.shutdown();
 
