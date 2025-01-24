@@ -33,7 +33,7 @@ export class LangfuseExporter implements SpanExporter {
     this.langfuse = LangfuseExporter.langfuse; // store reference to singleton instance
   }
 
-  export(allSpans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
+  async export(allSpans: ReadableSpan[], resultCallback: (result: ExportResult) => void): Promise<void> {
     this.logDebug("exporting spans", allSpans);
 
     try {
@@ -56,7 +56,7 @@ export class LangfuseExporter implements SpanExporter {
       }
 
       // Schedule a flush. Necessary to ensure event delivery in Vercel Cloud Functions with streaming responses
-      this.langfuse.flushAsync();
+      await this.langfuse.flushAsync();
 
       const successCode: ExportResultCode.SUCCESS = 0; // Do not use enum directly to avoid adding a dependency on the enum
 
