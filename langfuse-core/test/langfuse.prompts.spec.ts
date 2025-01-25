@@ -29,11 +29,40 @@ describe("Langfuse Core", () => {
     } as const,
   };
 
+  const getPromptsStatelessSuccess = {
+    fetchResult: "success" as const,
+    data: {
+      data: [
+        {
+          name: "test-prompt",
+          versions: [1, 2],
+          labels: ["production"],
+          tags: ["tag1", "tag2"],
+          lastUpdatedAt: "2024-01-01T00:00:00.000Z",
+          lastConfig: { temperature: 0.5 },
+        },
+      ],
+      meta: {
+        page: 1,
+        limit: 10,
+        totalItems: 1,
+        totalPages: 1,
+      },
+    },
+  };
+
   // Currently the fetch API doesn't throw on client or server errors, but resolves with a response object
   const getPromptStatelessFailure: GetLangfusePromptResponse = {
     fetchResult: "failure",
     data: {
       message: "Prompt not found",
+    },
+  };
+
+  const getPromptsStatelessFailure = {
+    fetchResult: "failure" as const,
+    data: {
+      message: "Failed to fetch prompts",
     },
   };
 
@@ -575,6 +604,57 @@ describe("Langfuse Core", () => {
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
       expect(prompt).toEqual([{ role: "system", content: 'This is a prompt with {"foo":"bar"}' }]);
+    });
+
+    it("should get a list of prompts without parameters", async () => {
+      const mockGetPromptsStateless = jest
+        .spyOn(langfuse, "getPromptsStateless")
+        .mockResolvedValue(getPromptsStatelessSuccess);
+
+      await langfuse.getPromptsStateless();
+      expect(mockGetPromptsStateless).toHaveBeenCalledTimes(1);
+      expect(mockGetPromptsStateless).toHaveBeenCalledWith(undefined);
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      const [url, options] = mocks.fetch.mock.calls[0];
+      expect(url).toEqual("https://cloud.langfuse.com/api/public/v2/prompts");
+      expect(options.method).toBe("GET");
+    });
+
+    it("should get a list of prompts with filters", async () => {
+      const params = {
+        name: "test",
+        label: "production",
+        tag: "tag1",
+        page: 1,
+        limit: 10,
+        fromUpdatedAt: "2024-01-01T00:00:00.000Z",
+        toUpdatedAt: "2024-01-02T00:00:00.000Z",
+      };
+
+      const mockGetPromptsStateless = jest
+        .spyOn(langfuse, "getPromptsStateless")
+        .mockResolvedValue(getPromptsStatelessSuccess);
+
+      await langfuse.getPromptsStateless(params);
+      expect(mockGetPromptsStateless).toHaveBeenCalledTimes(1);
+      expect(mockGetPromptsStateless).toHaveBeenCalledWith(params);
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      const [url, options] = mocks.fetch.mock.calls[0];
+      expect(url).toEqual(
+        "https://cloud.langfuse.com/api/public/v2/prompts?name=test&label=production&tag=tag1&page=1&limit=10&fromUpdatedAt=2024-01-01T00:00:00.000Z&toUpdatedAt=2024-01-02T00:00:00.000Z"
+      );
+      expect(options.method).toBe("GET");
+    });
+
+    it("should throw an error when fetching prompts fails", async () => {
+      const mockGetPromptsStateless = jest
+        .spyOn(langfuse, "getPromptsStateless")
+        .mockResolvedValue(getPromptsStatelessFailure);
+
+      await expect(langfuse.getPromptsStateless()).rejects.toThrow("Failed to fetch prompts");
+      expect(mockGetPromptsStateless).toHaveBeenCalledTimes(1);
     });
   });
 });

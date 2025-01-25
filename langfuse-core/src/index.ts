@@ -1,4 +1,5 @@
 import { SimpleEventEmitter } from "./eventemitter";
+import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
 import { LangfusePromptCache } from "./prompts/promptCache";
 import { ChatPromptClient, TextPromptClient, type LangfusePromptClient } from "./prompts/promptClients";
 import { getCommonReleaseEnvs } from "./release-env";
@@ -16,9 +17,6 @@ import {
   type CreateLangfuseGenerationBody,
   type CreateLangfusePromptBody,
   type CreateLangfusePromptResponse,
-  type GetMediaUploadUrlRequest,
-  type GetMediaUploadUrlResponse,
-  type PatchMediaBody,
   type CreateLangfuseScoreBody,
   type CreateLangfuseSpanBody,
   type CreateLangfuseTraceBody,
@@ -39,11 +37,15 @@ import {
   type GetLangfuseObservationsQuery,
   type GetLangfuseObservationsResponse,
   type GetLangfusePromptResponse,
+  type GetLangfusePromptsResponse,
   type GetLangfuseSessionsQuery,
   type GetLangfuseSessionsResponse,
   type GetLangfuseTraceResponse,
   type GetLangfuseTracesQuery,
   type GetLangfuseTracesResponse,
+  type GetMediaResponse,
+  type GetMediaUploadUrlRequest,
+  type GetMediaUploadUrlResponse,
   type IngestionReturnType,
   type LangfuseCoreOptions,
   type LangfuseFetchOptions,
@@ -51,13 +53,12 @@ import {
   type LangfuseObject,
   type LangfuseQueueItem,
   type MaskFunction,
+  type PatchMediaBody,
   type PromptInput,
   type SingleIngestionEvent,
   type UpdateLangfuseGenerationBody,
   type UpdateLangfuseSpanBody,
-  type GetMediaResponse,
 } from "./types";
-import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
 import {
   currentISOTime,
   encodeQueryParams,
@@ -69,8 +70,8 @@ import {
   type RetriableOptions,
 } from "./utils";
 
-export * from "./prompts/promptClients";
 export * from "./media/LangfuseMedia";
+export * from "./prompts/promptClients";
 export { LangfuseMemoryStorage } from "./storage-memory";
 export type { LangfusePromptRecord } from "./types";
 export * as utils from "./utils";
@@ -567,6 +568,78 @@ abstract class LangfuseCoreStateless {
             throw new LangfuseFetchNetworkError(e);
           }
         );
+
+        const data = await res.json();
+
+        if (res.status >= 500) {
+          throw new LangfuseFetchHttpError(res, JSON.stringify(data));
+        }
+
+        return { fetchResult: res.status === 200 ? "success" : "failure", data };
+      },
+      retryOptions,
+      retryLogger
+    );
+  }
+
+  async getPromptsStateless(params?: {
+    name?: string;
+    label?: string;
+    tag?: string;
+    page?: number;
+    limit?: number;
+    fromUpdatedAt?: string;
+    toUpdatedAt?: string;
+    maxRetries?: number;
+    requestTimeout?: number;
+  }): Promise<GetLangfusePromptsResponse> {
+    const queryParams = new URLSearchParams();
+
+    // Add parameters only if they are provided
+    if (params?.name) {
+      queryParams.append("name", params.name);
+    }
+    if (params?.label) {
+      queryParams.append("label", params.label);
+    }
+    if (params?.tag) {
+      queryParams.append("tag", params.tag);
+    }
+    if (params?.page) {
+      queryParams.append("page", params.page.toString());
+    }
+    if (params?.limit) {
+      queryParams.append("limit", params.limit.toString());
+    }
+    if (params?.fromUpdatedAt) {
+      queryParams.append("fromUpdatedAt", params.fromUpdatedAt);
+    }
+    if (params?.toUpdatedAt) {
+      queryParams.append("toUpdatedAt", params.toUpdatedAt);
+    }
+
+    const url = `${this.baseUrl}/api/public/v2/prompts${queryParams.size ? "?" + queryParams : ""}`;
+
+    const boundedMaxRetries = this._getBoundedMaxRetries({
+      maxRetries: params?.maxRetries,
+      defaultMaxRetries: 2,
+      maxRetriesUpperBound: 4,
+    });
+    const retryOptions = { ...this._retryOptions, retryCount: boundedMaxRetries, retryDelay: 500 };
+    const retryLogger = (string: string): void =>
+      this._events.emit("retry", string + ", " + url + ", " + JSON.stringify(retryOptions));
+
+    return retriable(
+      async () => {
+        const res = await this.fetch(
+          url,
+          this._getFetchOptions({ method: "GET", fetchTimeout: params?.requestTimeout })
+        ).catch((e) => {
+          if (e.name === "AbortError") {
+            throw new LangfuseFetchNetworkError("Fetch request timed out");
+          }
+          throw new LangfuseFetchNetworkError(e);
+        });
 
         const data = await res.json();
 
@@ -1747,5 +1820,5 @@ export class LangfuseEventClient extends LangfuseObservationClient {
   }
 }
 
-export * from "./types";
 export * from "./openapi/server";
+export * from "./types";

@@ -1,6 +1,6 @@
 import { type LangfuseObjectClient } from "./index";
-import { type LangfusePromptClient } from "./prompts/promptClients";
 import { type components, type paths } from "./openapi/server";
+import { type LangfusePromptClient } from "./prompts/promptClients";
 
 export type LangfuseCoreOptions = {
   // Langfuse API publicKey obtained from the Langfuse UI project settings
@@ -174,6 +174,17 @@ export type GetLangfusePromptResponse =
       data: GetLangfusePromptSuccessData;
     }
   | { fetchResult: "failure"; data: GetLangfusePromptFailureData };
+
+export type GetLangfusePromptsSuccessData =
+  paths["/api/public/v2/prompts"]["get"]["responses"]["200"]["content"]["application/json"];
+
+export type GetLangfusePromptsFailureData = { message?: string };
+export type GetLangfusePromptsResponse =
+  | {
+      fetchResult: "success";
+      data: GetLangfusePromptsSuccessData;
+    }
+  | { fetchResult: "failure"; data: GetLangfusePromptsFailureData };
 
 export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
