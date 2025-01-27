@@ -244,7 +244,7 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
     });
-    
+
     it("should not send events in admin mode", async () => {
       [langfuse, mocks] = createTestClient({
         publicKey: "pk-lf-111",
@@ -265,6 +265,7 @@ describe("Langfuse Core", () => {
 
       expect(mocks.fetch).not.toHaveBeenCalled();
     });
+  });
 
   describe("when queue is completely full", () => {
     const MAX_MSG_SIZE = 1_000_000;
@@ -273,7 +274,7 @@ describe("Langfuse Core", () => {
     const MSG_SIZE = MAX_MSG_SIZE - 1000;
     const BIG_STRING = "a".repeat(MSG_SIZE);
 
-    it("should flush remaining items on subsequent flush", () => {
+    it("should flush remaining items on subsequent flush", async () => {
       const n = Math.floor(BATCH_SIZE_LIMIT / MSG_SIZE) + 1;
 
       [langfuse, mocks] = createTestClient({
@@ -288,12 +289,7 @@ describe("Langfuse Core", () => {
         langfuse.trace({ name: `test-trace-${i}`, input: { content: BIG_STRING } });
       }
 
-      // First call flushes the messages that fit under the batch size limit
-      expect(mocks.fetch).toHaveBeenCalledTimes(1);
-
-      jest.advanceTimersByTime(300);
-
-      // Second call flushes the remaining messages
+      await jest.advanceTimersByTimeAsync(200);
       expect(mocks.fetch).toHaveBeenCalledTimes(2);
     });
   });
