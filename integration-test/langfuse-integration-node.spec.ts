@@ -449,8 +449,8 @@ describe("Langfuse Node.js", () => {
       });
 
       const prompt = await langfuse.getPrompt(promptName);
-      expect(prompt.labels).toEqual(expect.arrayContaining(["john", "doe"]));
-      expect(updatedPrompt.labels).toEqual(expect.arrayContaining(["john", "doe"]));
+      expect(prompt.labels).toEqual(expect.arrayContaining(["john", "doe", "production"]));
+      expect(updatedPrompt.labels).toEqual(expect.arrayContaining(["john", "doe", "production"]));
     });
   });
 
