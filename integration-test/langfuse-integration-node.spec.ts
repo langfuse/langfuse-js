@@ -433,7 +433,7 @@ describe("Langfuse Node.js", () => {
       });
     });
 
-    it.only("update a prompt", async () => {
+    it("update a prompt", async () => {
       const promptName = "test-prompt" + Math.random().toString(36);
       await langfuse.createPrompt({
         name: promptName,
