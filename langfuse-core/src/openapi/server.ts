@@ -339,7 +339,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/public/v2/prompts/{name}/version/{version}": {
+  "/api/public/v2/prompts/{name}/versions/{version}": {
     parameters: {
       query?: never;
       header?: never;

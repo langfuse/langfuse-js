@@ -1426,7 +1426,7 @@ paths:
               schema: {}
       security:
         - BasicAuth: []
-  /api/public/v2/prompts/{name}/version/{version}:
+  /api/public/v2/prompts/{name}/versions/{version}:
     patch:
       description: Update labels for a specific prompt version
       operationId: promptVersion_update
