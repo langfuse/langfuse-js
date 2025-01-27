@@ -339,7 +339,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/public/v2/prompts/{promptName}/version/{version}": {
+  "/api/public/v2/prompts/{name}/version/{version}": {
     parameters: {
       query?: never;
       header?: never;
@@ -1006,7 +1006,7 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) | undefined;
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
     /**
      * CommentObjectType
      * @enum {string}
@@ -2579,7 +2579,7 @@ export interface operations {
       };
     };
     responses: {
-      200: {
+      207: {
         headers: {
           [name: string]: unknown;
         };
@@ -3341,7 +3341,7 @@ export interface operations {
       header?: never;
       path: {
         /** @description The name of the prompt */
-        promptName: string;
+        name: string;
         /** @description Version of the prompt to update */
         version: number;
       };
