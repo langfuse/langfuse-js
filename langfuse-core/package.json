@@ -1,6 +1,6 @@
 {
   "name": "langfuse-core",
-  "version": "3.27.0",
+  "version": "3.32.3",
   "engines": {
     "node": ">=18"
   },
@@ -8,6 +8,11 @@
     "name": "Langfuse",
     "email": "hi@langfuse.com",
     "url": "https://langfuse.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/langfuse/langfuse-js.git",
+    "directory": "langfuse-core"
   },
   "license": "MIT",
   "main": "lib/index.cjs.js",
@@ -37,5 +42,5 @@
   "devDependencies": {
     "@types/mustache": "^4.2.5"
   },
-  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091"
+  "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed"
 }

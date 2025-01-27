@@ -9,6 +9,8 @@ export type LangfuseCoreOptions = {
   secretKey?: string;
   // Langfuse API baseUrl (https://cloud.langfuse.com by default)
   baseUrl?: string;
+  // Additional HTTP headers to send with each request
+  additionalHeaders?: Record<string, string>;
   // The number of events to queue before sending to Langfuse (flushing)
   flushAt?: number;
   // The interval in milliseconds between periodic flushes
@@ -25,6 +27,12 @@ export type LangfuseCoreOptions = {
   sdkIntegration?: string; // DEFAULT, LANGCHAIN, or any other custom value
   // Enabled switch for the SDK. If disabled, no observability data will be sent to Langfuse. Defaults to true.
   enabled?: boolean;
+  // Mask function to mask data in the event body
+  mask?: MaskFunction;
+  // Project ID to use for the SDK in admin mode. This should never be set by users.
+  _projectId?: string;
+  // Whether to enable local event export. Defaults to false.
+  _isLocalEventExportEnabled?: boolean;
 };
 
 export enum LangfusePersistedProperty {
@@ -36,7 +44,7 @@ export enum LangfusePersistedProperty {
 export type LangfuseFetchOptions = {
   method: "GET" | "POST" | "PUT" | "PATCH";
   headers: { [key: string]: string };
-  body?: string;
+  body?: string | Buffer;
   signal?: AbortSignal;
 };
 
@@ -44,6 +52,7 @@ export type LangfuseFetchResponse<T = any> = {
   status: number;
   text: () => Promise<string>;
   json: () => Promise<T>;
+  arrayBuffer: () => Promise<ArrayBuffer>;
 };
 
 export type LangfuseObject = SingleIngestionEvent["type"];
@@ -84,6 +93,7 @@ export type EventBody =
   | UpdateLangfuseGenerationBody;
 
 export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
+export type UsageDetails = FixTypes<components["schemas"]["UsageDetails"]>;
 export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
 export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
 
@@ -169,6 +179,13 @@ export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
 
+// Media
+export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
+export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;
+export type MediaContentType = components["schemas"]["MediaContentType"];
+export type PatchMediaBody = FixTypes<components["schemas"]["PatchMediaBody"]>;
+export type GetMediaResponse = FixTypes<components["schemas"]["GetMediaResponse"]>;
+
 type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
 type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
 export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
@@ -177,7 +194,7 @@ export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptReque
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 
 export type PromptInput = {
-  prompt?: LangfusePromptClient;
+  prompt?: LangfusePromptRecord | LangfusePromptClient;
 };
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
@@ -230,3 +247,7 @@ export type LinkDatasetItem = (
   }
 ) => Promise<{ id: string }>;
 export type DatasetItem = DatasetItemData & { link: LinkDatasetItem };
+
+export type MaskFunction = (params: { data: any }) => any;
+
+export type LangfusePromptRecord = (TextPrompt | ChatPrompt) & { isFallback: boolean };

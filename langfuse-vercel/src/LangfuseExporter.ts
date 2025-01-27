@@ -1,5 +1,5 @@
-import type { SpanExporter, ReadableSpan } from "@opentelemetry/sdk-trace-base";
-import { Langfuse, type LangfuseOptions } from "langfuse";
+import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
+import { Langfuse, type LangfuseOptions, type LangfusePromptRecord } from "langfuse";
 
 import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
@@ -33,7 +33,7 @@ export class LangfuseExporter implements SpanExporter {
     this.langfuse = LangfuseExporter.langfuse; // store reference to singleton instance
   }
 
-  export(allSpans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
+  async export(allSpans: ReadableSpan[], resultCallback: (result: ExportResult) => void): Promise<void> {
     this.logDebug("exporting spans", allSpans);
 
     try {
@@ -55,6 +55,9 @@ export class LangfuseExporter implements SpanExporter {
         this.processTraceSpans(traceId, spans);
       }
 
+      // Schedule a flush. Necessary to ensure event delivery in Vercel Cloud Functions with streaming responses
+      await this.langfuse.flushAsync();
+
       const successCode: ExportResultCode.SUCCESS = 0; // Do not use enum directly to avoid adding a dependency on the enum
 
       resultCallback({ code: successCode });
@@ -68,50 +71,53 @@ export class LangfuseExporter implements SpanExporter {
   private processTraceSpans(traceId: string, spans: ReadableSpan[]): void {
     const rootSpan = spans.find((span) => this.isRootAiSdkSpan(span, spans));
     if (!rootSpan) {
-      throw Error("Root span not found");
+      this.logDebug("No root span found with AI SDK spans, skipping trace");
+
+      return;
     }
 
-    const rootSpanAttributes = rootSpan.attributes;
     const userProvidedTraceId = this.parseTraceId(spans);
     const finalTraceId = userProvidedTraceId ?? traceId;
+    const langfusePrompt = this.parseLangfusePromptTraceAttribute(spans);
+    const updateParent = this.parseLangfuseUpdateParentTraceAttribute(spans);
 
-    this.langfuse.trace({
-      id: finalTraceId,
-      name: this.parseTraceName(spans) ?? rootSpan?.name,
+    const traceParams = {
       userId: this.parseUserIdTraceAttribute(spans),
       sessionId: this.parseSessionIdTraceAttribute(spans),
       tags: this.parseTagsTraceAttribute(spans).length > 0 ? this.parseTagsTraceAttribute(spans) : undefined,
-      input:
-        "ai.prompt.messages" in rootSpanAttributes
-          ? rootSpanAttributes["ai.prompt.messages"]
-          : "ai.prompt" in rootSpanAttributes
-            ? rootSpanAttributes["ai.prompt"]
-            : "ai.toolCall.args" in rootSpanAttributes
-              ? rootSpanAttributes["ai.toolCall.args"]
-              : undefined,
-      output:
-        "ai.result.text" in rootSpanAttributes
-          ? rootSpanAttributes["ai.result.text"]
-          : "ai.toolCall.result" in rootSpanAttributes
-            ? rootSpanAttributes["ai.toolCall.result"]
-            : "ai.result.object" in rootSpanAttributes
-              ? rootSpanAttributes["ai.result.object"]
-              : "ai.result.toolCalls" in rootSpanAttributes
-                ? rootSpanAttributes["ai.result.toolCalls"]
-                : undefined,
+      name: this.parseTraceName(spans) ?? rootSpan?.name,
+      input: this.parseInput(rootSpan),
+      output: this.parseOutput(rootSpan),
       metadata: this.filterTraceAttributes(this.parseMetadataTraceAttribute(spans)),
-    });
+    };
+
+    const finalTraceParams = {
+      id: finalTraceId,
+      ...(updateParent ? traceParams : {}),
+    };
+
+    this.langfuse.trace(finalTraceParams);
 
     for (const span of spans) {
       if (this.isGenerationSpan(span)) {
-        this.processSpanAsLangfuseGeneration(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
+        this.processSpanAsLangfuseGeneration(finalTraceId, span, this.isRootAiSdkSpan(span, spans), langfusePrompt);
       } else {
-        this.processSpanAsLangfuseSpan(finalTraceId, span, this.isRootAiSdkSpan(span, spans));
+        this.processSpanAsLangfuseSpan(
+          finalTraceId,
+          span,
+          this.isRootAiSdkSpan(span, spans),
+          userProvidedTraceId ? this.parseTraceName(spans) : undefined
+        );
       }
     }
   }
 
-  private processSpanAsLangfuseSpan(traceId: string, span: ReadableSpan, isRootSpan: boolean): void {
+  private processSpanAsLangfuseSpan(
+    traceId: string,
+    span: ReadableSpan,
+    isRootSpan: boolean,
+    rootSpanName?: string
+  ): void {
     const spanContext = span.spanContext();
     const attributes = span.attributes;
 
@@ -119,34 +125,28 @@ export class LangfuseExporter implements SpanExporter {
       traceId,
       parentObservationId: isRootSpan ? undefined : span.parentSpanId,
       id: spanContext.spanId,
-      name: "ai.toolCall.name" in attributes ? "ai.toolCall " + attributes["ai.toolCall.name"]?.toString() : span.name,
+      name:
+        isRootSpan && rootSpanName
+          ? rootSpanName
+          : "ai.toolCall.name" in attributes
+            ? "ai.toolCall " + attributes["ai.toolCall.name"]?.toString()
+            : span.name,
       startTime: this.hrTimeToDate(span.startTime),
       endTime: this.hrTimeToDate(span.endTime),
 
-      input:
-        "ai.prompt.messages" in attributes
-          ? attributes["ai.prompt.messages"]
-          : "ai.prompt" in attributes
-            ? attributes["ai.prompt"]
-            : "ai.toolCall.args" in attributes
-              ? attributes["ai.toolCall.args"]
-              : undefined,
-      output:
-        "ai.result.text" in attributes
-          ? attributes["ai.result.text"]
-          : "ai.toolCall.result" in attributes
-            ? attributes["ai.toolCall.result"]
-            : "ai.result.object" in attributes
-              ? attributes["ai.result.object"]
-              : "ai.result.toolCalls" in attributes
-                ? attributes["ai.result.toolCalls"]
-                : undefined,
+      input: this.parseInput(span),
+      output: this.parseOutput(span),
 
       metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
     });
   }
 
-  private processSpanAsLangfuseGeneration(traceId: string, span: ReadableSpan, isRootSpan: boolean): void {
+  private processSpanAsLangfuseGeneration(
+    traceId: string,
+    span: ReadableSpan,
+    isRootSpan: boolean,
+    langfusePrompt: LangfusePromptRecord | undefined
+  ): void {
     const spanContext = span.spanContext();
     const attributes = span.attributes;
 
@@ -160,9 +160,11 @@ export class LangfuseExporter implements SpanExporter {
       completionStartTime:
         "ai.response.msToFirstChunk" in attributes
           ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.response.msToFirstChunk"]))
-          : "ai.stream.msToFirstChunk" in attributes
-            ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.stream.msToFirstChunk"]))
-            : undefined,
+          : "ai.response.msToFirstChunk" in attributes
+            ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.response.msToFirstChunk"]))
+            : "ai.stream.msToFirstChunk" in attributes //  Legacy support for ai SDK versions < 4.0.0
+              ? new Date(this.hrTimeToDate(span.startTime).getTime() + Number(attributes["ai.stream.msToFirstChunk"]))
+              : undefined,
       model:
         "ai.response.model" in attributes
           ? attributes["ai.response.model"]?.toString()
@@ -172,9 +174,15 @@ export class LangfuseExporter implements SpanExporter {
               ? attributes["ai.model.id"]?.toString()
               : undefined,
       modelParameters: {
+        toolChoice: "ai.prompt.toolChoice" in attributes ? attributes["ai.prompt.toolChoice"]?.toString() : undefined,
         maxTokens:
           "gen_ai.request.max_tokens" in attributes ? attributes["gen_ai.request.max_tokens"]?.toString() : undefined,
-        finishReason: "gen_ai.system" in attributes ? attributes["gen_ai.finishReason"]?.toString() : undefined,
+        finishReason:
+          "gai.response.finishReason" in attributes
+            ? attributes["ai.response.finishReason"]?.toString()
+            : "gen_ai.finishReason" in attributes //  Legacy support for ai SDK versions < 4.0.0
+              ? attributes["gen_ai.finishReason"]?.toString()
+              : undefined,
         system:
           "gen_ai.system" in attributes
             ? attributes["gen_ai.system"]?.toString()
@@ -185,43 +193,33 @@ export class LangfuseExporter implements SpanExporter {
           "ai.settings.maxRetries" in attributes ? attributes["ai.settings.maxRetries"]?.toString() : undefined,
         mode: "ai.settings.mode" in attributes ? attributes["ai.settings.mode"]?.toString() : undefined,
       },
-      usage: {
-        input:
-          "gen_ai.usage.prompt_tokens" in attributes // Backward compat, input_tokens used in latest ai SDK versions
-            ? parseInt(attributes["gen_ai.usage.prompt_tokens"]?.toString() ?? "0")
-            : "gen_ai.usage.input_tokens" in attributes
-              ? parseInt(attributes["gen_ai.usage.input_tokens"]?.toString() ?? "0")
-              : undefined,
-
-        output:
-          "gen_ai.usage.completion_tokens" in attributes // Backward compat, output_tokens used in latest ai SDK versions
-            ? parseInt(attributes["gen_ai.usage.completion_tokens"]?.toString() ?? "0")
-            : "gen_ai.usage.output_tokens" in attributes
-              ? parseInt(attributes["gen_ai.usage.output_tokens"]?.toString() ?? "0")
-              : undefined,
-        total: "ai.usage.tokens" in attributes ? parseInt(attributes["ai.usage.tokens"]?.toString() ?? "0") : undefined,
-      },
-      input:
-        "ai.prompt.messages" in attributes
-          ? attributes["ai.prompt.messages"]
-          : "ai.prompt" in attributes
-            ? attributes["ai.prompt"]
-            : "ai.toolCall.args" in attributes
-              ? attributes["ai.toolCall.args"]
-              : undefined,
-      output:
-        "ai.result.text" in attributes
-          ? attributes["ai.result.text"]
-          : "ai.toolCall.result" in attributes
-            ? attributes["ai.toolCall.result"]
-            : "ai.result.object" in attributes
-              ? attributes["ai.result.object"]
-              : "ai.result.toolCalls" in attributes
-                ? attributes["ai.result.toolCalls"]
-                : undefined,
+      usage: this.parseUsageDetails(attributes),
+      usageDetails: this.parseUsageDetails(attributes),
+      input: this.parseInput(span),
+      output: this.parseOutput(span),
 
       metadata: this.filterTraceAttributes(this.parseSpanMetadata(span)),
+      prompt: langfusePrompt,
     });
+  }
+
+  private parseUsageDetails(attributes: Record<string, any>): Record<string, any> {
+    return {
+      input:
+        "gen_ai.usage.prompt_tokens" in attributes // Backward compat, input_tokens used in latest ai SDK versions
+          ? parseInt(attributes["gen_ai.usage.prompt_tokens"]?.toString() ?? "0")
+          : "gen_ai.usage.input_tokens" in attributes
+            ? parseInt(attributes["gen_ai.usage.input_tokens"]?.toString() ?? "0")
+            : undefined,
+
+      output:
+        "gen_ai.usage.completion_tokens" in attributes // Backward compat, output_tokens used in latest ai SDK versions
+          ? parseInt(attributes["gen_ai.usage.completion_tokens"]?.toString() ?? "0")
+          : "gen_ai.usage.output_tokens" in attributes
+            ? parseInt(attributes["gen_ai.usage.output_tokens"]?.toString() ?? "0")
+            : undefined,
+      total: "ai.usage.tokens" in attributes ? parseInt(attributes["ai.usage.tokens"]?.toString() ?? "0") : undefined,
+    };
   }
 
   private parseSpanMetadata(span: ReadableSpan): Record<string, (typeof span.attributes)[0]> {
@@ -229,7 +227,7 @@ export class LangfuseExporter implements SpanExporter {
       (acc, [key, value]) => {
         const metadataPrefix = "ai.telemetry.metadata.";
 
-        if (key.startsWith(metadataPrefix) && value) {
+        if (key.startsWith(metadataPrefix) && value != null) {
           const strippedKey = key.slice(metadataPrefix.length);
 
           acc[strippedKey] = value;
@@ -237,7 +235,7 @@ export class LangfuseExporter implements SpanExporter {
 
         const spanKeysToAdd = ["ai.settings.maxToolRoundtrips", "ai.prompt.format", "ai.toolCall.id", "ai.schema"];
 
-        if (spanKeysToAdd.includes(key) && value) {
+        if (spanKeysToAdd.includes(key) && value != null) {
           acc[key] = value;
         }
 
@@ -298,6 +296,49 @@ export class LangfuseExporter implements SpanExporter {
     await this.langfuse.shutdownAsync();
   }
 
+  private parseInput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
+    const attributes = span.attributes;
+    const tools = "ai.prompt.tools" in attributes ? attributes["ai.prompt.tools"] : [];
+
+    let chatMessages: any[] = [];
+    if ("ai.prompt.messages" in attributes) {
+      chatMessages = [attributes["ai.prompt.messages"]];
+      try {
+        chatMessages = JSON.parse(attributes["ai.prompt.messages"] as string);
+      } catch (e) {
+        console.error("Error parsing ai.prompt.messages", e);
+      }
+    }
+
+    return "ai.prompt.messages" in attributes
+      ? [...chatMessages, ...(Array.isArray(tools) ? tools : [])]
+      : "ai.prompt" in attributes
+        ? attributes["ai.prompt"]
+        : "ai.toolCall.args" in attributes
+          ? attributes["ai.toolCall.args"]
+          : undefined;
+  }
+
+  private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
+    const attributes = span.attributes;
+
+    return "ai.response.text" in attributes
+      ? attributes["ai.response.text"]
+      : "ai.result.text" in attributes // Legacy support for ai SDK versions < 4.0.0
+        ? attributes["ai.result.text"]
+        : "ai.toolCall.result" in attributes
+          ? attributes["ai.toolCall.result"]
+          : "ai.response.object" in attributes
+            ? attributes["ai.response.object"]
+            : "ai.result.object" in attributes // Legacy support for ai SDK versions < 4.0.0
+              ? attributes["ai.result.object"]
+              : "ai.response.toolCalls" in attributes
+                ? attributes["ai.response.toolCalls"]
+                : "ai.result.toolCalls" in attributes // Legacy support for ai SDK versions < 4.0.0
+                  ? attributes["ai.result.toolCalls"]
+                  : undefined;
+  }
+
   private parseTraceId(spans: ReadableSpan[]): string | undefined {
     return spans
       .map((span) => this.parseSpanMetadata(span)["langfuseTraceId"])
@@ -324,6 +365,35 @@ export class LangfuseExporter implements SpanExporter {
       .map((span) => this.parseSpanMetadata(span)["sessionId"])
       .find((id) => Boolean(id))
       ?.toString();
+  }
+
+  private parseLangfusePromptTraceAttribute(spans: ReadableSpan[]): LangfusePromptRecord | undefined {
+    const jsonPrompt = spans
+      .map((span) => this.parseSpanMetadata(span)["langfusePrompt"])
+      .find((prompt) => Boolean(prompt));
+
+    try {
+      if (jsonPrompt) {
+        const parsedPrompt = JSON.parse(jsonPrompt.toString());
+
+        if (
+          typeof parsedPrompt !== "object" ||
+          !(parsedPrompt["name"] && parsedPrompt["version"] && typeof parsedPrompt["isFallback"] === "boolean")
+        ) {
+          throw Error("Invalid langfusePrompt");
+        }
+
+        return parsedPrompt;
+      }
+    } catch (e) {
+      return undefined;
+    }
+  }
+
+  private parseLangfuseUpdateParentTraceAttribute(spans: ReadableSpan[]): boolean {
+    return Boolean(
+      spans.map((span) => this.parseSpanMetadata(span)["langfuseUpdateParent"]).find((val) => val != null) ?? true // default to true if no attribute is set
+    );
   }
 
   private parseTagsTraceAttribute(spans: ReadableSpan[]): string[] {
@@ -355,7 +425,14 @@ export class LangfuseExporter implements SpanExporter {
   }
 
   private filterTraceAttributes(obj: Record<string, any>): Record<string, any> {
-    const langfuseTraceAttributes = ["userId", "sessionId", "tags", "langfuseTraceId"];
+    const langfuseTraceAttributes = [
+      "userId",
+      "sessionId",
+      "tags",
+      "langfuseTraceId",
+      "langfusePrompt",
+      "langfuseUpdateParent",
+    ];
 
     return Object.entries(obj).reduce(
       (acc, [key, value]) => {

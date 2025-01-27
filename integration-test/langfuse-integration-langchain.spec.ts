@@ -146,7 +146,7 @@ describe("Langchain", () => {
 
     it("should execute simple non chat llm call", async () => {
       const handler = new CallbackHandler({});
-      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20 });
+      const llm = new OpenAI({ modelName: "gpt-3.5-turbo-instruct", maxTokens: 20 });
       const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
       const traceId = handler.traceId;
       await handler.flushAsync();
@@ -169,7 +169,7 @@ describe("Langchain", () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const singleGeneration = generation![0];
 
-      expect(singleGeneration.name).toBe("OpenAIChat");
+      expect(singleGeneration.name).toBe("OpenAI");
       expect(singleGeneration.input).toMatchObject(["Tell me a joke on a non chat api"]);
       expect(singleGeneration.usage?.input).toBeDefined();
       expect(singleGeneration.usage?.output).toBeDefined();
@@ -691,6 +691,128 @@ describe("Langchain", () => {
 
       expect((explainGeneration as any)["promptName"]).toBe(langfuseExplainPrompt.name);
       expect((explainGeneration as any)["promptVersion"]).toBe(langfuseExplainPrompt.version);
+    });
+
+    it("should export events in admin mode", async () => {
+      const projectId = "test-project-id";
+      const handler = new CallbackHandler({
+        sessionId: "test-session",
+        userId: "test-user",
+        metadata: {
+          foo: "bar",
+          array: ["a", "b"],
+        },
+        tags: ["test-tag", "test-tag-2"],
+        _projectId: projectId,
+        _isLocalEventExportEnabled: true,
+        version: "1.0.0",
+      });
+
+      handler.debug(true);
+
+      const messages = [new SystemMessage("You are an excellent Comedian"), new HumanMessage("Tell me a joke")];
+
+      const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
+      await llm.invoke(messages, { callbacks: [handler] });
+
+      await handler.flushAsync();
+      const shutdownResult = await handler.langfuse._exportLocalEvents(projectId);
+      if (!shutdownResult) {
+        throw new Error("No shutdown result");
+      }
+
+      console.log(JSON.stringify(shutdownResult, null, 2));
+
+      const events = shutdownResult;
+
+      expect(events.length).toBe(4);
+      const [traceCreate, generationCreate, generationUpdate, traceUpdate] = events;
+
+      // Check trace create event
+      expect(traceCreate.type).toBe("trace-create");
+      expect(traceCreate.body).toMatchObject({
+        name: "ChatOpenAI",
+        metadata: {
+          ls_provider: "openai",
+          ls_model_name: "gpt-4-turbo-preview",
+          ls_model_type: "chat",
+          ls_temperature: 1,
+          foo: "bar",
+          array: ["a", "b"],
+        },
+        userId: "test-user",
+        version: "1.0.0",
+        sessionId: "test-session",
+        input: [
+          {
+            content: "You are an excellent Comedian",
+            role: "system",
+          },
+          {
+            content: "Tell me a joke",
+            role: "user",
+          },
+        ],
+        tags: ["test-tag", "test-tag-2"],
+      });
+
+      // Check generation create event
+      expect(generationCreate.type).toBe("generation-create");
+      expect(generationCreate.body).toMatchObject({
+        name: "ChatOpenAI",
+        metadata: {
+          ls_provider: "openai",
+          ls_model_name: "gpt-4-turbo-preview",
+          ls_model_type: "chat",
+          ls_temperature: 1,
+        },
+        input: [
+          {
+            content: "You are an excellent Comedian",
+            role: "system",
+          },
+          {
+            content: "Tell me a joke",
+            role: "user",
+          },
+        ],
+        model: "gpt-4-turbo-preview",
+        modelParameters: {
+          temperature: 1,
+          top_p: 1,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+        },
+        version: "1.0.0",
+      });
+
+      // Check generation update event
+      expect(generationUpdate.type).toBe("generation-update");
+      expect(generationUpdate.body).toMatchObject({
+        output: {
+          role: "assistant",
+        },
+        usage: {
+          input: expect.any(Number),
+          output: expect.any(Number),
+          total: expect.any(Number),
+        },
+        version: "1.0.0",
+      });
+
+      // Check trace update event
+      expect(traceUpdate.type).toBe("trace-create");
+      expect(traceUpdate.body).toMatchObject({
+        output: {
+          role: "assistant",
+        },
+      });
+
+      // Check IDs match between events
+      const traceId = (traceCreate.body as any).id;
+      expect((generationCreate.body as any).traceId).toBe(traceId);
+      expect((generationUpdate.body as any).traceId).toBe(traceId);
+      expect((traceUpdate.body as any).id).toBe(traceId);
     });
   });
 });

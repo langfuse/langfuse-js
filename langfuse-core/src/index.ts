@@ -1,73 +1,80 @@
+import { SimpleEventEmitter } from "./eventemitter";
+import { LangfusePromptCache } from "./prompts/promptCache";
+import { ChatPromptClient, TextPromptClient, type LangfusePromptClient } from "./prompts/promptClients";
+import { getCommonReleaseEnvs } from "./release-env";
 import {
-  type LangfuseFetchOptions,
-  type LangfuseFetchResponse,
-  type LangfuseQueueItem,
-  type LangfuseCoreOptions,
   LangfusePersistedProperty,
-  type CreateLangfuseTraceBody,
-  type LangfuseObject,
-  type CreateLangfuseEventBody,
-  type CreateLangfuseSpanBody,
-  type CreateLangfuseGenerationBody,
-  type CreateLangfuseScoreBody,
-  type UpdateLangfuseSpanBody,
-  type UpdateLangfuseGenerationBody,
-  type GetLangfuseDatasetParams,
-  type GetLangfuseDatasetResponse,
-  type CreateLangfuseDatasetRunItemBody,
-  type CreateLangfuseDatasetRunItemResponse,
+  type ChatMessage,
+  type CreateChatPromptBody,
   type CreateLangfuseDatasetBody,
-  type CreateLangfuseDatasetResponse,
   type CreateLangfuseDatasetItemBody,
   type CreateLangfuseDatasetItemResponse,
-  type GetLangfuseDatasetRunResponse,
-  type GetLangfuseDatasetRunParams,
-  type DeferRuntime,
-  type IngestionReturnType,
-  type SingleIngestionEvent,
-  type CreateLangfusePromptResponse,
+  type CreateLangfuseDatasetResponse,
+  type CreateLangfuseDatasetRunItemBody,
+  type CreateLangfuseDatasetRunItemResponse,
+  type CreateLangfuseEventBody,
+  type CreateLangfuseGenerationBody,
   type CreateLangfusePromptBody,
-  type GetLangfusePromptResponse,
-  type PromptInput,
+  type CreateLangfusePromptResponse,
+  type GetMediaUploadUrlRequest,
+  type GetMediaUploadUrlResponse,
+  type PatchMediaBody,
+  type CreateLangfuseScoreBody,
+  type CreateLangfuseSpanBody,
+  type CreateLangfuseTraceBody,
   type CreatePromptBody,
-  type CreateChatPromptBody,
   type CreateTextPromptBody,
+  type DatasetItem,
+  type DeferRuntime,
+  type EventBody,
   type GetLangfuseDatasetItemsQuery,
   type GetLangfuseDatasetItemsResponse,
+  type GetLangfuseDatasetParams,
+  type GetLangfuseDatasetResponse,
+  type GetLangfuseDatasetRunParams,
+  type GetLangfuseDatasetRunResponse,
   type GetLangfuseDatasetRunsQuery,
   type GetLangfuseDatasetRunsResponse,
-  type GetLangfuseTracesQuery,
-  type GetLangfuseTracesResponse,
+  type GetLangfuseObservationResponse,
   type GetLangfuseObservationsQuery,
   type GetLangfuseObservationsResponse,
-  type GetLangfuseObservationResponse,
-  type GetLangfuseTraceResponse,
-  type ChatMessage,
+  type GetLangfusePromptResponse,
   type GetLangfuseSessionsQuery,
   type GetLangfuseSessionsResponse,
-  type EventBody,
-  type DatasetItem,
+  type GetLangfuseTraceResponse,
+  type GetLangfuseTracesQuery,
+  type GetLangfuseTracesResponse,
+  type IngestionReturnType,
+  type LangfuseCoreOptions,
+  type LangfuseFetchOptions,
+  type LangfuseFetchResponse,
+  type LangfuseObject,
+  type LangfuseQueueItem,
+  type MaskFunction,
+  type PromptInput,
+  type SingleIngestionEvent,
+  type UpdateLangfuseGenerationBody,
+  type UpdateLangfuseSpanBody,
+  type GetMediaResponse,
 } from "./types";
+import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
 import {
-  generateUUID,
-  removeTrailingSlash,
-  retriable,
-  type RetriableOptions,
-  safeSetTimeout,
-  getEnv,
   currentISOTime,
   encodeQueryParams,
+  generateUUID,
+  getEnv,
+  removeTrailingSlash,
+  retriable,
+  safeSetTimeout,
+  type RetriableOptions,
 } from "./utils";
 
-export * as utils from "./utils";
-import { SimpleEventEmitter } from "./eventemitter";
-import { getCommonReleaseEnvs } from "./release-env";
-import { ChatPromptClient, TextPromptClient, type LangfusePromptClient } from "./prompts/promptClients";
-import { LangfusePromptCache } from "./prompts/promptCache";
-export { LangfuseMemoryStorage } from "./storage-memory";
-
-export type IngestionBody = SingleIngestionEvent["body"];
 export * from "./prompts/promptClients";
+export * from "./media/LangfuseMedia";
+export { LangfuseMemoryStorage } from "./storage-memory";
+export type { LangfusePromptRecord } from "./types";
+export * as utils from "./utils";
+export type IngestionBody = SingleIngestionEvent["body"];
 
 const MAX_EVENT_SIZE = 1_000_000;
 
@@ -166,15 +173,21 @@ abstract class LangfuseCoreStateless {
   private secretKey: string | undefined;
   private publicKey: string;
   baseUrl: string;
+  additionalHeaders: Record<string, string> = {};
   private flushAt: number;
   private flushInterval: number;
   private requestTimeout: number;
   private removeDebugCallback?: () => void;
   private debugMode: boolean = false;
-  private pendingPromises: Record<string, Promise<any>> = {};
+  private pendingEventProcessingPromises: Record<string, Promise<any>> = {};
+  private pendingIngestionPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
   private sdkIntegration: string;
   private enabled: boolean;
+  protected isLocalEventExportEnabled: boolean;
+  private localEventExportMap: Map<string, SingleIngestionEvent[]> = new Map();
+  private projectId: string | undefined;
+  private mask: MaskFunction | undefined;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -191,15 +204,17 @@ abstract class LangfuseCoreStateless {
   abstract setPersistedProperty<T>(key: LangfusePersistedProperty, value: T | null): void;
 
   constructor(params: LangfuseCoreOptions) {
-    const { publicKey, secretKey, enabled, ...options } = params;
+    const { publicKey, secretKey, enabled, _projectId, _isLocalEventExportEnabled, ...options } = params;
 
     this.enabled = enabled === false ? false : true;
     this.publicKey = publicKey ?? "";
     this.secretKey = secretKey;
     this.baseUrl = removeTrailingSlash(options?.baseUrl || "https://cloud.langfuse.com");
+    this.additionalHeaders = options?.additionalHeaders || {};
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 15;
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
+    this.mask = options?.mask;
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
@@ -209,6 +224,26 @@ abstract class LangfuseCoreStateless {
     this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
+
+    this.isLocalEventExportEnabled = _isLocalEventExportEnabled ?? false;
+
+    if (this.isLocalEventExportEnabled && !_projectId) {
+      this._events.emit(
+        "error",
+        "Local event export is enabled, but no project ID was provided. Disabling local export."
+      );
+      this.isLocalEventExportEnabled = false;
+      return;
+    } else if (!this.isLocalEventExportEnabled && _projectId) {
+      this._events.emit(
+        "error",
+        "Local event export is disabled, but a project ID was provided. Disabling local export."
+      );
+      this.isLocalEventExportEnabled = false;
+      return;
+    } else {
+      this.projectId = _projectId;
+    }
   }
 
   getSdkIntegration(): string {
@@ -358,6 +393,10 @@ abstract class LangfuseCoreStateless {
       `${this.baseUrl}/api/public/dataset-items?${params}`,
       this._getFetchOptions({ method: "GET" })
     );
+  }
+
+  protected async _fetchMedia(id: string): Promise<GetMediaResponse> {
+    return this.fetchAndLogErrors(`${this.baseUrl}/api/public/media/${id}`, this._getFetchOptions({ method: "GET" }));
   }
 
   async fetchTraces(query?: GetLangfuseTracesQuery): Promise<GetLangfuseTracesResponse> {
@@ -561,45 +600,74 @@ abstract class LangfuseCoreStateless {
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: LangfuseObject, body: EventBody): void {
-    try {
-      if (!this.enabled) {
-        return;
-      }
+    if (!this.enabled) {
+      return;
+    }
 
-      const finalEventBody = this.truncateEventBody(body, MAX_EVENT_SIZE);
+    const promise = this.processEnqueueEvent(type, body);
+    const promiseId = generateUUID();
+    this.pendingEventProcessingPromises[promiseId] = promise;
 
-      try {
-        JSON.stringify(finalEventBody);
-      } catch (e) {
-        console.error(`[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
-        this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
-
-        return;
-      }
-
-      const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
-
-      queue.push({
-        id: generateUUID(),
-        type,
-        timestamp: currentISOTime(),
-        body: finalEventBody as any, // TODO: fix typecast. EventBody is not correctly narrowed to the correct type dictated by the 'type' property. This should be part of a larger type cleanup.
-        metadata: undefined,
+    promise
+      .catch((e) => {
+        this._events.emit("error", e);
+      })
+      .finally(() => {
+        delete this.pendingEventProcessingPromises[promiseId];
       });
-      this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
+  }
 
-      this._events.emit(type, finalEventBody);
+  protected async processEnqueueEvent(type: LangfuseObject, body: EventBody): Promise<void> {
+    this.maskEventBodyInPlace(body);
+    await this.processMediaInEvent(type, body);
+    const finalEventBody = this.truncateEventBody(body, MAX_EVENT_SIZE);
 
-      // Flush queued events if we meet the flushAt length
-      if (queue.length >= this.flushAt) {
-        this.flush();
-      }
-
-      if (this.flushInterval && !this._flushTimer) {
-        this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval);
-      }
+    try {
+      JSON.stringify(finalEventBody);
     } catch (e) {
-      this._events.emit("error", e);
+      this._events.emit("error", `[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
+      return;
+    }
+
+    const queue = this.getPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue) || [];
+
+    queue.push({
+      id: generateUUID(),
+      type,
+      timestamp: currentISOTime(),
+      body: finalEventBody as any, // TODO: fix typecast. EventBody is not correctly narrowed to the correct type dictated by the 'type' property. This should be part of a larger type cleanup.
+      metadata: undefined,
+    });
+    this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
+
+    this._events.emit(type, finalEventBody);
+
+    // Flush queued events if we meet the flushAt length
+    if (queue.length >= this.flushAt) {
+      this.flush();
+    }
+
+    if (this.flushInterval && !this._flushTimer) {
+      this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval);
+    }
+  }
+
+  private maskEventBodyInPlace(body: EventBody): void {
+    if (!this.mask) {
+      return;
+    }
+
+    const maskableKeys = ["input", "output"] as const;
+
+    for (const key of maskableKeys) {
+      if (key in body) {
+        try {
+          body[key as keyof EventBody] = this.mask({ data: body[key as keyof EventBody] });
+        } catch (e) {
+          this._events.emit("error", `Error masking ${key}: ${e}`);
+          body[key as keyof EventBody] = "<fully masked due to failed mask function>";
+        }
+      }
     }
   }
 
@@ -651,6 +719,199 @@ abstract class LangfuseCoreStateless {
     }
   }
 
+  protected async processMediaInEvent(type: LangfuseObject, body: EventBody): Promise<void> {
+    if (!body) {
+      return;
+    }
+
+    const traceId = "traceId" in body ? body.traceId : type.includes("trace") ? body.id : undefined;
+
+    if (!traceId) {
+      this._events.emit("warning", "traceId is required for media upload");
+      return;
+    }
+
+    const observationId = (type.includes("generation") || type.includes("span")) && body.id ? body.id : undefined;
+
+    await Promise.all(
+      (["input", "output", "metadata"] as const).map(async (field) => {
+        if (body[field as keyof EventBody]) {
+          body[field as keyof EventBody] =
+            (await this.findAndProcessMedia({
+              data: body[field as keyof EventBody],
+              traceId,
+              observationId,
+              field,
+            }).catch((e) => {
+              this._events.emit("error", `Error processing multimodal event: ${e}`);
+            })) ?? body[field as keyof EventBody];
+        }
+      })
+    );
+  }
+
+  protected async findAndProcessMedia({
+    data,
+    traceId,
+    observationId,
+    field,
+  }: {
+    data: any;
+    traceId: string;
+    observationId?: string;
+    field: "input" | "output" | "metadata";
+  }): Promise<any> {
+    const seenObjects = new WeakMap();
+    const maxLevels = 10;
+
+    const processRecursively = async (data: any, level: number): Promise<any> => {
+      if (typeof data === "string" && data.startsWith("data:")) {
+        const media = new LangfuseMedia({ base64DataUri: data });
+        await this.processMediaItem({ media, traceId, observationId, field });
+
+        return media;
+      }
+      if (typeof data !== "object" || data === null) {
+        return data;
+      }
+
+      // Use WeakMap to detect cycles
+      if (seenObjects.has(data) || level > maxLevels) {
+        return data;
+      }
+
+      seenObjects.set(data, true);
+
+      if (data instanceof LangfuseMedia || Object.prototype.toString.call(data) === "[object LangfuseMedia]") {
+        await this.processMediaItem({ media: data, traceId, observationId, field });
+
+        return data;
+      }
+
+      if (Array.isArray(data)) {
+        return await Promise.all(data.map((item) => processRecursively(item, level + 1)));
+      }
+
+      // Parse OpenAI input audio data which is passed as base64 string NOT in the data uri format
+      if (typeof data === "object" && data !== null) {
+        if ("input_audio" in data && typeof data["input_audio"] === "object" && "data" in data.input_audio) {
+          const media = new LangfuseMedia({
+            base64DataUri: `data:audio/${data.input_audio["format"] || "wav"};base64,${data.input_audio.data}`,
+          });
+
+          await this.processMediaItem({ media, traceId, observationId, field });
+
+          return {
+            ...data,
+            input_audio: {
+              ...data.input_audio,
+              data: media,
+            },
+          };
+        }
+
+        // OpenAI output audio data is passed as base64 string NOT in the data uri format
+        if ("audio" in data && typeof data["audio"] === "object" && "data" in data.audio) {
+          const media = new LangfuseMedia({
+            base64DataUri: `data:audio/${data.audio["format"] || "wav"};base64,${data.audio.data}`,
+          });
+
+          await this.processMediaItem({ media, traceId, observationId, field });
+
+          return {
+            ...data,
+            audio: {
+              ...data.audio,
+              data: media,
+            },
+          };
+        }
+
+        // Recursively process nested objects
+        return Object.fromEntries(
+          await Promise.all(
+            Object.entries(data).map(async ([key, value]) => [key, await processRecursively(value, level + 1)])
+          )
+        );
+      }
+
+      return data;
+    };
+
+    return await processRecursively(data, 1);
+  }
+
+  private async processMediaItem({
+    media,
+    traceId,
+    observationId,
+    field,
+  }: {
+    media: LangfuseMedia;
+    traceId: string;
+    observationId?: string;
+    field: string;
+  }): Promise<void> {
+    try {
+      if (!media.contentLength || !media._contentType || !media.contentSha256Hash || !media._contentBytes) {
+        return;
+      }
+
+      const getUploadUrlBody: GetMediaUploadUrlRequest = {
+        contentLength: media.contentLength,
+        traceId,
+        observationId,
+        field,
+        contentType: media._contentType,
+        sha256Hash: media.contentSha256Hash,
+      };
+
+      const fetchResponse = await this.fetch(
+        `${this.baseUrl}/api/public/media`,
+        this._getFetchOptions({
+          method: "POST",
+          body: JSON.stringify(getUploadUrlBody),
+        })
+      );
+
+      const uploadUrlResponse = (await fetchResponse.json()) as GetMediaUploadUrlResponse;
+
+      const { uploadUrl, mediaId } = uploadUrlResponse;
+      media._mediaId = mediaId;
+
+      if (uploadUrl) {
+        this._events.emit("debug", `Uploading media ${mediaId}`);
+        const startTime = Date.now();
+        const uploadResponse = await this.fetch(uploadUrl, {
+          method: "PUT",
+          body: media._contentBytes,
+          headers: {
+            "Content-Type": media._contentType,
+            "x-amz-checksum-sha256": media.contentSha256Hash,
+            "x-ms-blob-type": "BlockBlob",
+          },
+        });
+
+        const patchMediaBody: PatchMediaBody = {
+          uploadedAt: new Date().toISOString(),
+          uploadHttpStatus: uploadResponse.status,
+          uploadHttpError: await uploadResponse.text(),
+          uploadTimeMs: Date.now() - startTime,
+        };
+
+        await this.fetch(
+          `${this.baseUrl}/api/public/media/${mediaId}`,
+          this._getFetchOptions({ method: "PATCH", body: JSON.stringify(patchMediaBody) })
+        );
+        this._events.emit("debug", `Media upload status reported for ${mediaId}`);
+      } else {
+        this._events.emit("debug", `Media ${mediaId} already uploaded`);
+      }
+    } catch (err) {
+      this._events.emit("error", `Error processing media item: ${err}`);
+    }
+  }
+
   /**
    * Asynchronously flushes all events that are not yet sent to the server.
    * This function always resolves, even if there were errors when flushing.
@@ -658,7 +919,11 @@ abstract class LangfuseCoreStateless {
    *
    * @returns {Promise<void>} A promise that resolves when the flushing is completed.
    */
-  flushAsync(): Promise<void> {
+  async flushAsync(): Promise<void> {
+    await Promise.all(Object.values(this.pendingEventProcessingPromises)).catch((e) => {
+      logIngestionError(e);
+    });
+
     return new Promise((resolve, _reject) => {
       try {
         this.flush((err, data) => {
@@ -710,6 +975,18 @@ abstract class LangfuseCoreStateless {
       this._events.emit("flush", items);
     };
 
+    // If local event export is enabled, we don't send the events to the server, but instead store them in the localEventExportMap
+    if (this.isLocalEventExportEnabled && this.projectId) {
+      if (!this.localEventExportMap.has(this.projectId)) {
+        this.localEventExportMap.set(this.projectId, [...items]);
+      } else {
+        this.localEventExportMap.get(this.projectId)?.push(...items);
+      }
+
+      done();
+      return;
+    }
+
     const payload = JSON.stringify({
       batch: processedItems,
       metadata: {
@@ -734,9 +1011,9 @@ abstract class LangfuseCoreStateless {
       .catch((err) => {
         done(err);
       });
-    this.pendingPromises[promiseUUID] = requestPromise;
+    this.pendingIngestionPromises[promiseUUID] = requestPromise;
     requestPromise.finally(() => {
-      delete this.pendingPromises[promiseUUID];
+      delete this.pendingIngestionPromises[promiseUUID];
     });
   }
 
@@ -795,6 +1072,7 @@ abstract class LangfuseCoreStateless {
         "X-Langfuse-Sdk-Variant": this.getLibraryId(),
         "X-Langfuse-Sdk-Integration": this.sdkIntegration,
         "X-Langfuse-Public-Key": this.publicKey,
+        ...this.additionalHeaders,
         ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
       },
       body: p.body,
@@ -880,7 +1158,7 @@ abstract class LangfuseCoreStateless {
     try {
       await this.flushAsync();
       await Promise.all(
-        Object.values(this.pendingPromises).map((x) =>
+        Object.values(this.pendingIngestionPromises).map((x) =>
           x.catch(() => {
             // ignore errors as we are shutting down and can't deal with them anyways.
           })
@@ -890,6 +1168,21 @@ abstract class LangfuseCoreStateless {
       await this.flushAsync();
     } catch (e) {
       console.error("[Langfuse SDK] Error while shutting down Langfuse", e);
+    }
+  }
+
+  async _exportLocalEvents(projectId: string): Promise<SingleIngestionEvent[]> {
+    if (this.isLocalEventExportEnabled) {
+      clearTimeout(this._flushTimer);
+      await this.flushAsync();
+
+      const events = this.localEventExportMap.get(projectId) ?? [];
+      this.localEventExportMap.delete(projectId);
+
+      return events;
+    } else {
+      this._events.emit("error", "Local event exports are disabled, but _exportLocalEvents() was called.");
+      return [];
     }
   }
 
@@ -903,7 +1196,7 @@ abstract class LangfuseCoreStateless {
   protected async awaitAllQueuedAndPendingRequests(): Promise<void> {
     clearTimeout(this._flushTimer);
     await this.flushAsync();
-    await Promise.all(Object.values(this.pendingPromises));
+    await Promise.all(Object.values(this.pendingIngestionPromises));
   }
 }
 
@@ -939,10 +1232,12 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   private _promptCache: LangfusePromptCache;
 
   constructor(params: LangfuseCoreOptions) {
-    const { publicKey, secretKey, enabled } = params;
+    const { publicKey, secretKey, enabled, _isLocalEventExportEnabled } = params;
     let isObservabilityEnabled = enabled === false ? false : true;
 
-    if (!isObservabilityEnabled) {
+    if (_isLocalEventExportEnabled) {
+      isObservabilityEnabled = true;
+    } else if (!isObservabilityEnabled) {
       console.warn("Langfuse is disabled. No observability data will be sent to Langfuse.");
     } else if (!secretKey) {
       isObservabilityEnabled = false;
@@ -1248,6 +1543,57 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     }
   }
 
+  public async fetchMedia(id: string): Promise<GetMediaResponse> {
+    return await this._fetchMedia(id);
+  }
+
+  /**
+   * Replaces the media reference strings in an object with base64 data URIs for the media content.
+   *
+   * This method recursively traverses an object (up to a maximum depth of 10) looking for media reference strings
+   * in the format "@@@langfuseMedia:...@@@". When found, it fetches the actual media content using the provided
+   * Langfuse client and replaces the reference string with a base64 data URI.
+   *
+   * If fetching media content fails for a reference string, a warning is logged and the reference string is left unchanged.
+   *
+   * @param params - Configuration object
+   * @param params.obj - The object to process. Can be a primitive value, array, or nested object
+   * @param params.langfuseClient - Langfuse client instance used to fetch media content
+   * @param params.resolveWith - The representation of the media content to replace the media reference string with. Currently only "base64DataUri" is supported.
+   * @param params.maxDepth - Optional. Default is 10. The maximum depth to traverse the object.
+   *
+   * @returns A deep copy of the input object with all media references replaced with base64 data URIs where possible
+   *
+   * @example
+   * ```typescript
+   * const obj = {
+   *   image: "@@@langfuseMedia:type=image/jpeg|id=123|source=bytes@@@",
+   *   nested: {
+   *     pdf: "@@@langfuseMedia:type=application/pdf|id=456|source=bytes@@@"
+   *   }
+   * };
+   *
+   * const result = await LangfuseMedia.resolveMediaReferences({
+   *   obj,
+   *   langfuseClient
+   * });
+   *
+   * // Result:
+   * // {
+   * //   image: "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+   * //   nested: {
+   * //     pdf: "data:application/pdf;base64,JVBERi0xLjcK..."
+   * //   }
+   * // }
+   * ```
+   */
+  public async resolveMediaReferences<T>(
+    params: Omit<LangfuseMediaResolveMediaReferencesParams<T>, "langfuseClient">
+  ): Promise<T> {
+    const { obj, ...rest } = params;
+
+    return LangfuseMedia.resolveMediaReferences<T>({ ...rest, langfuseClient: this, obj });
+  }
   _updateSpan(body: UpdateLangfuseSpanBody): this {
     this.updateSpanStateless(body);
     return this;

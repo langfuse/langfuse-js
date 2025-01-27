@@ -2,7 +2,15 @@ import type OpenAI from "openai";
 import type { LangfuseParent } from "./types";
 
 import { LangfuseSingleton } from "./LangfuseSingleton";
-import { getToolCallOutput, parseChunk, parseCompletionOutput, parseInputArgs, parseUsage } from "./parseOpenAI";
+import {
+  getToolCallOutput,
+  parseChunk,
+  parseCompletionOutput,
+  parseInputArgs,
+  parseUsage,
+  parseUsageDetails,
+  parseUsageDetailsFromResponse,
+} from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
 import type { LangfuseConfig } from "./types";
 
@@ -60,6 +68,7 @@ const wrapMethod = async <T extends GenericMethod>(
       ...config,
       ...observationData,
       id: config?.traceId,
+      name: config?.traceName,
       timestamp: observationData.startTime,
     });
   }
@@ -74,9 +83,14 @@ const wrapMethod = async <T extends GenericMethod>(
         const textChunks: string[] = [];
         const toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] = [];
         let completionStartTime: Date | null = null;
+        let usage: OpenAI.CompletionUsage | null = null;
 
         for await (const rawChunk of response as AsyncIterable<unknown>) {
           completionStartTime = completionStartTime ?? new Date();
+
+          if (typeof rawChunk === "object" && rawChunk != null && "usage" in rawChunk) {
+            usage = rawChunk.usage as OpenAI.CompletionUsage | null;
+          }
 
           const processedChunk = parseChunk(rawChunk);
 
@@ -96,6 +110,14 @@ const wrapMethod = async <T extends GenericMethod>(
           output,
           endTime: new Date(),
           completionStartTime,
+          usage: usage
+            ? {
+                input: "prompt_tokens" in usage ? usage.prompt_tokens : undefined,
+                output: "completion_tokens" in usage ? usage.completion_tokens : undefined,
+                total: "total_tokens" in usage ? usage.total_tokens : undefined,
+              }
+            : undefined,
+          usageDetails: usage ? parseUsageDetails(usage) : undefined,
         });
 
         if (!hasUserProvidedParent) {
@@ -108,12 +130,14 @@ const wrapMethod = async <T extends GenericMethod>(
 
     const output = parseCompletionOutput(res);
     const usage = parseUsage(res);
+    const usageDetails = parseUsageDetailsFromResponse(res);
 
     langfuseParent.generation({
       ...observationData,
       output,
       endTime: new Date(),
       usage,
+      usageDetails,
     });
 
     if (!hasUserProvidedParent) {
@@ -131,6 +155,11 @@ const wrapMethod = async <T extends GenericMethod>(
         inputCost: 0,
         outputCost: 0,
         totalCost: 0,
+      },
+      costDetails: {
+        input: 0,
+        output: 0,
+        total: 0,
       },
     });
 

@@ -22,7 +22,7 @@ describe("Langfuse Core", () => {
   });
 
   describe("on", () => {
-    it("should listen to various events", () => {
+    it("should listen to various events", async () => {
       const mock = jest.fn();
       const mockOther = jest.fn();
       const mockOther2 = jest.fn();
@@ -31,22 +31,26 @@ describe("Langfuse Core", () => {
       langfuse.on("somethingElse", mockOther2);
 
       langfuse.trace({ name: "test-trace" });
+      await jest.advanceTimersByTimeAsync(1);
       expect(mock).toHaveBeenCalledTimes(1);
       expect(mockOther).toHaveBeenCalledTimes(1);
       expect(mockOther2).toHaveBeenCalledTimes(0);
       expect(mock.mock.lastCall[0]).toMatchObject({ name: "test-trace" });
     });
 
-    it("should unsubscribe when called", () => {
+    it("should unsubscribe when called", async () => {
       const mock = jest.fn();
       const unsubscribe = langfuse.on("trace-create", mock);
 
       langfuse.trace({ name: "test-trace1" });
+      await jest.advanceTimersByTimeAsync(1);
       expect(mock).toHaveBeenCalledTimes(1);
       langfuse.trace({ name: "test-trace2" });
+      await jest.advanceTimersByTimeAsync(1);
       expect(mock).toHaveBeenCalledTimes(2);
       unsubscribe();
       langfuse.trace({ name: "test-trace3" });
+      await jest.advanceTimersByTimeAsync(1);
       expect(mock).toHaveBeenCalledTimes(2);
     });
 

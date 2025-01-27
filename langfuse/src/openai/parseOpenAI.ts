@@ -1,5 +1,5 @@
 import type OpenAI from "openai";
-import type { Usage } from "langfuse-core";
+import type { Usage, UsageDetails } from "langfuse-core";
 
 type ParsedOpenAIArguments = {
   model: string;
@@ -67,10 +67,33 @@ export const parseUsage = (res: unknown): Usage | undefined => {
     const { prompt_tokens, completion_tokens, total_tokens } = res.usage;
 
     return {
-      promptTokens: prompt_tokens,
-      completionTokens: completion_tokens,
-      totalTokens: total_tokens,
+      input: prompt_tokens,
+      output: completion_tokens,
+      total: total_tokens,
     };
+  }
+};
+
+export const parseUsageDetails = (completionUsage: OpenAI.CompletionUsage): UsageDetails | undefined => {
+  const { prompt_tokens, completion_tokens, total_tokens, completion_tokens_details, prompt_tokens_details } =
+    completionUsage;
+
+  return {
+    input: prompt_tokens,
+    output: completion_tokens,
+    total: total_tokens,
+    ...Object.fromEntries(
+      Object.entries(prompt_tokens_details ?? {}).map(([key, value]) => [`input_${key}`, value as number])
+    ),
+    ...Object.fromEntries(
+      Object.entries(completion_tokens_details ?? {}).map(([key, value]) => [`output_${key}`, value as number])
+    ),
+  };
+};
+
+export const parseUsageDetailsFromResponse = (res: unknown): UsageDetails | undefined => {
+  if (hasCompletionUsage(res)) {
+    return parseUsageDetails(res.usage);
   }
 };
 

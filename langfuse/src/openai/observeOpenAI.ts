@@ -38,7 +38,8 @@ export const observeOpenAI = <SDKType extends object>(
 
       const defaultGenerationName = `${sdk.constructor?.name}.${propKey.toString()}`;
       const generationName = langfuseConfig?.generationName ?? defaultGenerationName;
-      const config = { ...langfuseConfig, generationName };
+      const traceName = langfuseConfig && "traceName" in langfuseConfig ? langfuseConfig.traceName : generationName;
+      const config = { ...langfuseConfig, generationName, traceName };
 
       // Add a flushAsync method to the OpenAI SDK that flushes the Langfuse client
       if (propKey === "flushAsync") {
@@ -52,6 +53,20 @@ export const observeOpenAI = <SDKType extends object>(
         }
 
         return langfuseClient.flushAsync.bind(langfuseClient);
+      }
+
+      // Add a shutdownAsync method to the OpenAI SDK that flushes the Langfuse client
+      if (propKey === "shutdownAsync") {
+        let langfuseClient: LangfuseCore;
+
+        // Flush the correct client depending on whether a parent client is provided
+        if (langfuseConfig && "parent" in langfuseConfig) {
+          langfuseClient = langfuseConfig.parent.client;
+        } else {
+          langfuseClient = LangfuseSingleton.getInstance();
+        }
+
+        return langfuseClient.shutdownAsync.bind(langfuseClient);
       }
 
       // Trace methods of the OpenAI SDK

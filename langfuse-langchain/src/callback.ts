@@ -10,6 +10,7 @@ import {
   HumanMessage,
   SystemMessage,
   ToolMessage,
+  type UsageMetadata,
   type BaseMessageFields,
   type MessageContent,
 } from "@langchain/core/messages";
@@ -20,13 +21,9 @@ import type { ChainValues } from "@langchain/core/utils/types";
 import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { Document } from "@langchain/core/documents";
 
-import type {
-  ChatPromptClient,
-  components,
-  LangfuseSpanClient,
-  LangfuseTraceClient,
-  TextPromptClient,
-} from "langfuse-core";
+import type { ChatPromptClient, LangfuseSpanClient, LangfuseTraceClient, TextPromptClient } from "langfuse-core";
+
+const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
 
 export type LlmMessage = {
   role: string;
@@ -199,15 +196,29 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       this.registerLangfusePrompt(parentRunId, metadata);
 
-      this.generateTrace(runName, runId, parentRunId, tags, metadata, inputs);
+      // In chains, inputs can be a string or an array of BaseMessage
+      let finalInput: string | ChainValues = inputs;
+      if (
+        typeof inputs === "object" &&
+        "input" in inputs &&
+        Array.isArray(inputs["input"]) &&
+        inputs["input"].every((m) => m instanceof BaseMessage)
+      ) {
+        finalInput = inputs["input"].map((m) => this.extractChatMessageContent(m));
+      } else if (typeof inputs === "object" && "content" in inputs && typeof inputs["content"] === "string") {
+        finalInput = inputs["content"];
+      }
+
+      this.generateTrace(runName, runId, parentRunId, tags, metadata, finalInput);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
         parentObservationId: parentRunId ?? this.rootObservationId,
         name: runName,
         metadata: this.joinTagsAndMetaData(tags, metadata),
-        input: inputs,
+        input: finalInput,
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
 
       // If there's no parent run, this is a top-level chain execution.
@@ -333,7 +344,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     if (this.rootProvided && this.updateRoot) {
       if (this.rootObservationId) {
-        this.langfuse._updateSpan({ id: this.rootObservationId, ...params });
+        this.langfuse._updateSpan({ id: this.rootObservationId, traceId: this.traceId, ...params });
       } else {
         this.langfuse.trace({ id: this.traceId, ...params });
       }
@@ -406,6 +417,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       modelParameters: modelParameters,
       version: this.version,
       prompt: registeredPrompt,
+      level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
     });
   }
 
@@ -434,14 +446,19 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chain end with ID: ${runId}`);
 
+      let finalOutput: ChainValues | string = outputs;
+      if (typeof outputs === "object" && "output" in outputs && typeof outputs["output"] === "string") {
+        finalOutput = outputs["output"];
+      }
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
-        output: outputs,
+        output: finalOutput,
         endTime: new Date(),
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, outputs);
+      this.updateTrace(runId, parentRunId, finalOutput);
       this.deregisterLangfusePrompt(runId);
     } catch (e) {
       this._log(e);
@@ -487,6 +504,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
     } catch (e) {
       this._log(e);
@@ -513,6 +531,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
     } catch (e) {
       this._log(e);
@@ -581,8 +600,25 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
+      const llmUsage = this.extractUsageMetadata(lastResponse) ?? output.llmOutput?.["tokenUsage"];
 
-      const llmUsage = output.llmOutput?.["tokenUsage"] ?? this.extractUsageMetadata(lastResponse);
+      const usageDetails: Record<string, any> = {
+        input: llmUsage?.input_tokens ?? ("promptTokens" in llmUsage ? llmUsage?.promptTokens : undefined),
+        output: llmUsage?.output_tokens ?? ("completionTokens" in llmUsage ? llmUsage?.completionTokens : undefined),
+        total: llmUsage?.total_tokens ?? ("totalTokens" in llmUsage ? llmUsage?.totalTokens : undefined),
+      };
+
+      if (llmUsage && "input_token_details" in llmUsage) {
+        for (const [key, val] of Object.entries(llmUsage["input_token_details"] ?? {})) {
+          usageDetails[`input_${key}`] = val;
+        }
+      }
+
+      if (llmUsage && "output_token_details" in llmUsage) {
+        for (const [key, val] of Object.entries(llmUsage["output_token_details"] ?? {})) {
+          usageDetails[`output_${key}`] = val;
+        }
+      }
 
       const extractedOutput =
         "message" in lastResponse && lastResponse["message"] instanceof BaseMessage
@@ -595,7 +631,8 @@ export class CallbackHandler extends BaseCallbackHandler {
         output: extractedOutput,
         endTime: new Date(),
         completionStartTime: runId in this.completionStartTimes ? this.completionStartTimes[runId] : undefined,
-        usage: llmUsage,
+        usage: usageDetails,
+        usageDetails: usageDetails,
         version: this.version,
       });
 
@@ -610,7 +647,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   /** Not all models supports tokenUsage in llmOutput, can use AIMessage.usage_metadata instead */
-  private extractUsageMetadata(generation: Generation): components["schemas"]["IngestionUsage"] | undefined {
+  private extractUsageMetadata(generation: Generation): UsageMetadata | undefined {
     try {
       const usageMetadata =
         "message" in generation &&
@@ -618,15 +655,7 @@ export class CallbackHandler extends BaseCallbackHandler {
           ? generation["message"].usage_metadata
           : undefined;
 
-      if (!usageMetadata) {
-        return;
-      }
-
-      return {
-        promptTokens: usageMetadata.input_tokens,
-        completionTokens: usageMetadata.output_tokens,
-        totalTokens: usageMetadata.total_tokens,
-      };
+      return usageMetadata;
     } catch (err) {
       this._log(`Error extracting usage metadata: ${err}`);
 
@@ -691,7 +720,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     if (!parentRunId && this.traceId && this.rootProvided && this.updateRoot) {
       if (this.rootObservationId) {
-        this.langfuse._updateSpan({ id: this.rootObservationId, output });
+        this.langfuse._updateSpan({ id: this.rootObservationId, traceId: this.traceId, output });
       } else {
         this.langfuse.trace({ id: this.traceId, output, ...traceUpdates });
       }

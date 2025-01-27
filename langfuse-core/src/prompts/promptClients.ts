@@ -13,14 +13,18 @@ abstract class BasePromptClient {
   public readonly labels: string[];
   public readonly tags: string[];
   public readonly isFallback: boolean;
+  public readonly type: "text" | "chat";
+  public readonly prompt: string | ChatMessage[];
 
-  constructor(prompt: CreateLangfusePromptResponse, isFallback = false) {
+  constructor(prompt: CreateLangfusePromptResponse, isFallback = false, type: "text" | "chat") {
     this.name = prompt.name;
     this.version = prompt.version;
     this.config = prompt.config;
     this.labels = prompt.labels;
     this.tags = prompt.tags;
     this.isFallback = isFallback;
+    this.type = type;
+    this.prompt = prompt.prompt;
   }
 
   abstract compile(variables?: Record<string, string>): string | ChatMessage[];
@@ -30,6 +34,19 @@ abstract class BasePromptClient {
   protected _transformToLangchainVariables(content: string): string {
     return content.replace(/\{\{(.*?)\}\}/g, "{$1}");
   }
+
+  public toJSON(): string {
+    return JSON.stringify({
+      name: this.name,
+      prompt: this.prompt,
+      version: this.version,
+      isFallback: this.isFallback,
+      tags: this.tags,
+      labels: this.labels,
+      type: this.type,
+      config: this.config,
+    });
+  }
 }
 
 export class TextPromptClient extends BasePromptClient {
@@ -37,7 +54,7 @@ export class TextPromptClient extends BasePromptClient {
   public readonly prompt: string;
 
   constructor(prompt: TextPrompt, isFallback = false) {
-    super(prompt, isFallback);
+    super(prompt, isFallback, "text");
     this.promptResponse = prompt;
     this.prompt = prompt.prompt;
   }
@@ -64,7 +81,7 @@ export class ChatPromptClient extends BasePromptClient {
   public readonly prompt: ChatMessage[];
 
   constructor(prompt: ChatPrompt, isFallback = false) {
-    super(prompt, isFallback);
+    super(prompt, isFallback, "chat");
     this.promptResponse = prompt;
     this.prompt = prompt.prompt;
   }
