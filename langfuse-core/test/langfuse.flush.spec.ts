@@ -266,4 +266,31 @@ describe("Langfuse Core", () => {
       expect(mocks.fetch).not.toHaveBeenCalled();
     });
   });
+
+  describe("when queue is completely full", () => {
+    const MAX_MSG_SIZE = 1_000_000;
+    const BATCH_SIZE_LIMIT = 2_500_000;
+    // Message is right under the message size limit
+    const MSG_SIZE = MAX_MSG_SIZE - 1000;
+    const BIG_STRING = "a".repeat(MSG_SIZE);
+
+    it("should flush remaining items on subsequent flush", async () => {
+      const n = Math.floor(BATCH_SIZE_LIMIT / MSG_SIZE) + 1;
+
+      [langfuse, mocks] = createTestClient({
+        publicKey: "pk-lf-111",
+        secretKey: "sk-lf-111",
+        flushAt: n,
+        flushInterval: 200,
+      });
+
+      // Adds enough messages to exceed batch size limit
+      for (let i = 0; i < n; i++) {
+        langfuse.trace({ name: `test-trace-${i}`, input: { content: BIG_STRING } });
+      }
+
+      await jest.advanceTimersByTimeAsync(200);
+      expect(mocks.fetch).toHaveBeenCalledTimes(2);
+    });
+  });
 });
