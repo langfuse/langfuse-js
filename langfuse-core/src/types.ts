@@ -66,7 +66,7 @@ export type SingleIngestionEvent =
 
 // return type of ingestion endpoint defined on 200 status error in fern as 207 is not possible
 export type IngestionReturnType =
-  paths["/api/public/ingestion"]["post"]["responses"][200]["content"]["application/json"];
+  paths["/api/public/ingestion"]["post"]["responses"][207]["content"]["application/json"];
 
 export type LangfuseEventProperties = {
   [key: string]: any;
