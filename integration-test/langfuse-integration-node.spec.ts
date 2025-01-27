@@ -627,7 +627,7 @@ describe("Langfuse Node.js", () => {
     expect(fetchedTraces.data[0]).toMatchObject({
       name: traceName,
       sessionId: "session-1",
-      input: JSON.stringify({ key: "value" }),
+      input: { key: "value" },
       output: "output-value",
       timestamp: traceParams[1].timestamp.toISOString(),
     });
