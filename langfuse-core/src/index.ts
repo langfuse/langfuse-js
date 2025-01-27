@@ -955,15 +955,13 @@ abstract class LangfuseCoreStateless {
     }
 
     const items = queue.splice(0, this.flushAt);
-    this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, queue);
 
     const MAX_MSG_SIZE = 1_000_000;
     const BATCH_SIZE_LIMIT = 2_500_000;
 
     const { processedItems, remainingItems } = this.processQueueItems(items, MAX_MSG_SIZE, BATCH_SIZE_LIMIT);
 
-    // Add remaining items back to the start of the queue
-    queue.unshift(...remainingItems);
+    this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, [...remainingItems, ...queue]);
 
     const promiseUUID = generateUUID();
 
