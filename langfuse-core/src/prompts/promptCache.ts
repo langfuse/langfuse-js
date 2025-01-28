@@ -50,4 +50,13 @@ export class LangfusePromptCache {
   public isRefreshing(key: string): boolean {
     return this._refreshingKeys.has(key);
   }
+
+  public invalidate(promptName: string): void {
+    console.log("invalidating", promptName, this._cache.keys());
+    for (const key of this._cache.keys()) {
+      if (key.startsWith(promptName)) {
+        this._cache.delete(key);
+      }
+    }
+  }
 }

@@ -190,6 +190,7 @@ export interface paths {
      *
      *     Notes:
      *
+     *     - Introduction to data model: https://langfuse.com/docs/tracing-data-model
      *     - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
      *     - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors. */
     post: operations["ingestion_batch"];
@@ -336,6 +337,23 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  "/api/public/v2/prompts/{name}/versions/{version}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** @description Update labels for a specific prompt version */
+    patch: operations["promptVersion_update"];
     trace?: never;
   };
   "/api/public/v2/prompts/{promptName}": {
@@ -949,12 +967,12 @@ export interface components {
       /** @description Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
       matchPattern: string;
       /**
-       * Format: date
+       * Format: date-time
        * @description Apply only to generations which are newer than this ISO date.
        */
       startDate?: string | null;
       /** @description Unit used by this model. */
-      unit: components["schemas"]["ModelUsageUnit"];
+      unit?: components["schemas"]["ModelUsageUnit"];
       /**
        * Format: double
        * @description Price (USD) per input unit
@@ -988,11 +1006,10 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) | undefined;
-    /**
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) | undefined /**
      * CommentObjectType
      * @enum {string}
-     */
+     */;
     CommentObjectType: "TRACE" | "OBSERVATION" | "SESSION" | "PROMPT";
     /**
      * DatasetStatus
@@ -1477,7 +1494,7 @@ export interface components {
        */
       startDate?: string | null;
       /** @description Unit used by this model. */
-      unit: components["schemas"]["ModelUsageUnit"];
+      unit?: components["schemas"]["ModelUsageUnit"];
       /**
        * Format: double
        * @description Price (USD) per input unit
@@ -2561,7 +2578,7 @@ export interface operations {
       };
     };
     responses: {
-      200: {
+      207: {
         headers: {
           [name: string]: unknown;
         };
@@ -3273,6 +3290,77 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Projects"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  promptVersion_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The name of the prompt */
+        name: string;
+        /** @description Version of the prompt to update */
+        version: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description New labels for the prompt version. Labels are unique across versions. The "latest" label is reserved and managed by Langfuse. */
+          newLabels: string[];
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Prompt"];
         };
       };
       400: {
