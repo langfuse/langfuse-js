@@ -56,7 +56,7 @@ import {
   type UpdateLangfuseGenerationBody,
   type UpdateLangfuseSpanBody,
   type GetMediaResponse,
-  UpdatePromptBody,
+  type UpdatePromptBody,
 } from "./types";
 import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
 import {
@@ -69,6 +69,7 @@ import {
   safeSetTimeout,
   type RetriableOptions,
 } from "./utils";
+import { isInSample } from "./sampling";
 
 export * from "./prompts/promptClients";
 export * from "./media/LangfuseMedia";
@@ -189,6 +190,7 @@ abstract class LangfuseCoreStateless {
   private localEventExportMap: Map<string, SingleIngestionEvent[]> = new Map();
   private projectId: string | undefined;
   private mask: MaskFunction | undefined;
+  private sampleRate: number | undefined;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -216,6 +218,12 @@ abstract class LangfuseCoreStateless {
     this.flushInterval = options?.flushInterval ?? 10000;
     this.release = options?.release ?? getEnv("LANGFUSE_RELEASE") ?? getCommonReleaseEnvs() ?? undefined;
     this.mask = options?.mask;
+    this.sampleRate =
+      options?.sampleRate ?? (getEnv("LANGFUSE_SAMPLE_RATE") ? Number(getEnv("LANGFUSE_SAMPLE_RATE")) : undefined);
+
+    if (this.sampleRate) {
+      this._events.emit("debug", `Langfuse trace sampling enabled with sampleRate ${this.sampleRate}.`);
+    }
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
@@ -614,6 +622,19 @@ abstract class LangfuseCoreStateless {
       return;
     }
 
+    // Sampling
+    const traceId = this.parseTraceId(type, body);
+    if (!traceId) {
+      this._events.emit(
+        "warning",
+        "Failed to parse traceID for sampling. Please open a Github issue in https://github.com/langfuse/langfuse/issues/new/choose"
+      );
+    } else if (!isInSample(traceId, this.sampleRate)) {
+      this._events.emit("debug", `Event with trace ID ${traceId} is out of sample. Skipping.`);
+
+      return;
+    }
+
     const promise = this.processEnqueueEvent(type, body);
     const promiseId = generateUUID();
     this.pendingEventProcessingPromises[promiseId] = promise;
@@ -734,7 +755,7 @@ abstract class LangfuseCoreStateless {
       return;
     }
 
-    const traceId = "traceId" in body ? body.traceId : type.includes("trace") ? body.id : undefined;
+    const traceId = this.parseTraceId(type, body);
 
     if (!traceId) {
       this._events.emit("warning", "traceId is required for media upload");
@@ -758,6 +779,10 @@ abstract class LangfuseCoreStateless {
         }
       })
     );
+  }
+
+  protected parseTraceId(type: LangfuseObject, body: EventBody): string | null | undefined {
+    return "traceId" in body ? body.traceId : type.includes("trace") ? body.id : undefined;
   }
 
   protected async findAndProcessMedia({

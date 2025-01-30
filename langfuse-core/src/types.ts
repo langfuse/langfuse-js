@@ -29,6 +29,8 @@ export type LangfuseCoreOptions = {
   enabled?: boolean;
   // Mask function to mask data in the event body
   mask?: MaskFunction;
+  // Trace sampling rate. Approx. sampleRate % traces will be sent to LF servers
+  sampleRate?: number;
   // Project ID to use for the SDK in admin mode. This should never be set by users.
   _projectId?: string;
   // Whether to enable local event export. Defaults to false.

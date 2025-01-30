@@ -648,6 +648,53 @@ describe("Langfuse (fetch)", () => {
       });
     });
 
+    it("sampleRate can be passed as constructor arg", () => {
+      const sampleRate = 0.5;
+      const langfuse = new Langfuse({ sampleRate });
+
+      expect((langfuse as any).sampleRate).toBe(sampleRate);
+    });
+
+    it("sampleRate can be passed as environment variable", () => {
+      process.env.LANGFUSE_SAMPLE_RATE = "0.5";
+      const langfuse = new Langfuse();
+
+      expect((langfuse as any).sampleRate).toBe(0.5);
+      delete process.env.LANGFUSE_SAMPLE_RATE;
+    });
+
+    it("should sample trace Ids correctly", async () => {
+      const traceIdOutSample = "test-trace-out-sample"; // Deterministic hash: 0.92
+      const traceIdInSample = "test-trace-in-the-sample"; // Deterministic hash: 0.02
+
+      const langfuse = new Langfuse({ sampleRate: 0.5 });
+      langfuse.debug();
+
+      const inSampleTrace = langfuse.trace({ id: traceIdInSample, name: traceIdInSample });
+      inSampleTrace.span({ name: "span" });
+      inSampleTrace.generation({ name: "generation" });
+
+      const outSampleTrace = langfuse.trace({ id: traceIdOutSample, name: traceIdOutSample });
+      outSampleTrace.span({ name: "span" });
+      outSampleTrace.generation({ name: "generation" });
+
+      await langfuse.flushAsync();
+
+      expect(
+        (await getAxiosClient()).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceIdOutSample}`, {
+          headers: getHeaders(),
+        })
+      ).rejects.toThrow();
+
+      const fetchedInSampleTrace = await (
+        await getAxiosClient()
+      ).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceIdInSample}`, {
+        headers: getHeaders(),
+      });
+
+      expect(fetchedInSampleTrace.data.id).toBe(traceIdInSample);
+    }, 10_000);
+
     it("should mask data in the event body", async () => {
       const mask = ({ data }: { data: any }): string =>
         typeof data === "string" && data.includes("confidential") ? "MASKED" : data;
