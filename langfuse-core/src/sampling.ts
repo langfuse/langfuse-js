@@ -14,7 +14,6 @@ export function isInSample(input: string, sampleRate: number | undefined): boole
     return true;
   }
 
-
   return simpleHash(input) < sampleRate;
 }
 
