@@ -558,7 +558,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(trace.sessionId).toBe("Langfuse");
       expect(trace.userId).toBeDefined();
       expect(trace.userId).toBe("LangfuseUser");
-    }, 10000);
+    }, 15000);
 
     it("Error Handling in openai", async () => {
       const name = `Error-Handling-in-wrapper-${randomUUID()}`;
@@ -1107,7 +1107,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       },
     });
     expect(generation.model).toBe("gpt-4o-2024-08-06");
-  }, 15_000);
+  }, 10000);
 
   it("should work with vision input", async () => {
     const traceId = randomUUID();
@@ -1165,7 +1165,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         },
       ],
     });
-  }, 10_000);
+  }, 15_000);
 
   it("should work with audio input and output", async () => {
     const traceId = randomUUID();
