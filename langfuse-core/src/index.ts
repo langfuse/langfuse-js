@@ -917,15 +917,19 @@ abstract class LangfuseCoreStateless {
       if (uploadUrl) {
         this._events.emit("debug", `Uploading media ${mediaId}`);
         const startTime = Date.now();
-        const uploadResponse = await this.fetch(uploadUrl, {
-          method: "PUT",
-          body: media._contentBytes,
-          headers: {
-            "Content-Type": media._contentType,
-            "x-amz-checksum-sha256": media.contentSha256Hash,
-            "x-ms-blob-type": "BlockBlob",
-          },
+
+        const uploadResponse = await this.uploadMediaWithBackoff({
+          uploadUrl,
+          contentBytes: media._contentBytes,
+          contentType: media._contentType,
+          contentSha256Hash: media.contentSha256Hash,
+          maxRetries: 3,
+          baseDelay: 1000,
         });
+
+        if (!uploadResponse) {
+          throw Error("Media upload process failed");
+        }
 
         const patchMediaBody: PatchMediaBody = {
           uploadedAt: new Date().toISOString(),
@@ -944,6 +948,46 @@ abstract class LangfuseCoreStateless {
       }
     } catch (err) {
       this._events.emit("error", `Error processing media item: ${err}`);
+    }
+  }
+
+  private async uploadMediaWithBackoff(params: {
+    uploadUrl: string;
+    contentType: string;
+    contentSha256Hash: string;
+    contentBytes: Buffer;
+    maxRetries: number;
+    baseDelay: number;
+  }): Promise<LangfuseFetchResponse | undefined> {
+    const { uploadUrl, contentType, contentSha256Hash, contentBytes, maxRetries, baseDelay } = params;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const uploadResponse = await this.fetch(uploadUrl, {
+          method: "PUT",
+          body: contentBytes,
+          headers: {
+            "Content-Type": contentType,
+            "x-amz-checksum-sha256": contentSha256Hash,
+            "x-ms-blob-type": "BlockBlob",
+          },
+        });
+
+        if (attempt < maxRetries && uploadResponse.status !== 200 && uploadResponse.status !== 201) {
+          throw new Error(`Upload failed with status ${uploadResponse.status}`);
+        }
+
+        return uploadResponse;
+      } catch (e) {
+        if (attempt === maxRetries) {
+          throw e;
+        }
+
+        const delay = baseDelay * Math.pow(2, attempt);
+        const jitter = Math.random() * 1000;
+
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+      }
     }
   }
 
