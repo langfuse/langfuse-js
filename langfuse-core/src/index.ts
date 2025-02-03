@@ -587,7 +587,7 @@ abstract class LangfuseCoreStateless {
         );
 
         if (res.status >= 500) {
-          throw new LangfuseFetchHttpError(res, JSON.stringify(await res.text()));
+          throw new LangfuseFetchHttpError(res, await res.text());
         }
 
         const data = await res.json();
