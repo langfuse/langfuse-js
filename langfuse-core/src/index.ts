@@ -70,9 +70,12 @@ import {
   type RetriableOptions,
 } from "./utils";
 import { isInSample } from "./sampling";
+import { LangfusePublicApi } from "./publicApi";
 
+export * from "./publicApi";
 export * from "./prompts/promptClients";
 export * from "./media/LangfuseMedia";
+
 export { LangfuseMemoryStorage } from "./storage-memory";
 export type { LangfusePromptRecord } from "./types";
 export * as utils from "./utils";
@@ -172,6 +175,7 @@ function logIngestionError(error: any): void {
 
 abstract class LangfuseCoreStateless {
   // options
+  public api: LangfusePublicApi<null>["api"];
   private secretKey: string | undefined;
   private publicKey: string;
   baseUrl: string;
@@ -235,6 +239,21 @@ abstract class LangfuseCoreStateless {
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
 
     this.isLocalEventExportEnabled = _isLocalEventExportEnabled ?? false;
+
+    this.api = new LangfusePublicApi({
+      baseUrl: this.baseUrl,
+      baseApiParams: {
+        headers: {
+          "X-Langfuse-Sdk-Name": "langfuse-js",
+          "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
+          "X-Langfuse-Sdk-Variant": this.getLibraryId(),
+          "X-Langfuse-Sdk-Integration": this.sdkIntegration,
+          "X-Langfuse-Public-Key": this.publicKey,
+          ...this.additionalHeaders,
+          ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
+        },
+      },
+    }).api;
 
     if (this.isLocalEventExportEnabled && !_projectId) {
       this._events.emit(

@@ -19,6 +19,7 @@
     "lib": [
       "ES2021",
       "ES2022.Error",
+      "DOM"
     ],
     "types": [
       "node",
