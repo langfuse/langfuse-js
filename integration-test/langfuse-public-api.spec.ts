@@ -171,7 +171,7 @@ describe("Langfuse Public API", () => {
         runDescription: "Test run description",
         metadata: { model: "gpt-4" },
         datasetItemId: item.id,
-        traceId: "test-trace-id",
+        traceId: traceId,
       };
       const runResponse = await langfuse.api.datasetRunItemsCreate(run);
       expect(runResponse.datasetRunName).toBe(run.runName);
