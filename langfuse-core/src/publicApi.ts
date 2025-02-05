@@ -1560,6 +1560,23 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description Get a dataset item
+     *
+     * @tags DatasetItems
+     * @name DatasetItemsGet
+     * @request GET:/api/public/dataset-items/{id}
+     * @secure
+     */
+    datasetItemsGet: (id: string, params: RequestParams = {}) =>
+      this.request<ApiDatasetItem, any>({
+        path: `/api/public/dataset-items/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Get dataset items
      *
      * @tags DatasetItems
@@ -1589,23 +1606,6 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Get a dataset item
-     *
-     * @tags DatasetItems
-     * @name DatasetItemsGet
-     * @request GET:/api/public/dataset-items/{id}
-     * @secure
-     */
-    datasetItemsGet: (id: string, params: RequestParams = {}) =>
-      this.request<ApiDatasetItem, any>({
-        path: `/api/public/dataset-items/${id}`,
-        method: "GET",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
      * @description Create a dataset run item
      *
      * @tags DatasetRunItems
@@ -1620,32 +1620,6 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get all datasets
-     *
-     * @tags Datasets
-     * @name DatasetsList
-     * @request GET:/api/public/v2/datasets
-     * @secure
-     */
-    datasetsList: (
-      query?: {
-        /** page number, starts at 1 */
-        page?: number | null;
-        /** limit of items per page */
-        limit?: number | null;
-      },
-      params: RequestParams = {}
-    ) =>
-      this.request<ApiPaginatedDatasets, any>({
-        path: `/api/public/v2/datasets`,
-        method: "GET",
-        query: query,
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -1731,6 +1705,32 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description Get all datasets
+     *
+     * @tags Datasets
+     * @name DatasetsList
+     * @request GET:/api/public/v2/datasets
+     * @secure
+     */
+    datasetsList: (
+      query?: {
+        /** page number, starts at 1 */
+        page?: number | null;
+        /** limit of items per page */
+        limit?: number | null;
+      },
+      params: RequestParams = {}
+    ) =>
+      this.request<ApiPaginatedDatasets, any>({
+        path: `/api/public/v2/datasets`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Check health of API and database
      *
      * @tags Health
@@ -1790,24 +1790,6 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Patch a media record
-     *
-     * @tags Media
-     * @name MediaPatch
-     * @request PATCH:/api/public/media/{mediaId}
-     * @secure
-     */
-    mediaPatch: (mediaId: string, data: ApiPatchMediaBody, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/api/public/media/${mediaId}`,
-        method: "PATCH",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        ...params,
-      }),
-
-    /**
      * @description Get a presigned upload URL for a media record
      *
      * @tags Media
@@ -1823,6 +1805,24 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
         secure: true,
         type: ContentType.Json,
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Patch a media record
+     *
+     * @tags Media
+     * @name MediaPatch
+     * @request PATCH:/api/public/media/{mediaId}
+     * @secure
+     */
+    mediaPatch: (mediaId: string, data: ApiPatchMediaBody, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/api/public/media/${mediaId}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         ...params,
       }),
 
@@ -1888,6 +1888,39 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description Delete a model. Cannot delete models managed by Langfuse. You can create your own definition with the same modelName to override the definition though.
+     *
+     * @tags Models
+     * @name ModelsDelete
+     * @request DELETE:/api/public/models/{id}
+     * @secure
+     */
+    modelsDelete: (id: string, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/api/public/models/${id}`,
+        method: "DELETE",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * @description Get a model
+     *
+     * @tags Models
+     * @name ModelsGet
+     * @request GET:/api/public/models/{id}
+     * @secure
+     */
+    modelsGet: (id: string, params: RequestParams = {}) =>
+      this.request<ApiModel, any>({
+        path: `/api/public/models/${id}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Get all models
      *
      * @tags Models
@@ -1910,39 +1943,6 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
         query: query,
         secure: true,
         format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get a model
-     *
-     * @tags Models
-     * @name ModelsGet
-     * @request GET:/api/public/models/{id}
-     * @secure
-     */
-    modelsGet: (id: string, params: RequestParams = {}) =>
-      this.request<ApiModel, any>({
-        path: `/api/public/models/${id}`,
-        method: "GET",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Delete a model. Cannot delete models managed by Langfuse. You can create your own definition with the same modelName to override the definition though.
-     *
-     * @tags Models
-     * @name ModelsDelete
-     * @request DELETE:/api/public/models/{id}
-     * @secure
-     */
-    modelsDelete: (id: string, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/api/public/models/${id}`,
-        method: "DELETE",
-        secure: true,
         ...params,
       }),
 
@@ -2024,25 +2024,17 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Update labels for a specific prompt version
+     * @description Create a new version for the prompt with the given `name`
      *
-     * @tags PromptVersion
-     * @name PromptVersionUpdate
-     * @request PATCH:/api/public/v2/prompts/{name}/versions/{version}
+     * @tags Prompts
+     * @name PromptsCreate
+     * @request POST:/api/public/v2/prompts
      * @secure
      */
-    promptVersionUpdate: (
-      name: string,
-      version: number,
-      data: {
-        /** New labels for the prompt version. Labels are unique across versions. The "latest" label is reserved and managed by Langfuse. */
-        newLabels: string[];
-      },
-      params: RequestParams = {}
-    ) =>
+    promptsCreate: (data: ApiCreatePromptRequest, params: RequestParams = {}) =>
       this.request<ApiPrompt, any>({
-        path: `/api/public/v2/prompts/${name}/versions/${version}`,
-        method: "PATCH",
+        path: `/api/public/v2/prompts`,
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -2117,17 +2109,25 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Create a new version for the prompt with the given `name`
+     * @description Update labels for a specific prompt version
      *
-     * @tags Prompts
-     * @name PromptsCreate
-     * @request POST:/api/public/v2/prompts
+     * @tags PromptVersion
+     * @name PromptVersionUpdate
+     * @request PATCH:/api/public/v2/prompts/{name}/versions/{version}
      * @secure
      */
-    promptsCreate: (data: ApiCreatePromptRequest, params: RequestParams = {}) =>
+    promptVersionUpdate: (
+      name: string,
+      version: number,
+      data: {
+        /** New labels for the prompt version. Labels are unique across versions. The "latest" label is reserved and managed by Langfuse. */
+        newLabels: string[];
+      },
+      params: RequestParams = {}
+    ) =>
       this.request<ApiPrompt, any>({
-        path: `/api/public/v2/prompts`,
-        method: "POST",
+        path: `/api/public/v2/prompts/${name}/versions/${version}`,
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -2217,6 +2217,22 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description Delete a score
+     *
+     * @tags Score
+     * @name ScoreDelete
+     * @request DELETE:/api/public/scores/{scoreId}
+     * @secure
+     */
+    scoreDelete: (scoreId: string, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/api/public/scores/${scoreId}`,
+        method: "DELETE",
+        secure: true,
+        ...params,
+      }),
+
+    /**
      * @description Get a list of scores
      *
      * @tags Score
@@ -2293,18 +2309,19 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Delete a score
+     * @description Get a session. Please note that `traces` on this endpoint are not paginated, if you plan to fetch large sessions, consider `GET /api/public/traces?sessionId=<sessionId>`
      *
-     * @tags Score
-     * @name ScoreDelete
-     * @request DELETE:/api/public/scores/{scoreId}
+     * @tags Sessions
+     * @name SessionsGet
+     * @request GET:/api/public/sessions/{sessionId}
      * @secure
      */
-    scoreDelete: (scoreId: string, params: RequestParams = {}) =>
-      this.request<void, any>({
-        path: `/api/public/scores/${scoreId}`,
-        method: "DELETE",
+    sessionsGet: (sessionId: string, params: RequestParams = {}) =>
+      this.request<ApiSessionWithTraces, any>({
+        path: `/api/public/sessions/${sessionId}`,
+        method: "GET",
         secure: true,
+        format: "json",
         ...params,
       }),
 
@@ -2339,23 +2356,6 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
         path: `/api/public/sessions`,
         method: "GET",
         query: query,
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get a session. Please note that `traces` on this endpoint are not paginated, if you plan to fetch large sessions, consider `GET /api/public/traces?sessionId=<sessionId>`
-     *
-     * @tags Sessions
-     * @name SessionsGet
-     * @request GET:/api/public/sessions/{sessionId}
-     * @secure
-     */
-    sessionsGet: (sessionId: string, params: RequestParams = {}) =>
-      this.request<ApiSessionWithTraces, any>({
-        path: `/api/public/sessions/${sessionId}`,
-        method: "GET",
         secure: true,
         format: "json",
         ...params,
