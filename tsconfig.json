@@ -18,8 +18,7 @@
     "rootDir": "./",
     "lib": [
       "ES2021",
-      "ES2022.Error",
-      "DOM"
+      "ES2022.Error"
     ],
     "types": [
       "node",

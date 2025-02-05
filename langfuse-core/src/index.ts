@@ -70,9 +70,7 @@ import {
   type RetriableOptions,
 } from "./utils";
 import { isInSample } from "./sampling";
-import { LangfusePublicApi } from "./publicApi";
 
-export * from "./publicApi";
 export * from "./prompts/promptClients";
 export * from "./media/LangfuseMedia";
 
@@ -175,9 +173,8 @@ function logIngestionError(error: any): void {
 
 abstract class LangfuseCoreStateless {
   // options
-  public api: LangfusePublicApi<null>["api"];
-  private secretKey: string | undefined;
-  private publicKey: string;
+  protected secretKey: string | undefined;
+  protected publicKey: string;
   baseUrl: string;
   additionalHeaders: Record<string, string> = {};
   private flushAt: number;
@@ -188,7 +185,7 @@ abstract class LangfuseCoreStateless {
   private pendingEventProcessingPromises: Record<string, Promise<any>> = {};
   private pendingIngestionPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
-  private sdkIntegration: string;
+  protected sdkIntegration: string;
   private enabled: boolean;
   protected isLocalEventExportEnabled: boolean;
   private localEventExportMap: Map<string, SingleIngestionEvent[]> = new Map();
@@ -239,21 +236,6 @@ abstract class LangfuseCoreStateless {
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
 
     this.isLocalEventExportEnabled = _isLocalEventExportEnabled ?? false;
-
-    this.api = new LangfusePublicApi({
-      baseUrl: this.baseUrl,
-      baseApiParams: {
-        headers: {
-          "X-Langfuse-Sdk-Name": "langfuse-js",
-          "X-Langfuse-Sdk-Version": this.getLibraryVersion(),
-          "X-Langfuse-Sdk-Variant": this.getLibraryId(),
-          "X-Langfuse-Sdk-Integration": this.sdkIntegration,
-          "X-Langfuse-Public-Key": this.publicKey,
-          ...this.additionalHeaders,
-          ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
-        },
-      },
-    }).api;
 
     if (this.isLocalEventExportEnabled && !_projectId) {
       this._events.emit(
@@ -1178,7 +1160,7 @@ abstract class LangfuseCoreStateless {
     return fetchOptions;
   }
 
-  private constructAuthorizationHeader(
+  protected constructAuthorizationHeader(
     publicKey: string,
     secretKey?: string
   ): {
