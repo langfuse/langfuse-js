@@ -79,7 +79,12 @@ export type { LangfusePromptRecord } from "./types";
 export * as utils from "./utils";
 export type IngestionBody = SingleIngestionEvent["body"];
 
-const MAX_EVENT_SIZE = 1_000_000;
+const MAX_EVENT_SIZE_BYTES = getEnv("LANGFUSE_MAX_EVENT_SIZE_BYTES")
+  ? Number(getEnv("LANGFUSE_MAX_EVENT_SIZE_BYTES"))
+  : 1_000_000;
+const MAX_BATCH_SIZE_BYTES = getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES")
+  ? Number(getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES"))
+  : 2_500_000;
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -652,7 +657,7 @@ abstract class LangfuseCoreStateless {
   protected async processEnqueueEvent(type: LangfuseObject, body: EventBody): Promise<void> {
     this.maskEventBodyInPlace(body);
     await this.processMediaInEvent(type, body);
-    const finalEventBody = this.truncateEventBody(body, MAX_EVENT_SIZE);
+    const finalEventBody = this.truncateEventBody(body, MAX_EVENT_SIZE_BYTES);
 
     try {
       JSON.stringify(finalEventBody);
@@ -1036,10 +1041,11 @@ abstract class LangfuseCoreStateless {
 
     const items = queue.splice(0, this.flushAt);
 
-    const MAX_MSG_SIZE = 1_000_000;
-    const BATCH_SIZE_LIMIT = 2_500_000;
-
-    const { processedItems, remainingItems } = this.processQueueItems(items, MAX_MSG_SIZE, BATCH_SIZE_LIMIT);
+    const { processedItems, remainingItems } = this.processQueueItems(
+      items,
+      MAX_EVENT_SIZE_BYTES,
+      MAX_BATCH_SIZE_BYTES
+    );
 
     this.setPersistedProperty<LangfuseQueueItem[]>(LangfusePersistedProperty.Queue, [...remainingItems, ...queue]);
 
