@@ -42,22 +42,10 @@ yarn test:integration
 ## Update OpenAPI spec
 
 1. Generate Fern JavaScript SDK in [langfuse](https://github.com/langfuse/langfuse) and copy the files generated in `web/public/generated/api/openapi.yml` and `web/public/generated/api-client/openapi.yml` into the `langfuse-core/openapi-spec` folder in this repo.
-2. Execute the following command: `yarn run generateAPI` this updates the TypeScript types resulting from the OpenAPI spec.
-3. To update the public API client exposed on the `api` property of the Langfuse client, please run the following command. Learn more about the options in the `swagger-typescript-api` [repo here](https://github.com/acacode/swagger-typescript-api).
+2. Execute the following command: `yarn run generateAPI` this updates
 
-```bash
-npx swagger-typescript-api \
- --path ./langfuse-core/openapi-spec/openapi-server.yaml \
- --output ./langfuse-core/src \
- --name publicApi.ts \
- --api-class-name LangfusePublicApi \
- --union-enums \
- --unwrap-response-data \
- --type-prefix Api \
- --sort-routes \
- --extract-request-params \
- --extract-request-body
-```
+- the TypeScript types resulting from the OpenAPI spec.
+- the public API client exposed on the `api` property of the Langfuse client. Learn more about the options in the `swagger-typescript-api` [repo here](https://github.com/acacode/swagger-typescript-api).
 
 ## Publishing a new version
 
