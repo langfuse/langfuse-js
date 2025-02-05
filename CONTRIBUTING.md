@@ -53,7 +53,10 @@ npx swagger-typescript-api \
  --api-class-name LangfusePublicApi \
  --union-enums \
  --unwrap-response-data \
- --type-prefix Api
+ --type-prefix Api \
+ --sort-routes \
+ --extract-request-params \
+ --extract-request-body
 ```
 
 ## Publishing a new version

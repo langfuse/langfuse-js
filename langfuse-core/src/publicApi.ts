@@ -1245,6 +1245,231 @@ export interface ApiUtilsMetaResponse {
   totalPages: number;
 }
 
+export interface ApiCommentsGetParams {
+  /** Page number, starts at 1. */
+  page?: number | null;
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
+  limit?: number | null;
+  /** Filter comments by object type (trace, observation, session, prompt). */
+  objectType?: string | null;
+  /** Filter comments by object id. If objectType is not provided, an error will be thrown. */
+  objectId?: string | null;
+  /** Filter comments by author user id. */
+  authorUserId?: string | null;
+}
+
+export interface ApiDatasetItemsListParams {
+  datasetName?: string | null;
+  sourceTraceId?: string | null;
+  sourceObservationId?: string | null;
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+}
+
+export interface ApiDatasetsListParams {
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+}
+
+export interface ApiDatasetsGetRunsParams {
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+  datasetName: string;
+}
+
+export interface ApiIngestionBatchPayload {
+  /** Batch of tracing events to be ingested. Discriminated by attribute `type`. */
+  batch: ApiIngestionEvent[];
+  /** Optional. Metadata field used by the Langfuse SDKs for debugging. */
+  metadata?: any;
+}
+
+export interface ApiMetricsDailyParams {
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+  /** Optional filter by the name of the trace */
+  traceName?: string | null;
+  /** Optional filter by the userId associated with the trace */
+  userId?: string | null;
+  /** Optional filter for metrics where traces include all of these tags */
+  tags?: (string | null)[];
+  /**
+   * Optional filter to only include traces and observations on or after a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  fromTimestamp?: string | null;
+  /**
+   * Optional filter to only include traces and observations before a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  toTimestamp?: string | null;
+}
+
+export interface ApiModelsListParams {
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+}
+
+export interface ApiObservationsGetManyParams {
+  /** Page number, starts at 1. */
+  page?: number | null;
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+  limit?: number | null;
+  name?: string | null;
+  userId?: string | null;
+  type?: string | null;
+  traceId?: string | null;
+  parentObservationId?: string | null;
+  /**
+   * Retrieve only observations with a start_time or or after this datetime (ISO 8601).
+   * @format date-time
+   */
+  fromStartTime?: string | null;
+  /**
+   * Retrieve only observations with a start_time before this datetime (ISO 8601).
+   * @format date-time
+   */
+  toStartTime?: string | null;
+  /** Optional filter to only include observations with a certain version. */
+  version?: string | null;
+}
+
+export interface ApiPromptVersionUpdatePayload {
+  /** New labels for the prompt version. Labels are unique across versions. The "latest" label is reserved and managed by Langfuse. */
+  newLabels: string[];
+}
+
+export interface ApiPromptsGetParams {
+  /** Version of the prompt to be retrieved. */
+  version?: number | null;
+  /** Label of the prompt to be retrieved. Defaults to "production" if no label or version is set. */
+  label?: string | null;
+  /** The name of the prompt */
+  promptName: string;
+}
+
+export interface ApiPromptsListParams {
+  name?: string | null;
+  label?: string | null;
+  tag?: string | null;
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+  /**
+   * Optional filter to only include prompt versions created/updated on or after a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  fromUpdatedAt?: string | null;
+  /**
+   * Optional filter to only include prompt versions created/updated before a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  toUpdatedAt?: string | null;
+}
+
+export interface ApiScoreConfigsGetParams {
+  /** Page number, starts at 1. */
+  page?: number | null;
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
+  limit?: number | null;
+}
+
+export interface ApiScoreGetParams {
+  /** Page number, starts at 1. */
+  page?: number | null;
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+  limit?: number | null;
+  /** Retrieve only scores with this userId associated to the trace. */
+  userId?: string | null;
+  /** Retrieve only scores with this name. */
+  name?: string | null;
+  /**
+   * Optional filter to only include scores created on or after a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  fromTimestamp?: string | null;
+  /**
+   * Optional filter to only include scores created before a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  toTimestamp?: string | null;
+  /** Retrieve only scores from a specific source. */
+  source?: ApiScoreSource | null;
+  /** Retrieve only scores with <operator> value. */
+  operator?: string | null;
+  /**
+   * Retrieve only scores with <operator> value.
+   * @format double
+   */
+  value?: number | null;
+  /** Comma-separated list of score IDs to limit the results to. */
+  scoreIds?: string | null;
+  /** Retrieve only scores with a specific configId. */
+  configId?: string | null;
+  /** Retrieve only scores with a specific annotation queueId. */
+  queueId?: string | null;
+  /** Retrieve only scores with a specific dataType. */
+  dataType?: ApiScoreDataType | null;
+  /** Only scores linked to traces that include all of these tags will be returned. */
+  traceTags?: (string | null)[];
+}
+
+export interface ApiSessionsListParams {
+  /** Page number, starts at 1 */
+  page?: number | null;
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+  limit?: number | null;
+  /**
+   * Optional filter to only include sessions created on or after a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  fromTimestamp?: string | null;
+  /**
+   * Optional filter to only include sessions created before a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  toTimestamp?: string | null;
+}
+
+export interface ApiTraceListParams {
+  /** Page number, starts at 1 */
+  page?: number | null;
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+  limit?: number | null;
+  userId?: string | null;
+  name?: string | null;
+  sessionId?: string | null;
+  /**
+   * Optional filter to only include traces with a trace.timestamp on or after a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  fromTimestamp?: string | null;
+  /**
+   * Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601)
+   * @format date-time
+   */
+  toTimestamp?: string | null;
+  /** Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
+  orderBy?: string | null;
+  /** Only traces that include all of these tags will be returned. */
+  tags?: (string | null)[];
+  /** Optional filter to only include traces with a certain version. */
+  version?: string | null;
+  /** Optional filter to only include traces with a certain release. */
+  release?: string | null;
+}
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
 
@@ -1499,21 +1724,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/comments
      * @secure
      */
-    commentsGet: (
-      query?: {
-        /** Page number, starts at 1. */
-        page?: number | null;
-        /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
-        limit?: number | null;
-        /** Filter comments by object type (trace, observation, session, prompt). */
-        objectType?: string | null;
-        /** Filter comments by object id. If objectType is not provided, an error will be thrown. */
-        objectId?: string | null;
-        /** Filter comments by author user id. */
-        authorUserId?: string | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    commentsGet: (query: ApiCommentsGetParams, params: RequestParams = {}) =>
       this.request<ApiGetCommentsResponse, any>({
         path: `/api/public/comments`,
         method: "GET",
@@ -1584,18 +1795,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/dataset-items
      * @secure
      */
-    datasetItemsList: (
-      query?: {
-        datasetName?: string | null;
-        sourceTraceId?: string | null;
-        sourceObservationId?: string | null;
-        /** page number, starts at 1 */
-        page?: number | null;
-        /** limit of items per page */
-        limit?: number | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    datasetItemsList: (query: ApiDatasetItemsListParams, params: RequestParams = {}) =>
       this.request<ApiPaginatedDatasetItems, any>({
         path: `/api/public/dataset-items`,
         method: "GET",
@@ -1685,16 +1885,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/datasets/{datasetName}/runs
      * @secure
      */
-    datasetsGetRuns: (
-      datasetName: string,
-      query?: {
-        /** page number, starts at 1 */
-        page?: number | null;
-        /** limit of items per page */
-        limit?: number | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    datasetsGetRuns: ({ datasetName, ...query }: ApiDatasetsGetRunsParams, params: RequestParams = {}) =>
       this.request<ApiPaginatedDatasetRuns, any>({
         path: `/api/public/datasets/${datasetName}/runs`,
         method: "GET",
@@ -1712,15 +1903,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/v2/datasets
      * @secure
      */
-    datasetsList: (
-      query?: {
-        /** page number, starts at 1 */
-        page?: number | null;
-        /** limit of items per page */
-        limit?: number | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    datasetsList: (query: ApiDatasetsListParams, params: RequestParams = {}) =>
       this.request<ApiPaginatedDatasets, any>({
         path: `/api/public/v2/datasets`,
         method: "GET",
@@ -1753,15 +1936,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request POST:/api/public/ingestion
      * @secure
      */
-    ingestionBatch: (
-      data: {
-        /** Batch of tracing events to be ingested. Discriminated by attribute `type`. */
-        batch: ApiIngestionEvent[];
-        /** Optional. Metadata field used by the Langfuse SDKs for debugging. */
-        metadata?: any;
-      },
-      params: RequestParams = {}
-    ) =>
+    ingestionBatch: (data: ApiIngestionBatchPayload, params: RequestParams = {}) =>
       this.request<ApiIngestionResponse, any>({
         path: `/api/public/ingestion`,
         method: "POST",
@@ -1834,31 +2009,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/metrics/daily
      * @secure
      */
-    metricsDaily: (
-      query?: {
-        /** page number, starts at 1 */
-        page?: number | null;
-        /** limit of items per page */
-        limit?: number | null;
-        /** Optional filter by the name of the trace */
-        traceName?: string | null;
-        /** Optional filter by the userId associated with the trace */
-        userId?: string | null;
-        /** Optional filter for metrics where traces include all of these tags */
-        tags?: (string | null)[];
-        /**
-         * Optional filter to only include traces and observations on or after a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        fromTimestamp?: string | null;
-        /**
-         * Optional filter to only include traces and observations before a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        toTimestamp?: string | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    metricsDaily: (query: ApiMetricsDailyParams, params: RequestParams = {}) =>
       this.request<ApiDailyMetrics, any>({
         path: `/api/public/metrics/daily`,
         method: "GET",
@@ -1928,15 +2079,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/models
      * @secure
      */
-    modelsList: (
-      query?: {
-        /** page number, starts at 1 */
-        page?: number | null;
-        /** limit of items per page */
-        limit?: number | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    modelsList: (query: ApiModelsListParams, params: RequestParams = {}) =>
       this.request<ApiPaginatedModels, any>({
         path: `/api/public/models`,
         method: "GET",
@@ -1971,32 +2114,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/observations
      * @secure
      */
-    observationsGetMany: (
-      query?: {
-        /** Page number, starts at 1. */
-        page?: number | null;
-        /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
-        limit?: number | null;
-        name?: string | null;
-        userId?: string | null;
-        type?: string | null;
-        traceId?: string | null;
-        parentObservationId?: string | null;
-        /**
-         * Retrieve only observations with a start_time or or after this datetime (ISO 8601).
-         * @format date-time
-         */
-        fromStartTime?: string | null;
-        /**
-         * Retrieve only observations with a start_time before this datetime (ISO 8601).
-         * @format date-time
-         */
-        toStartTime?: string | null;
-        /** Optional filter to only include observations with a certain version. */
-        version?: string | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    observationsGetMany: (query: ApiObservationsGetManyParams, params: RequestParams = {}) =>
       this.request<ApiObservationsViews, any>({
         path: `/api/public/observations`,
         method: "GET",
@@ -2050,16 +2168,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/v2/prompts/{promptName}
      * @secure
      */
-    promptsGet: (
-      promptName: string,
-      query?: {
-        /** Version of the prompt to be retrieved. */
-        version?: number | null;
-        /** Label of the prompt to be retrieved. Defaults to "production" if no label or version is set. */
-        label?: string | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    promptsGet: ({ promptName, ...query }: ApiPromptsGetParams, params: RequestParams = {}) =>
       this.request<ApiPrompt, any>({
         path: `/api/public/v2/prompts/${promptName}`,
         method: "GET",
@@ -2077,28 +2186,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/v2/prompts
      * @secure
      */
-    promptsList: (
-      query?: {
-        name?: string | null;
-        label?: string | null;
-        tag?: string | null;
-        /** page number, starts at 1 */
-        page?: number | null;
-        /** limit of items per page */
-        limit?: number | null;
-        /**
-         * Optional filter to only include prompt versions created/updated on or after a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        fromUpdatedAt?: string | null;
-        /**
-         * Optional filter to only include prompt versions created/updated before a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        toUpdatedAt?: string | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    promptsList: (query: ApiPromptsListParams, params: RequestParams = {}) =>
       this.request<ApiPromptMetaListResponse, any>({
         path: `/api/public/v2/prompts`,
         method: "GET",
@@ -2119,10 +2207,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
     promptVersionUpdate: (
       name: string,
       version: number,
-      data: {
-        /** New labels for the prompt version. Labels are unique across versions. The "latest" label is reserved and managed by Langfuse. */
-        newLabels: string[];
-      },
+      data: ApiPromptVersionUpdatePayload,
       params: RequestParams = {}
     ) =>
       this.request<ApiPrompt, any>({
@@ -2162,15 +2247,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/score-configs
      * @secure
      */
-    scoreConfigsGet: (
-      query?: {
-        /** Page number, starts at 1. */
-        page?: number | null;
-        /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
-        limit?: number | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    scoreConfigsGet: (query: ApiScoreConfigsGetParams, params: RequestParams = {}) =>
       this.request<ApiScoreConfigs, any>({
         path: `/api/public/score-configs`,
         method: "GET",
@@ -2240,48 +2317,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/scores
      * @secure
      */
-    scoreGet: (
-      query?: {
-        /** Page number, starts at 1. */
-        page?: number | null;
-        /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
-        limit?: number | null;
-        /** Retrieve only scores with this userId associated to the trace. */
-        userId?: string | null;
-        /** Retrieve only scores with this name. */
-        name?: string | null;
-        /**
-         * Optional filter to only include scores created on or after a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        fromTimestamp?: string | null;
-        /**
-         * Optional filter to only include scores created before a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        toTimestamp?: string | null;
-        /** Retrieve only scores from a specific source. */
-        source?: ApiScoreSource | null;
-        /** Retrieve only scores with <operator> value. */
-        operator?: string | null;
-        /**
-         * Retrieve only scores with <operator> value.
-         * @format double
-         */
-        value?: number | null;
-        /** Comma-separated list of score IDs to limit the results to. */
-        scoreIds?: string | null;
-        /** Retrieve only scores with a specific configId. */
-        configId?: string | null;
-        /** Retrieve only scores with a specific annotation queueId. */
-        queueId?: string | null;
-        /** Retrieve only scores with a specific dataType. */
-        dataType?: ApiScoreDataType | null;
-        /** Only scores linked to traces that include all of these tags will be returned. */
-        traceTags?: (string | null)[];
-      },
-      params: RequestParams = {}
-    ) =>
+    scoreGet: (query: ApiScoreGetParams, params: RequestParams = {}) =>
       this.request<ApiGetScoresResponse, any>({
         path: `/api/public/scores`,
         method: "GET",
@@ -2333,25 +2369,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/sessions
      * @secure
      */
-    sessionsList: (
-      query?: {
-        /** Page number, starts at 1 */
-        page?: number | null;
-        /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
-        limit?: number | null;
-        /**
-         * Optional filter to only include sessions created on or after a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        fromTimestamp?: string | null;
-        /**
-         * Optional filter to only include sessions created before a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        toTimestamp?: string | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    sessionsList: (query: ApiSessionsListParams, params: RequestParams = {}) =>
       this.request<ApiPaginatedSessions, any>({
         path: `/api/public/sessions`,
         method: "GET",
@@ -2386,36 +2404,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
      * @request GET:/api/public/traces
      * @secure
      */
-    traceList: (
-      query?: {
-        /** Page number, starts at 1 */
-        page?: number | null;
-        /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
-        limit?: number | null;
-        userId?: string | null;
-        name?: string | null;
-        sessionId?: string | null;
-        /**
-         * Optional filter to only include traces with a trace.timestamp on or after a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        fromTimestamp?: string | null;
-        /**
-         * Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601)
-         * @format date-time
-         */
-        toTimestamp?: string | null;
-        /** Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
-        orderBy?: string | null;
-        /** Only traces that include all of these tags will be returned. */
-        tags?: (string | null)[];
-        /** Optional filter to only include traces with a certain version. */
-        version?: string | null;
-        /** Optional filter to only include traces with a certain release. */
-        release?: string | null;
-      },
-      params: RequestParams = {}
-    ) =>
+    traceList: (query: ApiTraceListParams, params: RequestParams = {}) =>
       this.request<ApiTraces, any>({
         path: `/api/public/traces`,
         method: "GET",
