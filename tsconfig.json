@@ -18,7 +18,7 @@
     "rootDir": "./",
     "lib": [
       "ES2021",
-      "ES2022.Error",
+      "ES2022.Error"
     ],
     "types": [
       "node",

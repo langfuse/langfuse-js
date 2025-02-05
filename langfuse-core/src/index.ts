@@ -73,6 +73,7 @@ import { isInSample } from "./sampling";
 
 export * from "./prompts/promptClients";
 export * from "./media/LangfuseMedia";
+
 export { LangfuseMemoryStorage } from "./storage-memory";
 export type { LangfusePromptRecord } from "./types";
 export * as utils from "./utils";
@@ -172,8 +173,8 @@ function logIngestionError(error: any): void {
 
 abstract class LangfuseCoreStateless {
   // options
-  private secretKey: string | undefined;
-  private publicKey: string;
+  protected secretKey: string | undefined;
+  protected publicKey: string;
   baseUrl: string;
   additionalHeaders: Record<string, string> = {};
   private flushAt: number;
@@ -184,7 +185,7 @@ abstract class LangfuseCoreStateless {
   private pendingEventProcessingPromises: Record<string, Promise<any>> = {};
   private pendingIngestionPromises: Record<string, Promise<any>> = {};
   private release: string | undefined;
-  private sdkIntegration: string;
+  protected sdkIntegration: string;
   private enabled: boolean;
   protected isLocalEventExportEnabled: boolean;
   private localEventExportMap: Map<string, SingleIngestionEvent[]> = new Map();
@@ -1159,7 +1160,7 @@ abstract class LangfuseCoreStateless {
     return fetchOptions;
   }
 
-  private constructAuthorizationHeader(
+  protected constructAuthorizationHeader(
     publicKey: string,
     secretKey?: string
   ): {
