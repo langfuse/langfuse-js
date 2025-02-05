@@ -11,16 +11,20 @@ import { LangfusePublicApi } from "./publicApi";
 import { version } from "../package.json";
 import { type LangfuseOptions } from "./types";
 
-export type * from "langfuse-core";
+export type * from "./publicApi";
+export type {
+  LangfusePromptClient,
+  ChatPromptClient,
+  TextPromptClient,
+  LangfusePromptRecord,
+  LangfuseTraceClient,
+  LangfuseSpanClient,
+  LangfuseEventClient,
+  LangfuseGenerationClient,
+} from "langfuse-core";
 
 // Required when users pass these as typed arguments
-export {
-  type LangfuseTraceClient,
-  type LangfuseSpanClient,
-  type LangfuseEventClient,
-  type LangfuseGenerationClient,
-  LangfuseMedia,
-} from "langfuse-core";
+export { LangfuseMedia } from "langfuse-core";
 
 export class Langfuse extends LangfuseCore {
   private _storage: LangfuseStorage;
