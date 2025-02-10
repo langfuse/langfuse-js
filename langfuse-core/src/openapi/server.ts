@@ -1569,6 +1569,8 @@ export interface components {
       labels?: string[] | null;
       /** @description List of tags to apply to all versions of this prompt. */
       tags?: string[] | null;
+      /** @description Commit message for this prompt version. */
+      commitMessage?: string | null;
     };
     /** CreateTextPromptRequest */
     CreateTextPromptRequest: {
@@ -1579,6 +1581,8 @@ export interface components {
       labels?: string[] | null;
       /** @description List of tags to apply to all versions of this prompt. */
       tags?: string[] | null;
+      /** @description Commit message for this prompt version. */
+      commitMessage?: string | null;
     };
     /** Prompt */
     Prompt:
@@ -1599,6 +1603,8 @@ export interface components {
       labels: string[];
       /** @description List of tags. Used to filter via UI and API. The same across versions of a prompt. */
       tags: string[];
+      /** @description Commit message for this prompt version. */
+      commitMessage?: string | null;
     };
     /** ChatMessage */
     ChatMessage: {
