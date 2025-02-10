@@ -15,6 +15,7 @@ abstract class BasePromptClient {
   public readonly isFallback: boolean;
   public readonly type: "text" | "chat";
   public readonly prompt: string | ChatMessage[];
+  public readonly commitMessage: string | null | undefined;
 
   constructor(prompt: CreateLangfusePromptResponse, isFallback = false, type: "text" | "chat") {
     this.name = prompt.name;
@@ -25,6 +26,7 @@ abstract class BasePromptClient {
     this.isFallback = isFallback;
     this.type = type;
     this.prompt = prompt.prompt;
+    this.commitMessage = prompt.commitMessage;
   }
 
   abstract compile(variables?: Record<string, string>): string | ChatMessage[];
