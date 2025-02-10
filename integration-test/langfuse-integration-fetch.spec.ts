@@ -455,6 +455,7 @@ describe("Langfuse (fetch)", () => {
         name: promptName,
         isActive: true,
         prompt: "A {{animal}} usually has {{animal}} friends.",
+        commitMessage: "initial commit",
       });
 
       expect(createdPrompt.constructor.name).toBe("TextPromptClient");
@@ -464,6 +465,7 @@ describe("Langfuse (fetch)", () => {
       expect(createdPrompt.constructor.name).toBe("TextPromptClient");
       expect(fetchedPrompt.name).toEqual(promptName);
       expect(fetchedPrompt.prompt).toEqual("A {{animal}} usually has {{animal}} friends.");
+      expect(fetchedPrompt.commitMessage).toBe("initial commit");
       expect(fetchedPrompt.compile({ animal: "dog" })).toEqual("A dog usually has dog friends.");
     });
 
@@ -529,6 +531,7 @@ describe("Langfuse (fetch)", () => {
         type: "chat",
         isActive: true,
         prompt: [{ role: "system", content: "A {{animal}} usually has {{animal}} friends." }],
+        commitMessage: "initial commit",
       });
 
       expect(createdPrompt.constructor.name).toBe("ChatPromptClient");
@@ -543,6 +546,7 @@ describe("Langfuse (fetch)", () => {
       expect(fetchedPrompt.compile({ animal: "dog" })).toEqual([
         { role: "system", content: "A dog usually has dog friends." },
       ]);
+      expect(fetchedPrompt.commitMessage).toBe("initial commit");
     });
 
     it("should not return fallback if fetch succeeds", async () => {

@@ -1077,6 +1077,8 @@ export interface ApiCreateChatPromptRequest {
   labels?: string[] | null;
   /** List of tags to apply to all versions of this prompt. */
   tags?: string[] | null;
+  /** Commit message for this prompt version. */
+  commitMessage?: string | null;
 }
 
 /** CreateTextPromptRequest */
@@ -1088,6 +1090,8 @@ export interface ApiCreateTextPromptRequest {
   labels?: string[] | null;
   /** List of tags to apply to all versions of this prompt. */
   tags?: string[] | null;
+  /** Commit message for this prompt version. */
+  commitMessage?: string | null;
 }
 
 /** Prompt */
@@ -1108,6 +1112,8 @@ export interface ApiBasePrompt {
   labels: string[];
   /** List of tags. Used to filter via UI and API. The same across versions of a prompt. */
   tags: string[];
+  /** Commit message for this prompt version. */
+  commitMessage?: string | null;
 }
 
 /** ChatMessage */
