@@ -129,25 +129,46 @@ const wrapMethod = <T extends GenericMethod>(
     }
 
     if (res instanceof Promise) {
-      const wrappedPromise = res.then((result) => {
-        const output = parseCompletionOutput(result);
-        const usage = parseUsage(result);
-        const usageDetails = parseUsageDetailsFromResponse(result);
+      const wrappedPromise = res
+        .then((result) => {
+          const output = parseCompletionOutput(result);
+          const usage = parseUsage(result);
+          const usageDetails = parseUsageDetailsFromResponse(result);
 
-        langfuseParent.generation({
-          ...observationData,
-          output,
-          endTime: new Date(),
-          usage,
-          usageDetails,
+          langfuseParent.generation({
+            ...observationData,
+            output,
+            endTime: new Date(),
+            usage,
+            usageDetails,
+          });
+
+          if (!hasUserProvidedParent) {
+            langfuseParent.update({ output });
+          }
+
+          return result;
+        })
+        .catch((err) => {
+          langfuseParent.generation({
+            ...observationData,
+            endTime: new Date(),
+            statusMessage: String(err),
+            level: "ERROR",
+            usage: {
+              inputCost: 0,
+              outputCost: 0,
+              totalCost: 0,
+            },
+            costDetails: {
+              input: 0,
+              output: 0,
+              total: 0,
+            },
+          });
+
+          throw err;
         });
-
-        if (!hasUserProvidedParent) {
-          langfuseParent.update({ output });
-        }
-
-        return result;
-      });
 
       return wrappedPromise;
     }
