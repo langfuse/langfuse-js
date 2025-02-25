@@ -23,11 +23,11 @@ export const withTracing = <T extends GenericMethod>(
   return (...args) => wrapMethod(tracedMethod, config, ...args);
 };
 
-const wrapMethod = async <T extends GenericMethod>(
+const wrapMethod = <T extends GenericMethod>(
   tracedMethod: T,
   config?: LangfuseConfig,
   ...args: Parameters<T>
-): Promise<ReturnType<T> | any> => {
+): ReturnType<T> | any => {
   const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
 
   const finalModelParams = { ...modelParameters, response_format: undefined };
@@ -74,74 +74,60 @@ const wrapMethod = async <T extends GenericMethod>(
   }
 
   try {
-    const res = await tracedMethod(...args);
+    const res = tracedMethod(...args);
 
     // Handle stream responses
     if (isAsyncIterable(res)) {
-      async function* tracedOutputGenerator(): AsyncGenerator<unknown, void, unknown> {
-        const response = res;
-        const textChunks: string[] = [];
-        const toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] = [];
-        let completionStartTime: Date | null = null;
-        let usage: OpenAI.CompletionUsage | null = null;
-
-        for await (const rawChunk of response as AsyncIterable<unknown>) {
-          completionStartTime = completionStartTime ?? new Date();
-
-          if (typeof rawChunk === "object" && rawChunk != null && "usage" in rawChunk) {
-            usage = rawChunk.usage as OpenAI.CompletionUsage | null;
-          }
-
-          const processedChunk = parseChunk(rawChunk);
-
-          if (!processedChunk.isToolCall) {
-            textChunks.push(processedChunk.data);
-          } else {
-            toolCallChunks.push(processedChunk.data);
-          }
-
-          yield rawChunk;
-        }
-
-        const output = toolCallChunks.length > 0 ? getToolCallOutput(toolCallChunks) : textChunks.join("");
-
-        langfuseParent.generation({
-          ...observationData,
-          output,
-          endTime: new Date(),
-          completionStartTime,
-          usage: usage
-            ? {
-                input: "prompt_tokens" in usage ? usage.prompt_tokens : undefined,
-                output: "completion_tokens" in usage ? usage.completion_tokens : undefined,
-                total: "total_tokens" in usage ? usage.total_tokens : undefined,
-              }
-            : undefined,
-          usageDetails: usage ? parseUsageDetails(usage) : undefined,
-        });
-
-        if (!hasUserProvidedParent) {
-          langfuseParent.update({ output });
-        }
-      }
-
-      return tracedOutputGenerator() as ReturnType<T>;
+      return wrapAsyncIterable(res, langfuseParent, hasUserProvidedParent, observationData);
     }
 
-    const output = parseCompletionOutput(res);
-    const usage = parseUsage(res);
-    const usageDetails = parseUsageDetailsFromResponse(res);
+    if (res instanceof Promise) {
+      const wrappedPromise = res
+        .then((result) => {
+          if (isAsyncIterable(result)) {
+            return wrapAsyncIterable(result, langfuseParent, hasUserProvidedParent, observationData);
+          }
 
-    langfuseParent.generation({
-      ...observationData,
-      output,
-      endTime: new Date(),
-      usage,
-      usageDetails,
-    });
+          const output = parseCompletionOutput(result);
+          const usage = parseUsage(result);
+          const usageDetails = parseUsageDetailsFromResponse(result);
 
-    if (!hasUserProvidedParent) {
-      langfuseParent.update({ output });
+          langfuseParent.generation({
+            ...observationData,
+            output,
+            endTime: new Date(),
+            usage,
+            usageDetails,
+          });
+
+          if (!hasUserProvidedParent) {
+            langfuseParent.update({ output });
+          }
+
+          return result;
+        })
+        .catch((err) => {
+          langfuseParent.generation({
+            ...observationData,
+            endTime: new Date(),
+            statusMessage: String(err),
+            level: "ERROR",
+            usage: {
+              inputCost: 0,
+              outputCost: 0,
+              totalCost: 0,
+            },
+            costDetails: {
+              input: 0,
+              output: 0,
+              total: 0,
+            },
+          });
+
+          throw err;
+        });
+
+      return wrappedPromise;
     }
 
     return res;
@@ -166,3 +152,59 @@ const wrapMethod = async <T extends GenericMethod>(
     throw error;
   }
 };
+
+function wrapAsyncIterable<R>(
+  iterable: AsyncIterable<unknown>,
+  langfuseParent: LangfuseParent,
+  hasUserProvidedParent: boolean | undefined,
+  observationData: Record<string, any>
+): R {
+  async function* tracedOutputGenerator(): AsyncGenerator<unknown, void, unknown> {
+    const response = iterable;
+    const textChunks: string[] = [];
+    const toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] = [];
+    let completionStartTime: Date | null = null;
+    let usage: OpenAI.CompletionUsage | null = null;
+
+    for await (const rawChunk of response as AsyncIterable<unknown>) {
+      completionStartTime = completionStartTime ?? new Date();
+
+      if (typeof rawChunk === "object" && rawChunk != null && "usage" in rawChunk) {
+        usage = rawChunk.usage as OpenAI.CompletionUsage | null;
+      }
+
+      const processedChunk = parseChunk(rawChunk);
+
+      if (!processedChunk.isToolCall) {
+        textChunks.push(processedChunk.data);
+      } else {
+        toolCallChunks.push(processedChunk.data);
+      }
+
+      yield rawChunk;
+    }
+
+    const output = toolCallChunks.length > 0 ? getToolCallOutput(toolCallChunks) : textChunks.join("");
+
+    langfuseParent.generation({
+      ...observationData,
+      output,
+      endTime: new Date(),
+      completionStartTime,
+      usage: usage
+        ? {
+            input: "prompt_tokens" in usage ? usage.prompt_tokens : undefined,
+            output: "completion_tokens" in usage ? usage.completion_tokens : undefined,
+            total: "total_tokens" in usage ? usage.total_tokens : undefined,
+          }
+        : undefined,
+      usageDetails: usage ? parseUsageDetails(usage) : undefined,
+    });
+
+    if (!hasUserProvidedParent) {
+      langfuseParent.update({ output });
+    }
+  }
+
+  return tracedOutputGenerator() as R;
+}
