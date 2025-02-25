@@ -146,7 +146,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.input).toBeDefined();
       expect(generation.input).toBe("Say this is a test!");
       expect(generation.output).toBeDefined();
-      expect(generation.output).toMatch(res.choices[0].text);
+      expect(res.choices[0].text).toContain(generation.output);
       expect(generation.usage).toMatchObject({
         unit: "TOKENS",
         input: usage?.prompt_tokens,
