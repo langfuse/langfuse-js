@@ -23,11 +23,11 @@ export const withTracing = <T extends GenericMethod>(
   return (...args) => wrapMethod(tracedMethod, config, ...args);
 };
 
-const wrapMethod = async <T extends GenericMethod>(
+const wrapMethod = <T extends GenericMethod>(
   tracedMethod: T,
   config?: LangfuseConfig,
   ...args: Parameters<T>
-): Promise<ReturnType<T> | any> => {
+): ReturnType<T> | any => {
   const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
 
   const finalModelParams = { ...modelParameters, response_format: undefined };
@@ -74,7 +74,7 @@ const wrapMethod = async <T extends GenericMethod>(
   }
 
   try {
-    const res = await tracedMethod(...args);
+    const res = tracedMethod(...args);
 
     // Handle stream responses
     if (isAsyncIterable(res)) {
@@ -128,20 +128,28 @@ const wrapMethod = async <T extends GenericMethod>(
       return tracedOutputGenerator() as ReturnType<T>;
     }
 
-    const output = parseCompletionOutput(res);
-    const usage = parseUsage(res);
-    const usageDetails = parseUsageDetailsFromResponse(res);
+    if (res instanceof Promise) {
+      const wrappedPromise = res.then((result) => {
+        const output = parseCompletionOutput(result);
+        const usage = parseUsage(result);
+        const usageDetails = parseUsageDetailsFromResponse(result);
 
-    langfuseParent.generation({
-      ...observationData,
-      output,
-      endTime: new Date(),
-      usage,
-      usageDetails,
-    });
+        langfuseParent.generation({
+          ...observationData,
+          output,
+          endTime: new Date(),
+          usage,
+          usageDetails,
+        });
 
-    if (!hasUserProvidedParent) {
-      langfuseParent.update({ output });
+        if (!hasUserProvidedParent) {
+          langfuseParent.update({ output });
+        }
+
+        return result;
+      });
+
+      return wrappedPromise;
     }
 
     return res;
