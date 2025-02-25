@@ -814,6 +814,37 @@ describe("Langchain", () => {
       expect((generationUpdate.body as any).traceId).toBe(traceId);
       expect((traceUpdate.body as any).id).toBe(traceId);
     });
+    it("should handle cached token counts", async () => {
+      const handler = new CallbackHandler();
+      const messages = [
+        new SystemMessage("You are an excellent Comedian\n".repeat(200)),
+        new HumanMessage("Tell me a joke"),
+      ];
+
+      const llm = new ChatOpenAI({ modelName: "gpt-4o-mini" });
+
+      await llm.invoke(messages, { callbacks: [handler] });
+
+      // Execute again to force cached token usage
+      await llm.invoke(messages, { callbacks: [handler] });
+
+      await handler.flushAsync();
+
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
+      expect(trace).toBeDefined();
+
+      const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+
+      generations?.forEach((generation) => {
+        expect(generation.usageDetails).toBeDefined();
+        expect(generation.usageDetails?.input_cache_read).toBeGreaterThan(0);
+        expect(
+          (generation.usageDetails?.input ?? 0) +
+            (generation.usageDetails?.input_cache_read ?? 0) +
+            (generation.usageDetails?.output ?? 0)
+        ).toEqual(generation.usageDetails?.total ?? 0);
+      });
+    });
   });
 });
 
