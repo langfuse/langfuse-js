@@ -611,12 +611,20 @@ export class CallbackHandler extends BaseCallbackHandler {
       if (llmUsage && "input_token_details" in llmUsage) {
         for (const [key, val] of Object.entries(llmUsage["input_token_details"] ?? {})) {
           usageDetails[`input_${key}`] = val;
+
+          if ("input" in usageDetails && typeof val === "number") {
+            usageDetails["input"] = Math.max(0, usageDetails["input"] - val);
+          }
         }
       }
 
       if (llmUsage && "output_token_details" in llmUsage) {
         for (const [key, val] of Object.entries(llmUsage["output_token_details"] ?? {})) {
           usageDetails[`output_${key}`] = val;
+
+          if ("output" in usageDetails && typeof val === "number") {
+            usageDetails["output"] = Math.max(0, usageDetails["output"] - val);
+          }
         }
       }
 
