@@ -1077,7 +1077,7 @@ abstract class LangfuseCoreStateless {
 
     const done = (err?: any): void => {
       if (err) {
-        this._events.emit("error", err);
+        this._events.emit("warning", err);
       }
       callback?.(err, items);
       this._events.emit("flush", items);
@@ -1157,7 +1157,7 @@ abstract class LangfuseCoreStateless {
         totalSize += itemSize;
         processedItems.push(queue[i]);
       } catch (error) {
-        console.error(`[Langfuse SDK] ${error}`);
+        this._events.emit("error", error);
         remainingItems.push(...queue.slice(i));
         break;
       }
