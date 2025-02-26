@@ -186,7 +186,15 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** @description Batched ingestion for Langfuse Tracing. If you want to use tracing via the API, such as to build your own Langfuse client implementation, this is the only API route you need to implement.
+    /** @description Batched ingestion for Langfuse Tracing.
+     *     If you want to use tracing via the API, such as to build your own Langfuse client implementation, this is the only API route you need to implement.
+     *
+     *     Within each batch, there can be multiple events.
+     *     Each event has a type, an id, a timestamp, metadata and a body.
+     *     Internally, we refer to this as the "event envelope" as it tells us something about the event but not the trace.
+     *     We use the event id within this envelope to deduplicate messages to avoid processing the same event twice, i.e. the event id should be unique per request.
+     *     The event.body.id is the ID of the actual trace and will be used for updates and will be visible within the Langfuse App.
+     *     I.e. if you want to update a trace, you'd use the same body id, but separate event IDs.
      *
      *     Notes:
      *
@@ -586,6 +594,8 @@ export interface components {
       tags?: string[] | null;
       /** @description Public traces are accessible via url without login */
       public?: boolean | null;
+      /** @description The environment from which this trace originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+      environment?: string | null;
     };
     /** TraceWithDetails */
     TraceWithDetails: {
@@ -693,6 +703,8 @@ export interface components {
       costDetails?: {
         [key: string]: number;
       } | null;
+      /** @description The environment from which this observation originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+      environment?: string | null;
     };
     /** ObservationsView */
     ObservationsView: {
@@ -825,6 +837,8 @@ export interface components {
       configId?: string | null;
       /** @description Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
       queueId?: string | null;
+      /** @description The environment from which this score originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+      environment?: string | null;
     };
     /** NumericScore */
     NumericScore: {
@@ -1006,10 +1020,11 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) | undefined /**
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) | undefined;
+    /**
      * CommentObjectType
      * @enum {string}
-     */;
+     */
     CommentObjectType: "TRACE" | "OBSERVATION" | "SESSION" | "PROMPT";
     /**
      * DatasetStatus
@@ -1153,6 +1168,7 @@ export interface components {
       statusMessage?: string | null;
       parentObservationId?: string | null;
       version?: string | null;
+      environment?: string | null;
     };
     /** CreateEventBody */
     CreateEventBody: {
@@ -1228,6 +1244,7 @@ export interface components {
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+      environment?: string | null;
     };
     /** TraceBody */
     TraceBody: {
@@ -1243,6 +1260,7 @@ export interface components {
       version?: string | null;
       metadata?: unknown;
       tags?: string[] | null;
+      environment?: string | null;
       /** @description Make trace publicly accessible via url */
       public?: boolean | null;
     };
@@ -1257,6 +1275,7 @@ export interface components {
       traceId: string;
       /** @example novelty */
       name: string;
+      environment?: string | null;
       /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
       value: components["schemas"]["CreateScoreValue"];
       observationId?: string | null;

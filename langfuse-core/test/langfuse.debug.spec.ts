@@ -28,8 +28,8 @@ describe("Langfuse Core", () => {
       langfuse.trace({ name: "test-trace2" });
       await jest.advanceTimersByTimeAsync(1);
       expect(spy).toHaveBeenCalledTimes(4);
-      expect(spy).toHaveBeenCalledWith("Langfuse Debug", "trace-create", expect.stringContaining("test-trace2"));
-      expect(spy).toHaveBeenCalledWith("Langfuse Debug", "flush", expect.stringContaining("test-trace2"));
+      expect(spy).toHaveBeenCalledWith("[Langfuse Debug]", "trace-create", expect.stringContaining("test-trace2"));
+      expect(spy).toHaveBeenCalledWith("[Langfuse Debug]", "flush", expect.stringContaining("test-trace2"));
 
       spy.mockReset();
       langfuse.debug(false);
