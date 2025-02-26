@@ -642,6 +642,7 @@ export interface ApiOptionalObservationBody {
   statusMessage?: string | null;
   parentObservationId?: string | null;
   version?: string | null;
+  environment?: string | null;
 }
 
 /** CreateEventBody */
@@ -715,6 +716,7 @@ export interface ApiObservationBody {
   level?: ApiObservationLevel | null;
   statusMessage?: string | null;
   parentObservationId?: string | null;
+  environment?: string | null;
 }
 
 /** TraceBody */
@@ -731,6 +733,7 @@ export interface ApiTraceBody {
   version?: string | null;
   metadata?: any;
   tags?: string[] | null;
+  environment?: string | null;
   /** Make trace publicly accessible via url */
   public?: boolean | null;
 }
@@ -747,6 +750,7 @@ export interface ApiScoreBody {
   traceId: string;
   /** @example "novelty" */
   name: string;
+  environment?: string | null;
   /** The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
   value: ApiCreateScoreValue;
   observationId?: string | null;

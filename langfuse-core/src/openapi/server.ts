@@ -1168,6 +1168,7 @@ export interface components {
       statusMessage?: string | null;
       parentObservationId?: string | null;
       version?: string | null;
+      environment?: string | null;
     };
     /** CreateEventBody */
     CreateEventBody: {
@@ -1243,6 +1244,7 @@ export interface components {
       level?: components["schemas"]["ObservationLevel"];
       statusMessage?: string | null;
       parentObservationId?: string | null;
+      environment?: string | null;
     };
     /** TraceBody */
     TraceBody: {
@@ -1258,6 +1260,7 @@ export interface components {
       version?: string | null;
       metadata?: unknown;
       tags?: string[] | null;
+      environment?: string | null;
       /** @description Make trace publicly accessible via url */
       public?: boolean | null;
     };
@@ -1272,6 +1275,7 @@ export interface components {
       traceId: string;
       /** @example novelty */
       name: string;
+      environment?: string | null;
       /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
       value: components["schemas"]["CreateScoreValue"];
       observationId?: string | null;

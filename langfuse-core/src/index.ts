@@ -85,6 +85,7 @@ const MAX_EVENT_SIZE_BYTES = getEnv("LANGFUSE_MAX_EVENT_SIZE_BYTES")
 const MAX_BATCH_SIZE_BYTES = getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES")
   ? Number(getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES"))
   : 2_500_000;
+const ENVIRONMENT_PATTERN = /^(?!langfuse)[a-z0-9_-]+$/;
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -197,6 +198,7 @@ abstract class LangfuseCoreStateless {
   private projectId: string | undefined;
   private mask: MaskFunction | undefined;
   private sampleRate: number | undefined;
+  private environment: string | undefined;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -229,6 +231,14 @@ abstract class LangfuseCoreStateless {
 
     if (this.sampleRate) {
       this._events.emit("debug", `Langfuse trace sampling enabled with sampleRate ${this.sampleRate}.`);
+    }
+
+    this.environment = options?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
+    if (this.environment && !ENVIRONMENT_PATTERN.test(this.environment)) {
+      this._events.emit(
+        "error",
+        `Invalid tracing environment set: ${this.environment} . Environment must match regex ${ENVIRONMENT_PATTERN}. Events will be rejected by Langfuse server.`
+      );
     }
 
     this._retryOptions = {
@@ -301,6 +311,7 @@ abstract class LangfuseCoreStateless {
       id,
       release,
       timestamp: bodyTimestamp ?? new Date(),
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("trace-create", parsedBody);
@@ -315,6 +326,7 @@ abstract class LangfuseCoreStateless {
     const parsedBody: CreateLangfuseEventBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("event-create", parsedBody);
@@ -329,6 +341,7 @@ abstract class LangfuseCoreStateless {
     const parsedBody: CreateLangfuseSpanBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("span-create", parsedBody);
@@ -347,6 +360,7 @@ abstract class LangfuseCoreStateless {
     const parsedBody: CreateLangfuseGenerationBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      environment: this.environment,
       ...promptDetails,
       ...rest,
     };
@@ -362,6 +376,7 @@ abstract class LangfuseCoreStateless {
 
     const parsedBody: CreateLangfuseScoreBody = {
       id,
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("score-create", parsedBody);
