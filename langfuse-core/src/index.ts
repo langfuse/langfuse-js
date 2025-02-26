@@ -217,6 +217,10 @@ abstract class LangfuseCoreStateless {
   constructor(params: LangfuseCoreOptions) {
     const { publicKey, secretKey, enabled, _projectId, _isLocalEventExportEnabled, ...options } = params;
 
+    this._events.on("error", (payload) => {
+      console.error(`[Langfuse SDK] ${typeof payload === "string" ? payload : JSON.stringify(payload)}`);
+    });
+
     this.enabled = enabled === false ? false : true;
     this.publicKey = publicKey ?? "";
     this.secretKey = secretKey;
@@ -292,9 +296,14 @@ abstract class LangfuseCoreStateless {
     this.debugMode = enabled;
 
     if (enabled) {
-      this.removeDebugCallback = this.on("*", (event, payload) =>
-        console.log("Langfuse Debug", event, JSON.stringify(payload))
-      );
+      this.removeDebugCallback = this.on("*", (event, payload) => {
+        // we already have a logger attached to error events
+        if (event === "error") {
+          return;
+        }
+
+        console.log("[Langfuse Debug]", event, JSON.stringify(payload));
+      });
     }
   }
 
@@ -677,7 +686,7 @@ abstract class LangfuseCoreStateless {
     try {
       JSON.stringify(finalEventBody);
     } catch (e) {
-      this._events.emit("error", `[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
+      this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
       return;
     }
 

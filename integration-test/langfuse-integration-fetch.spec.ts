@@ -770,6 +770,29 @@ describe("Langfuse (fetch)", () => {
     expect(fetchedTrace.data.scores[0].environment).toEqual(environment);
   }, 10_000);
 
+  it("should log error if invalid environment is specified", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const environment = "PRODUCTION";
+    const langfuse = new Langfuse({ environment });
+    const traceId = randomUUID();
+
+    const trace = langfuse.trace({ id: traceId });
+    trace.generation({ name: "test-gen" });
+    trace.score({ name: "test", value: 1 });
+
+    await langfuse.flushAsync();
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid tracing environment"));
+
+    const fetchedTrace = await (
+      await getAxiosClient()
+    ).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
+      headers: getHeaders(),
+    });
+
+    expect(fetchedTrace.status).toBe(404);
+  }, 10_000);
+
   it("should set environment if specified in environment variable", async () => {
     const environment = "staging";
     process.env.LANGFUSE_TRACING_ENVIRONMENT = environment;
