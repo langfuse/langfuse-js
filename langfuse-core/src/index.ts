@@ -85,6 +85,7 @@ const MAX_EVENT_SIZE_BYTES = getEnv("LANGFUSE_MAX_EVENT_SIZE_BYTES")
 const MAX_BATCH_SIZE_BYTES = getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES")
   ? Number(getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES"))
   : 2_500_000;
+const ENVIRONMENT_PATTERN = /^(?!langfuse)[a-z0-9_-]+$/;
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -197,6 +198,7 @@ abstract class LangfuseCoreStateless {
   private projectId: string | undefined;
   private mask: MaskFunction | undefined;
   private sampleRate: number | undefined;
+  private environment: string | undefined;
 
   // internal
   protected _events = new SimpleEventEmitter();
@@ -215,6 +217,10 @@ abstract class LangfuseCoreStateless {
   constructor(params: LangfuseCoreOptions) {
     const { publicKey, secretKey, enabled, _projectId, _isLocalEventExportEnabled, ...options } = params;
 
+    this._events.on("error", (payload) => {
+      console.error(`[Langfuse SDK] ${typeof payload === "string" ? payload : JSON.stringify(payload)}`);
+    });
+
     this.enabled = enabled === false ? false : true;
     this.publicKey = publicKey ?? "";
     this.secretKey = secretKey;
@@ -229,6 +235,14 @@ abstract class LangfuseCoreStateless {
 
     if (this.sampleRate) {
       this._events.emit("debug", `Langfuse trace sampling enabled with sampleRate ${this.sampleRate}.`);
+    }
+
+    this.environment = options?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
+    if (this.environment && !ENVIRONMENT_PATTERN.test(this.environment)) {
+      this._events.emit(
+        "error",
+        `Invalid tracing environment set: ${this.environment} . Environment must match regex ${ENVIRONMENT_PATTERN}. Events will be rejected by Langfuse server.`
+      );
     }
 
     this._retryOptions = {
@@ -282,9 +296,14 @@ abstract class LangfuseCoreStateless {
     this.debugMode = enabled;
 
     if (enabled) {
-      this.removeDebugCallback = this.on("*", (event, payload) =>
-        console.log("Langfuse Debug", event, JSON.stringify(payload))
-      );
+      this.removeDebugCallback = this.on("*", (event, payload) => {
+        // we already have a logger attached to error events
+        if (event === "error") {
+          return;
+        }
+
+        console.log("[Langfuse Debug]", event, JSON.stringify(payload));
+      });
     }
   }
 
@@ -301,6 +320,7 @@ abstract class LangfuseCoreStateless {
       id,
       release,
       timestamp: bodyTimestamp ?? new Date(),
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("trace-create", parsedBody);
@@ -315,6 +335,7 @@ abstract class LangfuseCoreStateless {
     const parsedBody: CreateLangfuseEventBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("event-create", parsedBody);
@@ -329,6 +350,7 @@ abstract class LangfuseCoreStateless {
     const parsedBody: CreateLangfuseSpanBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("span-create", parsedBody);
@@ -347,6 +369,7 @@ abstract class LangfuseCoreStateless {
     const parsedBody: CreateLangfuseGenerationBody = {
       id,
       startTime: bodyStartTime ?? new Date(),
+      environment: this.environment,
       ...promptDetails,
       ...rest,
     };
@@ -362,6 +385,7 @@ abstract class LangfuseCoreStateless {
 
     const parsedBody: CreateLangfuseScoreBody = {
       id,
+      environment: this.environment,
       ...rest,
     };
     this.enqueue("score-create", parsedBody);
@@ -662,7 +686,7 @@ abstract class LangfuseCoreStateless {
     try {
       JSON.stringify(finalEventBody);
     } catch (e) {
-      this._events.emit("error", `[Langfuse SDK] Event Body for ${type} is not JSON-serializable: ${e}`);
+      this._events.emit("error", `Event Body for ${type} is not JSON-serializable: ${e}`);
       return;
     }
 
@@ -1053,7 +1077,7 @@ abstract class LangfuseCoreStateless {
 
     const done = (err?: any): void => {
       if (err) {
-        this._events.emit("error", err);
+        this._events.emit("warning", err);
       }
       callback?.(err, items);
       this._events.emit("flush", items);
@@ -1133,7 +1157,7 @@ abstract class LangfuseCoreStateless {
         totalSize += itemSize;
         processedItems.push(queue[i]);
       } catch (error) {
-        console.error(`[Langfuse SDK] ${error}`);
+        this._events.emit("error", error);
         remainingItems.push(...queue.slice(i));
         break;
       }

@@ -748,6 +748,75 @@ describe("Langfuse (fetch)", () => {
     }, 10_000);
   });
 
+  it("should set environment if specified in constructor arg", async () => {
+    const environment = "production";
+    const langfuse = new Langfuse({ environment });
+    const traceId = randomUUID();
+
+    const trace = langfuse.trace({ id: traceId });
+    trace.generation({ name: "test-gen" });
+    trace.score({ name: "test", value: 1 });
+
+    await langfuse.flushAsync();
+
+    const fetchedTrace = await (
+      await getAxiosClient()
+    ).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
+      headers: getHeaders(),
+    });
+
+    expect(fetchedTrace.data.environment).toEqual(environment);
+    expect(fetchedTrace.data.observations[0].environment).toEqual(environment);
+    expect(fetchedTrace.data.scores[0].environment).toEqual(environment);
+  }, 10_000);
+
+  it("should log error if invalid environment is specified", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const environment = "PRODUCTION";
+    const langfuse = new Langfuse({ environment });
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid tracing environment"));
+
+    const traceId = randomUUID();
+
+    const trace = langfuse.trace({ id: traceId });
+    trace.generation({ name: "test-gen" });
+    trace.score({ name: "test", value: 1 });
+
+    await langfuse.flushAsync();
+
+    await expect(
+      (await getAxiosClient()).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
+        headers: getHeaders(),
+      })
+    ).rejects.toThrow();
+  }, 15_000);
+
+  it("should set environment if specified in environment variable", async () => {
+    const environment = "staging";
+    process.env.LANGFUSE_TRACING_ENVIRONMENT = environment;
+    const langfuse = new Langfuse();
+    const traceId = randomUUID();
+
+    const trace = langfuse.trace({ id: traceId });
+    trace.generation({ name: "test-gen" });
+    trace.score({ name: "test", value: 1 });
+
+    await langfuse.flushAsync();
+
+    const fetchedTrace = await (
+      await getAxiosClient()
+    ).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
+      headers: getHeaders(),
+    });
+
+    expect(fetchedTrace.data.environment).toEqual(environment);
+    expect(fetchedTrace.data.observations[0].environment).toEqual(environment);
+    expect(fetchedTrace.data.scores[0].environment).toEqual(environment);
+
+    delete process.env.LANGFUSE_TRACING_ENVIRONMENT;
+  }, 10_000);
+
   it("replace media reference string in object", async () => {
     const langfuse = new Langfuse();
     const mockTraceName = "test-trace-with-audio" + Math.random().toString(36);

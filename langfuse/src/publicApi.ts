@@ -64,6 +64,8 @@ export interface ApiTrace {
   tags?: string[] | null;
   /** Public traces are accessible via url without login */
   public?: boolean | null;
+  /** The environment from which this trace originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+  environment?: string | null;
 }
 
 /** TraceWithDetails */
@@ -170,6 +172,8 @@ export interface ApiObservation {
   usageDetails?: Record<string, number>;
   /** The cost details of the observation. Key is the name of the cost metric, value is the cost in USD. The total key is the sum of all (non-total) cost metrics or the total value ingested. */
   costDetails?: Record<string, number>;
+  /** The environment from which this observation originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+  environment?: string | null;
 }
 
 /** ObservationsView */
@@ -308,6 +312,8 @@ export interface ApiBaseScore {
   configId?: string | null;
   /** Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
   queueId?: string | null;
+  /** The environment from which this score originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+  environment?: string | null;
 }
 
 /** NumericScore */
@@ -636,6 +642,7 @@ export interface ApiOptionalObservationBody {
   statusMessage?: string | null;
   parentObservationId?: string | null;
   version?: string | null;
+  environment?: string | null;
 }
 
 /** CreateEventBody */
@@ -709,6 +716,7 @@ export interface ApiObservationBody {
   level?: ApiObservationLevel | null;
   statusMessage?: string | null;
   parentObservationId?: string | null;
+  environment?: string | null;
 }
 
 /** TraceBody */
@@ -725,6 +733,7 @@ export interface ApiTraceBody {
   version?: string | null;
   metadata?: any;
   tags?: string[] | null;
+  environment?: string | null;
   /** Make trace publicly accessible via url */
   public?: boolean | null;
 }
@@ -741,6 +750,7 @@ export interface ApiScoreBody {
   traceId: string;
   /** @example "novelty" */
   name: string;
+  environment?: string | null;
   /** The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
   value: ApiCreateScoreValue;
   observationId?: string | null;
@@ -1935,7 +1945,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Batched ingestion for Langfuse Tracing. If you want to use tracing via the API, such as to build your own Langfuse client implementation, this is the only API route you need to implement. Notes: - Introduction to data model: https://langfuse.com/docs/tracing-data-model - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly. - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors.
+     * @description Batched ingestion for Langfuse Tracing. If you want to use tracing via the API, such as to build your own Langfuse client implementation, this is the only API route you need to implement. Within each batch, there can be multiple events. Each event has a type, an id, a timestamp, metadata and a body. Internally, we refer to this as the "event envelope" as it tells us something about the event but not the trace. We use the event id within this envelope to deduplicate messages to avoid processing the same event twice, i.e. the event id should be unique per request. The event.body.id is the ID of the actual trace and will be used for updates and will be visible within the Langfuse App. I.e. if you want to update a trace, you'd use the same body id, but separate event IDs. Notes: - Introduction to data model: https://langfuse.com/docs/tracing-data-model - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly. - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors.
      *
      * @tags Ingestion
      * @name IngestionBatch
