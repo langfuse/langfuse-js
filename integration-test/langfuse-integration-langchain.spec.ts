@@ -6,7 +6,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import { PromptTemplate } from "@langchain/core/prompts";
+import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI, OpenAI } from "@langchain/openai";
 
 import { CallbackHandler, Langfuse, type LlmMessage } from "../langfuse-langchain";
@@ -605,6 +605,57 @@ describe("Langchain", () => {
       expect(returnedNewGeneration?.length).toBe(2);
       // Returned observations within traces are currently not sorted, so we can't guarantee the order of the returned observations
       expect(returnedNewGeneration?.some((gen) => gen.id === handler.getLangchainRunId())).toBe(true);
+    });
+
+    it("links a langfuse chat prompt to a langchain run", async () => {
+      const langfuse = new Langfuse();
+      const traceName = "test-link-chat-prompt-to-lc-run";
+
+      const jokePromptName = "joke-prompt" + randomUUID().slice(0, 5);
+      const jokePromptString = "Tell me a one-line joke about {{topic}}";
+
+      await langfuse.createPrompt({
+        name: jokePromptName,
+        type: "chat",
+        prompt: [{ role: "user", content: jokePromptString }],
+        labels: ["production"],
+      });
+
+      // Fetch prompts
+      const langfuseJokePrompt = await langfuse.getPrompt(jokePromptName, undefined, { type: "chat" });
+
+      const langchainJokePrompt = ChatPromptTemplate.fromMessages(langfuseJokePrompt.getLangchainPrompt()).withConfig({
+        metadata: { langfusePrompt: langfuseJokePrompt },
+      });
+
+      const model = new OpenAI();
+      const chain = langchainJokePrompt.pipe(model).pipe(new StringOutputParser());
+
+      const handler = new CallbackHandler();
+
+      await chain.invoke(
+        { topic: "vacation" },
+        {
+          callbacks: [handler],
+          runName: traceName,
+          tags: ["langchain-tag"],
+        }
+      );
+      await handler.shutdownAsync();
+
+      expect(handler.traceId).toBeDefined();
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
+
+      expect(trace).toBeDefined();
+      expect(trace?.name).toBe(traceName);
+
+      const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generations?.length).toBe(1);
+
+      const generation = generations?.[0];
+      expect(generation).toBeDefined();
+      expect((generation as any)["promptName"]).toBe(jokePromptName);
+      expect((generation as any)["promptVersion"]).toBe(langfuseJokePrompt.version);
     });
 
     it("links a langfuse prompt to a langchain run", async () => {
