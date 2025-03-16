@@ -1240,4 +1240,217 @@ describe("Langfuse-OpenAI-Integation", () => {
       refusal: null,
     });
   }, 20_000);
+
+  describe("OpenAI Response API", () => {
+    it("should handle text input", async () => {
+      const name = `Response-TextInput-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        input: "Tell me a three sentence bedtime story about a unicorn.",
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBe("Tell me a three sentence bedtime story about a unicorn.");
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle image input", async () => {
+      const name = `Response-ImageInput-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        input: [
+          {
+            role: "user",
+            content: [
+              { type: "input_text", text: "what is in this image?" },
+              {
+                type: "input_image",
+                image_url:
+                  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+              } as any,
+            ],
+          },
+        ],
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle web search", async () => {
+      const name = `Response-WebSearch-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        tools: [{ type: "web_search_preview" }],
+        input: "What was a positive news story from today?",
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle streaming", async () => {
+      const name = `Response-Streaming-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        instructions: "You are a helpful assistant.",
+        input: "Hello!",
+        stream: true,
+      });
+
+      for await (const _ of response) {
+        continue;
+      }
+
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle functions", async () => {
+      const name = `Response-Functions-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const tools = [
+        {
+          type: "function",
+          name: "get_current_weather",
+          description: "Get the current weather in a given location",
+          parameters: {
+            type: "object",
+            properties: {
+              location: {
+                type: "string",
+                description: "The city and state, e.g. San Francisco, CA",
+              },
+              unit: { type: "string", enum: ["celsius", "fahrenheit"] },
+            },
+            required: ["location", "unit"],
+          },
+        },
+      ];
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        tools: tools as any,
+        input: "What is the weather like in Boston today?",
+        tool_choice: "auto",
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle reasoning", async () => {
+      const name = `Response-Reasoning-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "o3-mini",
+        input: "How much wood would a woodchuck chuck?",
+        reasoning: {
+          effort: "high",
+        },
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("o3-mini");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 20_000);
+  });
 });
