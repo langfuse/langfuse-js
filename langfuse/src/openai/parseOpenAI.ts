@@ -1,5 +1,5 @@
 import type OpenAI from "openai";
-import type { Usage, UsageDetails } from "langfuse-core";
+import type { CreateLangfuseGenerationBody, Usage, UsageDetails } from "langfuse-core";
 
 type ParsedOpenAIArguments = {
   model: string;
@@ -26,7 +26,8 @@ export const parseInputArgs = (args: Record<string, any>): ParsedOpenAIArguments
     top_logprobs: args.top_logprobs,
   };
 
-  let input: Record<string, any> | string;
+  let input: Record<string, any> | string = args.input;
+
   if (args && typeof args === "object" && !Array.isArray(args) && "messages" in args) {
     input = {};
     input.messages = args.messages;
@@ -43,7 +44,7 @@ export const parseInputArgs = (args: Record<string, any>): ParsedOpenAIArguments
     if ("tool_choice" in args) {
       input.tool_choice = args.tool_choice;
     }
-  } else {
+  } else if (!input) {
     input = args.prompt;
   }
 
@@ -54,7 +55,24 @@ export const parseInputArgs = (args: Record<string, any>): ParsedOpenAIArguments
   };
 };
 
-export const parseCompletionOutput = (res: unknown): string => {
+export const parseCompletionOutput = (res: unknown): CreateLangfuseGenerationBody["output"] => {
+  if (res instanceof Object && "output_text" in res && res["output_text"] !== "") {
+    return res["output_text"] as string;
+  }
+
+  if (typeof res === "object" && res && "output" in res && Array.isArray(res["output"])) {
+    const output = res["output"];
+
+    if (output.length > 1) {
+      return output;
+    }
+    if (output.length === 1) {
+      return output[0] as Record<string, unknown>;
+    }
+
+    return null;
+  }
+
   if (!(res instanceof Object && "choices" in res && Array.isArray(res.choices))) {
     return "";
   }
@@ -75,20 +93,36 @@ export const parseUsage = (res: unknown): Usage | undefined => {
 };
 
 export const parseUsageDetails = (completionUsage: OpenAI.CompletionUsage): UsageDetails | undefined => {
-  const { prompt_tokens, completion_tokens, total_tokens, completion_tokens_details, prompt_tokens_details } =
-    completionUsage;
+  if ("prompt_tokens" in completionUsage) {
+    const { prompt_tokens, completion_tokens, total_tokens, completion_tokens_details, prompt_tokens_details } =
+      completionUsage;
 
-  return {
-    input: prompt_tokens,
-    output: completion_tokens,
-    total: total_tokens,
-    ...Object.fromEntries(
-      Object.entries(prompt_tokens_details ?? {}).map(([key, value]) => [`input_${key}`, value as number])
-    ),
-    ...Object.fromEntries(
-      Object.entries(completion_tokens_details ?? {}).map(([key, value]) => [`output_${key}`, value as number])
-    ),
-  };
+    return {
+      input: prompt_tokens,
+      output: completion_tokens,
+      total: total_tokens,
+      ...Object.fromEntries(
+        Object.entries(prompt_tokens_details ?? {}).map(([key, value]) => [`input_${key}`, value as number])
+      ),
+      ...Object.fromEntries(
+        Object.entries(completion_tokens_details ?? {}).map(([key, value]) => [`output_${key}`, value as number])
+      ),
+    };
+  } else if ("input_tokens" in completionUsage) {
+    const { input_tokens, output_tokens, total_tokens, input_tokens_details, output_tokens_details } = completionUsage;
+
+    return {
+      input: input_tokens,
+      output: output_tokens,
+      total: total_tokens,
+      ...Object.fromEntries(
+        Object.entries(input_tokens_details ?? {}).map(([key, value]) => [`input_${key}`, value as number])
+      ),
+      ...Object.fromEntries(
+        Object.entries(output_tokens_details ?? {}).map(([key, value]) => [`output_${key}`, value as number])
+      ),
+    };
+  }
 };
 
 export const parseUsageDetailsFromResponse = (res: unknown): UsageDetails | undefined => {
@@ -130,9 +164,14 @@ function hasCompletionUsage(obj: any): obj is { usage: OpenAI.CompletionUsage } 
     obj instanceof Object &&
     "usage" in obj &&
     obj.usage instanceof Object &&
-    typeof obj.usage.prompt_tokens === "number" &&
-    typeof obj.usage.completion_tokens === "number" &&
-    typeof obj.usage.total_tokens === "number"
+    // Completion API Usage format
+    ((typeof obj.usage.prompt_tokens === "number" &&
+      typeof obj.usage.completion_tokens === "number" &&
+      typeof obj.usage.total_tokens === "number") ||
+      // Response API Usage format
+      (typeof obj.usage.input_tokens === "number" &&
+        typeof obj.usage.output_tokens === "number" &&
+        typeof obj.usage.total_tokens === "number"))
   );
 }
 
@@ -163,5 +202,66 @@ export const getToolCallOutput = (
         },
       },
     ],
+  };
+};
+
+export const parseModelDataFromResponse = (
+  res: unknown
+): {
+  model: string | undefined;
+  modelParameters: Record<string, string | number> | undefined;
+  metadata: Record<string, unknown> | undefined;
+} => {
+  if (typeof res !== "object" || res === null) {
+    return {
+      model: undefined,
+      modelParameters: undefined,
+      metadata: undefined,
+    };
+  }
+
+  const model = "model" in res ? (res["model"] as string) : undefined;
+  const modelParameters: Record<string, string | number> = {};
+  const modelParamKeys = [
+    "max_output_tokens",
+    "parallel_tool_calls",
+    "store",
+    "temperature",
+    "tool_choice",
+    "top_p",
+    "truncation",
+    "user",
+  ];
+
+  const metadata: Record<string, unknown> = {};
+  const metadataKeys = [
+    "reasoning",
+    "incomplete_details",
+    "instructions",
+    "previous_response_id",
+    "tools",
+    "metadata",
+    "status",
+    "error",
+  ];
+
+  for (const key of modelParamKeys) {
+    const val = key in res ? (res[key as keyof typeof res] as string | number) : null;
+    if (val !== null && val !== undefined) {
+      modelParameters[key as keyof typeof modelParameters] = val;
+    }
+  }
+
+  for (const key of metadataKeys) {
+    const val = key in res ? (res[key as keyof typeof res] as string | number) : null;
+    if (val) {
+      metadata[key as keyof typeof metadata] = val;
+    }
+  }
+
+  return {
+    model,
+    modelParameters: Object.keys(modelParameters).length > 0 ? modelParameters : undefined,
+    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
   };
 };

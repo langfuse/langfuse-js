@@ -1,5 +1,6 @@
 import type OpenAI from "openai";
-import type { LangfuseParent } from "./types";
+
+import { type CreateLangfuseGenerationBody } from "langfuse-core";
 
 import { LangfuseSingleton } from "./LangfuseSingleton";
 import {
@@ -9,10 +10,11 @@ import {
   parseInputArgs,
   parseUsage,
   parseUsageDetails,
+  parseModelDataFromResponse,
   parseUsageDetailsFromResponse,
 } from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
-import type { LangfuseConfig } from "./types";
+import type { LangfuseConfig, LangfuseParent } from "./types";
 
 type GenericMethod = (...args: unknown[]) => unknown;
 
@@ -91,6 +93,11 @@ const wrapMethod = <T extends GenericMethod>(
           const output = parseCompletionOutput(result);
           const usage = parseUsage(result);
           const usageDetails = parseUsageDetailsFromResponse(result);
+          const {
+            model: modelFromResponse,
+            modelParameters: modelParametersFromResponse,
+            metadata: metadataFromResponse,
+          } = parseModelDataFromResponse(result);
 
           langfuseParent.generation({
             ...observationData,
@@ -98,6 +105,9 @@ const wrapMethod = <T extends GenericMethod>(
             endTime: new Date(),
             usage,
             usageDetails,
+            model: modelFromResponse || observationData.model,
+            modelParameters: { ...observationData.modelParameters, ...modelParametersFromResponse },
+            metadata: { ...observationData.metadata, ...metadataFromResponse },
           });
 
           if (!hasUserProvidedParent) {
@@ -165,9 +175,28 @@ function wrapAsyncIterable<R>(
     const toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[] = [];
     let completionStartTime: Date | null = null;
     let usage: OpenAI.CompletionUsage | null = null;
+    let usageDetails: CreateLangfuseGenerationBody["usageDetails"] = undefined;
+    let output: CreateLangfuseGenerationBody["output"] = null;
 
     for await (const rawChunk of response as AsyncIterable<unknown>) {
       completionStartTime = completionStartTime ?? new Date();
+
+      // Handle Response API chunks
+      if (typeof rawChunk === "object" && rawChunk && "response" in rawChunk) {
+        const result = rawChunk["response"];
+        output = parseCompletionOutput(result);
+        usageDetails = parseUsageDetailsFromResponse(result);
+
+        const {
+          model: modelFromResponse,
+          modelParameters: modelParametersFromResponse,
+          metadata: metadataFromResponse,
+        } = parseModelDataFromResponse(result);
+
+        observationData["model"] = modelFromResponse ?? observationData["model"];
+        observationData["modelParameters"] = { ...observationData.modelParameters, ...modelParametersFromResponse };
+        observationData["metadata"] = { ...observationData.metadata, ...metadataFromResponse };
+      }
 
       if (typeof rawChunk === "object" && rawChunk != null && "usage" in rawChunk) {
         usage = rawChunk.usage as OpenAI.CompletionUsage | null;
@@ -184,7 +213,7 @@ function wrapAsyncIterable<R>(
       yield rawChunk;
     }
 
-    const output = toolCallChunks.length > 0 ? getToolCallOutput(toolCallChunks) : textChunks.join("");
+    output = output ?? (toolCallChunks.length > 0 ? getToolCallOutput(toolCallChunks) : textChunks.join(""));
 
     langfuseParent.generation({
       ...observationData,
@@ -198,7 +227,7 @@ function wrapAsyncIterable<R>(
             total: "total_tokens" in usage ? usage.total_tokens : undefined,
           }
         : undefined,
-      usageDetails: usage ? parseUsageDetails(usage) : undefined,
+      usageDetails: usageDetails ?? (usage ? parseUsageDetails(usage) : undefined),
     });
 
     if (!hasUserProvidedParent) {
