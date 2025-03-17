@@ -1,5 +1,6 @@
 import type OpenAI from "openai";
-import type { LangfuseParent } from "./types";
+
+import { type CreateLangfuseGenerationBody } from "langfuse-core";
 
 import { LangfuseSingleton } from "./LangfuseSingleton";
 import {
@@ -13,8 +14,7 @@ import {
   parseUsageDetailsFromResponse,
 } from "./parseOpenAI";
 import { isAsyncIterable } from "./utils";
-import type { LangfuseConfig } from "./types";
-import { CreateLangfuseGenerationBody } from "langfuse-core/lib";
+import type { LangfuseConfig, LangfuseParent } from "./types";
 
 type GenericMethod = (...args: unknown[]) => unknown;
 
