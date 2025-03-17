@@ -247,7 +247,7 @@ export const parseModelDataFromResponse = (
 
   for (const key of modelParamKeys) {
     const val = key in res ? (res[key as keyof typeof res] as string | number) : null;
-    if (val) {
+    if (val !== null && val !== undefined) {
       modelParameters[key as keyof typeof modelParameters] = val;
     }
   }
