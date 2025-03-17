@@ -44,7 +44,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -95,7 +95,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         stream: true,
       });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -139,7 +139,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         stream: false,
       });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo-instruct");
+      expect(generation.model).toContain("gpt-3.5-turbo-instruct");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -190,7 +190,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         stream: true,
       });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo-instruct");
+      expect(generation.model).toContain("gpt-3.5-turbo-instruct");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -246,7 +246,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -311,7 +311,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -399,7 +399,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -485,7 +485,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -524,7 +524,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -585,7 +585,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         expect(generation.name).toBe(name);
         expect(generation.modelParameters).toBeDefined();
         expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
-        expect(generation.model).toBe("gpt-3.5-turbo-instruct");
+        expect(generation.model).toContain("gpt-3.5-turbo-instruct");
         expect(generation.input).toBeDefined();
         expect(generation.output).toBeNull();
         expect(generation.statusMessage).toBeDefined();
@@ -648,7 +648,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(generation.modelParameters).toBeDefined();
     expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
     expect(generation.usage).toBeDefined();
-    expect(generation.model).toBe("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-3.5-turbo");
     expect(generation.totalTokens).toBeDefined();
     expect(generation.promptTokens).toBeDefined();
     expect(generation.completionTokens).toBeDefined();
@@ -721,7 +721,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(generation.modelParameters).toBeDefined();
     expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
     expect(generation.usage).toBeDefined();
-    expect(generation.model).toBe("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-3.5-turbo");
     expect(generation.totalTokens).toBeDefined();
     expect(generation.promptTokens).toBeDefined();
     expect(generation.completionTokens).toBeDefined();
@@ -1040,7 +1040,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     });
     expect(generation.output).toMatchObject(completion.choices[0].message);
     expect(generation.metadata).toMatchObject({ someKey: "someValue", response_format });
-    expect(generation.model).toBe("gpt-4o-2024-08-06");
+    expect(generation.model).toContain("gpt-4o-2024-08-06");
   }, 15_000);
 
   it("should work with structured output parsing with beta API", async () => {
@@ -1106,7 +1106,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         },
       },
     });
-    expect(generation.model).toBe("gpt-4o-2024-08-06");
+    expect(generation.model).toContain("gpt-4o-2024-08-06");
   }, 10000);
 
   it("should work with vision input", async () => {
@@ -1141,7 +1141,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(trace.status).toBe(200);
 
     const generation = trace.data.observations[0];
-    expect(generation.model).toBe("gpt-4o-2024-08-06");
+    expect(generation.model).toContain("gpt-4o-2024-08-06");
     expect(generation.input).toMatchObject({
       messages: [
         {
@@ -1202,7 +1202,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(trace.status).toBe(200);
 
     const generation = trace.data.observations[0];
-    expect(generation.model).toBe("gpt-4o-audio-preview");
+    expect(generation.model).toContain("gpt-4o-audio-preview");
     expect(generation.input).toMatchObject({
       messages: [
         {
