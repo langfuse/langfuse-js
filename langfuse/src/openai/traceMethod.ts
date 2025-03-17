@@ -183,7 +183,6 @@ function wrapAsyncIterable<R>(
 
       // Handle Response API chunks
       if (typeof rawChunk === "object" && rawChunk && "response" in rawChunk) {
-        console.log(rawChunk);
         const result = rawChunk["response"];
         output = parseCompletionOutput(result);
         usageDetails = parseUsageDetailsFromResponse(result);
