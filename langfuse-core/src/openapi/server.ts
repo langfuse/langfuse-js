@@ -4,6 +4,77 @@
  */
 
 export interface paths {
+  "/api/public/annotation-queues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all annotation queues */
+    get: operations["annotationQueues_listQueues"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/annotation-queues/{queueId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get an annotation queue by ID */
+    get: operations["annotationQueues_getQueue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/annotation-queues/{queueId}/items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get items for a specific annotation queue */
+    get: operations["annotationQueues_listQueueItems"];
+    put?: never;
+    /** @description Add an item to an annotation queue */
+    post: operations["annotationQueues_createQueueItem"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/annotation-queues/{queueId}/items/{itemId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a specific item from an annotation queue */
+    get: operations["annotationQueues_getQueueItem"];
+    put?: never;
+    post?: never;
+    /** @description Remove an item from an annotation queue */
+    delete: operations["annotationQueues_deleteQueueItem"];
+    options?: never;
+    head?: never;
+    /** @description Update an annotation queue item */
+    patch: operations["annotationQueues_updateQueueItem"];
+    trace?: never;
+  };
   "/api/public/comments": {
     parameters: {
       query?: never;
@@ -68,7 +139,8 @@ export interface paths {
     get: operations["datasetItems_get"];
     put?: never;
     post?: never;
-    delete?: never;
+    /** @description Delete a dataset item and all its run items. This action is irreversible. */
+    delete: operations["datasetItems_delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -137,7 +209,8 @@ export interface paths {
     get: operations["datasets_getRun"];
     put?: never;
     post?: never;
-    delete?: never;
+    /** @description Delete a dataset run and all its run items. This action is irreversible. */
+    delete: operations["datasets_deleteRun"];
     options?: never;
     head?: never;
     patch?: never;
@@ -197,7 +270,6 @@ export interface paths {
      *     I.e. if you want to update a trace, you'd use the same body id, but separate event IDs.
      *
      *     Notes:
-     *
      *     - Introduction to data model: https://langfuse.com/docs/tracing-data-model
      *     - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
      *     - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors. */
@@ -515,7 +587,8 @@ export interface paths {
     get: operations["trace_get"];
     put?: never;
     post?: never;
-    delete?: never;
+    /** @description Delete a specific trace */
+    delete: operations["trace_delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -532,7 +605,8 @@ export interface paths {
     get: operations["trace_list"];
     put?: never;
     post?: never;
-    delete?: never;
+    /** @description Delete multiple traces */
+    delete: operations["trace_deleteMultiple"];
     options?: never;
     head?: never;
     patch?: never;
@@ -542,6 +616,67 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AnnotationQueueStatus
+     * @enum {string}
+     */
+    AnnotationQueueStatus: "PENDING" | "COMPLETED";
+    /**
+     * AnnotationQueueObjectType
+     * @enum {string}
+     */
+    AnnotationQueueObjectType: "TRACE" | "OBSERVATION";
+    /** AnnotationQueue */
+    AnnotationQueue: {
+      id: string;
+      name: string;
+      description?: string | null;
+      scoreConfigIds: string[];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /** AnnotationQueueItem */
+    AnnotationQueueItem: {
+      id: string;
+      queueId: string;
+      objectId: string;
+      objectType: components["schemas"]["AnnotationQueueObjectType"];
+      status: components["schemas"]["AnnotationQueueStatus"];
+      /** Format: date-time */
+      completedAt?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /** PaginatedAnnotationQueues */
+    PaginatedAnnotationQueues: {
+      data: components["schemas"]["AnnotationQueue"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** PaginatedAnnotationQueueItems */
+    PaginatedAnnotationQueueItems: {
+      data: components["schemas"]["AnnotationQueueItem"][];
+      meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** CreateAnnotationQueueItemRequest */
+    CreateAnnotationQueueItemRequest: {
+      objectId: string;
+      objectType: components["schemas"]["AnnotationQueueObjectType"];
+      /** @description Defaults to PENDING for new queue items */
+      status?: components["schemas"]["AnnotationQueueStatus"];
+    };
+    /** UpdateAnnotationQueueItemRequest */
+    UpdateAnnotationQueueItemRequest: {
+      status?: components["schemas"]["AnnotationQueueStatus"];
+    };
+    /** DeleteAnnotationQueueItemResponse */
+    DeleteAnnotationQueueItemResponse: {
+      success: boolean;
+      message: string;
+    };
     /** CreateCommentRequest */
     CreateCommentRequest: {
       /** @description The id of the project to attach the comment to. */
@@ -641,6 +776,8 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       projectId: string;
+      /** @description The environment from which this session originated. */
+      environment?: string | null;
     };
     /** SessionWithTraces */
     SessionWithTraces: {
@@ -1020,7 +1157,7 @@ export interface components {
      */
     ObservationLevel: "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
     /** MapValue */
-    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null) | undefined;
+    MapValue: (string | null) | (number | null) | (boolean | null) | (string[] | null);
     /**
      * CommentObjectType
      * @enum {string}
@@ -1041,6 +1178,11 @@ export interface components {
      * @enum {string}
      */
     ScoreDataType: "NUMERIC" | "BOOLEAN" | "CATEGORICAL";
+    /** DeleteDatasetItemResponse */
+    DeleteDatasetItemResponse: {
+      /** @description Success message after deletion */
+      message: string;
+    };
     /** CreateDatasetItemRequest */
     CreateDatasetItemRequest: {
       datasetName: string;
@@ -1086,6 +1228,10 @@ export interface components {
     PaginatedDatasetRuns: {
       data: components["schemas"]["DatasetRun"][];
       meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** DeleteDatasetRunResponse */
+    DeleteDatasetRunResponse: {
+      message: string;
     };
     /** HealthResponse */
     HealthResponse: {
@@ -1351,16 +1497,34 @@ export interface components {
       successes: components["schemas"]["IngestionSuccess"][];
       errors: components["schemas"]["IngestionError"][];
     };
-    /** OpenAIUsageSchema */
-    OpenAIUsageSchema: {
+    /**
+     * OpenAICompletionUsageSchema
+     * @description OpenAI Usage schema from (Chat-)Completion APIs
+     */
+    OpenAICompletionUsageSchema: {
       prompt_tokens: number;
       completion_tokens: number;
       total_tokens: number;
       prompt_tokens_details?: {
-        [key: string]: number;
+        [key: string]: number | null;
       } | null;
       completion_tokens_details?: {
-        [key: string]: number;
+        [key: string]: number | null;
+      } | null;
+    };
+    /**
+     * OpenAIResponseUsageSchema
+     * @description OpenAI Usage schema from Response API
+     */
+    OpenAIResponseUsageSchema: {
+      input_tokens: number;
+      output_tokens: number;
+      total_tokens: number;
+      input_tokens_details?: {
+        [key: string]: number | null;
+      } | null;
+      output_tokens_details?: {
+        [key: string]: number | null;
       } | null;
     };
     /** UsageDetails */
@@ -1368,7 +1532,8 @@ export interface components {
       | {
           [key: string]: number;
         }
-      | components["schemas"]["OpenAIUsageSchema"];
+      | components["schemas"]["OpenAICompletionUsageSchema"]
+      | components["schemas"]["OpenAIResponseUsageSchema"];
     /** GetMediaResponse */
     GetMediaResponse: {
       /** @description The unique langfuse identifier of a media record */
@@ -1624,6 +1789,10 @@ export interface components {
       tags: string[];
       /** @description Commit message for this prompt version. */
       commitMessage?: string | null;
+      /** @description The dependency resolution graph for the current prompt. Null if prompt has no dependencies. */
+      resolutionGraph?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ChatMessage */
     ChatMessage: {
@@ -1673,6 +1842,8 @@ export interface components {
       value: components["schemas"]["CreateScoreValue"];
       observationId?: string | null;
       comment?: string | null;
+      /** @description The environment of the score. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+      environment?: string | null;
       /** @description The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
       dataType?: components["schemas"]["ScoreDataType"];
       /** @description Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
@@ -1689,6 +1860,8 @@ export interface components {
       userId?: string | null;
       /** @description A list of tags associated with the trace referenced by score */
       tags?: string[] | null;
+      /** @description The environment of the trace referenced by score */
+      environment?: string | null;
     };
     /** GetScoresResponseDataNumeric */
     GetScoresResponseDataNumeric: {
@@ -1731,6 +1904,10 @@ export interface components {
       data: components["schemas"]["TraceWithDetails"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
+    /** DeleteTraceResponse */
+    DeleteTraceResponse: {
+      message: string;
+    };
     /** Sort */
     Sort: {
       id: string;
@@ -1755,6 +1932,463 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  annotationQueues_listQueues: {
+    parameters: {
+      query?: {
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedAnnotationQueues"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  annotationQueues_getQueue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique identifier of the annotation queue */
+        queueId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnotationQueue"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  annotationQueues_listQueueItems: {
+    parameters: {
+      query?: {
+        /** @description Filter by status */
+        status?: components["schemas"]["AnnotationQueueStatus"];
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+      };
+      header?: never;
+      path: {
+        /** @description The unique identifier of the annotation queue */
+        queueId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedAnnotationQueueItems"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  annotationQueues_createQueueItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique identifier of the annotation queue */
+        queueId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateAnnotationQueueItemRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnotationQueueItem"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  annotationQueues_getQueueItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique identifier of the annotation queue */
+        queueId: string;
+        /** @description The unique identifier of the annotation queue item */
+        itemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnotationQueueItem"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  annotationQueues_deleteQueueItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique identifier of the annotation queue */
+        queueId: string;
+        /** @description The unique identifier of the annotation queue item */
+        itemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeleteAnnotationQueueItemResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  annotationQueues_updateQueueItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique identifier of the annotation queue */
+        queueId: string;
+        /** @description The unique identifier of the annotation queue item */
+        itemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateAnnotationQueueItemRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnotationQueueItem"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   comments_get: {
     parameters: {
       query?: {
@@ -2141,6 +2775,67 @@ export interface operations {
       };
     };
   };
+  datasetItems_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeleteDatasetItemResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   datasetRunItems_create: {
     parameters: {
       query?: never;
@@ -2410,6 +3105,68 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DatasetRunWithItems"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  datasets_deleteRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        datasetName: string;
+        runName: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeleteDatasetRunResponse"];
         };
       };
       400: {
@@ -2855,6 +3612,8 @@ export interface operations {
         userId?: string | null;
         /** @description Optional filter for metrics where traces include all of these tags */
         tags?: (string | null)[];
+        /** @description Optional filter for metrics where events include any of these environments */
+        environment?: (string | null)[];
         /** @description Optional filter to only include traces and observations on or after a certain datetime (ISO 8601) */
         fromTimestamp?: string | null;
         /** @description Optional filter to only include traces and observations before a certain datetime (ISO 8601) */
@@ -3237,6 +3996,8 @@ export interface operations {
         type?: string | null;
         traceId?: string | null;
         parentObservationId?: string | null;
+        /** @description Optional filter for observations where the environment is one of the provided values. */
+        environment?: (string | null)[];
         /** @description Retrieve only observations with a start_time or or after this datetime (ISO 8601). */
         fromStartTime?: string | null;
         /** @description Retrieve only observations with a start_time before this datetime (ISO 8601). */
@@ -3835,6 +4596,8 @@ export interface operations {
         fromTimestamp?: string | null;
         /** @description Optional filter to only include scores created before a certain datetime (ISO 8601) */
         toTimestamp?: string | null;
+        /** @description Optional filter for scores where the environment is one of the provided values. */
+        environment?: (string | null)[];
         /** @description Retrieve only scores from a specific source. */
         source?: components["schemas"]["ScoreSource"];
         /** @description Retrieve only scores with <operator> value. */
@@ -4104,6 +4867,8 @@ export interface operations {
         fromTimestamp?: string | null;
         /** @description Optional filter to only include sessions created before a certain datetime (ISO 8601) */
         toTimestamp?: string | null;
+        /** @description Optional filter for sessions where the environment is one of the provided values. */
+        environment?: (string | null)[];
       };
       header?: never;
       path?: never;
@@ -4285,6 +5050,68 @@ export interface operations {
       };
     };
   };
+  trace_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The unique langfuse identifier of the trace to delete */
+        traceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeleteTraceResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   trace_list: {
     parameters: {
       query?: {
@@ -4307,6 +5134,8 @@ export interface operations {
         version?: string | null;
         /** @description Optional filter to only include traces with a certain release. */
         release?: string | null;
+        /** @description Optional filter for traces where the environment is one of the provided values. */
+        environment?: (string | null)[];
       };
       header?: never;
       path?: never;
@@ -4320,6 +5149,72 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Traces"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  trace_deleteMultiple: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description List of trace IDs to delete */
+          traceIds: string[];
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeleteTraceResponse"];
         };
       };
       400: {
