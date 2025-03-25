@@ -9,6 +9,70 @@
  * ---------------------------------------------------------------
  */
 
+/** AnnotationQueueStatus */
+export type ApiAnnotationQueueStatus = "PENDING" | "COMPLETED";
+
+/** AnnotationQueueObjectType */
+export type ApiAnnotationQueueObjectType = "TRACE" | "OBSERVATION";
+
+/** AnnotationQueue */
+export interface ApiAnnotationQueue {
+  id: string;
+  name: string;
+  description?: string | null;
+  scoreConfigIds: string[];
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+/** AnnotationQueueItem */
+export interface ApiAnnotationQueueItem {
+  id: string;
+  queueId: string;
+  objectId: string;
+  objectType: ApiAnnotationQueueObjectType;
+  status: ApiAnnotationQueueStatus;
+  /** @format date-time */
+  completedAt?: string | null;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+/** PaginatedAnnotationQueues */
+export interface ApiPaginatedAnnotationQueues {
+  data: ApiAnnotationQueue[];
+  meta: ApiUtilsMetaResponse;
+}
+
+/** PaginatedAnnotationQueueItems */
+export interface ApiPaginatedAnnotationQueueItems {
+  data: ApiAnnotationQueueItem[];
+  meta: ApiUtilsMetaResponse;
+}
+
+/** CreateAnnotationQueueItemRequest */
+export interface ApiCreateAnnotationQueueItemRequest {
+  objectId: string;
+  objectType: ApiAnnotationQueueObjectType;
+  /** Defaults to PENDING for new queue items */
+  status?: ApiAnnotationQueueStatus | null;
+}
+
+/** UpdateAnnotationQueueItemRequest */
+export interface ApiUpdateAnnotationQueueItemRequest {
+  status?: ApiAnnotationQueueStatus | null;
+}
+
+/** DeleteAnnotationQueueItemResponse */
+export interface ApiDeleteAnnotationQueueItemResponse {
+  success: boolean;
+  message: string;
+}
+
 /** CreateCommentRequest */
 export interface ApiCreateCommentRequest {
   /** The id of the project to attach the comment to. */
@@ -114,6 +178,8 @@ export interface ApiSession {
   /** @format date-time */
   createdAt: string;
   projectId: string;
+  /** The environment from which this session originated. */
+  environment?: string | null;
 }
 
 /** SessionWithTraces */
@@ -517,6 +583,12 @@ export type ApiScoreSource = "ANNOTATION" | "API" | "EVAL";
 /** ScoreDataType */
 export type ApiScoreDataType = "NUMERIC" | "BOOLEAN" | "CATEGORICAL";
 
+/** DeleteDatasetItemResponse */
+export interface ApiDeleteDatasetItemResponse {
+  /** Success message after deletion */
+  message: string;
+}
+
 /** CreateDatasetItemRequest */
 export interface ApiCreateDatasetItemRequest {
   datasetName: string;
@@ -567,6 +639,11 @@ export interface ApiCreateDatasetRequest {
 export interface ApiPaginatedDatasetRuns {
   data: ApiDatasetRun[];
   meta: ApiUtilsMetaResponse;
+}
+
+/** DeleteDatasetRunResponse */
+export interface ApiDeleteDatasetRunResponse {
+  message: string;
 }
 
 /** HealthResponse */
@@ -841,17 +918,32 @@ export interface ApiIngestionResponse {
   errors: ApiIngestionError[];
 }
 
-/** OpenAIUsageSchema */
-export interface ApiOpenAIUsageSchema {
+/**
+ * OpenAICompletionUsageSchema
+ * OpenAI Usage schema from (Chat-)Completion APIs
+ */
+export interface ApiOpenAICompletionUsageSchema {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
-  prompt_tokens_details?: Record<string, number>;
-  completion_tokens_details?: Record<string, number>;
+  prompt_tokens_details?: Record<string, number | null>;
+  completion_tokens_details?: Record<string, number | null>;
+}
+
+/**
+ * OpenAIResponseUsageSchema
+ * OpenAI Usage schema from Response API
+ */
+export interface ApiOpenAIResponseUsageSchema {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  input_tokens_details?: Record<string, number | null>;
+  output_tokens_details?: Record<string, number | null>;
 }
 
 /** UsageDetails */
-export type ApiUsageDetails = Record<string, number> | ApiOpenAIUsageSchema;
+export type ApiUsageDetails = Record<string, number> | ApiOpenAICompletionUsageSchema | ApiOpenAIResponseUsageSchema;
 
 /** GetMediaResponse */
 export interface ApiGetMediaResponse {
@@ -1124,6 +1216,8 @@ export interface ApiBasePrompt {
   tags: string[];
   /** Commit message for this prompt version. */
   commitMessage?: string | null;
+  /** The dependency resolution graph for the current prompt. Null if prompt has no dependencies. */
+  resolutionGraph?: Record<string, any>;
 }
 
 /** ChatMessage */
@@ -1179,6 +1273,8 @@ export interface ApiCreateScoreRequest {
   value: ApiCreateScoreValue;
   observationId?: string | null;
   comment?: string | null;
+  /** The environment of the score. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+  environment?: string | null;
   /** The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
   dataType?: ApiScoreDataType | null;
   /** Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
@@ -1197,6 +1293,8 @@ export interface ApiGetScoresResponseTraceData {
   userId?: string | null;
   /** A list of tags associated with the trace referenced by score */
   tags?: string[] | null;
+  /** The environment of the trace referenced by score */
+  environment?: string | null;
 }
 
 /** GetScoresResponseDataNumeric */
@@ -1244,6 +1342,11 @@ export interface ApiTraces {
   meta: ApiUtilsMetaResponse;
 }
 
+/** DeleteTraceResponse */
+export interface ApiDeleteTraceResponse {
+  message: string;
+}
+
 /** Sort */
 export interface ApiSort {
   id: string;
@@ -1259,6 +1362,24 @@ export interface ApiUtilsMetaResponse {
   totalItems: number;
   /** number of total pages given the current limit */
   totalPages: number;
+}
+
+export interface ApiAnnotationQueuesListQueuesParams {
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+}
+
+export interface ApiAnnotationQueuesListQueueItemsParams {
+  /** Filter by status */
+  status?: ApiAnnotationQueueStatus | null;
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+  /** The unique identifier of the annotation queue */
+  queueId: string;
 }
 
 export interface ApiCommentsGetParams {
@@ -1317,6 +1438,8 @@ export interface ApiMetricsDailyParams {
   userId?: string | null;
   /** Optional filter for metrics where traces include all of these tags */
   tags?: (string | null)[];
+  /** Optional filter for metrics where events include any of these environments */
+  environment?: (string | null)[];
   /**
    * Optional filter to only include traces and observations on or after a certain datetime (ISO 8601)
    * @format date-time
@@ -1346,6 +1469,8 @@ export interface ApiObservationsGetManyParams {
   type?: string | null;
   traceId?: string | null;
   parentObservationId?: string | null;
+  /** Optional filter for observations where the environment is one of the provided values. */
+  environment?: (string | null)[];
   /**
    * Retrieve only observations with a start_time or or after this datetime (ISO 8601).
    * @format date-time
@@ -1420,6 +1545,8 @@ export interface ApiScoreGetParams {
    * @format date-time
    */
   toTimestamp?: string | null;
+  /** Optional filter for scores where the environment is one of the provided values. */
+  environment?: (string | null)[];
   /** Retrieve only scores from a specific source. */
   source?: ApiScoreSource | null;
   /** Retrieve only scores with <operator> value. */
@@ -1456,6 +1583,8 @@ export interface ApiSessionsListParams {
    * @format date-time
    */
   toTimestamp?: string | null;
+  /** Optional filter for sessions where the environment is one of the provided values. */
+  environment?: (string | null)[];
 }
 
 export interface ApiTraceListParams {
@@ -1484,6 +1613,13 @@ export interface ApiTraceListParams {
   version?: string | null;
   /** Optional filter to only include traces with a certain release. */
   release?: string | null;
+  /** Optional filter for traces where the environment is one of the provided values. */
+  environment?: (string | null)[];
+}
+
+export interface ApiTraceDeleteMultiplePayload {
+  /** List of trace IDs to delete */
+  traceIds: string[];
 }
 
 export type QueryParamsType = Record<string | number, any>;
@@ -1714,6 +1850,143 @@ export class HttpClient<SecurityDataType = unknown> {
 export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   api = {
     /**
+     * @description Add an item to an annotation queue
+     *
+     * @tags AnnotationQueues
+     * @name AnnotationQueuesCreateQueueItem
+     * @request POST:/api/public/annotation-queues/{queueId}/items
+     * @secure
+     */
+    annotationQueuesCreateQueueItem: (
+      queueId: string,
+      data: ApiCreateAnnotationQueueItemRequest,
+      params: RequestParams = {}
+    ) =>
+      this.request<ApiAnnotationQueueItem, any>({
+        path: `/api/public/annotation-queues/${queueId}/items`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Remove an item from an annotation queue
+     *
+     * @tags AnnotationQueues
+     * @name AnnotationQueuesDeleteQueueItem
+     * @request DELETE:/api/public/annotation-queues/{queueId}/items/{itemId}
+     * @secure
+     */
+    annotationQueuesDeleteQueueItem: (queueId: string, itemId: string, params: RequestParams = {}) =>
+      this.request<ApiDeleteAnnotationQueueItemResponse, any>({
+        path: `/api/public/annotation-queues/${queueId}/items/${itemId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get an annotation queue by ID
+     *
+     * @tags AnnotationQueues
+     * @name AnnotationQueuesGetQueue
+     * @request GET:/api/public/annotation-queues/{queueId}
+     * @secure
+     */
+    annotationQueuesGetQueue: (queueId: string, params: RequestParams = {}) =>
+      this.request<ApiAnnotationQueue, any>({
+        path: `/api/public/annotation-queues/${queueId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a specific item from an annotation queue
+     *
+     * @tags AnnotationQueues
+     * @name AnnotationQueuesGetQueueItem
+     * @request GET:/api/public/annotation-queues/{queueId}/items/{itemId}
+     * @secure
+     */
+    annotationQueuesGetQueueItem: (queueId: string, itemId: string, params: RequestParams = {}) =>
+      this.request<ApiAnnotationQueueItem, any>({
+        path: `/api/public/annotation-queues/${queueId}/items/${itemId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get items for a specific annotation queue
+     *
+     * @tags AnnotationQueues
+     * @name AnnotationQueuesListQueueItems
+     * @request GET:/api/public/annotation-queues/{queueId}/items
+     * @secure
+     */
+    annotationQueuesListQueueItems: (
+      { queueId, ...query }: ApiAnnotationQueuesListQueueItemsParams,
+      params: RequestParams = {}
+    ) =>
+      this.request<ApiPaginatedAnnotationQueueItems, any>({
+        path: `/api/public/annotation-queues/${queueId}/items`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get all annotation queues
+     *
+     * @tags AnnotationQueues
+     * @name AnnotationQueuesListQueues
+     * @request GET:/api/public/annotation-queues
+     * @secure
+     */
+    annotationQueuesListQueues: (query: ApiAnnotationQueuesListQueuesParams, params: RequestParams = {}) =>
+      this.request<ApiPaginatedAnnotationQueues, any>({
+        path: `/api/public/annotation-queues`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update an annotation queue item
+     *
+     * @tags AnnotationQueues
+     * @name AnnotationQueuesUpdateQueueItem
+     * @request PATCH:/api/public/annotation-queues/{queueId}/items/{itemId}
+     * @secure
+     */
+    annotationQueuesUpdateQueueItem: (
+      queueId: string,
+      itemId: string,
+      data: ApiUpdateAnnotationQueueItemRequest,
+      params: RequestParams = {}
+    ) =>
+      this.request<ApiAnnotationQueueItem, any>({
+        path: `/api/public/annotation-queues/${queueId}/items/${itemId}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Create a comment. Comments may be attached to different object types (trace, observation, session, prompt).
      *
      * @tags Comments
@@ -1787,6 +2060,23 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description Delete a dataset item and all its run items. This action is irreversible.
+     *
+     * @tags DatasetItems
+     * @name DatasetItemsDelete
+     * @request DELETE:/api/public/dataset-items/{id}
+     * @secure
+     */
+    datasetItemsDelete: (id: string, params: RequestParams = {}) =>
+      this.request<ApiDeleteDatasetItemResponse, any>({
+        path: `/api/public/dataset-items/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Get a dataset item
      *
      * @tags DatasetItems
@@ -1855,6 +2145,23 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
         body: data,
         secure: true,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a dataset run and all its run items. This action is irreversible.
+     *
+     * @tags Datasets
+     * @name DatasetsDeleteRun
+     * @request DELETE:/api/public/datasets/{datasetName}/runs/{runName}
+     * @secure
+     */
+    datasetsDeleteRun: (datasetName: string, runName: string, params: RequestParams = {}) =>
+      this.request<ApiDeleteDatasetRunResponse, any>({
+        path: `/api/public/datasets/${datasetName}/runs/${runName}`,
+        method: "DELETE",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -2391,6 +2698,42 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
         method: "GET",
         query: query,
         secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a specific trace
+     *
+     * @tags Trace
+     * @name TraceDelete
+     * @request DELETE:/api/public/traces/{traceId}
+     * @secure
+     */
+    traceDelete: (traceId: string, params: RequestParams = {}) =>
+      this.request<ApiDeleteTraceResponse, any>({
+        path: `/api/public/traces/${traceId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete multiple traces
+     *
+     * @tags Trace
+     * @name TraceDeleteMultiple
+     * @request DELETE:/api/public/traces
+     * @secure
+     */
+    traceDeleteMultiple: (data: ApiTraceDeleteMultiplePayload, params: RequestParams = {}) =>
+      this.request<ApiDeleteTraceResponse, any>({
+        path: `/api/public/traces`,
+        method: "DELETE",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
