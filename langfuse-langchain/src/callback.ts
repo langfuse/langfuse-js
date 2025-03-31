@@ -677,7 +677,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     if (message instanceof HumanMessage) {
       response = { content: message.content, role: "user" };
     } else if (message instanceof ChatMessage) {
-      response = { content: message.content, role: message.name };
+      response = { content: message.content, role: message.role };
     } else if (message instanceof AIMessage) {
       response = { content: message.content, role: "assistant" };
     } else if (message instanceof SystemMessage) {
