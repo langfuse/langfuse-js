@@ -32,7 +32,7 @@ const wrapMethod = <T extends GenericMethod>(
 ): ReturnType<T> | any => {
   const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
 
-  const finalModelParams = { ...modelParameters, response_format: undefined };
+  const finalModelParams = { ...modelParameters, response_format: null };
   const finalMetadata = {
     ...config?.metadata,
     response_format: "response_format" in modelParameters ? modelParameters.response_format : undefined,
