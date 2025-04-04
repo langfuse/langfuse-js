@@ -1345,8 +1345,6 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
     if (_isLocalEventExportEnabled) {
       isObservabilityEnabled = true;
-    } else if (!isObservabilityEnabled) {
-      console.warn("Langfuse is disabled. No observability data will be sent to Langfuse.");
     } else if (!secretKey) {
       isObservabilityEnabled = false;
       console.warn(
