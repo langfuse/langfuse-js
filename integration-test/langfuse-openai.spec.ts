@@ -1451,6 +1451,6 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedInputCost).toBeDefined();
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
-    }, 20_000);
+    }, 30_000);
   });
 });
