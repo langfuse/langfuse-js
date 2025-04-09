@@ -38,7 +38,7 @@ describe("Langfuse Core", () => {
 
       expect((noPublicKeyClient[0] as any).enabled).toBe(false);
       expect(consoleSpy).toHaveBeenNthCalledWith(
-        2,
+        1,
         "Langfuse public key was not passed to constructor or not set as 'LANGFUSE_PUBLIC_KEY' environment variable. No observability data will be sent to Langfuse."
       );
 
@@ -47,7 +47,7 @@ describe("Langfuse Core", () => {
         secretKey: undefined as unknown as string,
       });
       expect(consoleSpy).toHaveBeenNthCalledWith(
-        3,
+        2,
         "Langfuse secret key was not passed to constructor or not set as 'LANGFUSE_SECRET_KEY' environment variable. No observability data will be sent to Langfuse."
       );
 
@@ -60,7 +60,7 @@ describe("Langfuse Core", () => {
 
       expect((noKeysClient[0] as any).enabled).toBe(false);
       expect(consoleSpy).toHaveBeenNthCalledWith(
-        4,
+        3,
         "Langfuse secret key was not passed to constructor or not set as 'LANGFUSE_SECRET_KEY' environment variable. No observability data will be sent to Langfuse."
       );
     });
