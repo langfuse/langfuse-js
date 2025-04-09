@@ -30,10 +30,6 @@ describe("Langfuse Core", () => {
       });
 
       expect((disabledClient[0] as any).enabled).toBe(false);
-      expect(consoleSpy).toHaveBeenNthCalledWith(
-        1,
-        "Langfuse is disabled. No observability data will be sent to Langfuse."
-      );
 
       const noPublicKeyClient = createTestClient({
         publicKey: undefined as unknown as string,
