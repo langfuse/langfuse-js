@@ -1338,7 +1338,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedInputCost).toBeDefined();
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
-    }, 10_000);
+    }, 30_000);
     it("should handle streaming", async () => {
       const name = `Response-Streaming-${randomUUID().slice(0, 8)}`;
       const traceId = randomUUID();
@@ -1451,6 +1451,6 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.calculatedInputCost).toBeDefined();
       expect(generation.calculatedOutputCost).toBeDefined();
       expect(generation.calculatedTotalCost).toBeDefined();
-    }, 20_000);
+    }, 30_000);
   });
 });

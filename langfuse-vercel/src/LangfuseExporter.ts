@@ -174,24 +174,27 @@ export class LangfuseExporter implements SpanExporter {
               ? attributes["ai.model.id"]?.toString()
               : undefined,
       modelParameters: {
-        toolChoice: "ai.prompt.toolChoice" in attributes ? attributes["ai.prompt.toolChoice"]?.toString() : undefined,
+        toolChoice:
+          "ai.prompt.toolChoice" in attributes ? attributes["ai.prompt.toolChoice"]?.toString() ?? null : null,
         maxTokens:
-          "gen_ai.request.max_tokens" in attributes ? attributes["gen_ai.request.max_tokens"]?.toString() : undefined,
+          "gen_ai.request.max_tokens" in attributes
+            ? attributes["gen_ai.request.max_tokens"]?.toString() ?? null
+            : null,
         finishReason:
           "gai.response.finishReason" in attributes
-            ? attributes["ai.response.finishReason"]?.toString()
+            ? attributes["ai.response.finishReason"]?.toString() ?? null
             : "gen_ai.finishReason" in attributes //  Legacy support for ai SDK versions < 4.0.0
-              ? attributes["gen_ai.finishReason"]?.toString()
-              : undefined,
+              ? attributes["gen_ai.finishReason"]?.toString() ?? null
+              : null,
         system:
           "gen_ai.system" in attributes
-            ? attributes["gen_ai.system"]?.toString()
+            ? attributes["gen_ai.system"]?.toString() ?? null
             : "ai.model.provider" in attributes
-              ? attributes["ai.model.provider"]?.toString()
-              : undefined,
+              ? attributes["ai.model.provider"]?.toString() ?? null
+              : null,
         maxRetries:
-          "ai.settings.maxRetries" in attributes ? attributes["ai.settings.maxRetries"]?.toString() : undefined,
-        mode: "ai.settings.mode" in attributes ? attributes["ai.settings.mode"]?.toString() : undefined,
+          "ai.settings.maxRetries" in attributes ? attributes["ai.settings.maxRetries"]?.toString() ?? null : null,
+        mode: "ai.settings.mode" in attributes ? attributes["ai.settings.mode"]?.toString() ?? null : null,
       },
       usage: this.parseUsageDetails(attributes),
       usageDetails: this.parseUsageDetails(attributes),

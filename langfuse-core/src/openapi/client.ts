@@ -27,19 +27,19 @@ export interface components {
   schemas: {
     /** CreateScoreRequest */
     CreateScoreRequest: {
-      id?: string;
+      id?: string | null;
       /** @example cdef-1234-5678-90ab */
       traceId: string;
       /** @example novelty */
       name: string;
       /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
       value: components["schemas"]["CreateScoreValue"];
-      observationId?: string;
-      comment?: string;
+      observationId?: string | null;
+      comment?: string | null;
       /** @description When set, must match the score value's type. If not set, will be inferred from the score value or config */
       dataType?: components["schemas"]["ScoreDataType"];
       /** @description Reference a score config on a score. When set, the score name must equal the config name and scores must comply with the config's range and data type. For categorical scores, the value must map to a config category. Numeric scores might be constrained by the score config's max and min values */
-      configId?: string;
+      configId?: string | null;
     };
     /** BaseScore */
     BaseScore: {
@@ -47,17 +47,17 @@ export interface components {
       traceId: string;
       name: string;
       source: components["schemas"]["ScoreSource"];
-      observationId?: string;
+      observationId?: string | null;
       /** Format: date-time */
       timestamp: string;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
-      authorUserId?: string;
-      comment?: string;
+      authorUserId?: string | null;
+      comment?: string | null;
       /** @description Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
-      configId?: string;
+      configId?: string | null;
     };
     /** NumericScore */
     NumericScore: {
@@ -83,7 +83,7 @@ export interface components {
        * Format: double
        * @description Only defined if a config is linked. Represents the numeric category mapping of the stringValue
        */
-      value?: number;
+      value?: number | null;
       /** @description The string representation of the score value. If no config is linked, can be any string. Otherwise, must map to a config category */
       stringValue: string;
     } & components["schemas"]["BaseScore"];
