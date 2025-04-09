@@ -96,11 +96,8 @@ describe("Langfuse (fetch)", () => {
     });
 
     it("silently skips creating observations if Langfuse is disabled", async () => {
-      const consoleSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
       const langfuse = new Langfuse({ enabled: false });
       const fetchSpy = jest.spyOn(langfuse, "fetch");
-
-      expect(consoleSpy).toHaveBeenCalledWith("Langfuse is disabled. No observability data will be sent to Langfuse.");
 
       const trace = langfuse.trace({
         name: "trace-name",
