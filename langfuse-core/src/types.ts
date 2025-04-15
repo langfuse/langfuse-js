@@ -252,7 +252,7 @@ export type LinkDatasetItem = (
     description?: string;
     metadata?: any;
   }
-) => Promise<components['schemas']['DatasetRunItem']>;
+) => Promise<{ id: string }>;
 export type DatasetItem = DatasetItemData & { link: LinkDatasetItem };
 
 export type MaskFunction = (params: { data: any }) => any;
