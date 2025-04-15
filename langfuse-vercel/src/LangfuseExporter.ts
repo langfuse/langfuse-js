@@ -123,7 +123,7 @@ export class LangfuseExporter implements SpanExporter {
 
     this.langfuse.span({
       traceId,
-      parentObservationId: isRootSpan ? undefined : span.parentSpanId,
+      parentObservationId: isRootSpan ? undefined : this.getParentSpanId(span),
       id: spanContext.spanId,
       name:
         isRootSpan && rootSpanName
@@ -152,7 +152,7 @@ export class LangfuseExporter implements SpanExporter {
 
     this.langfuse.generation({
       traceId,
-      parentObservationId: isRootSpan ? undefined : span.parentSpanId,
+      parentObservationId: isRootSpan ? undefined : this.getParentSpanId(span),
       id: spanContext.spanId,
       name: span.name,
       startTime: this.hrTimeToDate(span.startTime),
@@ -255,7 +255,11 @@ export class LangfuseExporter implements SpanExporter {
   }
 
   private isAiSdkSpan(span: ReadableSpan): boolean {
-    return span.instrumentationLibrary.name === "ai";
+    // compat with OTEL SDKs v1 and v2
+    // https://github.com/open-telemetry/opentelemetry-js/releases/tag/v2.0.0
+    const instrumentationScopeName =
+      (span as any).instrumentationLibrary?.name ?? (span as any).instrumentationScope?.name;
+    return instrumentationScopeName === "ai";
   }
 
   /**
@@ -268,8 +272,9 @@ export class LangfuseExporter implements SpanExporter {
    */
   private isRootAiSdkSpan(span: ReadableSpan, spans: ReadableSpan[]): boolean {
     const spanIds = new Set(spans.map((span) => span.spanContext().spanId));
+    const parentSpanId = this.getParentSpanId(span);
 
-    return !span.parentSpanId || !spanIds.has(span.parentSpanId);
+    return !parentSpanId || !spanIds.has(parentSpanId);
   }
 
   private logDebug(message: string, ...args: any[]): void {
@@ -278,6 +283,12 @@ export class LangfuseExporter implements SpanExporter {
     }
 
     console.log(`[${new Date().toISOString()}] [LangfuseExporter] ${message}`, ...args);
+  }
+
+  private getParentSpanId(span: ReadableSpan): string | null | undefined {
+    // Typecast necessary for OTEL v1 v2 compat
+    // https://github.com/open-telemetry/opentelemetry-js/releases/tag/v2.0.0
+    return (span as any).parentSpanId ?? (span as any).parentSpanContext?.spanId;
   }
 
   private hrTimeToDate(hrtime: [number, number]): Date {
