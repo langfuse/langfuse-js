@@ -4,6 +4,7 @@ import { Langfuse, type LangfuseOptions, type LangfusePromptRecord } from "langf
 import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
 type LangfuseExporterParams = {
+  shouldExportNonAiSpans?: boolean;
   publicKey?: string;
   secretKey?: string;
   baseUrl?: string;
@@ -13,10 +14,12 @@ type LangfuseExporterParams = {
 export class LangfuseExporter implements SpanExporter {
   static langfuse: Langfuse | null = null; // Singleton instance
   private readonly debug: boolean;
+  private readonly shouldExportNonAiSpans: boolean;
   private readonly langfuse: Langfuse;
 
   constructor(params: LangfuseExporterParams = {}) {
     this.debug = params.debug ?? false;
+    this.shouldExportNonAiSpans = params.shouldExportNonAiSpans ?? false;
 
     if (!LangfuseExporter.langfuse) {
       LangfuseExporter.langfuse = new Langfuse({
@@ -40,7 +43,7 @@ export class LangfuseExporter implements SpanExporter {
       const traceSpanMap = new Map<string, ReadableSpan[]>();
 
       for (const span of allSpans) {
-        if (!this.isAiSdkSpan(span)) {
+        if (!this.shouldExportNonAiSpans && !this.isAiSdkSpan(span)) {
           this.logDebug("Ignoring non-AI SDK span", span.name);
 
           continue;
