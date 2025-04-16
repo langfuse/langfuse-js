@@ -4,6 +4,7 @@ import { Langfuse, type LangfuseOptions, type LangfusePromptRecord } from "langf
 import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
 type LangfuseExporterParams = {
+  preserveRootSpanName?: boolean;
   shouldExportNonAiSpans?: boolean;
   publicKey?: string;
   secretKey?: string;
@@ -14,11 +15,13 @@ type LangfuseExporterParams = {
 export class LangfuseExporter implements SpanExporter {
   static langfuse: Langfuse | null = null; // Singleton instance
   private readonly debug: boolean;
+  private readonly preserveRootSpanName: boolean;
   private readonly shouldExportNonAiSpans: boolean;
   private readonly langfuse: Langfuse;
 
   constructor(params: LangfuseExporterParams = {}) {
     this.debug = params.debug ?? false;
+    this.preserveRootSpanName = params.preserveRootSpanName ?? false;
     this.shouldExportNonAiSpans = params.shouldExportNonAiSpans ?? false;
 
     if (!LangfuseExporter.langfuse) {
@@ -124,16 +127,17 @@ export class LangfuseExporter implements SpanExporter {
     const spanContext = span.spanContext();
     const attributes = span.attributes;
 
+    const spanName = isRootSpan && rootSpanName
+      ? rootSpanName
+      : !this.preserveRootSpanName && "ai.toolCall.name" in attributes
+        ? "ai.toolCall " + attributes["ai.toolCall.name"]?.toString()
+        : span.name;
+
     this.langfuse.span({
       traceId,
       parentObservationId: isRootSpan ? undefined : this.getParentSpanId(span),
       id: spanContext.spanId,
-      name:
-        isRootSpan && rootSpanName
-          ? rootSpanName
-          : "ai.toolCall.name" in attributes
-            ? "ai.toolCall " + attributes["ai.toolCall.name"]?.toString()
-            : span.name,
+      name: spanName,
       startTime: this.hrTimeToDate(span.startTime),
       endTime: this.hrTimeToDate(span.endTime),
 
@@ -364,6 +368,10 @@ export class LangfuseExporter implements SpanExporter {
   }
 
   private parseTraceName(spans: ReadableSpan[]): string | undefined {
+    if (this.preserveRootSpanName) {
+      return undefined;
+    }
+
     return spans
       .map((span) => span.attributes["resource.name"])
       .find((name) => Boolean(name))
