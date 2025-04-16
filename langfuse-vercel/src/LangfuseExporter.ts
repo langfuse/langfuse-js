@@ -4,7 +4,7 @@ import { Langfuse, type LangfuseOptions, type LangfusePromptRecord } from "langf
 import type { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
 type LangfuseExporterParams = {
-  preserveRootSpanName?: boolean;
+  preserveRootSpanName?: boolean; // If true, preserves the original root span name in traces instead of using a generated name.
   enableNonAiSpans?: boolean;
   publicKey?: string;
   secretKey?: string;
