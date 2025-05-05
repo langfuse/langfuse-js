@@ -181,8 +181,8 @@ export class LangfuseExporter implements SpanExporter {
             ? attributes["gen_ai.request.max_tokens"]?.toString() ?? null
             : null,
         finishReason:
-          "gai.response.finishReason" in attributes
-            ? attributes["ai.response.finishReason"]?.toString() ?? null
+          "gen_ai.response.finish_reasons" in attributes
+            ? attributes["gen_ai.response.finish_reasons"]?.toString() ?? null
             : "gen_ai.finishReason" in attributes //  Legacy support for ai SDK versions < 4.0.0
               ? attributes["gen_ai.finishReason"]?.toString() ?? null
               : null,
@@ -195,6 +195,10 @@ export class LangfuseExporter implements SpanExporter {
         maxRetries:
           "ai.settings.maxRetries" in attributes ? attributes["ai.settings.maxRetries"]?.toString() ?? null : null,
         mode: "ai.settings.mode" in attributes ? attributes["ai.settings.mode"]?.toString() ?? null : null,
+        temperature:
+          "gen_ai.request.temperature" in attributes
+            ? attributes["gen_ai.request.temperature"]?.toString() ?? null
+            : null,
       },
       usage: this.parseUsageDetails(attributes),
       usageDetails: this.parseUsageDetails(attributes),
