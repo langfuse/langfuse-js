@@ -1252,8 +1252,10 @@ abstract class LangfuseCoreStateless {
 
   private async fetchAndLogErrors<T>(url: string, options: LangfuseFetchOptions): Promise<T> {
     const res = await this.fetch(url, options);
-    const data = await res.json();
 
+    // 429 responses do not have a JSON body, so attempting to execute `json()`
+    // will throw and error before the 429 is logged.
+    const data = res.status === 429 ? await res.text() : await res.json();
     if (res.status < 200 || res.status >= 400) {
       logIngestionError(new LangfuseFetchHttpError(res, JSON.stringify(data)));
     }
