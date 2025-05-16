@@ -314,9 +314,87 @@ export class LangfuseExporter implements SpanExporter {
     await this.langfuse.shutdownAsync();
   }
 
-  private parseInput(span: ReadableSpan): any | undefined { // Return type 'any' or a more specific interface
-    const attributes = span.attributes;
 
+  // Helper function to transform Vercel AI SDK messages to a more common/OpenAI-like format
+  private transformMessages(messages: any[]): any[] {
+    if (!Array.isArray(messages)) {
+      this.logDebug("transformMessages received non-array input, returning as is:", messages);
+      return messages;
+    }
+
+    return messages.map(message => {
+      if (typeof message !== 'object' || message === null || !message.role) {
+        return message; // Not a standard message object
+      }
+
+      const newMessage: any = { role: message.role };
+      let textContentForAssistant: string | null = null; // For assistant role, text content
+
+      if (Array.isArray(message.content)) {
+        // Vercel AI SDK often puts content in an array of typed objects (MessageContentPart[])
+        const contentParts = message.content as any[];
+
+        if (message.role === "assistant") {
+          const toolCallParts = contentParts.filter(part => part.type === "tool-call");
+          const textParts = contentParts.filter(part => part.type === "text");
+
+          if (textParts.length > 0) {
+            textContentForAssistant = textParts.map(p => p.text).join("\n"); // Concatenate if multiple text parts
+          }
+
+          if (toolCallParts.length > 0) {
+            newMessage.tool_calls = toolCallParts.map(tc => ({
+              id: tc.toolCallId,
+              type: "function", // Assuming 'function'
+              function: {
+                name: tc.toolName,
+                arguments: typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args),
+              },
+            }));
+            newMessage.content = textContentForAssistant ?? null; // OpenAI: content is text or null if tool_calls
+          } else if (textContentForAssistant !== null) {
+            newMessage.content = textContentForAssistant;
+          } else {
+            // If no text and no tool_calls, but content is an array (e.g. other types)
+            newMessage.content = JSON.stringify(message.content);
+          }
+        } else if (message.role === "tool") {
+          const toolResultPart = contentParts.find(part => part.type === "tool-result");
+          if (toolResultPart) {
+            newMessage.tool_call_id = toolResultPart.toolCallId;
+            newMessage.name = toolResultPart.toolName; // Corresponds to function name for OpenAI
+            newMessage.content = typeof toolResultPart.result === 'string'
+              ? toolResultPart.result
+              : JSON.stringify(toolResultPart.result);
+          } else {
+            newMessage.content = JSON.stringify(message.content); // Fallback
+          }
+        } else if (message.role === "user" || message.role === "system") {
+          const textParts = contentParts.filter(part => part.type === "text");
+          if (textParts.length > 0) {
+            newMessage.content = textParts.map(p => p.text).join("\n");
+          } else {
+            // Handle other content types for user/system if necessary (e.g., images)
+            newMessage.content = JSON.stringify(message.content);
+          }
+        } else {
+           // Other roles, stringify content if it's an array
+           newMessage.content = JSON.stringify(message.content);
+        }
+      } else if (typeof message.content === 'string') {
+        newMessage.content = message.content;
+      } else if (message.content === null || message.content === undefined) {
+        newMessage.content = null;
+      } else {
+        // Fallback for unknown content structure (e.g. object but not array)
+        newMessage.content = JSON.stringify(message.content);
+      }
+      return newMessage;
+    });
+  }
+
+  private parseInput(span: ReadableSpan): any | undefined {
+    const attributes = span.attributes;
     let parsedMessages: any[] | undefined = undefined;
     let parsedTools: any[] | undefined = undefined;
 
@@ -327,19 +405,19 @@ export class LangfuseExporter implements SpanExporter {
         try {
           parsedMessages = JSON.parse(rawMessages);
           if (!Array.isArray(parsedMessages)) {
-            // If JSON.parse results in a non-array, log and potentially wrap it
-            console.warn("LangfuseExporter: Parsed 'ai.prompt.messages' is not an array:", parsedMessages);
-            // Depending on expected Vercel AI SDK behavior, you might choose to wrap non-array results or discard.
-            // For safety, if it's not an array after parsing, treat as if parsing failed or structure is unexpected.
-            // parsedMessages = [parsedMessages]; // Or set to undefined / log error
+            this.logDebug("Parsed 'ai.prompt.messages' is not an array:", parsedMessages);
+            parsedMessages = undefined;
           }
         } catch (e) {
           console.error("LangfuseExporter: Error parsing 'ai.prompt.messages'", e);
-          // Fallback: could treat rawMessages as a single message content or ignore
+          parsedMessages = undefined;
         }
       } else if (Array.isArray(rawMessages)) {
-         // If it's already an array (less common for OTel attributes but possible)
          parsedMessages = rawMessages;
+      }
+
+      if (parsedMessages) {
+        parsedMessages = this.transformMessages(parsedMessages);
       }
     }
 
@@ -350,11 +428,12 @@ export class LangfuseExporter implements SpanExporter {
         try {
           parsedTools = JSON.parse(rawTools);
            if (!Array.isArray(parsedTools)) {
-            console.warn("LangfuseExporter: Parsed 'ai.prompt.tools' is not an array:", parsedTools);
-            // parsedTools = [parsedTools]; // Or set to undefined / log error
+            this.logDebug("Parsed 'ai.prompt.tools' is not an array:", parsedTools);
+            parsedTools = undefined;
           }
         } catch (e) {
           console.error("LangfuseExporter: Error parsing 'ai.prompt.tools'", e);
+          parsedTools = undefined;
         }
       } else if (Array.isArray(rawTools)) {
         parsedTools = rawTools;
@@ -365,43 +444,70 @@ export class LangfuseExporter implements SpanExporter {
     if (parsedMessages && parsedTools) {
       return { messages: parsedMessages, tools: parsedTools };
     } else if (parsedMessages) {
-      // If only messages are present, still structure it if that's what Langfuse expects for chat input
       return { messages: parsedMessages };
     } else if (parsedTools) {
-      // If only tools are present (less common for primary input)
       return { tools: parsedTools };
     }
 
-    // Fallbacks for non-chat/tool inputs (simple prompts or tool arguments)
+    // Fallbacks for non-chat/tool inputs (simple prompts)
     if ("ai.prompt" in attributes) {
       return attributes["ai.prompt"];
     }
-    if ("ai.toolCall.args" in attributes) {
-      // This is usually input to a tool, not the primary LLM input
-      return attributes["ai.toolCall.args"];
+    // `ai.toolCall.args` is input for a tool execution span, not LLM generation.
+    return undefined;
+  }
+
+  private parseOutput(span: ReadableSpan): any | undefined {
+    const attributes = span.attributes;
+    let assistantResponse: any = undefined;
+    let textContent: string | null = null;
+
+    if ("ai.response.text" in attributes) {
+        textContent = attributes["ai.response.text"]?.toString() ?? null;
+    } else if ("ai.result.text" in attributes) { // Legacy support
+        textContent = attributes["ai.result.text"]?.toString() ?? null;
     }
 
-    return undefined;
-}
-  private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
-    const attributes = span.attributes;
+    if ("ai.response.toolCalls" in attributes || "ai.result.toolCalls" in attributes) {
+        const rawToolCalls = attributes["ai.response.toolCalls"] ?? attributes["ai.result.toolCalls"];
+        let parsedToolCalls;
+        if (typeof rawToolCalls === 'string') {
+            try {
+                parsedToolCalls = JSON.parse(rawToolCalls);
+            } catch (e) {
+                console.error("LangfuseExporter: Error parsing toolCalls in output", e);
+            }
+        } else {
+            parsedToolCalls = rawToolCalls; // Assume it's already an array of Vercel SDK tool call objects
+        }
 
-    return "ai.response.text" in attributes
-      ? attributes["ai.response.text"]
-      : "ai.result.text" in attributes // Legacy support for ai SDK versions < 4.0.0
-        ? attributes["ai.result.text"]
-        : "ai.toolCall.result" in attributes
-          ? attributes["ai.toolCall.result"]
-          : "ai.response.object" in attributes
-            ? attributes["ai.response.object"]
-            : "ai.result.object" in attributes // Legacy support for ai SDK versions < 4.0.0
-              ? attributes["ai.result.object"]
-              : "ai.response.toolCalls" in attributes
-                ? attributes["ai.response.toolCalls"]
-                : "ai.result.toolCalls" in attributes // Legacy support for ai SDK versions < 4.0.0
-                  ? attributes["ai.result.toolCalls"]
-                  : undefined;
-  }
+        if (Array.isArray(parsedToolCalls) && parsedToolCalls.length > 0) {
+            const transformedToolCalls = parsedToolCalls.map(tc => ({
+                id: tc.toolCallId || tc.id, // Vercel uses toolCallId
+                type: "function",
+                function: {
+                    name: tc.toolName || tc.function?.name,
+                    arguments: typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args ?? tc.function?.arguments),
+                },
+            }));
+            // Langfuse generation.output for an assistant message with tool calls
+            assistantResponse = {
+                content: textContent, // Text content alongside tool_calls
+                tool_calls: transformedToolCalls
+            };
+        } else if (textContent !== null) {
+             // Only text response
+            assistantResponse = textContent;
+        }
+    } else if (textContent !== null) {
+        assistantResponse = textContent;
+    } else if ("ai.response.object" in attributes) {
+        assistantResponse = attributes["ai.response.object"];
+    } else if ("ai.result.object" in attributes) { // Legacy
+        assistantResponse = attributes["ai.result.object"];
+    }
+    return assistantResponse;
+}
 
   private parseTraceId(spans: ReadableSpan[]): string | undefined {
     return spans
