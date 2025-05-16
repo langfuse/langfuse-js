@@ -314,48 +314,200 @@ export class LangfuseExporter implements SpanExporter {
     await this.langfuse.shutdownAsync();
   }
 
-  private parseInput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
-    const attributes = span.attributes;
-    const tools = "ai.prompt.tools" in attributes ? attributes["ai.prompt.tools"] : [];
 
-    let chatMessages: any[] = [];
+  // Helper function to transform Vercel AI SDK messages to a more common/OpenAI-like format
+  private transformMessages(messages: any[]): any[] {
+    if (!Array.isArray(messages)) {
+      this.logDebug("transformMessages received non-array input, returning as is:", messages);
+      return messages;
+    }
+
+    return messages.map(message => {
+      if (typeof message !== 'object' || message === null || !message.role) {
+        return message; // Not a standard message object
+      }
+
+      const newMessage: any = { role: message.role };
+      let textContentForAssistant: string | null = null; // For assistant role, text content
+
+      if (Array.isArray(message.content)) {
+        // Vercel AI SDK often puts content in an array of typed objects (MessageContentPart[])
+        const contentParts = message.content as any[];
+
+        if (message.role === "assistant") {
+          const toolCallParts = contentParts.filter(part => part.type === "tool-call");
+          const textParts = contentParts.filter(part => part.type === "text");
+
+          if (textParts.length > 0) {
+            textContentForAssistant = textParts.map(p => p.text).join("\n"); // Concatenate if multiple text parts
+          }
+
+          if (toolCallParts.length > 0) {
+            newMessage.tool_calls = toolCallParts.map(tc => ({
+              id: tc.toolCallId,
+              type: "function", // Assuming 'function'
+              function: {
+                name: tc.toolName,
+                arguments: typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args),
+              },
+            }));
+            newMessage.content = textContentForAssistant ?? null; // OpenAI: content is text or null if tool_calls
+          } else if (textContentForAssistant !== null) {
+            newMessage.content = textContentForAssistant;
+          } else {
+            // If no text and no tool_calls, but content is an array (e.g. other types)
+            newMessage.content = JSON.stringify(message.content);
+          }
+        } else if (message.role === "tool") {
+          const toolResultPart = contentParts.find(part => part.type === "tool-result");
+          if (toolResultPart) {
+            newMessage.tool_call_id = toolResultPart.toolCallId;
+            newMessage.name = toolResultPart.toolName; // Corresponds to function name for OpenAI
+            newMessage.content = typeof toolResultPart.result === 'string'
+              ? toolResultPart.result
+              : JSON.stringify(toolResultPart.result);
+          } else {
+            newMessage.content = JSON.stringify(message.content); // Fallback
+          }
+        } else if (message.role === "user" || message.role === "system") {
+          const textParts = contentParts.filter(part => part.type === "text");
+          if (textParts.length > 0) {
+            newMessage.content = textParts.map(p => p.text).join("\n");
+          } else {
+            // Handle other content types for user/system if necessary (e.g., images)
+            newMessage.content = JSON.stringify(message.content);
+          }
+        } else {
+           // Other roles, stringify content if it's an array
+           newMessage.content = JSON.stringify(message.content);
+        }
+      } else if (typeof message.content === 'string') {
+        newMessage.content = message.content;
+      } else if (message.content === null || message.content === undefined) {
+        newMessage.content = null;
+      } else {
+        // Fallback for unknown content structure (e.g. object but not array)
+        newMessage.content = JSON.stringify(message.content);
+      }
+      return newMessage;
+    });
+  }
+
+  private parseInput(span: ReadableSpan): any | undefined {
+    const attributes = span.attributes;
+    let parsedMessages: any[] | undefined = undefined;
+    let parsedTools: any[] | undefined = undefined;
+
+    // Parse messages
     if ("ai.prompt.messages" in attributes) {
-      chatMessages = [attributes["ai.prompt.messages"]];
-      try {
-        chatMessages = JSON.parse(attributes["ai.prompt.messages"] as string);
-      } catch (e) {
-        console.error("Error parsing ai.prompt.messages", e);
+      const rawMessages = attributes["ai.prompt.messages"];
+      if (typeof rawMessages === 'string') {
+        try {
+          parsedMessages = JSON.parse(rawMessages);
+          if (!Array.isArray(parsedMessages)) {
+            this.logDebug("Parsed 'ai.prompt.messages' is not an array:", parsedMessages);
+            parsedMessages = undefined;
+          }
+        } catch (e) {
+          console.error("LangfuseExporter: Error parsing 'ai.prompt.messages'", e);
+          parsedMessages = undefined;
+        }
+      } else if (Array.isArray(rawMessages)) {
+         parsedMessages = rawMessages;
+      }
+
+      if (parsedMessages) {
+        parsedMessages = this.transformMessages(parsedMessages);
       }
     }
 
-    return "ai.prompt.messages" in attributes
-      ? [...chatMessages, ...(Array.isArray(tools) ? tools : [])]
-      : "ai.prompt" in attributes
-        ? attributes["ai.prompt"]
-        : "ai.toolCall.args" in attributes
-          ? attributes["ai.toolCall.args"]
-          : undefined;
+    // Parse tools
+    if ("ai.prompt.tools" in attributes) {
+      const rawTools = attributes["ai.prompt.tools"];
+      if (typeof rawTools === 'string') {
+        try {
+          parsedTools = JSON.parse(rawTools);
+           if (!Array.isArray(parsedTools)) {
+            this.logDebug("Parsed 'ai.prompt.tools' is not an array:", parsedTools);
+            parsedTools = undefined;
+          }
+        } catch (e) {
+          console.error("LangfuseExporter: Error parsing 'ai.prompt.tools'", e);
+          parsedTools = undefined;
+        }
+      } else if (Array.isArray(rawTools)) {
+        parsedTools = rawTools;
+      }
+    }
+
+    // Construct the input object based on what was parsed
+    if (parsedMessages && parsedTools) {
+      return { messages: parsedMessages, tools: parsedTools };
+    } else if (parsedMessages) {
+      return { messages: parsedMessages };
+    } else if (parsedTools) {
+      return { tools: parsedTools };
+    }
+
+    // Fallbacks for non-chat/tool inputs (simple prompts)
+    if ("ai.prompt" in attributes) {
+      return attributes["ai.prompt"];
+    }
+    // `ai.toolCall.args` is input for a tool execution span, not LLM generation.
+    return undefined;
   }
 
-  private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
+  private parseOutput(span: ReadableSpan): any | undefined {
     const attributes = span.attributes;
+    let assistantResponse: any = undefined;
+    let textContent: string | null = null;
 
-    return "ai.response.text" in attributes
-      ? attributes["ai.response.text"]
-      : "ai.result.text" in attributes // Legacy support for ai SDK versions < 4.0.0
-        ? attributes["ai.result.text"]
-        : "ai.toolCall.result" in attributes
-          ? attributes["ai.toolCall.result"]
-          : "ai.response.object" in attributes
-            ? attributes["ai.response.object"]
-            : "ai.result.object" in attributes // Legacy support for ai SDK versions < 4.0.0
-              ? attributes["ai.result.object"]
-              : "ai.response.toolCalls" in attributes
-                ? attributes["ai.response.toolCalls"]
-                : "ai.result.toolCalls" in attributes // Legacy support for ai SDK versions < 4.0.0
-                  ? attributes["ai.result.toolCalls"]
-                  : undefined;
-  }
+    if ("ai.response.text" in attributes) {
+        textContent = attributes["ai.response.text"]?.toString() ?? null;
+    } else if ("ai.result.text" in attributes) { // Legacy support
+        textContent = attributes["ai.result.text"]?.toString() ?? null;
+    }
+
+    if ("ai.response.toolCalls" in attributes || "ai.result.toolCalls" in attributes) {
+        const rawToolCalls = attributes["ai.response.toolCalls"] ?? attributes["ai.result.toolCalls"];
+        let parsedToolCalls;
+        if (typeof rawToolCalls === 'string') {
+            try {
+                parsedToolCalls = JSON.parse(rawToolCalls);
+            } catch (e) {
+                console.error("LangfuseExporter: Error parsing toolCalls in output", e);
+            }
+        } else {
+            parsedToolCalls = rawToolCalls; // Assume it's already an array of Vercel SDK tool call objects
+        }
+
+        if (Array.isArray(parsedToolCalls) && parsedToolCalls.length > 0) {
+            const transformedToolCalls = parsedToolCalls.map(tc => ({
+                id: tc.toolCallId || tc.id, // Vercel uses toolCallId
+                type: "function",
+                function: {
+                    name: tc.toolName || tc.function?.name,
+                    arguments: typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args ?? tc.function?.arguments),
+                },
+            }));
+            // Langfuse generation.output for an assistant message with tool calls
+            assistantResponse = {
+                content: textContent, // Text content alongside tool_calls
+                tool_calls: transformedToolCalls
+            };
+        } else if (textContent !== null) {
+             // Only text response
+            assistantResponse = textContent;
+        }
+    } else if (textContent !== null) {
+        assistantResponse = textContent;
+    } else if ("ai.response.object" in attributes) {
+        assistantResponse = attributes["ai.response.object"];
+    } else if ("ai.result.object" in attributes) { // Legacy
+        assistantResponse = attributes["ai.result.object"];
+    }
+    return assistantResponse;
+}
 
   private parseTraceId(spans: ReadableSpan[]): string | undefined {
     return spans
