@@ -314,29 +314,75 @@ export class LangfuseExporter implements SpanExporter {
     await this.langfuse.shutdownAsync();
   }
 
-  private parseInput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
+  private parseInput(span: ReadableSpan): any | undefined { // Return type 'any' or a more specific interface
     const attributes = span.attributes;
-    const tools = "ai.prompt.tools" in attributes ? attributes["ai.prompt.tools"] : [];
 
-    let chatMessages: any[] = [];
+    let parsedMessages: any[] | undefined = undefined;
+    let parsedTools: any[] | undefined = undefined;
+
+    // Parse messages
     if ("ai.prompt.messages" in attributes) {
-      chatMessages = [attributes["ai.prompt.messages"]];
-      try {
-        chatMessages = JSON.parse(attributes["ai.prompt.messages"] as string);
-      } catch (e) {
-        console.error("Error parsing ai.prompt.messages", e);
+      const rawMessages = attributes["ai.prompt.messages"];
+      if (typeof rawMessages === 'string') {
+        try {
+          parsedMessages = JSON.parse(rawMessages);
+          if (!Array.isArray(parsedMessages)) {
+            // If JSON.parse results in a non-array, log and potentially wrap it
+            console.warn("LangfuseExporter: Parsed 'ai.prompt.messages' is not an array:", parsedMessages);
+            // Depending on expected Vercel AI SDK behavior, you might choose to wrap non-array results or discard.
+            // For safety, if it's not an array after parsing, treat as if parsing failed or structure is unexpected.
+            // parsedMessages = [parsedMessages]; // Or set to undefined / log error
+          }
+        } catch (e) {
+          console.error("LangfuseExporter: Error parsing 'ai.prompt.messages'", e);
+          // Fallback: could treat rawMessages as a single message content or ignore
+        }
+      } else if (Array.isArray(rawMessages)) {
+         // If it's already an array (less common for OTel attributes but possible)
+         parsedMessages = rawMessages;
       }
     }
 
-    return "ai.prompt.messages" in attributes
-      ? [...chatMessages, ...(Array.isArray(tools) ? tools : [])]
-      : "ai.prompt" in attributes
-        ? attributes["ai.prompt"]
-        : "ai.toolCall.args" in attributes
-          ? attributes["ai.toolCall.args"]
-          : undefined;
-  }
+    // Parse tools
+    if ("ai.prompt.tools" in attributes) {
+      const rawTools = attributes["ai.prompt.tools"];
+      if (typeof rawTools === 'string') {
+        try {
+          parsedTools = JSON.parse(rawTools);
+           if (!Array.isArray(parsedTools)) {
+            console.warn("LangfuseExporter: Parsed 'ai.prompt.tools' is not an array:", parsedTools);
+            // parsedTools = [parsedTools]; // Or set to undefined / log error
+          }
+        } catch (e) {
+          console.error("LangfuseExporter: Error parsing 'ai.prompt.tools'", e);
+        }
+      } else if (Array.isArray(rawTools)) {
+        parsedTools = rawTools;
+      }
+    }
 
+    // Construct the input object based on what was parsed
+    if (parsedMessages && parsedTools) {
+      return { messages: parsedMessages, tools: parsedTools };
+    } else if (parsedMessages) {
+      // If only messages are present, still structure it if that's what Langfuse expects for chat input
+      return { messages: parsedMessages };
+    } else if (parsedTools) {
+      // If only tools are present (less common for primary input)
+      return { tools: parsedTools };
+    }
+
+    // Fallbacks for non-chat/tool inputs (simple prompts or tool arguments)
+    if ("ai.prompt" in attributes) {
+      return attributes["ai.prompt"];
+    }
+    if ("ai.toolCall.args" in attributes) {
+      // This is usually input to a tool, not the primary LLM input
+      return attributes["ai.toolCall.args"];
+    }
+
+    return undefined;
+}
   private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
     const attributes = span.attributes;
 
