@@ -323,9 +323,7 @@ export class LangfuseExporter implements SpanExporter {
       chatMessages = [attributes["ai.prompt.messages"]];
       try {
         chatMessages = JSON.parse(attributes["ai.prompt.messages"] as string);
-      } catch (e) {
-        console.error("Error parsing ai.prompt.messages", e);
-      }
+      } catch {}
     }
 
     return "ai.prompt.messages" in attributes
