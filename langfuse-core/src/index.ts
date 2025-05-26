@@ -1349,14 +1349,20 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       isObservabilityEnabled = true;
     } else if (!secretKey) {
       isObservabilityEnabled = false;
-      console.warn(
-        "Langfuse secret key was not passed to constructor or not set as 'LANGFUSE_SECRET_KEY' environment variable. No observability data will be sent to Langfuse."
-      );
+
+      if (enabled !== false) {
+        console.warn(
+          "Langfuse secret key was not passed to constructor or not set as 'LANGFUSE_SECRET_KEY' environment variable. No observability data will be sent to Langfuse."
+        );
+      }
     } else if (!publicKey) {
       isObservabilityEnabled = false;
-      console.warn(
-        "Langfuse public key was not passed to constructor or not set as 'LANGFUSE_PUBLIC_KEY' environment variable. No observability data will be sent to Langfuse."
-      );
+
+      if (enabled !== false) {
+        console.warn(
+          "Langfuse public key was not passed to constructor or not set as 'LANGFUSE_PUBLIC_KEY' environment variable. No observability data will be sent to Langfuse."
+        );
+      }
     }
 
     super({ ...params, enabled: isObservabilityEnabled });
