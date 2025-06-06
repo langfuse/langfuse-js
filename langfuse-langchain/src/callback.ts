@@ -601,6 +601,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
       const llmUsage = this.extractUsageMetadata(lastResponse) ?? output.llmOutput?.["tokenUsage"];
+      const modelName = this.extractModelNameFromMetadata(lastResponse);
 
       const usageDetails: Record<string, any> = {
         input: llmUsage?.input_tokens ?? ("promptTokens" in llmUsage ? llmUsage?.promptTokens : undefined),
@@ -635,6 +636,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       this.langfuse._updateGeneration({
         id: runId,
+        model: modelName,
         traceId: this.traceId,
         output: extractedOutput,
         endTime: new Date(),
@@ -669,6 +671,15 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       return;
     }
+  }
+
+  private extractModelNameFromMetadata(generation: any): string | undefined {
+    try {
+      return "message" in generation &&
+        (generation["message"] instanceof AIMessage || generation["message"] instanceof AIMessageChunk)
+        ? generation["message"].response_metadata.model_name
+        : undefined;
+    } catch {}
   }
 
   private extractChatMessageContent(message: BaseMessage): LlmMessage | AnonymousLlmMessage | MessageContent {
