@@ -250,7 +250,7 @@ abstract class LangfuseCoreStateless {
       retryDelay: options?.fetchRetryDelay ?? 3000,
       retryCheck: isLangfuseFetchError,
     };
-    this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
+    this.requestTimeout = options?.requestTimeout ?? 5000; // 5 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
 
@@ -607,14 +607,15 @@ abstract class LangfuseCoreStateless {
 
     return retriable(
       async () => {
-        const res = await this.fetch(url, this._getFetchOptions({ method: "GET", fetchTimeout: requestTimeout })).catch(
-          (e) => {
-            if (e.name === "AbortError") {
-              throw new LangfuseFetchNetworkError("Fetch request timed out");
-            }
-            throw new LangfuseFetchNetworkError(e);
+        const res = await this.fetch(
+          url,
+          this._getFetchOptions({ method: "GET", fetchTimeout: requestTimeout ?? this.requestTimeout })
+        ).catch((e) => {
+          if (e.name === "AbortError") {
+            throw new LangfuseFetchNetworkError("Fetch request timed out");
           }
-        );
+          throw new LangfuseFetchNetworkError(e);
+        });
 
         if (res.status >= 500) {
           throw new LangfuseFetchHttpError(res, await res.text());
