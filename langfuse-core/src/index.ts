@@ -250,7 +250,7 @@ abstract class LangfuseCoreStateless {
       retryDelay: options?.fetchRetryDelay ?? 3000,
       retryCheck: isLangfuseFetchError,
     };
-    this.requestTimeout = options?.requestTimeout ?? 5000; // 5 seconds
+    this.requestTimeout = options?.requestTimeout ?? 10000; // 10 seconds
 
     this.sdkIntegration = options?.sdkIntegration ?? "DEFAULT";
 
@@ -1184,7 +1184,7 @@ abstract class LangfuseCoreStateless {
         ...this.constructAuthorizationHeader(this.publicKey, this.secretKey),
       },
       body: p.body,
-      signal: AbortSignal.timeout(p.fetchTimeout ?? this.requestTimeout),
+      ...(p.fetchTimeout !== undefined ? { signal: AbortSignal.timeout(p.fetchTimeout) } : {}),
     };
 
     return fetchOptions;
