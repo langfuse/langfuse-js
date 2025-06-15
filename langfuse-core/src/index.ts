@@ -313,7 +313,7 @@ abstract class LangfuseCoreStateless {
   protected traceStateless(body: CreateLangfuseTraceBody): string {
     const { id: bodyId, timestamp: bodyTimestamp, release: bodyRelease, ...rest } = body;
 
-    const id = bodyId ?? generateUUID();
+    const id = bodyId ?? generateUUID().replace(/-/g, "");
     const release = bodyRelease ?? this.release;
 
     const parsedBody: CreateLangfuseTraceBody = {
