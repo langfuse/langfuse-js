@@ -40,12 +40,16 @@ type RootParams = {
   root: LangfuseTraceClient | LangfuseSpanClient;
 };
 
+type ClientParams = {
+  client: Langfuse;
+};
+
 type KeyParams = {
   publicKey?: string;
   secretKey?: string;
 } & LangfuseOptions;
 
-type ConstructorParams = (RootParams | KeyParams) & {
+type ConstructorParams = (RootParams | ClientParams | KeyParams) & {
   userId?: string; // added to all traces
   version?: string; // added to all traces and observations
   sessionId?: string; // added to all traces
@@ -82,6 +86,12 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.rootProvided = true;
       this.updateRoot = params.updateRoot ?? false;
       this.metadata = params.metadata;
+    } else if (params && "client" in params) {
+      this.langfuse = params.client;
+      this.sessionId = params.sessionId;
+      this.userId = params.userId;
+      this.metadata = params.metadata;
+      this.tags = params.tags;
     } else {
       this.langfuse = new Langfuse({
         ...params,
