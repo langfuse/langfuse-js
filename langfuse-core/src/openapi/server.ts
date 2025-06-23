@@ -153,7 +153,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** @description List dataset run items */
+    get: operations["datasetRunItems_list"];
     put?: never;
     /** @description Create a dataset run item */
     post: operations["datasetRunItems_create"];
@@ -315,15 +316,15 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/public/metrics/daily": {
+  "/api/public/metrics": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** @description Get daily metrics of the Langfuse project */
-    get: operations["metrics_daily"];
+    /** @description Get metrics from the Langfuse project using a query object */
+    get: operations["metrics_metrics"];
     put?: never;
     post?: never;
     delete?: never;
@@ -402,6 +403,59 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/public/organizations/memberships": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all memberships for the organization associated with the API key (requires organization-scoped API key) */
+    get: operations["organizations_getOrganizationMemberships"];
+    /** @description Create or update a membership for the organization associated with the API key (requires organization-scoped API key) */
+    put: operations["organizations_updateOrganizationMembership"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/projects/{projectId}/memberships": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all memberships for a specific project (requires organization-scoped API key) */
+    get: operations["organizations_getProjectMemberships"];
+    /** @description Create or update a membership for a specific project (requires organization-scoped API key). The user must already be a member of the organization. */
+    put: operations["organizations_updateProjectMembership"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/organizations/projects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all projects for the organization associated with the API key (requires organization-scoped API key) */
+    get: operations["organizations_getOrganizationProjects"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/public/projects": {
     parameters: {
       query?: never;
@@ -412,8 +466,62 @@ export interface paths {
     /** @description Get Project associated with API key */
     get: operations["projects_get"];
     put?: never;
-    post?: never;
+    /** @description Create a new project (requires organization-scoped API key) */
+    post: operations["projects_create"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/projects/{projectId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** @description Update a project by ID (requires organization-scoped API key). */
+    put: operations["projects_update"];
+    post?: never;
+    /** @description Delete a project by ID (requires organization-scoped API key). Project deletion is processed asynchronously. */
+    delete: operations["projects_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/projects/{projectId}/apiKeys": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get all API keys for a project (requires organization-scoped API key) */
+    get: operations["projects_getApiKeys"];
+    put?: never;
+    /** @description Create a new API key for a project (requires organization-scoped API key) */
+    post: operations["projects_createApiKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/projects/{projectId}/apiKeys/{apiKeyId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** @description Delete an API key for a project (requires organization-scoped API key) */
+    delete: operations["projects_deleteApiKey"];
     options?: never;
     head?: never;
     patch?: never;
@@ -471,6 +579,93 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/public/scim/ServiceProviderConfig": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get SCIM Service Provider Configuration (requires organization-scoped API key) */
+    get: operations["scim_getServiceProviderConfig"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/scim/ResourceTypes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get SCIM Resource Types (requires organization-scoped API key) */
+    get: operations["scim_getResourceTypes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/scim/Schemas": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get SCIM Schemas (requires organization-scoped API key) */
+    get: operations["scim_getSchemas"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/scim/Users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description List users in the organization (requires organization-scoped API key) */
+    get: operations["scim_listUsers"];
+    put?: never;
+    /** @description Create a new user in the organization (requires organization-scoped API key) */
+    post: operations["scim_createUser"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/scim/Users/{userId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a specific user by ID (requires organization-scoped API key) */
+    get: operations["scim_getUser"];
+    put?: never;
+    post?: never;
+    /** @description Remove a user from the organization (requires organization-scoped API key). Note that this only removes the user from the organization but does not delete the user entity itself. */
+    delete: operations["scim_deleteUser"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/public/score-configs": {
     parameters: {
       query?: never;
@@ -506,6 +701,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/public/v2/scores": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a list of scores (supports both trace and session scores) */
+    get: operations["scoreV2_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/public/v2/scores/{scoreId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Get a score (supports both trace and session scores) */
+    get: operations["scoreV2_get-by-id"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/public/scores": {
     parameters: {
       query?: never;
@@ -513,10 +742,9 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get a list of scores */
-    get: operations["score_get"];
+    get?: never;
     put?: never;
-    /** @description Create a score */
+    /** @description Create a score (supports both trace and session scores) */
     post: operations["score_create"];
     delete?: never;
     options?: never;
@@ -531,11 +759,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** @description Get a score */
-    get: operations["score_get-by-id"];
+    get?: never;
     put?: never;
     post?: never;
-    /** @description Delete a score */
+    /** @description Delete a score (supports both trace and session scores) */
     delete: operations["score_delete"];
     options?: never;
     head?: never;
@@ -768,7 +995,7 @@ export interface components {
       /** @description List of observations */
       observations: components["schemas"]["ObservationsView"][];
       /** @description List of scores */
-      scores: components["schemas"]["Score"][];
+      scores: components["schemas"]["ScoreV1"][];
     } & components["schemas"]["Trace"];
     /** Session */
     Session: {
@@ -955,8 +1182,8 @@ export interface components {
       value: number;
       label: string;
     };
-    /** BaseScore */
-    BaseScore: {
+    /** BaseScoreV1 */
+    BaseScoreV1: {
       id: string;
       traceId: string;
       name: string;
@@ -970,6 +1197,74 @@ export interface components {
       updatedAt: string;
       authorUserId?: string | null;
       comment?: string | null;
+      metadata?: unknown;
+      /** @description Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
+      configId?: string | null;
+      /** @description Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
+      queueId?: string | null;
+      /** @description The environment from which this score originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+      environment?: string | null;
+    };
+    /** NumericScoreV1 */
+    NumericScoreV1: {
+      /**
+       * Format: double
+       * @description The numeric value of the score
+       */
+      value: number;
+    } & components["schemas"]["BaseScoreV1"];
+    /** BooleanScoreV1 */
+    BooleanScoreV1: {
+      /**
+       * Format: double
+       * @description The numeric value of the score. Equals 1 for "True" and 0 for "False"
+       */
+      value: number;
+      /** @description The string representation of the score value. Is inferred from the numeric value and equals "True" or "False" */
+      stringValue: string;
+    } & components["schemas"]["BaseScoreV1"];
+    /** CategoricalScoreV1 */
+    CategoricalScoreV1: {
+      /**
+       * Format: double
+       * @description Only defined if a config is linked. Represents the numeric category mapping of the stringValue
+       */
+      value?: number | null;
+      /** @description The string representation of the score value. If no config is linked, can be any string. Otherwise, must map to a config category */
+      stringValue: string;
+    } & components["schemas"]["BaseScoreV1"];
+    /** ScoreV1 */
+    ScoreV1:
+      | ({
+          /** @enum {string} */
+          dataType: "NUMERIC";
+        } & components["schemas"]["NumericScoreV1"])
+      | ({
+          /** @enum {string} */
+          dataType: "CATEGORICAL";
+        } & components["schemas"]["CategoricalScoreV1"])
+      | ({
+          /** @enum {string} */
+          dataType: "BOOLEAN";
+        } & components["schemas"]["BooleanScoreV1"]);
+    /** BaseScore */
+    BaseScore: {
+      id: string;
+      traceId?: string | null;
+      sessionId?: string | null;
+      observationId?: string | null;
+      datasetRunId?: string | null;
+      name: string;
+      source: components["schemas"]["ScoreSource"];
+      /** Format: date-time */
+      timestamp: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      authorUserId?: string | null;
+      comment?: string | null;
+      metadata?: unknown;
       /** @description Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
       configId?: string | null;
       /** @description Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
@@ -1126,17 +1421,17 @@ export interface components {
       unit?: components["schemas"]["ModelUsageUnit"];
       /**
        * Format: double
-       * @description Price (USD) per input unit
+       * @description Deprecated. See 'prices' instead. Price (USD) per input unit
        */
       inputPrice?: number | null;
       /**
        * Format: double
-       * @description Price (USD) per output unit
+       * @description Deprecated. See 'prices' instead. Price (USD) per output unit
        */
       outputPrice?: number | null;
       /**
        * Format: double
-       * @description Price (USD) per total unit. Cannot be set if input or output price is set.
+       * @description Deprecated. See 'prices' instead. Price (USD) per total unit. Cannot be set if input or output price is set.
        */
       totalPrice?: number | null;
       /** @description Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
@@ -1144,6 +1439,15 @@ export interface components {
       /** @description Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
       tokenizerConfig?: unknown;
       isLangfuseManaged: boolean;
+      /** @description Price (USD) by usage type */
+      prices: {
+        [key: string]: components["schemas"]["ModelPrice"];
+      };
+    };
+    /** ModelPrice */
+    ModelPrice: {
+      /** Format: double */
+      price: number;
     };
     /**
      * ModelUsageUnit
@@ -1212,6 +1516,11 @@ export interface components {
       observationId?: string | null;
       /** @description traceId should always be provided. For compatibility with older SDK versions it can also be inferred from the provided observationId. */
       traceId?: string | null;
+    };
+    /** PaginatedDatasetRunItems */
+    PaginatedDatasetRunItems: {
+      data: components["schemas"]["DatasetRunItem"][];
+      meta: components["schemas"]["utilsMetaResponse"];
     };
     /** PaginatedDatasets */
     PaginatedDatasets: {
@@ -1417,15 +1726,17 @@ export interface components {
     /** ScoreBody */
     ScoreBody: {
       id?: string | null;
-      /** @example cdef-1234-5678-90ab */
-      traceId: string;
+      traceId?: string | null;
+      sessionId?: string | null;
+      observationId?: string | null;
+      datasetRunId?: string | null;
       /** @example novelty */
       name: string;
       environment?: string | null;
       /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
       value: components["schemas"]["CreateScoreValue"];
-      observationId?: string | null;
       comment?: string | null;
+      metadata?: unknown;
       /** @description When set, must match the score value's type. If not set, will be inferred from the score value or config */
       dataType?: components["schemas"]["ScoreDataType"];
       /** @description Reference a score config on a score. When set, the score name must equal the config name and scores must comply with the config's range and data type. For categorical scores, the value must map to a config category. Numeric scores might be constrained by the score config's max and min values */
@@ -1622,44 +1933,14 @@ export interface components {
       | "application/json"
       | "application/xml"
       | "application/octet-stream";
-    /** DailyMetrics */
-    DailyMetrics: {
-      /** @description A list of daily metrics, only days with ingested data are included. */
-      data: components["schemas"]["DailyMetricsDetails"][];
-      meta: components["schemas"]["utilsMetaResponse"];
-    };
-    /** DailyMetricsDetails */
-    DailyMetricsDetails: {
-      /** Format: date */
-      date: string;
-      countTraces: number;
-      countObservations: number;
-      /**
-       * Format: double
-       * @description Total model cost in USD
-       */
-      totalCost: number;
-      usage: components["schemas"]["UsageByModel"][];
-    };
-    /**
-     * UsageByModel
-     * @description Daily usage of a given model. Usage corresponds to the unit set for the specific model (e.g. tokens).
-     */
-    UsageByModel: {
-      model?: string | null;
-      /** @description Total number of generation input units (e.g. tokens) */
-      inputUsage: number;
-      /** @description Total number of generation output units (e.g. tokens) */
-      outputUsage: number;
-      /** @description Total number of generation total units (e.g. tokens) */
-      totalUsage: number;
-      countTraces: number;
-      countObservations: number;
-      /**
-       * Format: double
-       * @description Total model cost in USD
-       */
-      totalCost: number;
+    /** MetricsResponse */
+    MetricsResponse: {
+      /** @description The metrics data. Each item in the list contains the metric values and dimensions requested in the query.
+       *     Format varies based on the query parameters.
+       *     Histograms will return an array with [lower, upper, height] tuples. */
+      data: {
+        [key: string]: unknown;
+      }[];
     };
     /** PaginatedModels */
     PaginatedModels: {
@@ -1709,6 +1990,43 @@ export interface components {
       data: components["schemas"]["ObservationsView"][];
       meta: components["schemas"]["utilsMetaResponse"];
     };
+    /**
+     * MembershipRole
+     * @enum {string}
+     */
+    MembershipRole: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+    /** MembershipRequest */
+    MembershipRequest: {
+      userId: string;
+      role: components["schemas"]["MembershipRole"];
+    };
+    /** MembershipResponse */
+    MembershipResponse: {
+      userId: string;
+      role: components["schemas"]["MembershipRole"];
+      email: string;
+      name: string;
+    };
+    /** MembershipsResponse */
+    MembershipsResponse: {
+      memberships: components["schemas"]["MembershipResponse"][];
+    };
+    /** OrganizationProject */
+    OrganizationProject: {
+      id: string;
+      name: string;
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /** OrganizationProjectsResponse */
+    OrganizationProjectsResponse: {
+      projects: components["schemas"]["OrganizationProject"][];
+    };
     /** Projects */
     Projects: {
       data: components["schemas"]["Project"][];
@@ -1717,6 +2035,60 @@ export interface components {
     Project: {
       id: string;
       name: string;
+      /** @description Metadata for the project */
+      metadata: {
+        [key: string]: unknown;
+      };
+      /** @description Number of days to retain data. Null or 0 means no retention. Omitted if no retention is configured. */
+      retentionDays?: number | null;
+    };
+    /** ProjectDeletionResponse */
+    ProjectDeletionResponse: {
+      success: boolean;
+      message: string;
+    };
+    /**
+     * ApiKeyList
+     * @description List of API keys for a project
+     */
+    ApiKeyList: {
+      apiKeys: components["schemas"]["ApiKeySummary"][];
+    };
+    /**
+     * ApiKeySummary
+     * @description Summary of an API key
+     */
+    ApiKeySummary: {
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      expiresAt?: string | null;
+      /** Format: date-time */
+      lastUsedAt?: string | null;
+      note?: string | null;
+      publicKey: string;
+      displaySecretKey: string;
+    };
+    /**
+     * ApiKeyResponse
+     * @description Response for API key creation
+     */
+    ApiKeyResponse: {
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      publicKey: string;
+      secretKey: string;
+      displaySecretKey: string;
+      note?: string | null;
+    };
+    /**
+     * ApiKeyDeletionResponse
+     * @description Response for API key deletion
+     */
+    ApiKeyDeletionResponse: {
+      success: boolean;
     };
     /** PromptMetaListResponse */
     PromptMetaListResponse: {
@@ -1807,6 +2179,121 @@ export interface components {
     ChatPrompt: {
       prompt: components["schemas"]["ChatMessage"][];
     } & components["schemas"]["BasePrompt"];
+    /** ServiceProviderConfig */
+    ServiceProviderConfig: {
+      schemas: string[];
+      documentationUri: string;
+      patch: components["schemas"]["ScimFeatureSupport"];
+      bulk: components["schemas"]["BulkConfig"];
+      filter: components["schemas"]["FilterConfig"];
+      changePassword: components["schemas"]["ScimFeatureSupport"];
+      sort: components["schemas"]["ScimFeatureSupport"];
+      etag: components["schemas"]["ScimFeatureSupport"];
+      authenticationSchemes: components["schemas"]["AuthenticationScheme"][];
+      meta: components["schemas"]["ResourceMeta"];
+    };
+    /** ScimFeatureSupport */
+    ScimFeatureSupport: {
+      supported: boolean;
+    };
+    /** BulkConfig */
+    BulkConfig: {
+      supported: boolean;
+      maxOperations: number;
+      maxPayloadSize: number;
+    };
+    /** FilterConfig */
+    FilterConfig: {
+      supported: boolean;
+      maxResults: number;
+    };
+    /** ResourceMeta */
+    ResourceMeta: {
+      resourceType: string;
+      location: string;
+    };
+    /** AuthenticationScheme */
+    AuthenticationScheme: {
+      name: string;
+      description: string;
+      specUri: string;
+      type: string;
+      primary: boolean;
+    };
+    /** ResourceTypesResponse */
+    ResourceTypesResponse: {
+      schemas: string[];
+      totalResults: number;
+      Resources: components["schemas"]["ResourceType"][];
+    };
+    /** ResourceType */
+    ResourceType: {
+      schemas?: string[] | null;
+      id: string;
+      name: string;
+      endpoint: string;
+      description: string;
+      schema: string;
+      schemaExtensions: components["schemas"]["SchemaExtension"][];
+      meta: components["schemas"]["ResourceMeta"];
+    };
+    /** SchemaExtension */
+    SchemaExtension: {
+      schema: string;
+      required: boolean;
+    };
+    /** SchemasResponse */
+    SchemasResponse: {
+      schemas: string[];
+      totalResults: number;
+      Resources: components["schemas"]["SchemaResource"][];
+    };
+    /** SchemaResource */
+    SchemaResource: {
+      id: string;
+      name: string;
+      description: string;
+      attributes: unknown[];
+      meta: components["schemas"]["ResourceMeta"];
+    };
+    /** ScimUsersListResponse */
+    ScimUsersListResponse: {
+      schemas: string[];
+      totalResults: number;
+      startIndex: number;
+      itemsPerPage: number;
+      Resources: components["schemas"]["ScimUser"][];
+    };
+    /** ScimUser */
+    ScimUser: {
+      schemas: string[];
+      id: string;
+      userName: string;
+      name: components["schemas"]["ScimName"];
+      emails: components["schemas"]["ScimEmail"][];
+      meta: components["schemas"]["UserMeta"];
+    };
+    /** UserMeta */
+    UserMeta: {
+      resourceType: string;
+      created?: string | null;
+      lastModified?: string | null;
+    };
+    /** ScimName */
+    ScimName: {
+      formatted?: string | null;
+    };
+    /** ScimEmail */
+    ScimEmail: {
+      primary: boolean;
+      value: string;
+      type: string;
+    };
+    /**
+     * EmptyResponse
+     * @description Empty response for 204 No Content responses
+     */
+    EmptyResponse: Record<string, never>;
     /** ScoreConfigs */
     ScoreConfigs: {
       data: components["schemas"]["ScoreConfig"][];
@@ -1831,29 +2318,6 @@ export interface components {
       /** @description Description is shown across the Langfuse UI and can be used to e.g. explain the config categories in detail, why a numeric range was set, or provide additional context on config name or usage */
       description?: string | null;
     };
-    /** CreateScoreRequest */
-    CreateScoreRequest: {
-      id?: string | null;
-      /** @example cdef-1234-5678-90ab */
-      traceId: string;
-      /** @example novelty */
-      name: string;
-      /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
-      value: components["schemas"]["CreateScoreValue"];
-      observationId?: string | null;
-      comment?: string | null;
-      /** @description The environment of the score. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
-      environment?: string | null;
-      /** @description The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
-      dataType?: components["schemas"]["ScoreDataType"];
-      /** @description Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
-      configId?: string | null;
-    };
-    /** CreateScoreResponse */
-    CreateScoreResponse: {
-      /** @description The id of the created object in Langfuse */
-      id: string;
-    };
     /** GetScoresResponseTraceData */
     GetScoresResponseTraceData: {
       /** @description The user ID associated with the trace referenced by score */
@@ -1865,15 +2329,15 @@ export interface components {
     };
     /** GetScoresResponseDataNumeric */
     GetScoresResponseDataNumeric: {
-      trace: components["schemas"]["GetScoresResponseTraceData"];
+      trace?: components["schemas"]["GetScoresResponseTraceData"];
     } & components["schemas"]["NumericScore"];
     /** GetScoresResponseDataCategorical */
     GetScoresResponseDataCategorical: {
-      trace: components["schemas"]["GetScoresResponseTraceData"];
+      trace?: components["schemas"]["GetScoresResponseTraceData"];
     } & components["schemas"]["CategoricalScore"];
     /** GetScoresResponseDataBoolean */
     GetScoresResponseDataBoolean: {
-      trace: components["schemas"]["GetScoresResponseTraceData"];
+      trace?: components["schemas"]["GetScoresResponseTraceData"];
     } & components["schemas"]["BooleanScore"];
     /** GetScoresResponseData */
     GetScoresResponseData:
@@ -1893,6 +2357,31 @@ export interface components {
     GetScoresResponse: {
       data: components["schemas"]["GetScoresResponseData"][];
       meta: components["schemas"]["utilsMetaResponse"];
+    };
+    /** CreateScoreRequest */
+    CreateScoreRequest: {
+      id?: string | null;
+      traceId?: string | null;
+      sessionId?: string | null;
+      observationId?: string | null;
+      datasetRunId?: string | null;
+      /** @example novelty */
+      name: string;
+      /** @description The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+      value: components["schemas"]["CreateScoreValue"];
+      comment?: string | null;
+      metadata?: unknown;
+      /** @description The environment of the score. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+      environment?: string | null;
+      /** @description The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
+      dataType?: components["schemas"]["ScoreDataType"];
+      /** @description Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
+      configId?: string | null;
+    };
+    /** CreateScoreResponse */
+    CreateScoreResponse: {
+      /** @description The id of the created object in Langfuse */
+      id: string;
     };
     /** PaginatedSessions */
     PaginatedSessions: {
@@ -2836,6 +3325,71 @@ export interface operations {
       };
     };
   };
+  datasetRunItems_list: {
+    parameters: {
+      query: {
+        datasetId: string;
+        runName: string;
+        /** @description page number, starts at 1 */
+        page?: number | null;
+        /** @description limit of items per page */
+        limit?: number | null;
+        response: components["schemas"]["PaginatedDatasetRunItems"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   datasetRunItems_create: {
     parameters: {
       query?: never;
@@ -3599,25 +4153,51 @@ export interface operations {
       };
     };
   };
-  metrics_daily: {
+  metrics_metrics: {
     parameters: {
-      query?: {
-        /** @description page number, starts at 1 */
-        page?: number | null;
-        /** @description limit of items per page */
-        limit?: number | null;
-        /** @description Optional filter by the name of the trace */
-        traceName?: string | null;
-        /** @description Optional filter by the userId associated with the trace */
-        userId?: string | null;
-        /** @description Optional filter for metrics where traces include all of these tags */
-        tags?: (string | null)[];
-        /** @description Optional filter for metrics where events include any of these environments */
-        environment?: (string | null)[];
-        /** @description Optional filter to only include traces and observations on or after a certain datetime (ISO 8601) */
-        fromTimestamp?: string | null;
-        /** @description Optional filter to only include traces and observations before a certain datetime (ISO 8601) */
-        toTimestamp?: string | null;
+      query: {
+        /** @description JSON string containing the query parameters with the following structure:
+         *     ```json
+         *     {
+         *       "view": string,           // Required. One of "traces", "observations", "scores-numeric", "scores-categorical"
+         *       "dimensions": [           // Optional. Default: []
+         *         {
+         *           "field": string       // Field to group by, e.g. "name", "userId", "sessionId"
+         *         }
+         *       ],
+         *       "metrics": [              // Required. At least one metric must be provided
+         *         {
+         *           "measure": string,    // What to measure, e.g. "count", "latency", "value"
+         *           "aggregation": string // How to aggregate, e.g. "count", "sum", "avg", "p95", "histogram"
+         *         }
+         *       ],
+         *       "filters": [              // Optional. Default: []
+         *         {
+         *           "column": string,     // Column to filter on
+         *           "operator": string,   // Operator, e.g. "=", ">", "<", "contains"
+         *           "value": any,         // Value to compare against
+         *           "type": string,       // Data type, e.g. "string", "number", "stringObject"
+         *           "key": string         // Required only when filtering on metadata
+         *         }
+         *       ],
+         *       "timeDimension": {        // Optional. Default: null. If provided, results will be grouped by time
+         *         "granularity": string   // One of "minute", "hour", "day", "week", "month", "auto"
+         *       },
+         *       "fromTimestamp": string,  // Required. ISO datetime string for start of time range
+         *       "toTimestamp": string,    // Required. ISO datetime string for end of time range
+         *       "orderBy": [              // Optional. Default: null
+         *         {
+         *           "field": string,      // Field to order by
+         *           "direction": string   // "asc" or "desc"
+         *         }
+         *       ],
+         *       "config": {               // Optional. Query-specific configuration
+         *         "bins": number,         // Optional. Number of bins for histogram (1-100), default: 10
+         *         "row_limit": number     // Optional. Row limit for results (1-1000)
+         *       }
+         *     }
+         *     ``` */
+        query: string;
       };
       header?: never;
       path?: never;
@@ -3630,7 +4210,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["DailyMetrics"];
+          "application/json": components["schemas"]["MetricsResponse"];
         };
       };
       400: {
@@ -3998,7 +4578,7 @@ export interface operations {
         parentObservationId?: string | null;
         /** @description Optional filter for observations where the environment is one of the provided values. */
         environment?: (string | null)[];
-        /** @description Retrieve only observations with a start_time or or after this datetime (ISO 8601). */
+        /** @description Retrieve only observations with a start_time on or after this datetime (ISO 8601). */
         fromStartTime?: string | null;
         /** @description Retrieve only observations with a start_time before this datetime (ISO 8601). */
         toStartTime?: string | null;
@@ -4061,6 +4641,313 @@ export interface operations {
       };
     };
   };
+  organizations_getOrganizationMemberships: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MembershipsResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  organizations_updateOrganizationMembership: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MembershipRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MembershipResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  organizations_getProjectMemberships: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MembershipsResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  organizations_updateProjectMembership: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MembershipRequest"];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MembershipResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  organizations_getOrganizationProjects: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OrganizationProjectsResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   projects_get: {
     parameters: {
       query?: never;
@@ -4076,6 +4963,402 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Projects"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  projects_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          /** @description Optional metadata for the project */
+          metadata?: {
+            [key: string]: unknown;
+          } | null;
+          /** @description Number of days to retain data. Must be 0 or at least 3 days. Requires data-retention entitlement for non-zero values. Optional. */
+          retention: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Project"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  projects_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          /** @description Optional metadata for the project */
+          metadata?: {
+            [key: string]: unknown;
+          } | null;
+          /** @description Number of days to retain data. Must be 0 or at least 3 days. Requires data-retention entitlement for non-zero values. Optional. */
+          retention: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Project"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  projects_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProjectDeletionResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  projects_getApiKeys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApiKeyList"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  projects_createApiKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description Optional note for the API key */
+          note?: string | null;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApiKeyResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  projects_deleteApiKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+        apiKeyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApiKeyDeletionResponse"];
         };
       };
       400: {
@@ -4392,6 +5675,445 @@ export interface operations {
       };
     };
   };
+  scim_getServiceProviderConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServiceProviderConfig"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scim_getResourceTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceTypesResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scim_getSchemas: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SchemasResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scim_listUsers: {
+    parameters: {
+      query?: {
+        /** @description Filter expression (e.g. userName eq "value") */
+        filter?: string | null;
+        /** @description 1-based index of the first result to return (default 1) */
+        startIndex?: number | null;
+        /** @description Maximum number of results to return (default 100) */
+        count?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScimUsersListResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scim_createUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description User's email address (required) */
+          userName: string;
+          /** @description User's name information */
+          name: components["schemas"]["ScimName"];
+          /** @description User's email addresses */
+          emails?: components["schemas"]["ScimEmail"][] | null;
+          /** @description Whether the user is active */
+          active?: boolean | null;
+          /** @description Initial password for the user */
+          password?: string | null;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScimUser"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scim_getUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScimUser"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  scim_deleteUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EmptyResponse"];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      405: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
   scoreConfigs_get: {
     parameters: {
       query?: {
@@ -4581,7 +6303,7 @@ export interface operations {
       };
     };
   };
-  score_get: {
+  scoreV2_get: {
     parameters: {
       query?: {
         /** @description Page number, starts at 1. */
@@ -4671,25 +6393,24 @@ export interface operations {
       };
     };
   };
-  score_create: {
+  "scoreV2_get-by-id": {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        /** @description The unique langfuse identifier of a score */
+        scoreId: string;
+      };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateScoreRequest"];
-      };
-    };
+    requestBody?: never;
     responses: {
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CreateScoreResponse"];
+          "application/json": components["schemas"]["Score"];
         };
       };
       400: {
@@ -4734,24 +6455,25 @@ export interface operations {
       };
     };
   };
-  "score_get-by-id": {
+  score_create: {
     parameters: {
       query?: never;
       header?: never;
-      path: {
-        /** @description The unique langfuse identifier of a score */
-        scoreId: string;
-      };
+      path?: never;
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateScoreRequest"];
+      };
+    };
     responses: {
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Score"];
+          "application/json": components["schemas"]["CreateScoreResponse"];
         };
       };
       400: {
@@ -5136,6 +6858,8 @@ export interface operations {
         release?: string | null;
         /** @description Optional filter for traces where the environment is one of the provided values. */
         environment?: (string | null)[];
+        /** @description Comma-separated list of fields to include in the response. Available field groups are 'core' (always included), 'io' (input, output, metadata), 'scores', 'observations', 'metrics'. If not provided, all fields are included. Example: 'core,scores,metrics' */
+        fields?: string | null;
       };
       header?: never;
       path?: never;
