@@ -169,7 +169,7 @@ export type ApiTraceWithFullDetails = ApiTrace & {
   /** List of observations */
   observations: ApiObservationsView[];
   /** List of scores */
-  scores: ApiScore[];
+  scores: ApiScoreV1[];
 };
 
 /** Session */
@@ -359,8 +359,8 @@ export interface ApiConfigCategory {
   label: string;
 }
 
-/** BaseScore */
-export interface ApiBaseScore {
+/** BaseScoreV1 */
+export interface ApiBaseScoreV1 {
   id: string;
   traceId: string;
   name: string;
@@ -374,6 +374,76 @@ export interface ApiBaseScore {
   updatedAt: string;
   authorUserId?: string | null;
   comment?: string | null;
+  metadata?: any;
+  /** Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
+  configId?: string | null;
+  /** Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
+  queueId?: string | null;
+  /** The environment from which this score originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+  environment?: string | null;
+}
+
+/** NumericScoreV1 */
+export type ApiNumericScoreV1 = ApiBaseScoreV1 & {
+  /**
+   * The numeric value of the score
+   * @format double
+   */
+  value: number;
+};
+
+/** BooleanScoreV1 */
+export type ApiBooleanScoreV1 = ApiBaseScoreV1 & {
+  /**
+   * The numeric value of the score. Equals 1 for "True" and 0 for "False"
+   * @format double
+   */
+  value: number;
+  /** The string representation of the score value. Is inferred from the numeric value and equals "True" or "False" */
+  stringValue: string;
+};
+
+/** CategoricalScoreV1 */
+export type ApiCategoricalScoreV1 = ApiBaseScoreV1 & {
+  /**
+   * Only defined if a config is linked. Represents the numeric category mapping of the stringValue
+   * @format double
+   */
+  value?: number | null;
+  /** The string representation of the score value. If no config is linked, can be any string. Otherwise, must map to a config category */
+  stringValue: string;
+};
+
+/** ScoreV1 */
+export type ApiScoreV1 =
+  | ({
+      dataType: "NUMERIC";
+    } & ApiNumericScoreV1)
+  | ({
+      dataType: "CATEGORICAL";
+    } & ApiCategoricalScoreV1)
+  | ({
+      dataType: "BOOLEAN";
+    } & ApiBooleanScoreV1);
+
+/** BaseScore */
+export interface ApiBaseScore {
+  id: string;
+  traceId?: string | null;
+  sessionId?: string | null;
+  observationId?: string | null;
+  datasetRunId?: string | null;
+  name: string;
+  source: ApiScoreSource;
+  /** @format date-time */
+  timestamp: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  authorUserId?: string | null;
+  comment?: string | null;
+  metadata?: any;
   /** Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
   configId?: string | null;
   /** Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
@@ -538,17 +608,17 @@ export interface ApiModel {
   /** Unit used by this model. */
   unit?: ApiModelUsageUnit | null;
   /**
-   * Price (USD) per input unit
+   * Deprecated. See 'prices' instead. Price (USD) per input unit
    * @format double
    */
   inputPrice?: number | null;
   /**
-   * Price (USD) per output unit
+   * Deprecated. See 'prices' instead. Price (USD) per output unit
    * @format double
    */
   outputPrice?: number | null;
   /**
-   * Price (USD) per total unit. Cannot be set if input or output price is set.
+   * Deprecated. See 'prices' instead. Price (USD) per total unit. Cannot be set if input or output price is set.
    * @format double
    */
   totalPrice?: number | null;
@@ -557,6 +627,14 @@ export interface ApiModel {
   /** Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
   tokenizerConfig?: any;
   isLangfuseManaged: boolean;
+  /** Price (USD) by usage type */
+  prices: Record<string, ApiModelPrice>;
+}
+
+/** ModelPrice */
+export interface ApiModelPrice {
+  /** @format double */
+  price: number;
 }
 
 /**
@@ -620,6 +698,12 @@ export interface ApiCreateDatasetRunItemRequest {
   observationId?: string | null;
   /** traceId should always be provided. For compatibility with older SDK versions it can also be inferred from the provided observationId. */
   traceId?: string | null;
+}
+
+/** PaginatedDatasetRunItems */
+export interface ApiPaginatedDatasetRunItems {
+  data: ApiDatasetRunItem[];
+  meta: ApiUtilsMetaResponse;
 }
 
 /** PaginatedDatasets */
@@ -823,15 +907,17 @@ export interface ApiSDKLogBody {
 /** ScoreBody */
 export interface ApiScoreBody {
   id?: string | null;
-  /** @example "cdef-1234-5678-90ab" */
-  traceId: string;
+  traceId?: string | null;
+  sessionId?: string | null;
+  observationId?: string | null;
+  datasetRunId?: string | null;
   /** @example "novelty" */
   name: string;
   environment?: string | null;
   /** The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
   value: ApiCreateScoreValue;
-  observationId?: string | null;
   comment?: string | null;
+  metadata?: any;
   /** When set, must match the score value's type. If not set, will be inferred from the score value or config */
   dataType?: ApiScoreDataType | null;
   /** Reference a score config on a score. When set, the score name must equal the config name and scores must comply with the config's range and data type. For categorical scores, the value must map to a config category. Numeric scores might be constrained by the score config's max and min values */
@@ -1038,46 +1124,14 @@ export type ApiMediaContentType =
   | "application/xml"
   | "application/octet-stream";
 
-/** DailyMetrics */
-export interface ApiDailyMetrics {
-  /** A list of daily metrics, only days with ingested data are included. */
-  data: ApiDailyMetricsDetails[];
-  meta: ApiUtilsMetaResponse;
-}
-
-/** DailyMetricsDetails */
-export interface ApiDailyMetricsDetails {
-  /** @format date */
-  date: string;
-  countTraces: number;
-  countObservations: number;
+/** MetricsResponse */
+export interface ApiMetricsResponse {
   /**
-   * Total model cost in USD
-   * @format double
+   * The metrics data. Each item in the list contains the metric values and dimensions requested in the query.
+   * Format varies based on the query parameters.
+   * Histograms will return an array with [lower, upper, height] tuples.
    */
-  totalCost: number;
-  usage: ApiUsageByModel[];
-}
-
-/**
- * UsageByModel
- * Daily usage of a given model. Usage corresponds to the unit set for the specific model (e.g. tokens).
- */
-export interface ApiUsageByModel {
-  model?: string | null;
-  /** Total number of generation input units (e.g. tokens) */
-  inputUsage: number;
-  /** Total number of generation output units (e.g. tokens) */
-  outputUsage: number;
-  /** Total number of generation total units (e.g. tokens) */
-  totalUsage: number;
-  countTraces: number;
-  countObservations: number;
-  /**
-   * Total model cost in USD
-   * @format double
-   */
-  totalCost: number;
+  data: Record<string, any>[];
 }
 
 /** PaginatedModels */
@@ -1132,6 +1186,44 @@ export interface ApiObservationsViews {
   meta: ApiUtilsMetaResponse;
 }
 
+/** MembershipRole */
+export type ApiMembershipRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+
+/** MembershipRequest */
+export interface ApiMembershipRequest {
+  userId: string;
+  role: ApiMembershipRole;
+}
+
+/** MembershipResponse */
+export interface ApiMembershipResponse {
+  userId: string;
+  role: ApiMembershipRole;
+  email: string;
+  name: string;
+}
+
+/** MembershipsResponse */
+export interface ApiMembershipsResponse {
+  memberships: ApiMembershipResponse[];
+}
+
+/** OrganizationProject */
+export interface ApiOrganizationProject {
+  id: string;
+  name: string;
+  metadata?: Record<string, any>;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+/** OrganizationProjectsResponse */
+export interface ApiOrganizationProjectsResponse {
+  projects: ApiOrganizationProject[];
+}
+
 /** Projects */
 export interface ApiProjects {
   data: ApiProject[];
@@ -1141,6 +1233,63 @@ export interface ApiProjects {
 export interface ApiProject {
   id: string;
   name: string;
+  /** Metadata for the project */
+  metadata: Record<string, any>;
+  /** Number of days to retain data. Null or 0 means no retention. Omitted if no retention is configured. */
+  retentionDays?: number | null;
+}
+
+/** ProjectDeletionResponse */
+export interface ApiProjectDeletionResponse {
+  success: boolean;
+  message: string;
+}
+
+/**
+ * ApiKeyList
+ * List of API keys for a project
+ */
+export interface ApiApiKeyList {
+  apiKeys: ApiApiKeySummary[];
+}
+
+/**
+ * ApiKeySummary
+ * Summary of an API key
+ */
+export interface ApiApiKeySummary {
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  expiresAt?: string | null;
+  /** @format date-time */
+  lastUsedAt?: string | null;
+  note?: string | null;
+  publicKey: string;
+  displaySecretKey: string;
+}
+
+/**
+ * ApiKeyResponse
+ * Response for API key creation
+ */
+export interface ApiApiKeyResponse {
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+  publicKey: string;
+  secretKey: string;
+  displaySecretKey: string;
+  note?: string | null;
+}
+
+/**
+ * ApiKeyDeletionResponse
+ * Response for API key deletion
+ */
+export interface ApiApiKeyDeletionResponse {
+  success: boolean;
 }
 
 /** PromptMetaListResponse */
@@ -1236,6 +1385,138 @@ export type ApiChatPrompt = ApiBasePrompt & {
   prompt: ApiChatMessage[];
 };
 
+/** ServiceProviderConfig */
+export interface ApiServiceProviderConfig {
+  schemas: string[];
+  documentationUri: string;
+  patch: ApiScimFeatureSupport;
+  bulk: ApiBulkConfig;
+  filter: ApiFilterConfig;
+  changePassword: ApiScimFeatureSupport;
+  sort: ApiScimFeatureSupport;
+  etag: ApiScimFeatureSupport;
+  authenticationSchemes: ApiAuthenticationScheme[];
+  meta: ApiResourceMeta;
+}
+
+/** ScimFeatureSupport */
+export interface ApiScimFeatureSupport {
+  supported: boolean;
+}
+
+/** BulkConfig */
+export interface ApiBulkConfig {
+  supported: boolean;
+  maxOperations: number;
+  maxPayloadSize: number;
+}
+
+/** FilterConfig */
+export interface ApiFilterConfig {
+  supported: boolean;
+  maxResults: number;
+}
+
+/** ResourceMeta */
+export interface ApiResourceMeta {
+  resourceType: string;
+  location: string;
+}
+
+/** AuthenticationScheme */
+export interface ApiAuthenticationScheme {
+  name: string;
+  description: string;
+  specUri: string;
+  type: string;
+  primary: boolean;
+}
+
+/** ResourceTypesResponse */
+export interface ApiResourceTypesResponse {
+  schemas: string[];
+  totalResults: number;
+  Resources: ApiResourceType[];
+}
+
+/** ResourceType */
+export interface ApiResourceType {
+  schemas?: string[] | null;
+  id: string;
+  name: string;
+  endpoint: string;
+  description: string;
+  schema: string;
+  schemaExtensions: ApiSchemaExtension[];
+  meta: ApiResourceMeta;
+}
+
+/** SchemaExtension */
+export interface ApiSchemaExtension {
+  schema: string;
+  required: boolean;
+}
+
+/** SchemasResponse */
+export interface ApiSchemasResponse {
+  schemas: string[];
+  totalResults: number;
+  Resources: ApiSchemaResource[];
+}
+
+/** SchemaResource */
+export interface ApiSchemaResource {
+  id: string;
+  name: string;
+  description: string;
+  attributes: any[];
+  meta: ApiResourceMeta;
+}
+
+/** ScimUsersListResponse */
+export interface ApiScimUsersListResponse {
+  schemas: string[];
+  totalResults: number;
+  startIndex: number;
+  itemsPerPage: number;
+  Resources: ApiScimUser[];
+}
+
+/** ScimUser */
+export interface ApiScimUser {
+  schemas: string[];
+  id: string;
+  userName: string;
+  name: ApiScimName;
+  emails: ApiScimEmail[];
+  meta: ApiUserMeta;
+}
+
+/** UserMeta */
+export interface ApiUserMeta {
+  resourceType: string;
+  created?: string | null;
+  lastModified?: string | null;
+}
+
+/** ScimName */
+export interface ApiScimName {
+  formatted?: string | null;
+}
+
+/** ScimEmail */
+export interface ApiScimEmail {
+  primary: boolean;
+  value: string;
+  type: string;
+}
+
+/**
+ * EmptyResponse
+ * Empty response for 204 No Content responses
+ */
+export type ApiEmptyResponse = object;
+
 /** ScoreConfigs */
 export interface ApiScoreConfigs {
   data: ApiScoreConfig[];
@@ -1262,31 +1543,6 @@ export interface ApiCreateScoreConfigRequest {
   description?: string | null;
 }
 
-/** CreateScoreRequest */
-export interface ApiCreateScoreRequest {
-  id?: string | null;
-  /** @example "cdef-1234-5678-90ab" */
-  traceId: string;
-  /** @example "novelty" */
-  name: string;
-  /** The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
-  value: ApiCreateScoreValue;
-  observationId?: string | null;
-  comment?: string | null;
-  /** The environment of the score. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
-  environment?: string | null;
-  /** The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
-  dataType?: ApiScoreDataType | null;
-  /** Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
-  configId?: string | null;
-}
-
-/** CreateScoreResponse */
-export interface ApiCreateScoreResponse {
-  /** The id of the created object in Langfuse */
-  id: string;
-}
-
 /** GetScoresResponseTraceData */
 export interface ApiGetScoresResponseTraceData {
   /** The user ID associated with the trace referenced by score */
@@ -1299,17 +1555,17 @@ export interface ApiGetScoresResponseTraceData {
 
 /** GetScoresResponseDataNumeric */
 export type ApiGetScoresResponseDataNumeric = ApiNumericScore & {
-  trace: ApiGetScoresResponseTraceData;
+  trace?: ApiGetScoresResponseTraceData | null;
 };
 
 /** GetScoresResponseDataCategorical */
 export type ApiGetScoresResponseDataCategorical = ApiCategoricalScore & {
-  trace: ApiGetScoresResponseTraceData;
+  trace?: ApiGetScoresResponseTraceData | null;
 };
 
 /** GetScoresResponseDataBoolean */
 export type ApiGetScoresResponseDataBoolean = ApiBooleanScore & {
-  trace: ApiGetScoresResponseTraceData;
+  trace?: ApiGetScoresResponseTraceData | null;
 };
 
 /** GetScoresResponseData */
@@ -1328,6 +1584,33 @@ export type ApiGetScoresResponseData =
 export interface ApiGetScoresResponse {
   data: ApiGetScoresResponseData[];
   meta: ApiUtilsMetaResponse;
+}
+
+/** CreateScoreRequest */
+export interface ApiCreateScoreRequest {
+  id?: string | null;
+  traceId?: string | null;
+  sessionId?: string | null;
+  observationId?: string | null;
+  datasetRunId?: string | null;
+  /** @example "novelty" */
+  name: string;
+  /** The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+  value: ApiCreateScoreValue;
+  comment?: string | null;
+  metadata?: any;
+  /** The environment of the score. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
+  environment?: string | null;
+  /** The data type of the score. When passing a configId this field is inferred. Otherwise, this field must be passed or will default to numeric. */
+  dataType?: ApiScoreDataType | null;
+  /** Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
+  configId?: string | null;
+}
+
+/** CreateScoreResponse */
+export interface ApiCreateScoreResponse {
+  /** The id of the created object in Langfuse */
+  id: string;
 }
 
 /** PaginatedSessions */
@@ -1405,6 +1688,16 @@ export interface ApiDatasetItemsListParams {
   limit?: number | null;
 }
 
+export interface ApiDatasetRunItemsListParams {
+  datasetId: string;
+  runName: string;
+  /** page number, starts at 1 */
+  page?: number | null;
+  /** limit of items per page */
+  limit?: number | null;
+  response: ApiPaginatedDatasetRunItems;
+}
+
 export interface ApiDatasetsListParams {
   /** page number, starts at 1 */
   page?: number | null;
@@ -1427,29 +1720,51 @@ export interface ApiIngestionBatchPayload {
   metadata?: any;
 }
 
-export interface ApiMetricsDailyParams {
-  /** page number, starts at 1 */
-  page?: number | null;
-  /** limit of items per page */
-  limit?: number | null;
-  /** Optional filter by the name of the trace */
-  traceName?: string | null;
-  /** Optional filter by the userId associated with the trace */
-  userId?: string | null;
-  /** Optional filter for metrics where traces include all of these tags */
-  tags?: (string | null)[];
-  /** Optional filter for metrics where events include any of these environments */
-  environment?: (string | null)[];
+export interface ApiMetricsMetricsParams {
   /**
-   * Optional filter to only include traces and observations on or after a certain datetime (ISO 8601)
-   * @format date-time
+   * JSON string containing the query parameters with the following structure:
+   * ```json
+   * {
+   *   "view": string,           // Required. One of "traces", "observations", "scores-numeric", "scores-categorical"
+   *   "dimensions": [           // Optional. Default: []
+   *     {
+   *       "field": string       // Field to group by, e.g. "name", "userId", "sessionId"
+   *     }
+   *   ],
+   *   "metrics": [              // Required. At least one metric must be provided
+   *     {
+   *       "measure": string,    // What to measure, e.g. "count", "latency", "value"
+   *       "aggregation": string // How to aggregate, e.g. "count", "sum", "avg", "p95", "histogram"
+   *     }
+   *   ],
+   *   "filters": [              // Optional. Default: []
+   *     {
+   *       "column": string,     // Column to filter on
+   *       "operator": string,   // Operator, e.g. "=", ">", "<", "contains"
+   *       "value": any,         // Value to compare against
+   *       "type": string,       // Data type, e.g. "string", "number", "stringObject"
+   *       "key": string         // Required only when filtering on metadata
+   *     }
+   *   ],
+   *   "timeDimension": {        // Optional. Default: null. If provided, results will be grouped by time
+   *     "granularity": string   // One of "minute", "hour", "day", "week", "month", "auto"
+   *   },
+   *   "fromTimestamp": string,  // Required. ISO datetime string for start of time range
+   *   "toTimestamp": string,    // Required. ISO datetime string for end of time range
+   *   "orderBy": [              // Optional. Default: null
+   *     {
+   *       "field": string,      // Field to order by
+   *       "direction": string   // "asc" or "desc"
+   *     }
+   *   ],
+   *   "config": {               // Optional. Query-specific configuration
+   *     "bins": number,         // Optional. Number of bins for histogram (1-100), default: 10
+   *     "row_limit": number     // Optional. Row limit for results (1-1000)
+   *   }
+   * }
+   * ```
    */
-  fromTimestamp?: string | null;
-  /**
-   * Optional filter to only include traces and observations before a certain datetime (ISO 8601)
-   * @format date-time
-   */
-  toTimestamp?: string | null;
+  query: string;
 }
 
 export interface ApiModelsListParams {
@@ -1472,7 +1787,7 @@ export interface ApiObservationsGetManyParams {
   /** Optional filter for observations where the environment is one of the provided values. */
   environment?: (string | null)[];
   /**
-   * Retrieve only observations with a start_time or or after this datetime (ISO 8601).
+   * Retrieve only observations with a start_time on or after this datetime (ISO 8601).
    * @format date-time
    */
   fromStartTime?: string | null;
@@ -1483,6 +1798,27 @@ export interface ApiObservationsGetManyParams {
   toStartTime?: string | null;
   /** Optional filter to only include observations with a certain version. */
   version?: string | null;
+}
+
+export interface ApiProjectsCreatePayload {
+  name: string;
+  /** Optional metadata for the project */
+  metadata?: Record<string, any>;
+  /** Number of days to retain data. Must be 0 or at least 3 days. Requires data-retention entitlement for non-zero values. Optional. */
+  retention: number;
+}
+
+export interface ApiProjectsUpdatePayload {
+  name: string;
+  /** Optional metadata for the project */
+  metadata?: Record<string, any>;
+  /** Number of days to retain data. Must be 0 or at least 3 days. Requires data-retention entitlement for non-zero values. Optional. */
+  retention: number;
+}
+
+export interface ApiProjectsCreateApiKeyPayload {
+  /** Optional note for the API key */
+  note?: string | null;
 }
 
 export interface ApiPromptVersionUpdatePayload {
@@ -1519,6 +1855,28 @@ export interface ApiPromptsListParams {
   toUpdatedAt?: string | null;
 }
 
+export interface ApiScimListUsersParams {
+  /** Filter expression (e.g. userName eq "value") */
+  filter?: string | null;
+  /** 1-based index of the first result to return (default 1) */
+  startIndex?: number | null;
+  /** Maximum number of results to return (default 100) */
+  count?: number | null;
+}
+
+export interface ApiScimCreateUserPayload {
+  /** User's email address (required) */
+  userName: string;
+  /** User's name information */
+  name: ApiScimName;
+  /** User's email addresses */
+  emails?: ApiScimEmail[] | null;
+  /** Whether the user is active */
+  active?: boolean | null;
+  /** Initial password for the user */
+  password?: string | null;
+}
+
 export interface ApiScoreConfigsGetParams {
   /** Page number, starts at 1. */
   page?: number | null;
@@ -1526,7 +1884,7 @@ export interface ApiScoreConfigsGetParams {
   limit?: number | null;
 }
 
-export interface ApiScoreGetParams {
+export interface ApiScoreV2GetParams {
   /** Page number, starts at 1. */
   page?: number | null;
   /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
@@ -1615,6 +1973,8 @@ export interface ApiTraceListParams {
   release?: string | null;
   /** Optional filter for traces where the environment is one of the provided values. */
   environment?: (string | null)[];
+  /** Comma-separated list of fields to include in the response. Available field groups are 'core' (always included), 'io' (input, output, metadata), 'scores', 'observations', 'metrics'. If not provided, all fields are included. Example: 'core,scores,metrics' */
+  fields?: string | null;
 }
 
 export interface ApiTraceDeleteMultiplePayload {
@@ -2131,6 +2491,23 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description List dataset run items
+     *
+     * @tags DatasetRunItems
+     * @name DatasetRunItemsList
+     * @request GET:/api/public/dataset-run-items
+     * @secure
+     */
+    datasetRunItemsList: (query: ApiDatasetRunItemsListParams, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/api/public/dataset-run-items`,
+        method: "GET",
+        query: query,
+        secure: true,
+        ...params,
+      }),
+
+    /**
      * @description Create a dataset
      *
      * @tags Datasets
@@ -2325,16 +2702,16 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Get daily metrics of the Langfuse project
+     * @description Get metrics from the Langfuse project using a query object
      *
      * @tags Metrics
-     * @name MetricsDaily
-     * @request GET:/api/public/metrics/daily
+     * @name MetricsMetrics
+     * @request GET:/api/public/metrics
      * @secure
      */
-    metricsDaily: (query: ApiMetricsDailyParams, params: RequestParams = {}) =>
-      this.request<ApiDailyMetrics, any>({
-        path: `/api/public/metrics/daily`,
+    metricsMetrics: (query: ApiMetricsMetricsParams, params: RequestParams = {}) =>
+      this.request<ApiMetricsResponse, any>({
+        path: `/api/public/metrics`,
         method: "GET",
         query: query,
         secure: true,
@@ -2448,6 +2825,167 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description Get all memberships for the organization associated with the API key (requires organization-scoped API key)
+     *
+     * @tags Organizations
+     * @name OrganizationsGetOrganizationMemberships
+     * @request GET:/api/public/organizations/memberships
+     * @secure
+     */
+    organizationsGetOrganizationMemberships: (params: RequestParams = {}) =>
+      this.request<ApiMembershipsResponse, any>({
+        path: `/api/public/organizations/memberships`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get all projects for the organization associated with the API key (requires organization-scoped API key)
+     *
+     * @tags Organizations
+     * @name OrganizationsGetOrganizationProjects
+     * @request GET:/api/public/organizations/projects
+     * @secure
+     */
+    organizationsGetOrganizationProjects: (params: RequestParams = {}) =>
+      this.request<ApiOrganizationProjectsResponse, any>({
+        path: `/api/public/organizations/projects`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get all memberships for a specific project (requires organization-scoped API key)
+     *
+     * @tags Organizations
+     * @name OrganizationsGetProjectMemberships
+     * @request GET:/api/public/projects/{projectId}/memberships
+     * @secure
+     */
+    organizationsGetProjectMemberships: (projectId: string, params: RequestParams = {}) =>
+      this.request<ApiMembershipsResponse, any>({
+        path: `/api/public/projects/${projectId}/memberships`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create or update a membership for the organization associated with the API key (requires organization-scoped API key)
+     *
+     * @tags Organizations
+     * @name OrganizationsUpdateOrganizationMembership
+     * @request PUT:/api/public/organizations/memberships
+     * @secure
+     */
+    organizationsUpdateOrganizationMembership: (data: ApiMembershipRequest, params: RequestParams = {}) =>
+      this.request<ApiMembershipResponse, any>({
+        path: `/api/public/organizations/memberships`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create or update a membership for a specific project (requires organization-scoped API key). The user must already be a member of the organization.
+     *
+     * @tags Organizations
+     * @name OrganizationsUpdateProjectMembership
+     * @request PUT:/api/public/projects/{projectId}/memberships
+     * @secure
+     */
+    organizationsUpdateProjectMembership: (projectId: string, data: ApiMembershipRequest, params: RequestParams = {}) =>
+      this.request<ApiMembershipResponse, any>({
+        path: `/api/public/projects/${projectId}/memberships`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a new project (requires organization-scoped API key)
+     *
+     * @tags Projects
+     * @name ProjectsCreate
+     * @request POST:/api/public/projects
+     * @secure
+     */
+    projectsCreate: (data: ApiProjectsCreatePayload, params: RequestParams = {}) =>
+      this.request<ApiProject, any>({
+        path: `/api/public/projects`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a new API key for a project (requires organization-scoped API key)
+     *
+     * @tags Projects
+     * @name ProjectsCreateApiKey
+     * @request POST:/api/public/projects/{projectId}/apiKeys
+     * @secure
+     */
+    projectsCreateApiKey: (projectId: string, data: ApiProjectsCreateApiKeyPayload, params: RequestParams = {}) =>
+      this.request<ApiApiKeyResponse, any>({
+        path: `/api/public/projects/${projectId}/apiKeys`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a project by ID (requires organization-scoped API key). Project deletion is processed asynchronously.
+     *
+     * @tags Projects
+     * @name ProjectsDelete
+     * @request DELETE:/api/public/projects/{projectId}
+     * @secure
+     */
+    projectsDelete: (projectId: string, params: RequestParams = {}) =>
+      this.request<ApiProjectDeletionResponse, any>({
+        path: `/api/public/projects/${projectId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete an API key for a project (requires organization-scoped API key)
+     *
+     * @tags Projects
+     * @name ProjectsDeleteApiKey
+     * @request DELETE:/api/public/projects/{projectId}/apiKeys/{apiKeyId}
+     * @secure
+     */
+    projectsDeleteApiKey: (projectId: string, apiKeyId: string, params: RequestParams = {}) =>
+      this.request<ApiApiKeyDeletionResponse, any>({
+        path: `/api/public/projects/${projectId}/apiKeys/${apiKeyId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Get Project associated with API key
      *
      * @tags Projects
@@ -2460,6 +2998,42 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
         path: `/api/public/projects`,
         method: "GET",
         secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get all API keys for a project (requires organization-scoped API key)
+     *
+     * @tags Projects
+     * @name ProjectsGetApiKeys
+     * @request GET:/api/public/projects/{projectId}/apiKeys
+     * @secure
+     */
+    projectsGetApiKeys: (projectId: string, params: RequestParams = {}) =>
+      this.request<ApiApiKeyList, any>({
+        path: `/api/public/projects/${projectId}/apiKeys`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update a project by ID (requires organization-scoped API key).
+     *
+     * @tags Projects
+     * @name ProjectsUpdate
+     * @request PUT:/api/public/projects/{projectId}
+     * @secure
+     */
+    projectsUpdate: (projectId: string, data: ApiProjectsUpdatePayload, params: RequestParams = {}) =>
+      this.request<ApiProject, any>({
+        path: `/api/public/projects/${projectId}`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -2544,6 +3118,128 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
+     * @description Create a new user in the organization (requires organization-scoped API key)
+     *
+     * @tags Scim
+     * @name ScimCreateUser
+     * @request POST:/api/public/scim/Users
+     * @secure
+     */
+    scimCreateUser: (data: ApiScimCreateUserPayload, params: RequestParams = {}) =>
+      this.request<ApiScimUser, any>({
+        path: `/api/public/scim/Users`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Remove a user from the organization (requires organization-scoped API key). Note that this only removes the user from the organization but does not delete the user entity itself.
+     *
+     * @tags Scim
+     * @name ScimDeleteUser
+     * @request DELETE:/api/public/scim/Users/{userId}
+     * @secure
+     */
+    scimDeleteUser: (userId: string, params: RequestParams = {}) =>
+      this.request<ApiEmptyResponse, any>({
+        path: `/api/public/scim/Users/${userId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get SCIM Resource Types (requires organization-scoped API key)
+     *
+     * @tags Scim
+     * @name ScimGetResourceTypes
+     * @request GET:/api/public/scim/ResourceTypes
+     * @secure
+     */
+    scimGetResourceTypes: (params: RequestParams = {}) =>
+      this.request<ApiResourceTypesResponse, any>({
+        path: `/api/public/scim/ResourceTypes`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get SCIM Schemas (requires organization-scoped API key)
+     *
+     * @tags Scim
+     * @name ScimGetSchemas
+     * @request GET:/api/public/scim/Schemas
+     * @secure
+     */
+    scimGetSchemas: (params: RequestParams = {}) =>
+      this.request<ApiSchemasResponse, any>({
+        path: `/api/public/scim/Schemas`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get SCIM Service Provider Configuration (requires organization-scoped API key)
+     *
+     * @tags Scim
+     * @name ScimGetServiceProviderConfig
+     * @request GET:/api/public/scim/ServiceProviderConfig
+     * @secure
+     */
+    scimGetServiceProviderConfig: (params: RequestParams = {}) =>
+      this.request<ApiServiceProviderConfig, any>({
+        path: `/api/public/scim/ServiceProviderConfig`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a specific user by ID (requires organization-scoped API key)
+     *
+     * @tags Scim
+     * @name ScimGetUser
+     * @request GET:/api/public/scim/Users/{userId}
+     * @secure
+     */
+    scimGetUser: (userId: string, params: RequestParams = {}) =>
+      this.request<ApiScimUser, any>({
+        path: `/api/public/scim/Users/${userId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description List users in the organization (requires organization-scoped API key)
+     *
+     * @tags Scim
+     * @name ScimListUsers
+     * @request GET:/api/public/scim/Users
+     * @secure
+     */
+    scimListUsers: (query: ApiScimListUsersParams, params: RequestParams = {}) =>
+      this.request<ApiScimUsersListResponse, any>({
+        path: `/api/public/scim/Users`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Create a score configuration (config). Score configs are used to define the structure of scores
      *
      * @tags ScoreConfigs
@@ -2598,7 +3294,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Create a score
+     * @description Create a score (supports both trace and session scores)
      *
      * @tags Score
      * @name ScoreCreate
@@ -2617,7 +3313,7 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Delete a score
+     * @description Delete a score (supports both trace and session scores)
      *
      * @tags Score
      * @name ScoreDelete
@@ -2633,16 +3329,16 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Get a list of scores
+     * @description Get a list of scores (supports both trace and session scores)
      *
-     * @tags Score
-     * @name ScoreGet
-     * @request GET:/api/public/scores
+     * @tags ScoreV2
+     * @name ScoreV2Get
+     * @request GET:/api/public/v2/scores
      * @secure
      */
-    scoreGet: (query: ApiScoreGetParams, params: RequestParams = {}) =>
+    scoreV2Get: (query: ApiScoreV2GetParams, params: RequestParams = {}) =>
       this.request<ApiGetScoresResponse, any>({
-        path: `/api/public/scores`,
+        path: `/api/public/v2/scores`,
         method: "GET",
         query: query,
         secure: true,
@@ -2651,16 +3347,16 @@ export class LangfusePublicApi<SecurityDataType extends unknown> extends HttpCli
       }),
 
     /**
-     * @description Get a score
+     * @description Get a score (supports both trace and session scores)
      *
-     * @tags Score
-     * @name ScoreGetById
-     * @request GET:/api/public/scores/{scoreId}
+     * @tags ScoreV2
+     * @name ScoreV2GetById
+     * @request GET:/api/public/v2/scores/{scoreId}
      * @secure
      */
-    scoreGetById: (scoreId: string, params: RequestParams = {}) =>
+    scoreV2GetById: (scoreId: string, params: RequestParams = {}) =>
       this.request<ApiScore, any>({
-        path: `/api/public/scores/${scoreId}`,
+        path: `/api/public/v2/scores/${scoreId}`,
         method: "GET",
         secure: true,
         format: "json",
