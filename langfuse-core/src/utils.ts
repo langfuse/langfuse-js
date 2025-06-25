@@ -98,7 +98,7 @@ export function configLangfuseSDK(params?: LangfuseCoreOptions, secretRequired: 
 
   // check environment variables if values not provided
   const finalPublicKey = publicKey ?? getEnv("LANGFUSE_PUBLIC_KEY");
-  const finalSecretKey = secretRequired ? secretKey ?? getEnv("LANGFUSE_SECRET_KEY") : undefined;
+  const finalSecretKey = secretRequired ? (secretKey ?? getEnv("LANGFUSE_SECRET_KEY")) : undefined;
   const finalBaseUrl = coreOptions.baseUrl ?? getEnv("LANGFUSE_BASEURL");
 
   const finalCoreOptions = {

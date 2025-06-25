@@ -77,7 +77,7 @@ export const parseCompletionOutput = (res: unknown): CreateLangfuseGenerationBod
     return "";
   }
 
-  return "message" in res.choices[0] ? res.choices[0].message : res.choices[0].text ?? "";
+  return "message" in res.choices[0] ? res.choices[0].message : (res.choices[0].text ?? "");
 };
 
 export const parseUsage = (res: unknown): Usage | undefined => {
