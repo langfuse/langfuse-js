@@ -131,6 +131,41 @@ describe("Langfuse Core", () => {
       });
     });
 
+    it("should create a chat prompt with placeholders", async () => {
+      await langfuse.createPrompt({
+        name: "test-prompt-placeholder",
+        type: "chat",
+        prompt: [
+          { role: "system", content: "This is a prompt with a {{variable}}" },
+          { type: "placeholder", name: "history" },
+          { role: "assistant", content: "Hi {{name}}"},
+        ],
+        isActive: true,
+        config: {
+          temperature: 0.5,
+        },
+      });
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      const [url, options] = mocks.fetch.mock.calls[0];
+      expect(url).toMatch(/^https:\/\/cloud\.langfuse\.com\/api\/public\/v2\/prompts/);
+      expect(options.method).toBe("POST");
+      const body = parseBody(mocks.fetch.mock.calls[0]);
+
+      expect(body).toMatchObject({
+        isActive: true,
+        prompt: [
+          { role: "system", content: "This is a prompt with a {{variable}}" },
+          { type: "placeholder", name: "history" },
+          { role: "assistant", content: "Hi {{name}}" },
+        ],
+        name: "test-prompt-placeholder",
+        type: "chat",
+        config: { temperature: 0.5 },
+        labels: ["production"],
+      });
+    });
+
     it("should create prompt with tags", async () => {
       await langfuse.createPrompt({
         name: "test-prompt",
@@ -575,6 +610,141 @@ describe("Langfuse Core", () => {
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
       expect(prompt).toEqual([{ role: "system", content: 'This is a prompt with {"foo":"bar"}' }]);
+    });
+
+    describe("prompt compilation", () => {
+      const createMockPrompt = (prompt: any[]): any => ({
+        name: "test-prompt-with-placeholders",
+        version: 1,
+        prompt: prompt,
+        type: "chat",
+        config: { temperature: 0.5 },
+        labels: ["test"],
+        tags: ["placeholder"],
+      });
+
+      describe("getLangchainPrompt() method", () => {
+        it("should filter out placeholders for Langchain compatibility", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: "placeholder", name: "examples" },
+            { role: "user", content: "Help me with {{task}}" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const langchainPrompt = client.getLangchainPrompt();
+
+          expect(langchainPrompt).toHaveLength(2);
+          expect(langchainPrompt[0]).toEqual({
+            role: "system",
+            content: "You are a {role} assistant"  // Langchain format
+          });
+          expect(langchainPrompt[1]).toEqual({
+            role: "user",
+            content: "Help me with {task}"  // Langchain format
+          });
+        });
+      });
+
+      describe("JSON serialization", () => {
+        it("should serialize prompt with placeholders correctly", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: "placeholder", name: "examples" },
+            { role: "user", content: "Help me" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const json = client.toJSON();
+
+          // Should be valid JSON
+          expect(() => JSON.parse(json)).not.toThrow();
+
+          const parsed = JSON.parse(json);
+          expect(parsed.name).toBe("test-prompt-with-placeholders");
+          expect(parsed.version).toBe(1);
+          expect(parsed.type).toBe("chat");
+
+          // The prompt should maintain the original API format for compatibility
+          expect(parsed.prompt).toEqual([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: "placeholder", name: "examples" },
+            { role: "user", content: "Help me" }
+          ]);
+        });
+      });
+
+      describe("compile() method with placeholders", () => {
+        const mockPrompt = createMockPrompt([
+          { role: "system", content: "You are a {{role}} assistant" },
+          { type: "placeholder", name: "examples" },
+          { role: "user", content: "Help me with {{task}}" },
+          { type: "placeholder", name: "extra_history" },
+        ]);
+
+        const testCases = [
+          {
+            name: "variables only (undefined placeholders parameter)",
+            variables: { role: "helpful", task: "coding" },
+            placeholders: undefined,
+            expected: ["You are a helpful assistant", "Help me with coding"]
+          },
+          {
+            name: "variables only (empty placeholders)",
+            variables: { role: "helpful", task: "coding" },
+            placeholders: {},
+            expected: ["You are a helpful assistant", "Help me with coding"]
+          },
+          {
+            name: "empty placeholder array",
+            variables: { role: "helpful", task: "coding" },
+            placeholders: { examples: [] },
+            expected: ["You are a helpful assistant", "Help me with coding"]
+          },
+          {
+            name: "no variables or placeholders",
+            variables: {},
+            placeholders: {},
+            expected: ["You are a  assistant", "Help me with "]
+          },
+          {
+            name: "both variables and multiple placeholders",
+            variables: { role: "helpful", task: "coding" },
+            placeholders: {
+              examples: [
+                { role: "user", content: "Show {{task}}" }
+              ],
+              extra_history: [
+                { role: "user", content: "Show ABC" }
+              ]
+            },
+            expected: ["You are a helpful assistant", "Show coding", "Help me with coding", "Show ABC"]
+          },
+
+          {
+            name: "unused placeholders",
+            variables: { role: "helpful", task: "coding" },
+            placeholders: {
+              unused: [{ role: "user", content: "Won't appear" }],
+              examples: [{ role: "user", content: "Will appear" }]
+            },
+            expected: ["You are a helpful assistant", "Will appear", "Help me with coding"]
+          },
+        ];
+
+        testCases.forEach(({ name, variables, placeholders, expected }) => {
+          it(`should handle ${name}`, () => {
+            const client = new ChatPromptClient(mockPrompt);
+            const result = client.compile(variables, placeholders);
+
+            expect(result).toHaveLength(expected.length);
+            expected.forEach((expectedContent, i) => {
+              expect(result[i].content).toBe(expectedContent);
+            });
+          });
+        });
+
+      });
     });
   });
 });

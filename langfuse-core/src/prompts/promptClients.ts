@@ -1,6 +1,12 @@
 import mustache from "mustache";
 
-import type { ChatMessage, ChatPrompt, CreateLangfusePromptResponse, TextPrompt } from "../types";
+import type {
+  ChatMessage,
+  ChatPrompt,
+  CreateLangfusePromptResponse,
+  TextPrompt,
+  ChatMessageWithPlaceholders,
+} from "../types";
 
 mustache.escape = function (text) {
   return text;
@@ -14,7 +20,7 @@ abstract class BasePromptClient {
   public readonly tags: string[];
   public readonly isFallback: boolean;
   public readonly type: "text" | "chat";
-  public readonly prompt: string | ChatMessage[];
+  public readonly prompt: string | ChatMessageWithPlaceholders[];
   public readonly commitMessage: string | null | undefined;
 
   constructor(prompt: CreateLangfusePromptResponse, isFallback = false, type: "text" | "chat") {
@@ -80,7 +86,7 @@ export class TextPromptClient extends BasePromptClient {
 
 export class ChatPromptClient extends BasePromptClient {
   public readonly promptResponse: ChatPrompt;
-  public readonly prompt: ChatMessage[];
+  public readonly prompt: ChatMessageWithPlaceholders[];
 
   constructor(prompt: ChatPrompt, isFallback = false) {
     super(prompt, isFallback, "chat");
@@ -88,8 +94,28 @@ export class ChatPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
-  compile(variables?: Record<string, string>): ChatMessage[] {
-    return this.prompt.map<ChatMessage>((chatMessage) => ({
+  compile(
+    variables?: Record<string, string>,
+    placeholders?: Record<string, ChatMessage[]>
+  ): ChatMessage[] {
+    const messagesWithPlaceholdersReplaced: ChatMessage[] = [];
+
+    // Replace placeholders with provided message arrays
+    for (const item of this.prompt) {
+      if ('type' in item && item.type === "placeholder") {
+        if (placeholders && item.name in placeholders) {
+          messagesWithPlaceholdersReplaced.push(...placeholders[item.name]);
+        }
+        // If no placeholder fill-ins provided for a name, skip it
+      } else if ('role' in item && 'content' in item) {
+        messagesWithPlaceholdersReplaced.push({
+          role: item.role,
+          content: item.content,
+        });
+      }
+    }
+
+    return messagesWithPlaceholdersReplaced.map<ChatMessage>((chatMessage) => ({
       ...chatMessage,
       content: mustache.render(chatMessage.content, variables ?? {}),
     }));
@@ -115,10 +141,12 @@ export class ChatPromptClient extends BasePromptClient {
      * ```
      * @returns {ChatMessage[]} Chat messages with variables that can be plugged into Langchain's ChatPromptTemplate.
      */
-    return this.prompt.map((chatMessage) => ({
-      ...chatMessage,
-      content: this._transformToLangchainVariables(chatMessage.content),
-    }));
+    return this.prompt
+      .filter(item => 'role' in item && 'content' in item)
+      .map(item => ({
+        role: item.role,
+        content: this._transformToLangchainVariables(item.content),
+      }));
   }
 }
 

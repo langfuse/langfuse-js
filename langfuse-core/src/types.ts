@@ -183,6 +183,8 @@ export type GetLangfusePromptResponse =
   | { fetchResult: "failure"; data: GetLangfusePromptFailureData };
 
 export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
+export type PlaceholderMessage = FixTypes<components["schemas"]["PlaceholderMessage"]>;
+export type ChatMessageWithPlaceholders = FixTypes<components["schemas"]["ChatMessageWithPlaceholders"]>;
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
 
@@ -198,7 +200,15 @@ type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptR
 export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
 export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
 
+export type CreateChatPromptBodyWithPlaceholders = {
+  type: "chat"
+} & Omit<CreateChatPromptRequest, "type" | "prompt"> & {
+  prompt: (ChatMessage | ChatMessageWithPlaceholders)[];
+  isActive?: boolean;
+};
+
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
+export type CreatePromptBodyWithPlaceholders = CreateTextPromptBody | CreateChatPromptBodyWithPlaceholders;
 
 export type PromptInput = {
   prompt?: LangfusePromptRecord | LangfusePromptClient;
