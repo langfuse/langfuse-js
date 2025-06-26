@@ -70,7 +70,9 @@ abstract class BasePromptClient {
 
         // look ahead to find the next non-space character
         let j = i + 1;
-        while (j < n && /\s/.test(text[j])) j++;
+        while (j < n && /\s/.test(text[j])) {
+          j++;
+        }
 
         const isJson = j < n && (text[j] === "'" || text[j] === '"');
         out.push(isJson ? "{{" : "{");
