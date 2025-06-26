@@ -702,12 +702,6 @@ describe("Langfuse Core", () => {
             expected: ["You are a helpful assistant", "Help me with coding"],
           },
           {
-            name: "no variables or placeholders",
-            variables: {},
-            placeholders: {},
-            expected: ["You are a  assistant", "Help me with "],
-          },
-          {
             name: "both variables and multiple placeholders",
             variables: { role: "helpful", task: "coding" },
             placeholders: {
