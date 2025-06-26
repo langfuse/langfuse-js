@@ -21,6 +21,7 @@ import {
   type CreateLangfuseScoreBody,
   type CreateLangfuseSpanBody,
   type CreateLangfuseTraceBody,
+  type CreateChatPromptBody,
   type CreateChatPromptBodyWithPlaceholders,
   type CreateTextPromptBody,
   type DatasetItem,
@@ -1478,7 +1479,8 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
 
   async createPrompt(body: CreateChatPromptBodyWithPlaceholders): Promise<ChatPromptClient>;
   async createPrompt(body: CreateTextPromptBody): Promise<TextPromptClient>;
-  async createPrompt(body: CreateTextPromptBody | CreateChatPromptBodyWithPlaceholders): Promise<LangfusePromptClient> {
+  async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
+  async createPrompt(body: CreateTextPromptBody | CreateChatPromptBody | CreateChatPromptBodyWithPlaceholders): Promise<LangfusePromptClient> {
     const labels = body.labels ?? [];
 
     const promptResponse =
