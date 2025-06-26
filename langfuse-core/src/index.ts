@@ -1486,11 +1486,15 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
       body.type === "chat" // necessary to get types right here
         ? await this.createPromptStateless({
             ...body,
-            prompt: body.prompt.map(item => {
+            prompt: body.prompt.map((item) => {
               if ("type" in item && item.type === "placeholder") {
                 return { type: "placeholder", name: (item as PlaceholderMessage).name };
               } else if ("type" in item && item.type === "chatmessage") {
-                return { type: "chatmessage", role: (item as ChatMessage).role, content: (item as ChatMessage).content };
+                return {
+                  type: "chatmessage",
+                  role: (item as ChatMessage).role,
+                  content: (item as ChatMessage).content,
+                };
               } else {
                 // Handle regular ChatMessageDict (without type field)
                 return { type: "chatmessage", ...item };
@@ -1581,9 +1585,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
               {
                 ...sharedFallbackParams,
                 type: "chat",
-                prompt: (options.fallback as ChatMessage[]).map(msg => ({
+                prompt: (options.fallback as ChatMessage[]).map((msg) => ({
                   type: "chatmessage" as const,
-                  ...msg
+                  ...msg,
                 })),
               },
               true

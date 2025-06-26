@@ -138,7 +138,7 @@ describe("Langfuse Core", () => {
         prompt: [
           { role: "system", content: "This is a prompt with a {{variable}}" },
           { type: "placeholder", name: "history" },
-          { role: "assistant", content: "Hi {{name}}"},
+          { role: "assistant", content: "Hi {{name}}" },
         ],
         isActive: true,
         config: {
@@ -637,11 +637,11 @@ describe("Langfuse Core", () => {
           expect(langchainPrompt).toHaveLength(2);
           expect(langchainPrompt[0]).toEqual({
             role: "system",
-            content: "You are a {role} assistant"  // Langchain format
+            content: "You are a {role} assistant", // Langchain format
           });
           expect(langchainPrompt[1]).toEqual({
             role: "user",
-            content: "Help me with {task}"  // Langchain format
+            content: "Help me with {task}", // Langchain format
           });
         });
       });
@@ -669,7 +669,7 @@ describe("Langfuse Core", () => {
           expect(parsed.prompt).toEqual([
             { role: "system", content: "You are a {{role}} assistant" },
             { type: "placeholder", name: "examples" },
-            { role: "user", content: "Help me" }
+            { role: "user", content: "Help me" },
           ]);
         });
       });
@@ -687,38 +687,34 @@ describe("Langfuse Core", () => {
             name: "variables only (undefined placeholders parameter)",
             variables: { role: "helpful", task: "coding" },
             placeholders: undefined,
-            expected: ["You are a helpful assistant", "Help me with coding"]
+            expected: ["You are a helpful assistant", "Help me with coding"],
           },
           {
             name: "variables only (empty placeholders)",
             variables: { role: "helpful", task: "coding" },
             placeholders: {},
-            expected: ["You are a helpful assistant", "Help me with coding"]
+            expected: ["You are a helpful assistant", "Help me with coding"],
           },
           {
             name: "empty placeholder array",
             variables: { role: "helpful", task: "coding" },
             placeholders: { examples: [] },
-            expected: ["You are a helpful assistant", "Help me with coding"]
+            expected: ["You are a helpful assistant", "Help me with coding"],
           },
           {
             name: "no variables or placeholders",
             variables: {},
             placeholders: {},
-            expected: ["You are a  assistant", "Help me with "]
+            expected: ["You are a  assistant", "Help me with "],
           },
           {
             name: "both variables and multiple placeholders",
             variables: { role: "helpful", task: "coding" },
             placeholders: {
-              examples: [
-                { role: "user", content: "Show {{task}}" }
-              ],
-              extra_history: [
-                { role: "user", content: "Show ABC" }
-              ]
+              examples: [{ role: "user", content: "Show {{task}}" }],
+              extra_history: [{ role: "user", content: "Show ABC" }],
             },
-            expected: ["You are a helpful assistant", "Show coding", "Help me with coding", "Show ABC"]
+            expected: ["You are a helpful assistant", "Show coding", "Help me with coding", "Show ABC"],
           },
 
           {
@@ -726,9 +722,9 @@ describe("Langfuse Core", () => {
             variables: { role: "helpful", task: "coding" },
             placeholders: {
               unused: [{ role: "user", content: "Won't appear" }],
-              examples: [{ role: "user", content: "Will appear" }]
+              examples: [{ role: "user", content: "Will appear" }],
             },
-            expected: ["You are a helpful assistant", "Will appear", "Help me with coding"]
+            expected: ["You are a helpful assistant", "Will appear", "Help me with coding"],
           },
         ];
 
@@ -743,7 +739,6 @@ describe("Langfuse Core", () => {
             });
           });
         });
-
       });
     });
   });

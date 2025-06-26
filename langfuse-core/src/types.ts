@@ -201,11 +201,11 @@ export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequ
 export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
 
 export type CreateChatPromptBodyWithPlaceholders = {
-  type: "chat"
+  type: "chat";
 } & Omit<CreateChatPromptRequest, "type" | "prompt"> & {
-  prompt: (ChatMessage | ChatMessageWithPlaceholders)[];
-  isActive?: boolean;
-};
+    prompt: (ChatMessage | ChatMessageWithPlaceholders)[];
+    isActive?: boolean;
+  };
 
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 export type CreatePromptBodyWithPlaceholders = CreateTextPromptBody | CreateChatPromptBodyWithPlaceholders;

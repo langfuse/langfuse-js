@@ -94,20 +94,17 @@ export class ChatPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
-  compile(
-    variables?: Record<string, string>,
-    placeholders?: Record<string, ChatMessage[]>
-  ): ChatMessage[] {
+  compile(variables?: Record<string, string>, placeholders?: Record<string, ChatMessage[]>): ChatMessage[] {
     const messagesWithPlaceholdersReplaced: ChatMessage[] = [];
 
     // Replace placeholders with provided message arrays
     for (const item of this.prompt) {
-      if ('type' in item && item.type === "placeholder") {
+      if ("type" in item && item.type === "placeholder") {
         if (placeholders && item.name in placeholders) {
           messagesWithPlaceholdersReplaced.push(...placeholders[item.name]);
         }
         // If no placeholder fill-ins provided for a name, skip it
-      } else if ('role' in item && 'content' in item) {
+      } else if ("role" in item && "content" in item) {
         messagesWithPlaceholdersReplaced.push({
           role: item.role,
           content: item.content,
@@ -142,8 +139,8 @@ export class ChatPromptClient extends BasePromptClient {
      * @returns {ChatMessage[]} Chat messages with variables that can be plugged into Langchain's ChatPromptTemplate.
      */
     return this.prompt
-      .filter(item => 'role' in item && 'content' in item)
-      .map(item => ({
+      .filter((item) => "role" in item && "content" in item)
+      .map((item) => ({
         role: item.role,
         content: this._transformToLangchainVariables(item.content),
       }));
