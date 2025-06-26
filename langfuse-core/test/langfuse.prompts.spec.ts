@@ -1,4 +1,4 @@
-import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 
 import { type GetLangfusePromptResponse } from "../src";
 import { DEFAULT_PROMPT_CACHE_TTL_SECONDS } from "../src/prompts/promptCache";
@@ -575,6 +575,535 @@ describe("Langfuse Core", () => {
 
       const prompt = promptClient.compile({ someJson: JSON.stringify({ foo: "bar" }) });
       expect(prompt).toEqual([{ role: "system", content: 'This is a prompt with {"foo":"bar"}' }]);
+    });
+
+    describe("Langchain prompt compilation with JSON handling", () => {
+      it("should handle normal variables with nested JSON", async () => {
+        const promptString = `This is a prompt with {{animal}} and {{location}}.
+
+{{
+    "metadata": {{
+        "context": "test",
+        "nested": {{
+            "animal": {{animal}},
+            "properties": {{
+                "location": "{{location}}",
+                "count": 42
+            }}
+        }}
+    }},
+    "data": [
+        {{
+            "type": "primary",
+            "value": {{animal}}
+        }}
+    ]
+}}`;
+
+        const prompt = new TextPromptClient({
+          type: "text",
+          name: "nested_json_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: promptString,
+        });
+
+        const langchainPromptString = prompt.getLangchainPrompt();
+        const langchainPrompt = PromptTemplate.fromTemplate(langchainPromptString);
+        const formattedPrompt = await langchainPrompt.format({ animal: "cat", location: "Paris" });
+
+        const expected = `This is a prompt with cat and Paris.
+
+{
+    "metadata": {
+        "context": "test",
+        "nested": {
+            "animal": cat,
+            "properties": {
+                "location": "Paris",
+                "count": 42
+            }
+        }
+    },
+    "data": [
+        {
+            "type": "primary",
+            "value": cat
+        }
+    ]
+}`;
+
+        expect(formattedPrompt).toBe(expected);
+      });
+
+      it("should handle mixed variables (double and single braces) with nested JSON", async () => {
+        const promptString = `Normal variable: {{user_name}}
+Langchain variable: {user_age}
+
+{{
+    "user": {{
+        "name": {{user_name}},
+        "age": {user_age},
+        "profile": {{
+            "settings": {{
+                "theme": "dark",
+                "notifications": true
+            }}
+        }}
+    }},
+    "system": {{
+        "version": "1.0",
+        "active": true
+    }}
+}}`;
+
+        const prompt = new TextPromptClient({
+          type: "text",
+          name: "mixed_variables_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: promptString,
+        });
+
+        const langchainPromptString = prompt.getLangchainPrompt();
+        const langchainPrompt = PromptTemplate.fromTemplate(langchainPromptString);
+        const formattedPrompt = await langchainPrompt.format({ user_name: "Alice", user_age: 25 });
+
+        const expected = `Normal variable: Alice
+Langchain variable: 25
+
+{
+    "user": {
+        "name": Alice,
+        "age": 25,
+        "profile": {
+            "settings": {
+                "theme": "dark",
+                "notifications": true
+            }
+        }
+    },
+    "system": {
+        "version": "1.0",
+        "active": true
+    }
+}`;
+
+        expect(formattedPrompt).toBe(expected);
+      });
+
+      it("should handle variables inside and alongside complex nested JSON", async () => {
+        const promptString = `System message: {{system_msg}}
+User input: {user_input}
+
+{{
+    "request": {{
+        "system": {{system_msg}},
+        "user": {user_input},
+        "config": {{
+            "model": "gpt-4",
+            "temperature": 0.7,
+            "metadata": {{
+                "session": {{session_id}},
+                "timestamp": {timestamp},
+                "nested_data": {{
+                    "level1": {{
+                        "level2": {{
+                            "user_var": {{user_name}},
+                            "system_var": {system_status}
+                        }}
+                    }}
+                }}
+            }}
+        }}
+    }},
+    "context": {{context_data}}
+}}
+
+Final note: {{system_msg}} and {user_input}`;
+
+        const prompt = new TextPromptClient({
+          type: "text",
+          name: "variables_inside_json_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: promptString,
+        });
+
+        const langchainPromptString = prompt.getLangchainPrompt();
+        const langchainPrompt = PromptTemplate.fromTemplate(langchainPromptString);
+        const formattedPrompt = await langchainPrompt.format({
+          system_msg: "Hello",
+          user_input: "Test input",
+          session_id: "sess123",
+          timestamp: 1234567890,
+          user_name: "Bob",
+          system_status: "active",
+          context_data: "context_info",
+        });
+
+        const expected = `System message: Hello
+User input: Test input
+
+{
+    "request": {
+        "system": Hello,
+        "user": Test input,
+        "config": {
+            "model": "gpt-4",
+            "temperature": 0.7,
+            "metadata": {
+                "session": sess123,
+                "timestamp": 1234567890,
+                "nested_data": {
+                    "level1": {
+                        "level2": {
+                            "user_var": Bob,
+                            "system_var": active
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "context": context_info
+}
+
+Final note: Hello and Test input`;
+
+        expect(formattedPrompt).toBe(expected);
+      });
+
+      it("should handle edge case empty JSON objects", async () => {
+        const promptString = `Variable: {{test_var}}
+
+{{
+    "empty_object": {{}},
+    "empty_array": [],
+    "mixed": {{
+        "data": {{test_var}},
+        "empty": {{}},
+        "nested_empty": {{
+            "inner": {{}}
+        }}
+    }}
+}}`;
+
+        const prompt = new TextPromptClient({
+          type: "text",
+          name: "empty_json_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: promptString,
+        });
+
+        const langchainPromptString = prompt.getLangchainPrompt();
+        const langchainPrompt = PromptTemplate.fromTemplate(langchainPromptString);
+        const formattedPrompt = await langchainPrompt.format({ test_var: "value" });
+
+        const expected = `Variable: value
+
+{
+    "empty_object": {},
+    "empty_array": [],
+    "mixed": {
+        "data": value,
+        "empty": {},
+        "nested_empty": {
+            "inner": {}
+        }
+    }
+}`;
+
+        expect(formattedPrompt).toBe(expected);
+      });
+
+      it("should handle edge case nested quotes in JSON", async () => {
+        const promptString = `Message: {{message}}
+
+{{
+    "text": "This is a \\"quoted\\" string",
+    "user_message": {{message}},
+    "escaped": "Line 1\\\\nLine 2",
+    "complex": {{
+        "description": "Contains 'single' and \\"double\\" quotes",
+        "dynamic": {{message}}
+    }}
+}}`;
+
+        const prompt = new TextPromptClient({
+          type: "text",
+          name: "nested_quotes_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: promptString,
+        });
+
+        const langchainPromptString = prompt.getLangchainPrompt();
+        const langchainPrompt = PromptTemplate.fromTemplate(langchainPromptString);
+        const formattedPrompt = await langchainPrompt.format({ message: "Hello world" });
+
+        const expected = `Message: Hello world
+
+{
+    "text": "This is a \\"quoted\\" string",
+    "user_message": Hello world,
+    "escaped": "Line 1\\\\nLine 2",
+    "complex": {
+        "description": "Contains 'single' and \\"double\\" quotes",
+        "dynamic": Hello world
+    }
+}`;
+
+        expect(formattedPrompt).toBe(expected);
+      });
+
+      it("should handle edge case JSON with variables in strings", async () => {
+        const promptString = `Variable: {{test_var}}
+
+{{
+    "text_with_braces": "This has {{connector}} characters",
+    "also_braces": "Format: {{key}} = {{value}}",
+    "user_data": {{test_var}}
+}}`;
+
+        const prompt = new TextPromptClient({
+          type: "text",
+          name: "variables_in_strings_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: promptString,
+        });
+
+        const langchainPromptString = prompt.getLangchainPrompt();
+        const langchainPrompt = PromptTemplate.fromTemplate(langchainPromptString);
+        const formattedPrompt = await langchainPrompt.format({
+          test_var: "test_value",
+          key: "name",
+          value: "John",
+          connector: "special",
+        });
+
+        const expected = `Variable: test_value
+
+{
+    "text_with_braces": "This has special characters",
+    "also_braces": "Format: name = John",
+    "user_data": test_value
+}`;
+
+        expect(formattedPrompt).toBe(expected);
+      });
+
+      it("should handle complex real-world scenario", async () => {
+        const promptString = `System: {{system_prompt}}
+User query: {user_query}
+Context: {{context}}
+
+{{
+    "request": {{
+        "system_instruction": {{system_prompt}},
+        "user_input": {user_query},
+        "context": {{context}},
+        "settings": {{
+            "model": "gpt-4",
+            "temperature": 0.7,
+            "max_tokens": 1000,
+            "functions": [
+                {{
+                    "name": "search",
+                    "description": "Search for information",
+                    "parameters": {{
+                        "query": {user_query},
+                        "context": {{context}}
+                    }}
+                }}
+            ]
+        }},
+        "metadata": {{
+            "session_id": {{session_id}},
+            "timestamp": {timestamp},
+            "user_info": {{
+                "id": {user_id},
+                "preferences": {{
+                    "language": "en",
+                    "format": "json"
+                }}
+            }}
+        }}
+    }},
+    "response_format": {{
+        "type": "structured",
+        "schema": {{
+            "answer": "string",
+            "confidence": "number",
+            "sources": "array"
+        }}
+    }}
+}}
+
+Instructions: Use {{system_prompt}} to process {user_query} with context {{context}}.`;
+
+        const prompt = new TextPromptClient({
+          type: "text",
+          name: "complex_scenario_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: promptString,
+        });
+
+        const langchainPromptString = prompt.getLangchainPrompt();
+        const langchainPrompt = PromptTemplate.fromTemplate(langchainPromptString);
+        const formattedPrompt = await langchainPrompt.format({
+          system_prompt: "You are a helpful assistant",
+          user_query: "What is the weather?",
+          context: "Weather inquiry",
+          session_id: "sess_123",
+          timestamp: 1234567890,
+          user_id: "user_456",
+        });
+
+        const expected = `System: You are a helpful assistant
+User query: What is the weather?
+Context: Weather inquiry
+
+{
+    "request": {
+        "system_instruction": You are a helpful assistant,
+        "user_input": What is the weather?,
+        "context": Weather inquiry,
+        "settings": {
+            "model": "gpt-4",
+            "temperature": 0.7,
+            "max_tokens": 1000,
+            "functions": [
+                {
+                    "name": "search",
+                    "description": "Search for information",
+                    "parameters": {
+                        "query": What is the weather?,
+                        "context": Weather inquiry
+                    }
+                }
+            ]
+        },
+        "metadata": {
+            "session_id": sess_123,
+            "timestamp": 1234567890,
+            "user_info": {
+                "id": user_456,
+                "preferences": {
+                    "language": "en",
+                    "format": "json"
+                }
+            }
+        }
+    },
+    "response_format": {
+        "type": "structured",
+        "schema": {
+            "answer": "string",
+            "confidence": "number",
+            "sources": "array"
+        }
+    }
+}
+
+Instructions: Use You are a helpful assistant to process What is the weather? with context Weather inquiry.`;
+
+        expect(formattedPrompt).toBe(expected);
+      });
+
+      it("should handle chat prompt with JSON variables", async () => {
+        const chatMessages = [
+          {
+            role: "system",
+            content: `You are {{assistant_type}} assistant.
+
+Configuration:
+{{
+    "settings": {{
+        "model": "{{model_name}}",
+        "temperature": {temperature},
+        "capabilities": [
+            {{
+                "name": "search",
+                "enabled": {{search_enabled}},
+                "params": {{
+                    "provider": "{{search_provider}}"
+                }}
+            }}
+        ]
+    }}
+}}`,
+          },
+          {
+            role: "user",
+            content: "Hello {{user_name}}! I need help with: {{user_request}}",
+          },
+        ];
+
+        const prompt = new ChatPromptClient({
+          type: "chat",
+          name: "chat_json_test",
+          version: 1,
+          config: {},
+          tags: [],
+          labels: [],
+          prompt: chatMessages,
+        });
+
+        const langchainMessages = prompt.getLangchainPrompt();
+        const langchainPrompt = ChatPromptTemplate.fromMessages(langchainMessages.map((m) => [m.role, m.content]));
+        const formattedMessages = await langchainPrompt.formatMessages({
+          assistant_type: "helpful",
+          model_name: "gpt-4",
+          temperature: 0.7,
+          search_enabled: "true",
+          search_provider: "google",
+          user_name: "Alice",
+          user_request: "data analysis",
+        });
+
+        const expectedSystem = `You are helpful assistant.
+
+Configuration:
+{
+    "settings": {
+        "model": "gpt-4",
+        "temperature": 0.7,
+        "capabilities": [
+            {
+                "name": "search",
+                "enabled": true,
+                "params": {
+                    "provider": "google"
+                }
+            }
+        ]
+    }
+}`;
+
+        const expectedUser = "Hello Alice! I need help with: data analysis";
+
+        expect(formattedMessages).toHaveLength(2);
+        expect(formattedMessages[0].content).toBe(expectedSystem);
+        expect(formattedMessages[1].content).toBe(expectedUser);
+      });
     });
   });
 });
