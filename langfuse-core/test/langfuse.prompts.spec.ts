@@ -577,7 +577,7 @@ describe("Langfuse Core", () => {
       }
     });
 
-    it("should not HTML escape characters in prompt compile inputs", async () => {
+    it("should not HTML escape characters in test prompt compile inputs", async () => {
       const promptClient = new TextPromptClient({
         name: "test",
         type: "text",
@@ -734,6 +734,9 @@ describe("Langfuse Core", () => {
             });
           });
         });
+      });
+    });
+
     describe("Langchain prompt compilation with JSON handling", () => {
       it("should handle normal variables with nested JSON", async () => {
         const promptString = `This is a prompt with {{animal}} and {{location}}.
