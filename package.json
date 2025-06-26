@@ -95,5 +95,9 @@
   },
   "lint-staged": {
     "*.{ts,js,css,scss}": "prettier --write"
-  }
+  },
+  "dependencies": {
+    "yarn": "^1.22.22"
+  },
+  "version": "0.0.0"
 }
