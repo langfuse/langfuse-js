@@ -208,7 +208,6 @@ export type CreateChatPromptBodyWithPlaceholders = {
   };
 
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
-export type CreatePromptBodyWithPlaceholders = CreateTextPromptBody | CreateChatPromptBodyWithPlaceholders;
 
 export type PromptInput = {
   prompt?: LangfusePromptRecord | LangfusePromptClient;
