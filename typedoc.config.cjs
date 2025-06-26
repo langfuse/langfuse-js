@@ -1,6 +1,13 @@
 /** @type {import('typedoc').TypeDocOptions} */
 module.exports = {
-  entryPoints: ["./langfuse", "./langfuse-core", "./langfuse-langchain", "./langfuse-node", "./langfuse-vercel"],
+  entryPoints: [
+    "./langfuse",
+    "./langfuse-core",
+    "./langfuse-otel",
+    "./langfuse-langchain",
+    "./langfuse-node",
+    "./langfuse-vercel",
+  ],
   entryPointStrategy: "packages",
   name: "Langfuse JS/TS SDKs",
   navigationLinks: {
