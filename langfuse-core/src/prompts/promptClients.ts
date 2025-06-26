@@ -165,6 +165,26 @@ export class ChatPromptClient extends BasePromptClient {
         content: this._transformToLangchainVariables(item.content),
       }));
   }
+
+  // Keep the toJSON backwards compatibile - in case someone uses that. we don't return the type for non-placeholders here.
+  public toJSON(): string {
+    return JSON.stringify({
+      name: this.name,
+      prompt: this.promptResponse.prompt.map((item) => {
+        if ("type" in item && item.type === "chatmessage") {
+          const { type, ...messageWithoutType } = item;
+          return messageWithoutType;
+        }
+        return item;
+      }),
+      version: this.version,
+      isFallback: this.isFallback,
+      tags: this.tags,
+      labels: this.labels,
+      type: this.type,
+      config: this.config,
+    });
+  }
 }
 
 export type LangfusePromptClient = TextPromptClient | ChatPromptClient;
