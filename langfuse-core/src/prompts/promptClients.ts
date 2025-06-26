@@ -35,7 +35,10 @@ abstract class BasePromptClient {
     this.commitMessage = prompt.commitMessage;
   }
 
-  abstract compile(variables?: Record<string, string>, placeholders?: Record<string, ChatMessage[]>): string | ChatMessage[];
+  abstract compile(
+    variables?: Record<string, string>,
+    placeholders?: Record<string, ChatMessage[]>
+  ): string | ChatMessage[];
 
   public abstract getLangchainPrompt(): string | ChatMessage[];
 
