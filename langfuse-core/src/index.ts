@@ -21,7 +21,6 @@ import {
   type CreateLangfuseScoreBody,
   type CreateLangfuseSpanBody,
   type CreateLangfuseTraceBody,
-  type CreatePromptBodyWithPlaceholders,
   type CreateChatPromptBodyWithPlaceholders,
   type CreateTextPromptBody,
   type DatasetItem,
