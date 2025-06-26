@@ -188,6 +188,11 @@ export type ChatMessageWithPlaceholders = FixTypes<components["schemas"]["ChatMe
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
 
+// Make ChatPromptClient constructor backwards compatible with normal chat messages (probably no one uses it that way, but still)
+export type ChatPromptCompat = Omit<ChatPrompt, "prompt"> & {
+  prompt: ChatMessage[] | ChatMessageWithPlaceholders[];
+};
+
 // Media
 export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
 export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;

@@ -1480,7 +1480,9 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
   async createPrompt(body: CreateChatPromptBodyWithPlaceholders): Promise<ChatPromptClient>;
   async createPrompt(body: CreateTextPromptBody): Promise<TextPromptClient>;
   async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
-  async createPrompt(body: CreateTextPromptBody | CreateChatPromptBody | CreateChatPromptBodyWithPlaceholders): Promise<LangfusePromptClient> {
+  async createPrompt(
+    body: CreateTextPromptBody | CreateChatPromptBody | CreateChatPromptBodyWithPlaceholders
+  ): Promise<LangfusePromptClient> {
     const labels = body.labels ?? [];
 
     const promptResponse =

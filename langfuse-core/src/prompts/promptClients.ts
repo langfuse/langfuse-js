@@ -3,6 +3,7 @@ import mustache from "mustache";
 import type {
   ChatMessage,
   ChatPrompt,
+  ChatPromptCompat,
   CreateLangfusePromptResponse,
   TextPrompt,
   ChatMessageWithPlaceholders,
@@ -91,10 +92,26 @@ export class ChatPromptClient extends BasePromptClient {
   public readonly promptResponse: ChatPrompt;
   public readonly prompt: ChatMessageWithPlaceholders[];
 
-  constructor(prompt: ChatPrompt, isFallback = false) {
-    super(prompt, isFallback, "chat");
-    this.promptResponse = prompt;
-    this.prompt = prompt.prompt;
+  constructor(prompt: ChatPromptCompat, isFallback = false) {
+    // Convert ChatMessages to ChatMessageWithPlaceholders for backward compatibility
+    const normalizedPrompt = prompt.prompt.map((item): ChatMessageWithPlaceholders => {
+      if ("type" in item) {
+        // Already has type field (new format)
+        return item as ChatMessageWithPlaceholders;
+      } else {
+        // Plain ChatMessage (legacy format) - add type field
+        return { type: "chatmessage" as const, ...item } as ChatMessageWithPlaceholders;
+      }
+    });
+
+    const typedPrompt: ChatPrompt = {
+      ...prompt,
+      prompt: normalizedPrompt,
+    };
+
+    super(typedPrompt, isFallback, "chat");
+    this.promptResponse = typedPrompt;
+    this.prompt = normalizedPrompt;
   }
 
   compile(variables?: Record<string, string>, placeholders?: Record<string, ChatMessage[]>): ChatMessage[] {
