@@ -3,6 +3,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { type GetLangfusePromptResponse } from "../src";
 import { DEFAULT_PROMPT_CACHE_TTL_SECONDS } from "../src/prompts/promptCache";
 import { ChatPromptClient, TextPromptClient } from "../src/prompts/promptClients";
+import type { ChatMessage } from "../src/types";
 import {
   createTestClient,
   type LangfuseCoreTestClient,
@@ -725,7 +726,7 @@ describe("Langfuse Core", () => {
         testCases.forEach(({ name, variables, placeholders, expected }) => {
           it(`should handle ${name}`, () => {
             const client = new ChatPromptClient(mockPrompt);
-            const result = client.compile(variables, placeholders);
+            const result = client.compile(variables, placeholders as Record<string, ChatMessage[]> | undefined);
 
             expect(result).toHaveLength(expected.length);
             expected.forEach((expectedContent, i) => {
