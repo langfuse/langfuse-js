@@ -44,7 +44,74 @@ abstract class BasePromptClient {
   public abstract getLangchainPrompt(): string | ChatMessage[];
 
   protected _transformToLangchainVariables(content: string): string {
-    return content.replace(/\{\{(.*?)\}\}/g, "{$1}");
+    const jsonEscapedContent = this.escapeJsonForLangchain(content);
+
+    return jsonEscapedContent.replace(/\{\{(\w+)\}\}/g, "{$1}");
+  }
+
+  /**
+   * Escapes every curly brace that is part of a JSON object by doubling it.
+   *
+   * A curly brace is considered “JSON-related” when, after skipping any immediate
+   * whitespace, the next non-whitespace character is a single (') or double (") quote.
+   *
+   * Braces that are already doubled (e.g. `{{variable}}` placeholders) are left untouched.
+   *
+   * @param text - Input string that may contain JSON snippets.
+   * @returns The string with JSON-related braces doubled.
+   */
+  protected escapeJsonForLangchain(text: string): string {
+    const out: string[] = []; // collected characters
+    const stack: boolean[] = []; // true = “this { belongs to JSON”, false = normal “{”
+    let i = 0;
+    const n = text.length;
+
+    while (i < n) {
+      const ch = text[i];
+
+      // ---------- opening brace ----------
+      if (ch === "{") {
+        // leave existing “{{ …” untouched
+        if (i + 1 < n && text[i + 1] === "{") {
+          out.push("{{");
+          i += 2;
+          continue;
+        }
+
+        // look ahead to find the next non-space character
+        let j = i + 1;
+        while (j < n && /\s/.test(text[j])) {
+          j++;
+        }
+
+        const isJson = j < n && (text[j] === "'" || text[j] === '"');
+        out.push(isJson ? "{{" : "{");
+        stack.push(isJson); // remember how this “{” was treated
+        i += 1;
+        continue;
+      }
+
+      // ---------- closing brace ----------
+      if (ch === "}") {
+        // leave existing “… }}” untouched
+        if (i + 1 < n && text[i + 1] === "}") {
+          out.push("}}");
+          i += 2;
+          continue;
+        }
+
+        const isJson = stack.pop() ?? false;
+        out.push(isJson ? "}}" : "}");
+        i += 1;
+        continue;
+      }
+
+      // ---------- any other character ----------
+      out.push(ch);
+      i += 1;
+    }
+
+    return out.join("");
   }
 
   public toJSON(): string {
