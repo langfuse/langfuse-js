@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: langfuse
-  version: ''
+  version: ""
 paths:
   /api/public/scores:
     post:
@@ -11,28 +11,28 @@ paths:
         - Score
       parameters: []
       responses:
-        '204':
-          description: ''
-        '400':
-          description: ''
+        "204":
+          description: ""
+        "400":
+          description: ""
           content:
             application/json:
               schema:
                 type: string
-        '401':
-          description: ''
+        "401":
+          description: ""
           content:
             application/json:
               schema:
                 type: string
-        '403':
-          description: ''
+        "403":
+          description: ""
           content:
             application/json:
               schema:
                 type: string
-        '405':
-          description: ''
+        "405":
+          description: ""
           content:
             application/json:
               schema:
@@ -44,7 +44,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateScoreRequest'
+              $ref: "#/components/schemas/CreateScoreRequest"
 components:
   schemas:
     CreateScoreRequest:
@@ -70,7 +70,7 @@ components:
           type: string
           example: novelty
         value:
-          $ref: '#/components/schemas/CreateScoreValue'
+          $ref: "#/components/schemas/CreateScoreValue"
           description: >-
             The value of the score. Must be passed as string for categorical
             scores, and numeric for boolean and numeric scores. Boolean score
@@ -81,7 +81,7 @@ components:
         metadata:
           nullable: true
         dataType:
-          $ref: '#/components/schemas/ScoreDataType'
+          $ref: "#/components/schemas/ScoreDataType"
           nullable: true
           description: >-
             When set, must match the score value's type. If not set, will be
