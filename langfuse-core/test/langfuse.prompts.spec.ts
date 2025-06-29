@@ -683,7 +683,12 @@ describe("Langfuse Core", () => {
           { type: "placeholder", name: "extra_history" },
         ]);
 
-        const testCases = [
+        const testCases: Array<{
+          name: string;
+          variables: Record<string, string>;
+          placeholders: Record<string, ChatMessage[]> | undefined;
+          expected: string[];
+        }> = [
           {
             name: "variables only (undefined placeholders parameter)",
             variables: { role: "helpful", task: "coding" },
@@ -726,7 +731,7 @@ describe("Langfuse Core", () => {
         testCases.forEach(({ name, variables, placeholders, expected }) => {
           it(`should handle ${name}`, () => {
             const client = new ChatPromptClient(mockPrompt);
-            const result = client.compile(variables, placeholders as Record<string, ChatMessage[]> | undefined);
+            const result = client.compile(variables, placeholders);
 
             expect(result).toHaveLength(expected.length);
             expected.forEach((expectedContent, i) => {
