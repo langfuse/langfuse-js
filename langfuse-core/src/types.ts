@@ -193,6 +193,11 @@ export type ChatPromptCompat = Omit<ChatPrompt, "prompt"> & {
   prompt: ChatMessage[] | ChatMessageWithPlaceholders[];
 };
 
+export enum ChatMessageType {
+  ChatMessage = "chatmessage",
+  Placeholder = "placeholder",
+}
+
 // Media
 export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
 export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;

@@ -4,6 +4,7 @@ import { type GetLangfusePromptResponse } from "../src";
 import { DEFAULT_PROMPT_CACHE_TTL_SECONDS } from "../src/prompts/promptCache";
 import { ChatPromptClient, TextPromptClient } from "../src/prompts/promptClients";
 import type { ChatMessage } from "../src/types";
+import { ChatMessageType } from "../src/types";
 import {
   createTestClient,
   type LangfuseCoreTestClient,
@@ -138,7 +139,7 @@ describe("Langfuse Core", () => {
         type: "chat",
         prompt: [
           { role: "system", content: "This is a prompt with a {{variable}}" },
-          { type: "placeholder", name: "history" },
+          { type: ChatMessageType.Placeholder, name: "history" },
           { role: "assistant", content: "Hi {{name}}" },
         ],
         isActive: true,
@@ -157,7 +158,7 @@ describe("Langfuse Core", () => {
         isActive: true,
         prompt: [
           { role: "system", content: "This is a prompt with a {{variable}}" },
-          { type: "placeholder", name: "history" },
+          { type: ChatMessageType.Placeholder, name: "history" },
           { role: "assistant", content: "Hi {{name}}" },
         ],
         name: "test-prompt-placeholder",
@@ -628,7 +629,7 @@ describe("Langfuse Core", () => {
         it("should filter out placeholders for Langchain compatibility", () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
-            { type: "placeholder", name: "examples" },
+            { type: ChatMessageType.Placeholder, name: "examples" },
             { role: "user", content: "Help me with {{task}}" },
           ]);
 
@@ -651,7 +652,7 @@ describe("Langfuse Core", () => {
         it("should serialize prompt with placeholders correctly", () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
-            { type: "placeholder", name: "examples" },
+            { type: ChatMessageType.Placeholder, name: "examples" },
             { role: "user", content: "Help me" },
           ]);
 
@@ -669,7 +670,7 @@ describe("Langfuse Core", () => {
           // The prompt should maintain the original API format for compatibility
           expect(parsed.prompt).toEqual([
             { role: "system", content: "You are a {{role}} assistant" },
-            { type: "placeholder", name: "examples" },
+            { type: ChatMessageType.Placeholder, name: "examples" },
             { role: "user", content: "Help me" },
           ]);
         });
@@ -678,9 +679,9 @@ describe("Langfuse Core", () => {
       describe("compile() method with placeholders", () => {
         const mockPrompt = createMockPrompt([
           { role: "system", content: "You are a {{role}} assistant" },
-          { type: "placeholder", name: "examples" },
+          { type: ChatMessageType.Placeholder, name: "examples" },
           { role: "user", content: "Help me with {{task}}" },
-          { type: "placeholder", name: "extra_history" },
+          { type: ChatMessageType.Placeholder, name: "extra_history" },
         ]);
 
         const testCases: Array<{

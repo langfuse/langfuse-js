@@ -3,6 +3,7 @@ import { LangfusePromptCache } from "./prompts/promptCache";
 import { ChatPromptClient, TextPromptClient, type LangfusePromptClient } from "./prompts/promptClients";
 import { getCommonReleaseEnvs } from "./release-env";
 import {
+  ChatMessageType,
   LangfusePersistedProperty,
   type ChatMessage,
   type CreateLangfuseDatasetBody,
@@ -1490,17 +1491,17 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
         ? await this.createPromptStateless({
             ...body,
             prompt: body.prompt.map((item) => {
-              if ("type" in item && item.type === "placeholder") {
-                return { type: "placeholder", name: (item as PlaceholderMessage).name };
-              } else if ("type" in item && item.type === "chatmessage") {
+              if ("type" in item && item.type === ChatMessageType.Placeholder) {
+                return { type: ChatMessageType.Placeholder, name: (item as PlaceholderMessage).name };
+              } else if ("type" in item && item.type === ChatMessageType.ChatMessage) {
                 return {
-                  type: "chatmessage",
+                  type: ChatMessageType.ChatMessage,
                   role: (item as ChatMessage).role,
                   content: (item as ChatMessage).content,
                 };
               } else {
                 // Handle regular ChatMessageDict (without type field)
-                return { type: "chatmessage", ...item };
+                return { type: ChatMessageType.ChatMessage, ...item };
               }
             }),
             labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
@@ -1589,7 +1590,7 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
                 ...sharedFallbackParams,
                 type: "chat",
                 prompt: (options.fallback as ChatMessage[]).map((msg) => ({
-                  type: "chatmessage" as const,
+                  type: ChatMessageType.ChatMessage,
                   ...msg,
                 })),
               },

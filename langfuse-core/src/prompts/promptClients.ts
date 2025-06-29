@@ -1,12 +1,13 @@
 import mustache from "mustache";
 
-import type {
-  ChatMessage,
-  ChatPrompt,
-  ChatPromptCompat,
-  CreateLangfusePromptResponse,
-  TextPrompt,
-  ChatMessageWithPlaceholders,
+import {
+  type ChatMessage,
+  ChatMessageType,
+  type ChatPrompt,
+  type ChatPromptCompat,
+  type CreateLangfusePromptResponse,
+  type TextPrompt,
+  type ChatMessageWithPlaceholders,
 } from "../types";
 
 mustache.escape = function (text) {
@@ -167,7 +168,7 @@ export class ChatPromptClient extends BasePromptClient {
         return item as ChatMessageWithPlaceholders;
       } else {
         // Plain ChatMessage (legacy format) - add type field
-        return { type: "chatmessage" as const, ...item } as ChatMessageWithPlaceholders;
+        return { type: ChatMessageType.ChatMessage, ...item } as ChatMessageWithPlaceholders;
       }
     });
 
@@ -186,7 +187,7 @@ export class ChatPromptClient extends BasePromptClient {
 
     // Replace placeholders with provided message arrays
     for (const item of this.prompt) {
-      if ("type" in item && item.type === "placeholder") {
+      if ("type" in item && item.type === ChatMessageType.Placeholder) {
         if (placeholders && item.name in placeholders) {
           messagesWithPlaceholdersReplaced.push(...placeholders[item.name]);
         }
@@ -238,7 +239,7 @@ export class ChatPromptClient extends BasePromptClient {
     return JSON.stringify({
       name: this.name,
       prompt: this.promptResponse.prompt.map((item) => {
-        if ("type" in item && item.type === "chatmessage") {
+        if ("type" in item && item.type === ChatMessageType.ChatMessage) {
           const { type, ...messageWithoutType } = item;
           return messageWithoutType;
         }
