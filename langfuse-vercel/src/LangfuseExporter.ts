@@ -175,29 +175,29 @@ export class LangfuseExporter implements SpanExporter {
               : undefined,
       modelParameters: {
         toolChoice:
-          "ai.prompt.toolChoice" in attributes ? (attributes["ai.prompt.toolChoice"]?.toString() ?? null) : null,
+          "ai.prompt.toolChoice" in attributes ? attributes["ai.prompt.toolChoice"]?.toString() ?? null : null,
         maxTokens:
           "gen_ai.request.max_tokens" in attributes
-            ? (attributes["gen_ai.request.max_tokens"]?.toString() ?? null)
+            ? attributes["gen_ai.request.max_tokens"]?.toString() ?? null
             : null,
         finishReason:
           "gen_ai.response.finish_reasons" in attributes
-            ? (attributes["gen_ai.response.finish_reasons"]?.toString() ?? null)
+            ? attributes["gen_ai.response.finish_reasons"]?.toString() ?? null
             : "gen_ai.finishReason" in attributes //  Legacy support for ai SDK versions < 4.0.0
-              ? (attributes["gen_ai.finishReason"]?.toString() ?? null)
+              ? attributes["gen_ai.finishReason"]?.toString() ?? null
               : null,
         system:
           "gen_ai.system" in attributes
-            ? (attributes["gen_ai.system"]?.toString() ?? null)
+            ? attributes["gen_ai.system"]?.toString() ?? null
             : "ai.model.provider" in attributes
-              ? (attributes["ai.model.provider"]?.toString() ?? null)
+              ? attributes["ai.model.provider"]?.toString() ?? null
               : null,
         maxRetries:
-          "ai.settings.maxRetries" in attributes ? (attributes["ai.settings.maxRetries"]?.toString() ?? null) : null,
-        mode: "ai.settings.mode" in attributes ? (attributes["ai.settings.mode"]?.toString() ?? null) : null,
+          "ai.settings.maxRetries" in attributes ? attributes["ai.settings.maxRetries"]?.toString() ?? null : null,
+        mode: "ai.settings.mode" in attributes ? attributes["ai.settings.mode"]?.toString() ?? null : null,
         temperature:
           "gen_ai.request.temperature" in attributes
-            ? (attributes["gen_ai.request.temperature"]?.toString() ?? null)
+            ? attributes["gen_ai.request.temperature"]?.toString() ?? null
             : null,
       },
       usage: this.parseUsageDetails(attributes),
