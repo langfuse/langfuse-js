@@ -1322,7 +1322,7 @@ export type ApiCreatePromptRequest =
 /** CreateChatPromptRequest */
 export interface ApiCreateChatPromptRequest {
   name: string;
-  prompt: ApiChatMessage[];
+  prompt: ApiChatMessageWithPlaceholders[];
   config?: any;
   /** List of deployment labels of this prompt version. */
   labels?: string[] | null;
@@ -1369,10 +1369,24 @@ export interface ApiBasePrompt {
   resolutionGraph?: Record<string, any>;
 }
 
+/** ChatMessageWithPlaceholders */
+export type ApiChatMessageWithPlaceholders =
+  | ({
+      type: "chatmessage";
+    } & ApiChatMessage)
+  | ({
+      type: "placeholder";
+    } & ApiPlaceholderMessage);
+
 /** ChatMessage */
 export interface ApiChatMessage {
   role: string;
   content: string;
+}
+
+/** PlaceholderMessage */
+export interface ApiPlaceholderMessage {
+  name: string;
 }
 
 /** TextPrompt */
@@ -1382,7 +1396,7 @@ export type ApiTextPrompt = ApiBasePrompt & {
 
 /** ChatPrompt */
 export type ApiChatPrompt = ApiBasePrompt & {
-  prompt: ApiChatMessage[];
+  prompt: ApiChatMessageWithPlaceholders[];
 };
 
 /** ServiceProviderConfig */

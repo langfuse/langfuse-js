@@ -2119,7 +2119,7 @@ export interface components {
     /** CreateChatPromptRequest */
     CreateChatPromptRequest: {
       name: string;
-      prompt: components["schemas"]["ChatMessage"][];
+      prompt: components["schemas"]["ChatMessageWithPlaceholders"][];
       config?: unknown;
       /** @description List of deployment labels of this prompt version. */
       labels?: string[] | null;
@@ -2166,10 +2166,24 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** ChatMessageWithPlaceholders */
+    ChatMessageWithPlaceholders:
+      | ({
+          /** @enum {string} */
+          type: "chatmessage";
+        } & components["schemas"]["ChatMessage"])
+      | ({
+          /** @enum {string} */
+          type: "placeholder";
+        } & components["schemas"]["PlaceholderMessage"]);
     /** ChatMessage */
     ChatMessage: {
       role: string;
       content: string;
+    };
+    /** PlaceholderMessage */
+    PlaceholderMessage: {
+      name: string;
     };
     /** TextPrompt */
     TextPrompt: {
@@ -2177,7 +2191,7 @@ export interface components {
     } & components["schemas"]["BasePrompt"];
     /** ChatPrompt */
     ChatPrompt: {
-      prompt: components["schemas"]["ChatMessage"][];
+      prompt: components["schemas"]["ChatMessageWithPlaceholders"][];
     } & components["schemas"]["BasePrompt"];
     /** ServiceProviderConfig */
     ServiceProviderConfig: {
