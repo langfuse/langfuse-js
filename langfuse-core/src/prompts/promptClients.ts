@@ -266,7 +266,7 @@ export class ChatPromptClient extends BasePromptClient {
 
     for (const item of this.rawPrompt) {
       if ("type" in item && item.type === ChatMessageType.Placeholder) {
-        if (combinedPlaceholders && item.name in combinedPlaceholders) {
+        if (item.name in combinedPlaceholders) {
           messagesWithPlaceholdersReplaced.push(...combinedPlaceholders[item.name]);
         }
         // If no placeholder fill-ins provided for a name, skip it
