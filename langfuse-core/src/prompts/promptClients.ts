@@ -130,7 +130,7 @@ export class TextPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
-  get prompt() : string {
+  get prompt(): string {
     return this.rawPrompt;
   }
 
