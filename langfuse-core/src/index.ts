@@ -1493,14 +1493,8 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
             prompt: body.prompt.map((item) => {
               if ("type" in item && item.type === ChatMessageType.Placeholder) {
                 return { type: ChatMessageType.Placeholder, name: (item as PlaceholderMessage).name };
-              } else if ("type" in item && item.type === ChatMessageType.ChatMessage) {
-                return {
-                  type: ChatMessageType.ChatMessage,
-                  role: (item as ChatMessage).role,
-                  content: (item as ChatMessage).content,
-                };
               } else {
-                // Handle regular ChatMessageDict (without type field)
+                // Handle regular ChatMessage (without type field) from API
                 return { type: ChatMessageType.ChatMessage, ...item };
               }
             }),
