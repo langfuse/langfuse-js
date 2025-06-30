@@ -240,7 +240,13 @@ abstract class LangfuseCoreStateless {
     }
 
     this.environment = options?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
-    if (this.environment && !(ENVIRONMENT_PATTERN.test(this.environment) || WHITELISTED_LANGFUSE_INTERNAL_ENVIRONMENTS.includes(this.environment))) {
+    if (
+      this.environment &&
+      !(
+        ENVIRONMENT_PATTERN.test(this.environment) ||
+        WHITELISTED_LANGFUSE_INTERNAL_ENVIRONMENTS.includes(this.environment)
+      )
+    ) {
       this._events.emit(
         "error",
         `Invalid tracing environment set: ${this.environment} . Environment must match regex ${ENVIRONMENT_PATTERN}. Events will be rejected by Langfuse server.`
