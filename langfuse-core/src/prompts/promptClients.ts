@@ -130,7 +130,7 @@ export class TextPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
-  get prompt() {
+  get prompt() : string {
     return this.rawPrompt;
   }
 
@@ -247,19 +247,19 @@ export class ChatPromptClient extends BasePromptClient {
 
   compile(variables?: Record<string, string>, placeholders?: Record<string, ChatMessage[]>): ChatMessage[] {
     /**
-		 * Compiles the chat prompt by replacing placeholders and variables with actual values.
-		 *
-		 * Placeholders are filled-in from stored as well as optionally provided placeholders.
-		 * Provided placeholders take precedence over stored ones for identical keys.
-		 * Provided placeholders do not update the internally stored ones.
-		 * Unfilled placeholders are skipped in the output.
-		 * Variables within message content are processed using Mustache templating.
-		 *
-		 * @param variables - Key-value pairs for Mustache variable substitution in message content
-		 * @param placeholders - Key-value pairs where keys are placeholder names and values are ChatMessage arrays
-		 * @returns Array of ChatMessage objects with placeholders replaced and variables rendered
-		 */
-		const messagesWithPlaceholdersReplaced: ChatMessage[] = [];
+     * Compiles the chat prompt by replacing placeholders and variables with actual values.
+     *
+     * Placeholders are filled-in from stored as well as optionally provided placeholders.
+     * Provided placeholders take precedence over stored ones for identical keys.
+     * Provided placeholders do not update the internally stored ones.
+     * Unfilled placeholders are skipped in the output.
+     * Variables within message content are processed using Mustache templating.
+     *
+     * @param variables - Key-value pairs for Mustache variable substitution in message content
+     * @param placeholders - Key-value pairs where keys are placeholder names and values are ChatMessage arrays
+     * @returns Array of ChatMessage objects with placeholders replaced and variables rendered
+     */
+    const messagesWithPlaceholdersReplaced: ChatMessage[] = [];
 
     // Merge stored placeholders with provided placeholders (provided ones take precedence)
     const combinedPlaceholders = { ...this.placeholderFillIns, ...placeholders };
