@@ -198,6 +198,8 @@ export enum ChatMessageType {
   Placeholder = "placeholder",
 }
 
+export type ChatMessageOrPlaceholder = ChatMessage | ({ type: ChatMessageType.Placeholder } & PlaceholderMessage);
+
 // Media
 export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
 export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;

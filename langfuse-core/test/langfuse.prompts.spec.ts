@@ -3,7 +3,7 @@ import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import { type GetLangfusePromptResponse } from "../src";
 import { DEFAULT_PROMPT_CACHE_TTL_SECONDS } from "../src/prompts/promptCache";
 import { ChatPromptClient, TextPromptClient } from "../src/prompts/promptClients";
-import type { ChatMessage } from "../src/types";
+import type { ChatMessage, ChatMessageWithPlaceholders } from "../src/types";
 import { ChatMessageType } from "../src/types";
 import {
   createTestClient,
@@ -615,7 +615,7 @@ describe("Langfuse Core", () => {
     });
 
     describe("prompt compilation", () => {
-      const createMockPrompt = (prompt: any[]): any => ({
+      const createMockPrompt = (prompt: (ChatMessage | ChatMessageWithPlaceholders)[]): any => ({
         name: "test-prompt-with-placeholders",
         version: 1,
         prompt: prompt,
@@ -626,7 +626,7 @@ describe("Langfuse Core", () => {
       });
 
       describe("getLangchainPrompt() method", () => {
-        it("should filter out placeholders for Langchain compatibility", () => {
+        it("should include placeholders when getting Langchain prompt", () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
             { type: ChatMessageType.Placeholder, name: "examples" },
@@ -636,14 +636,122 @@ describe("Langfuse Core", () => {
           const client = new ChatPromptClient(mockPrompt);
           const langchainPrompt = client.getLangchainPrompt();
 
-          expect(langchainPrompt).toHaveLength(2);
+          expect(langchainPrompt).toHaveLength(3);
+          expect(langchainPrompt[0]).toEqual({
+            role: "system",
+            content: "You are a {role} assistant", // Langchain format
+          });
+          expect(langchainPrompt[1]).toEqual({
+            type: ChatMessageType.Placeholder,
+            name: "examples",
+          });
+          expect(langchainPrompt[2]).toEqual({
+            role: "user",
+            content: "Help me with {task}", // Langchain format
+          });
+        });
+
+        it("should support chaining update() with getLangchainPrompt()", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: ChatMessageType.Placeholder, name: "examples" },
+            { role: "user", content: "Help me with {{task}}" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const placeholders = {
+            examples: [
+              { role: "user", content: "Example question?" },
+              { role: "assistant", content: "Example answer." },
+            ],
+          };
+
+          const langchainPrompt = client.update(placeholders).getLangchainPrompt();
+
+          expect(langchainPrompt).toHaveLength(4);
           expect(langchainPrompt[0]).toEqual({
             role: "system",
             content: "You are a {role} assistant", // Langchain format
           });
           expect(langchainPrompt[1]).toEqual({
             role: "user",
+            content: "Example question?",
+          });
+          expect(langchainPrompt[2]).toEqual({
+            role: "assistant",
+            content: "Example answer.",
+          });
+          expect(langchainPrompt[3]).toEqual({
+            role: "user",
             content: "Help me with {task}", // Langchain format
+          });
+        });
+
+        it("should not change getter without placeholders", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: ChatMessageType.Placeholder, name: "examples" },
+            { role: "user", content: "Help me with {{task}}" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const prompt = client.prompt;
+
+          expect(prompt).toHaveLength(3);
+          expect(prompt[0]).toEqual({
+            type: ChatMessageType.ChatMessage,
+            role: "system",
+            content: "You are a {{role}} assistant",
+          });
+          expect(prompt[1]).toEqual({
+            type: ChatMessageType.Placeholder,
+            name: "examples",
+          });
+          expect(prompt[2]).toEqual({
+            type: ChatMessageType.ChatMessage,
+            role: "user",
+            content: "Help me with {{task}}",
+          });
+        });
+
+        it("should compile prompt with placeholders set in update()", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: ChatMessageType.Placeholder, name: "examples" },
+            { role: "user", content: "Help me with {{task}}" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const placeholders = {
+            examples: [
+              { role: "user", content: "Example question?" },
+              { role: "assistant", content: "Example answer." },
+            ],
+          };
+
+          client.update(placeholders);
+          const prompt = client.prompt;
+
+          expect(prompt).toHaveLength(4);
+          expect(prompt[0]).toEqual({
+            type: ChatMessageType.ChatMessage,
+            role: "system",
+            content: "You are a {{role}} assistant",
+          });
+          expect(prompt[1]).toEqual({
+            type: ChatMessageType.ChatMessage,
+            role: "user",
+            content: "Example question?",
+          });
+          expect(prompt[2]).toEqual({
+            type: ChatMessageType.ChatMessage,
+            role: "assistant",
+            content: "Example answer.",
+          });
+          expect(prompt[3]).toEqual({
+            type: ChatMessageType.ChatMessage,
+            role: "user",
+            content: "Help me with {{task}}",
           });
         });
       });

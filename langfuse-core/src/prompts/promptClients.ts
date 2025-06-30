@@ -2,6 +2,7 @@ import mustache from "mustache";
 
 import {
   type ChatMessage,
+  type ChatMessageOrPlaceholder,
   ChatMessageType,
   type ChatPrompt,
   type ChatPromptCompat,
@@ -22,7 +23,6 @@ abstract class BasePromptClient {
   public readonly tags: string[];
   public readonly isFallback: boolean;
   public readonly type: "text" | "chat";
-  public readonly prompt: string | ChatMessageWithPlaceholders[];
   public readonly commitMessage: string | null | undefined;
 
   constructor(prompt: CreateLangfusePromptResponse, isFallback = false, type: "text" | "chat") {
@@ -33,16 +33,18 @@ abstract class BasePromptClient {
     this.tags = prompt.tags;
     this.isFallback = isFallback;
     this.type = type;
-    this.prompt = prompt.prompt;
     this.commitMessage = prompt.commitMessage;
   }
+
+  abstract get prompt(): string | ChatMessageWithPlaceholders[];
+  abstract set prompt(value: string | ChatMessageWithPlaceholders[]);
 
   abstract compile(
     variables?: Record<string, string>,
     placeholders?: Record<string, ChatMessage[]>
   ): string | ChatMessage[];
 
-  public abstract getLangchainPrompt(): string | ChatMessage[];
+  public abstract getLangchainPrompt(): string | ChatMessage[] | ChatMessageOrPlaceholder[];
 
   protected _transformToLangchainVariables(content: string): string {
     const jsonEscapedContent = this.escapeJsonForLangchain(content);
@@ -115,28 +117,25 @@ abstract class BasePromptClient {
     return out.join("");
   }
 
-  public toJSON(): string {
-    return JSON.stringify({
-      name: this.name,
-      prompt: this.prompt,
-      version: this.version,
-      isFallback: this.isFallback,
-      tags: this.tags,
-      labels: this.labels,
-      type: this.type,
-      config: this.config,
-    });
-  }
+  public abstract toJSON(): string;
 }
 
 export class TextPromptClient extends BasePromptClient {
   public readonly promptResponse: TextPrompt;
-  public readonly prompt: string;
+  private rawPrompt!: string;
 
   constructor(prompt: TextPrompt, isFallback = false) {
     super(prompt, isFallback, "text");
     this.promptResponse = prompt;
     this.prompt = prompt.prompt;
+  }
+
+  get prompt() {
+    return this.rawPrompt;
+  }
+
+  protected set prompt(prompt: string) {
+    this.rawPrompt = prompt;
   }
 
   compile(variables?: Record<string, string>): string {
@@ -154,24 +153,28 @@ export class TextPromptClient extends BasePromptClient {
      */
     return this._transformToLangchainVariables(this.prompt);
   }
+
+  public toJSON(): string {
+    return JSON.stringify({
+      name: this.name,
+      prompt: this.rawPrompt,
+      version: this.version,
+      isFallback: this.isFallback,
+      tags: this.tags,
+      labels: this.labels,
+      type: this.type,
+      config: this.config,
+    });
+  }
 }
 
 export class ChatPromptClient extends BasePromptClient {
   public readonly promptResponse: ChatPrompt;
-  public readonly prompt: ChatMessageWithPlaceholders[];
+  private rawPrompt!: ChatMessageWithPlaceholders[];
+  private placeholderFillIns: Record<string, ChatMessage[]> = {};
 
   constructor(prompt: ChatPromptCompat, isFallback = false) {
-    // Convert ChatMessages to ChatMessageWithPlaceholders for backward compatibility
-    const normalizedPrompt = prompt.prompt.map((item): ChatMessageWithPlaceholders => {
-      if ("type" in item) {
-        // Already has type field (new format)
-        return item as ChatMessageWithPlaceholders;
-      } else {
-        // Plain ChatMessage (legacy format) - add type field
-        return { type: ChatMessageType.ChatMessage, ...item } as ChatMessageWithPlaceholders;
-      }
-    });
-
+    const normalizedPrompt = ChatPromptClient.normalizePrompt(prompt.prompt);
     const typedPrompt: ChatPrompt = {
       ...prompt,
       prompt: normalizedPrompt,
@@ -182,17 +185,92 @@ export class ChatPromptClient extends BasePromptClient {
     this.prompt = normalizedPrompt;
   }
 
-  compile(variables?: Record<string, string>, placeholders?: Record<string, ChatMessage[]>): ChatMessage[] {
-    const messagesWithPlaceholdersReplaced: ChatMessage[] = [];
+  private static normalizePrompt(prompt: ChatMessage[] | ChatMessageWithPlaceholders[]): ChatMessageWithPlaceholders[] {
+    // Convert ChatMessages to ChatMessageWithPlaceholders for backward compatibility
+    return prompt.map((item): ChatMessageWithPlaceholders => {
+      if ("type" in item) {
+        // Already has type field (new format)
+        return item as ChatMessageWithPlaceholders;
+      } else {
+        // Plain ChatMessage (legacy format) - add type field
+        return { type: ChatMessageType.ChatMessage, ...item } as ChatMessageWithPlaceholders;
+      }
+    });
+  }
 
-    // Replace placeholders with provided message arrays
-    for (const item of this.prompt) {
+  get prompt(): ChatMessageWithPlaceholders[] {
+    const messagesWithPlaceholdersReplaced: ChatMessageWithPlaceholders[] = [];
+    // Fill in placeholders with stored fill-ins, retain unfilled placeholders
+    for (const item of this.rawPrompt) {
       if ("type" in item && item.type === ChatMessageType.Placeholder) {
-        if (placeholders && item.name in placeholders) {
-          messagesWithPlaceholdersReplaced.push(...placeholders[item.name]);
+        if (this.placeholderFillIns && item.name in this.placeholderFillIns) {
+          const filledMessages = this.placeholderFillIns[item.name].map(
+            (msg) =>
+              ({
+                type: ChatMessageType.ChatMessage,
+                ...msg,
+              }) as ChatMessageWithPlaceholders
+          );
+          messagesWithPlaceholdersReplaced.push(...filledMessages);
+        } else {
+          // Keep unfilled placeholder
+          messagesWithPlaceholdersReplaced.push(item);
+        }
+      } else {
+        // Already a chat message
+        messagesWithPlaceholdersReplaced.push(item);
+      }
+    }
+    return messagesWithPlaceholdersReplaced;
+  }
+
+  protected set prompt(prompt: ChatMessage[] | ChatMessageWithPlaceholders[]) {
+    this.rawPrompt = ChatPromptClient.normalizePrompt(prompt);
+  }
+
+  public update(placeholders: Record<string, ChatMessage[]>): this {
+    /**
+     * Sets the stored placeholder fill-ins for the chat prompt.
+     *
+     * @param placeholders - Key-value pairs where keys are placeholder names and values are ChatMessage arrays
+     * @returns The ChatPromptClient instance for method chaining
+     *
+     * @example
+     * ```typescript
+     * const client = new ChatPromptClient(prompt);
+     * client.update({ examples: [{ role: "user", content: "Hello" }] }).getLangchainPrompt();
+     * ```
+     */
+    this.placeholderFillIns = { ...placeholders };
+    return this;
+  }
+
+  compile(variables?: Record<string, string>, placeholders?: Record<string, ChatMessage[]>): ChatMessage[] {
+    /**
+		 * Compiles the chat prompt by replacing placeholders and variables with actual values.
+		 *
+		 * Placeholders are filled-in from stored as well as optionally provided placeholders.
+		 * Provided placeholders take precedence over stored ones for identical keys.
+		 * Provided placeholders do not update the internally stored ones.
+		 * Unfilled placeholders are skipped in the output.
+		 * Variables within message content are processed using Mustache templating.
+		 *
+		 * @param variables - Key-value pairs for Mustache variable substitution in message content
+		 * @param placeholders - Key-value pairs where keys are placeholder names and values are ChatMessage arrays
+		 * @returns Array of ChatMessage objects with placeholders replaced and variables rendered
+		 */
+		const messagesWithPlaceholdersReplaced: ChatMessage[] = [];
+
+    // Merge stored placeholders with provided placeholders (provided ones take precedence)
+    const combinedPlaceholders = { ...this.placeholderFillIns, ...placeholders };
+
+    for (const item of this.rawPrompt) {
+      if ("type" in item && item.type === ChatMessageType.Placeholder) {
+        if (combinedPlaceholders && item.name in combinedPlaceholders) {
+          messagesWithPlaceholdersReplaced.push(...combinedPlaceholders[item.name]);
         }
         // If no placeholder fill-ins provided for a name, skip it
-      } else if ("role" in item && "content" in item) {
+      } else if ("role" in item && "content" in item && item.type === ChatMessageType.ChatMessage) {
         messagesWithPlaceholdersReplaced.push({
           role: item.role,
           content: item.content,
@@ -206,7 +284,7 @@ export class ChatPromptClient extends BasePromptClient {
     }));
   }
 
-  public getLangchainPrompt(): ChatMessage[] {
+  public getLangchainPrompt(): ChatMessageOrPlaceholder[] {
     /**
      * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
      *
@@ -224,14 +302,20 @@ export class ChatPromptClient extends BasePromptClient {
      * const formattedPrompt = await langchainPrompt.format(values);
      *
      * ```
-     * @returns {ChatMessage[]} Chat messages with variables that can be plugged into Langchain's ChatPromptTemplate.
+     * @returns {ChatMessageOrPlaceholder[]} All prompt messages (chat messages and placeholders) with variables transformed for Langchain compatibility.
      */
-    return this.prompt
-      .filter((item) => "role" in item && "content" in item)
-      .map((item) => ({
-        role: item.role,
-        content: this._transformToLangchainVariables(item.content),
-      }));
+    return this.prompt.map((item): ChatMessageOrPlaceholder => {
+      if ("type" in item && item.type === ChatMessageType.Placeholder) {
+        return item as { type: ChatMessageType.Placeholder } & typeof item;
+      } else if ("role" in item && "content" in item && item.type === ChatMessageType.ChatMessage) {
+        return {
+          role: item.role,
+          content: this._transformToLangchainVariables(item.content),
+        };
+      } else {
+        throw new Error("Invalid item in prompt array");
+      }
+    });
   }
 
   // Keep the toJSON backwards compatibile - in case someone uses that. we don't return the type for non-placeholders here.
@@ -240,7 +324,7 @@ export class ChatPromptClient extends BasePromptClient {
       name: this.name,
       prompt: this.promptResponse.prompt.map((item) => {
         if ("type" in item && item.type === ChatMessageType.ChatMessage) {
-          const { type, ...messageWithoutType } = item;
+          const { type: _, ...messageWithoutType } = item;
           return messageWithoutType;
         }
         return item;
