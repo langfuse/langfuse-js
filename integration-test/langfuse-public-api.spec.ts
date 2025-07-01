@@ -131,7 +131,7 @@ describe("Langfuse Public API", () => {
 
   describe("Scores", () => {
     it("should list scores with complex filters", async () => {
-      const response = await langfuse.api.scoreGet({
+      const response = await langfuse.api.scoreV2Get({
         name: "accuracy",
         dataType: "NUMERIC",
         page: 1,
@@ -258,7 +258,7 @@ describe("Langfuse Public API", () => {
       }
 
       try {
-        await langfuse.api.scoreGetById("non-existent-id");
+        await langfuse.api.scoreV2GetById("non-existent-id");
         fail("Expected request to fail");
       } catch (error: any) {
         expect(error.status).toBe(404);
