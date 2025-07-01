@@ -538,7 +538,7 @@ describe("Langfuse (fetch)", () => {
       expect(createdPrompt.constructor.name).toBe("ChatPromptClient");
       expect(fetchedPrompt.name).toEqual(promptName);
       expect(fetchedPrompt.prompt).toEqual([
-        { role: "system", content: "A {{animal}} usually has {{animal}} friends." },
+        { role: "system", content: "A {{animal}} usually has {{animal}} friends.", type: "chatmessage" },
       ]);
       expect(fetchedPrompt.compile({ animal: "dog" })).toEqual([
         { role: "system", content: "A dog usually has dog friends." },
@@ -595,7 +595,9 @@ describe("Langfuse (fetch)", () => {
       });
 
       expect(prompt.name).toEqual(promptName);
-      expect(prompt.prompt).toEqual(fallback);
+      expect(prompt.prompt).toEqual([
+        { role: "system", content: "fallback with variable {{variable}}", type: "chatmessage" },
+      ]);
       expect(prompt.compile({ variable: "value" })).toEqual([
         { role: "system", content: "fallback with variable value" },
       ]);
