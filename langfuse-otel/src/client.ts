@@ -1,43 +1,50 @@
-import { ConsoleSpanExporter, BatchSpanProcessor, NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
-import { TracerProvider, trace } from "@opentelemetry/api";
-import { LANGFUSE_VERSION } from "./constants";
-import { LangfuseSpanProcessor } from "./LangfuseSpanProcessor";
+import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { TracerProvider, trace, ProxyTracerProvider } from "@opentelemetry/api";
 
+import { LANGFUSE_VERSION } from "./constants";
+
+export type MaskFunction = (params: { data: any }) => any;
 export type LangfuseInitOptions = {
   publicKey?: string;
   secretKey?: string;
-  host?: string;
+  host?: string; // renamed from baseUrl
   tracerProvider?: TracerProvider;
+  debug?: boolean;
+
+  // Flushing
+  //flushAt?: number;
+  //flushInterval?: number;
+
+  // Fetching
+  //additionalHeaders?: Record<string, string>;
+  //fetchRetryCount?: number;
+  //fetchRetryDelay?: number;
+  //requestTimeout?: number;
+
+  // Attributes
+  //release?: string;
+  //environment?: string;
+
+  // Config
+  //tracingEnabled?: boolean;
+  //mask?: MaskFunction;
+  //sampleRate?: number;
+
+  // Prompt Experiments
+  //_projectId?: string;
+  //_isLocalEventExportEnabled?: boolean;
 };
 
 export class Langfuse {
-  private tracerProvider: NodeTracerProvider | null;
-  private publicKey: string | null;
+  constructor() {}
 
-  constructor() {
-    this.tracerProvider = null;
-    this.publicKey = null;
+  private get tracer() {
+    return trace
+      .getTracerProvider()
+      .getTracer("langfuse-sdk", LANGFUSE_VERSION);
   }
 
-  public init(options: LangfuseInitOptions) {
-    const { tracerProvider: providedTracerProvider, publicKey: providedPublicKey } = options;
-    this.publicKey = providedPublicKey ?? process.env["LANGFUSE_PUBLIC_KEY"] ?? null;
-
-    if (!providedTracerProvider) {
-      const tracerProvider = new NodeTracerProvider({
-        spanProcessors: [new BatchSpanProcessor(new ConsoleSpanExporter()), new LangfuseSpanProcessor({})],
-      });
-      tracerProvider.register();
-
-      this.tracerProvider = tracerProvider;
-    }
-  }
-
-  get tracer() {
-    return trace.getTracerProvider().getTracer("langfuse-sdk", LANGFUSE_VERSION); // TODO: fix missing public_key in tracer attributes
-  }
-
-  async startSpan() {
+  public startSpan() {
     this.tracer.startActiveSpan("parent", (span) => {
       span.setAttribute("key", "value");
 
@@ -47,26 +54,41 @@ export class Langfuse {
     });
   }
 
-  async flush() {
-    if (!this.tracerProvider) {
-      console.warn(
-        "Manually flushing is only supported if Langfuse is managing the underlying OpenTelemetry TracerProvider. Skipping."
-      );
+  public async flush() {
+    // See https://github.com/open-telemetry/opentelemetry-js/issues/3310#issuecomment-1273477289
+    const tracerProvider = trace.getTracerProvider();
 
-      return;
+    if (tracerProvider instanceof NodeTracerProvider) {
+      return tracerProvider.forceFlush();
+    } else if (tracerProvider instanceof ProxyTracerProvider) {
+      const delegateProvider = tracerProvider.getDelegate();
+
+      if (delegateProvider instanceof NodeTracerProvider) {
+        return delegateProvider.forceFlush();
+      }
     }
-    await this.tracerProvider?.forceFlush();
+
+    console.warn(
+      "[Langfuse] Flush not supported as OTEL SDK is not correctly initialized."
+    );
   }
 
-  async shutdown() {
-    if (!this.tracerProvider) {
-      console.warn(
-        "Manual shutdown is only supported if Langfuse is managing the underlying OpenTelemetry TracerProvider. Skipping."
-      );
+  public async shutdown() {
+    // See https://github.com/open-telemetry/opentelemetry-js/issues/3310#issuecomment-1273477289
+    const tracerProvider = trace.getTracerProvider();
 
-      return;
+    if (tracerProvider instanceof NodeTracerProvider) {
+      return tracerProvider.shutdown();
+    } else if (tracerProvider instanceof ProxyTracerProvider) {
+      const delegateProvider = tracerProvider.getDelegate();
+
+      if (delegateProvider instanceof NodeTracerProvider) {
+        return delegateProvider.shutdown();
+      }
     }
 
-    await this.tracerProvider.shutdown();
+    console.warn(
+      "[Langfuse] Shutdown not supported as OTEL SDK is not correctly initialized."
+    );
   }
 }
