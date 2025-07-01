@@ -235,7 +235,7 @@ export class ChatPromptClient extends BasePromptClient {
     }
 
     return messagesWithPlaceholdersReplaced.map((item) => {
-      if ("role" in item && "content" in item) {
+      if (typeof item === "object" && item !== null && "role" in item && "content" in item) {
         return {
           ...item,
           content: mustache.render(item.content, variables ?? {}),
