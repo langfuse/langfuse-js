@@ -200,6 +200,11 @@ export enum ChatMessageType {
 
 export type ChatMessageOrPlaceholder = ChatMessage | ({ type: ChatMessageType.Placeholder } & PlaceholderMessage);
 
+export type LangchainMessagesPlaceholder = {
+  variableName: string;
+  optional?: boolean;
+};
+
 // Media
 export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
 export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;

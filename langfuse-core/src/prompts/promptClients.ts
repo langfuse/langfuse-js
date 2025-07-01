@@ -46,7 +46,6 @@ abstract class BasePromptClient {
   ): string | ChatMessage[] | ChatMessageOrPlaceholder[];
 
   public abstract getLangchainPrompt(options?: {
-    variables?: Record<string, string>;
     placeholders?: Record<string, any>;
   }): string | ChatMessage[] | ChatMessageOrPlaceholder[] | (ChatMessage | LangchainMessagesPlaceholder)[];
 
@@ -126,7 +125,7 @@ abstract class BasePromptClient {
 
 export class TextPromptClient extends BasePromptClient {
   public readonly promptResponse: TextPrompt;
-  private rawPrompt!: string;
+  public readonly prompt: string;
 
   constructor(prompt: TextPrompt, isFallback = false) {
     super(prompt, isFallback, "text");
@@ -134,22 +133,11 @@ export class TextPromptClient extends BasePromptClient {
     this.prompt = prompt.prompt;
   }
 
-  get prompt(): string {
-    return this.rawPrompt;
-  }
-
-  protected set prompt(prompt: string) {
-    this.rawPrompt = prompt;
-  }
-
   compile(variables?: Record<string, string>, _placeholders?: Record<string, any>): string {
     return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
 
-  public getLangchainPrompt(_options?: {
-    variables?: Record<string, string>;
-    placeholders?: Record<string, any>;
-  }): string {
+  public getLangchainPrompt(_options?: { placeholders?: Record<string, any> }): string {
     /**
      * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
      *
@@ -164,7 +152,7 @@ export class TextPromptClient extends BasePromptClient {
   public toJSON(): string {
     return JSON.stringify({
       name: this.name,
-      prompt: this.rawPrompt,
+      prompt: this.prompt,
       version: this.version,
       isFallback: this.isFallback,
       tags: this.tags,
@@ -257,36 +245,63 @@ export class ChatPromptClient extends BasePromptClient {
   }
 
   public getLangchainPrompt(options?: {
-    variables?: Record<string, string>;
     placeholders?: Record<string, any>;
   }): (ChatMessage | LangchainMessagesPlaceholder)[] {
     /*
      * Converts Langfuse prompt into format compatible with Langchain PromptTemplate.
      *
-     * const langchainChatPrompt = ChatPromptTemplate.fromMessages(
-     *    langfuseChatPrompt.getLangchainPrompt().map((m) => [m.role, m.content])
-     *  );
+     * Fills-in placeholders from provided values and converts unresolved ones to Langchain MessagesPlaceholder objects.
+     * Transforms variables from {{var}} to {var} format for Langchain without rendering them.
      *
-     * const formattedPrompt = await langchainPrompt.format(values);
+     * @param options - Configuration object
+     * @param options.placeholders - Key-value pairs where keys are placeholder names and values can be ChatMessage arrays
+     * @returns Array of ChatMessage objects and Langchain MessagesPlaceholder objects with variables transformed for Langchain compatibility.
      *
+     * @example
+     * ```typescript
+     * const client = new ChatPromptClient(prompt);
+     * client.getLangchainPrompt({ placeholders: { examples: [{ role: "user", content: "Hello" }] } });
      * ```
-     * @returns {ChatMessageOrPlaceholder[]} All prompt messages (chat messages and placeholders) with variables transformed for Langchain compatibility.
      */
-    return this.prompt.map((item): ChatMessageOrPlaceholder => {
+    const messagesWithPlaceholdersReplaced: (ChatMessage | LangchainMessagesPlaceholder)[] = [];
+    const placeholderValues = options?.placeholders ?? {};
+
+    for (const item of this.prompt) {
       if ("type" in item && item.type === ChatMessageType.Placeholder) {
-        return item as { type: ChatMessageType.Placeholder } & typeof item;
+        const placeholderValue = placeholderValues[item.name];
+        if (
+          Array.isArray(placeholderValue) &&
+          placeholderValue.length > 0 &&
+          placeholderValue.every((msg) => typeof msg === "object" && "role" in msg && "content" in msg)
+        ) {
+          // Complete placeholder fill-in, replace with it
+          messagesWithPlaceholdersReplaced.push(
+            ...(placeholderValue as ChatMessage[]).map((msg) => {
+              return {
+                role: msg.role,
+                content: this._transformToLangchainVariables(msg.content),
+              };
+            })
+          );
+        } else if (Array.isArray(placeholderValue) && placeholderValue.length === 0) {
+        } else {
+          // Convert unresolved placeholder to Langchain MessagesPlaceholder
+          messagesWithPlaceholdersReplaced.push({
+            variableName: item.name,
+            optional: false,
+          });
+        }
       } else if ("role" in item && "content" in item && item.type === ChatMessageType.ChatMessage) {
-        return {
+        messagesWithPlaceholdersReplaced.push({
           role: item.role,
           content: this._transformToLangchainVariables(item.content),
-        };
-      } else {
-        throw new Error("Invalid item in prompt array");
+        });
       }
-    });
+    }
+
+    return messagesWithPlaceholdersReplaced;
   }
 
-  // Keep the toJSON backwards compatibile - in case someone uses that. we don't return the type for non-placeholders here.
   public toJSON(): string {
     return JSON.stringify({
       name: this.name,

@@ -1,4 +1,4 @@
-import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
+import { ChatPromptTemplate, PromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 
 import { type GetLangfusePromptResponse } from "../src";
 import { DEFAULT_PROMPT_CACHE_TTL_SECONDS } from "../src/prompts/promptCache";
@@ -568,8 +568,9 @@ describe("Langfuse Core", () => {
         });
 
         // Convert to Langchain prompt
+        // TODO: Fix type handling for MessagesPlaceholder
         const langchainPrompt = ChatPromptTemplate.fromMessages(
-          langfusePrompt.getLangchainPrompt().map((m) => [m.role, m.content])
+          langfusePrompt.getLangchainPrompt().map((m: any) => [m.role, m.content])
         );
 
         // Assertions
@@ -645,6 +646,12 @@ describe("Langfuse Core", () => {
             variableName: "examples",
             optional: false,
           });
+
+          // Verify compatibility with real Langchain MessagesPlaceholder
+          const realMessagesPlaceholder = new MessagesPlaceholder("examples");
+          const placeholderItem = langchainPrompt[1] as any;
+          expect(placeholderItem.variableName).toBe(realMessagesPlaceholder.variableName);
+          expect(placeholderItem.optional).toBe(realMessagesPlaceholder.optional);
           expect(langchainPrompt[2]).toEqual({
             role: "user",
             content: "Help me with {task}", // Langchain format
@@ -687,7 +694,87 @@ describe("Langfuse Core", () => {
           });
         });
 
-        it("should not change getter without placeholders", () => {
+        it("should handle resolved and unresolved placeholders as Langchain MessagesPlaceholder objects", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: ChatMessageType.Placeholder, name: "history" },
+            { role: "user", content: "Help me with {{task}}" },
+            { type: ChatMessageType.Placeholder, name: "unresolved_history" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const placeholders = {
+            history: [{ role: "user", content: "Hi" }],
+            // unresolved_history not provided - should become MessagesPlaceholder
+          };
+
+          const langchainPrompt = client.getLangchainPrompt({ placeholders });
+
+          expect(langchainPrompt).toHaveLength(4);
+          expect(langchainPrompt[0]).toEqual({
+            role: "system",
+            content: "You are a {role} assistant",
+          });
+          expect(langchainPrompt[1]).toEqual({
+            role: "user",
+            content: "Hi",
+          });
+          expect(langchainPrompt[2]).toEqual({
+            role: "user",
+            content: "Help me with {task}",
+          });
+          expect(langchainPrompt[3]).toEqual({
+            variableName: "unresolved_history",
+            optional: false,
+          });
+        });
+
+        it("should integrate properly with Langchain when using MessagesPlaceholder", async () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: ChatMessageType.Placeholder, name: "history" },
+            { role: "user", content: "Help me with {{task}}" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const langchainMessages = client.getLangchainPrompt();
+
+          const messages: any[] = [];
+          for (const msg of langchainMessages) {
+            if ("role" in msg && "content" in msg) {
+              messages.push([msg.role, msg.content]);
+            } else if ("variableName" in msg) {
+              // Create real Langchain MessagesPlaceholder
+              messages.push(new MessagesPlaceholder({ variableName: msg.variableName, optional: msg.optional }));
+            }
+          }
+
+          const langchainPrompt = ChatPromptTemplate.fromMessages(messages);
+
+          // Test that the prompt compiles correctly with Langchain
+          expect(langchainPrompt).toBeDefined();
+          expect(langchainPrompt.inputVariables).toContain("role");
+          expect(langchainPrompt.inputVariables).toContain("task");
+          expect(langchainPrompt.inputVariables).toContain("history");
+
+          // Test that it works with some sample data
+          const formatted = await langchainPrompt.formatMessages({
+            role: "helpful",
+            task: "coding",
+            history: [
+              { role: "user", content: "Previous question" },
+              { role: "assistant", content: "Previous answer" },
+            ],
+          });
+
+          expect(formatted).toHaveLength(4);
+          expect(formatted[0].content).toBe("You are a helpful assistant");
+          expect(formatted[1].content).toBe("Previous question");
+          expect(formatted[2].content).toBe("Previous answer");
+          expect(formatted[3].content).toBe("Help me with coding");
+        });
+
+        it("should return prompt with placeholders unchanged when no fill-ins provided", () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
             { type: ChatMessageType.Placeholder, name: "examples" },
@@ -1361,7 +1448,7 @@ Configuration:
         });
 
         const langchainMessages = prompt.getLangchainPrompt();
-        const langchainPrompt = ChatPromptTemplate.fromMessages(langchainMessages.map((m) => [m.role, m.content]));
+        const langchainPrompt = ChatPromptTemplate.fromMessages(langchainMessages.map((m: any) => [m.role, m.content]));
         const formattedMessages = await langchainPrompt.formatMessages({
           assistant_type: "helpful",
           model_name: "gpt-4",
