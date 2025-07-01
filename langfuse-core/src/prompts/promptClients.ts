@@ -7,6 +7,7 @@ import {
   type ChatPrompt,
   type ChatPromptCompat,
   type CreateLangfusePromptResponse,
+  type LangchainMessagesPlaceholder,
   type TextPrompt,
   type ChatMessageWithPlaceholders,
 } from "../types";
@@ -41,10 +42,13 @@ abstract class BasePromptClient {
 
   abstract compile(
     variables?: Record<string, string>,
-    placeholders?: Record<string, ChatMessage[]>
-  ): string | ChatMessage[];
+    placeholders?: Record<string, any>
+  ): string | ChatMessage[] | ChatMessageOrPlaceholder[];
 
-  public abstract getLangchainPrompt(): string | ChatMessage[] | ChatMessageOrPlaceholder[];
+  public abstract getLangchainPrompt(options?: {
+    variables?: Record<string, string>;
+    placeholders?: Record<string, any>;
+  }): string | ChatMessage[] | ChatMessageOrPlaceholder[] | (ChatMessage | LangchainMessagesPlaceholder)[];
 
   protected _transformToLangchainVariables(content: string): string {
     const jsonEscapedContent = this.escapeJsonForLangchain(content);
@@ -138,11 +142,14 @@ export class TextPromptClient extends BasePromptClient {
     this.rawPrompt = prompt;
   }
 
-  compile(variables?: Record<string, string>): string {
+  compile(variables?: Record<string, string>, _placeholders?: Record<string, any>): string {
     return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
 
-  public getLangchainPrompt(): string {
+  public getLangchainPrompt(_options?: {
+    variables?: Record<string, string>;
+    placeholders?: Record<string, any>;
+  }): string {
     /**
      * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
      *
@@ -170,8 +177,7 @@ export class TextPromptClient extends BasePromptClient {
 
 export class ChatPromptClient extends BasePromptClient {
   public readonly promptResponse: ChatPrompt;
-  private rawPrompt!: ChatMessageWithPlaceholders[];
-  private placeholderFillIns: Record<string, ChatMessage[]> = {};
+  public readonly prompt: ChatMessageWithPlaceholders[];
 
   constructor(prompt: ChatPromptCompat, isFallback = false) {
     const normalizedPrompt = ChatPromptClient.normalizePrompt(prompt.prompt);
@@ -198,78 +204,37 @@ export class ChatPromptClient extends BasePromptClient {
     });
   }
 
-  get prompt(): ChatMessageWithPlaceholders[] {
-    const messagesWithPlaceholdersReplaced: ChatMessageWithPlaceholders[] = [];
-    // Fill in placeholders with stored fill-ins, retain unfilled placeholders
-    for (const item of this.rawPrompt) {
-      if ("type" in item && item.type === ChatMessageType.Placeholder) {
-        if (this.placeholderFillIns && item.name in this.placeholderFillIns) {
-          const filledMessages = this.placeholderFillIns[item.name].map(
-            (msg) =>
-              ({
-                type: ChatMessageType.ChatMessage,
-                ...msg,
-              }) as ChatMessageWithPlaceholders
-          );
-          messagesWithPlaceholdersReplaced.push(...filledMessages);
-        } else {
-          // Keep unfilled placeholder
-          messagesWithPlaceholdersReplaced.push(item);
-        }
-      } else {
-        // Already a chat message
-        messagesWithPlaceholdersReplaced.push(item);
-      }
-    }
-    return messagesWithPlaceholdersReplaced;
-  }
-
-  protected set prompt(prompt: ChatMessage[] | ChatMessageWithPlaceholders[]) {
-    this.rawPrompt = ChatPromptClient.normalizePrompt(prompt);
-  }
-
-  public update(placeholders: Record<string, ChatMessage[]>): this {
+  compile(variables?: Record<string, string>, placeholders?: Record<string, any>): ChatMessageOrPlaceholder[] {
     /**
-     * Sets the stored placeholder fill-ins for the chat prompt.
+     * Compiles the chat prompt by replacing placeholders and variables with provided values.
      *
-     * @param placeholders - Key-value pairs where keys are placeholder names and values are ChatMessage arrays
-     * @returns The ChatPromptClient instance for method chaining
-     *
-     * @example
-     * ```typescript
-     * const client = new ChatPromptClient(prompt);
-     * client.update({ examples: [{ role: "user", content: "Hello" }] }).getLangchainPrompt();
-     * ```
-     */
-    this.placeholderFillIns = { ...placeholders };
-    return this;
-  }
-
-  compile(variables?: Record<string, string>, placeholders?: Record<string, ChatMessage[]>): ChatMessage[] {
-    /**
-     * Compiles the chat prompt by replacing placeholders and variables with actual values.
-     *
-     * Placeholders are filled-in from stored as well as optionally provided placeholders.
-     * Provided placeholders take precedence over stored ones for identical keys.
-     * Provided placeholders do not update the internally stored ones.
-     * Unfilled placeholders are skipped in the output.
-     * Variables within message content are processed using Mustache templating.
+     * First fills-in placeholders by from the provided placeholder parameter.
+     * Then compiles variables into the message content.
+     * Unresolved placeholders are included in the output as placeholder objects.
+     * If you only want to fill-in placeholders, pass an empty object for variables.
      *
      * @param variables - Key-value pairs for Mustache variable substitution in message content
-     * @param placeholders - Key-value pairs where keys are placeholder names and values are ChatMessage arrays
-     * @returns Array of ChatMessage objects with placeholders replaced and variables rendered
+     * @param placeholders - Key-value pairs where keys are placeholder names and values can be ChatMessage arrays
+     * @returns Array of ChatMessage objects and placeholder objects with placeholders replaced and variables rendered
      */
-    const messagesWithPlaceholdersReplaced: ChatMessage[] = [];
+    const messagesWithPlaceholdersReplaced: ChatMessageOrPlaceholder[] = [];
+    const placeholderValues = placeholders ?? {};
 
-    // Merge stored placeholders with provided placeholders (provided ones take precedence)
-    const combinedPlaceholders = { ...this.placeholderFillIns, ...placeholders };
-
-    for (const item of this.rawPrompt) {
+    for (const item of this.prompt) {
       if ("type" in item && item.type === ChatMessageType.Placeholder) {
-        if (item.name in combinedPlaceholders) {
-          messagesWithPlaceholdersReplaced.push(...combinedPlaceholders[item.name]);
+        const placeholderValue = placeholderValues[item.name];
+        if (
+          Array.isArray(placeholderValue) &&
+          placeholderValue.length > 0 &&
+          placeholderValue.every((msg) => typeof msg === "object" && "role" in msg && "content" in msg)
+        ) {
+          messagesWithPlaceholdersReplaced.push(...(placeholderValue as ChatMessage[]));
+        } else if (Array.isArray(placeholderValue) && placeholderValue.length === 0) {
+          // Empty array provided - skip placeholder (don't include it)
+        } else {
+          // Keep unresolved placeholder in the output
+          messagesWithPlaceholdersReplaced.push(item as { type: ChatMessageType.Placeholder } & typeof item);
         }
-        // If no placeholder fill-ins provided for a name, skip it
       } else if ("role" in item && "content" in item && item.type === ChatMessageType.ChatMessage) {
         messagesWithPlaceholdersReplaced.push({
           role: item.role,
@@ -278,22 +243,25 @@ export class ChatPromptClient extends BasePromptClient {
       }
     }
 
-    return messagesWithPlaceholdersReplaced.map<ChatMessage>((chatMessage) => ({
-      ...chatMessage,
-      content: mustache.render(chatMessage.content, variables ?? {}),
-    }));
+    return messagesWithPlaceholdersReplaced.map<ChatMessageOrPlaceholder>((item) => {
+      if ("role" in item && "content" in item) {
+        return {
+          ...item,
+          content: mustache.render(item.content, variables ?? {}),
+        };
+      } else {
+        // Return placeholder as-is
+        return item;
+      }
+    });
   }
 
-  public getLangchainPrompt(): ChatMessageOrPlaceholder[] {
-    /**
-     * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
-     *
-     * It specifically adapts the mustache-style double curly braces {{variable}} used in Langfuse
-     * to the single curly brace {variable} format expected by Langchain.
-     * Example usage:
-     *
-     * ```
-     * import { ChatPromptTemplate } from "@langchain/core/prompts";
+  public getLangchainPrompt(options?: {
+    variables?: Record<string, string>;
+    placeholders?: Record<string, any>;
+  }): (ChatMessage | LangchainMessagesPlaceholder)[] {
+    /*
+     * Converts Langfuse prompt into format compatible with Langchain PromptTemplate.
      *
      * const langchainChatPrompt = ChatPromptTemplate.fromMessages(
      *    langfuseChatPrompt.getLangchainPrompt().map((m) => [m.role, m.content])

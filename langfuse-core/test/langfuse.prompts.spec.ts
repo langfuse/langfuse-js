@@ -626,10 +626,10 @@ describe("Langfuse Core", () => {
       });
 
       describe("getLangchainPrompt() method", () => {
-        it("should include placeholders when getting Langchain prompt", () => {
+        it("should return Langchain MessagesPlaceholder objects for unresolved placeholders", () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
-            { type: ChatMessageType.Placeholder, name: "examples" },
+            { type: "placeholder", name: "examples" },
             { role: "user", content: "Help me with {{task}}" },
           ]);
 
@@ -642,8 +642,8 @@ describe("Langfuse Core", () => {
             content: "You are a {role} assistant", // Langchain format
           });
           expect(langchainPrompt[1]).toEqual({
-            type: ChatMessageType.Placeholder,
-            name: "examples",
+            variableName: "examples",
+            optional: false,
           });
           expect(langchainPrompt[2]).toEqual({
             role: "user",
@@ -651,7 +651,7 @@ describe("Langfuse Core", () => {
           });
         });
 
-        it("should support chaining update() with getLangchainPrompt()", () => {
+        it("should support getLangchainPrompt() with placeholders parameter", () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
             { type: ChatMessageType.Placeholder, name: "examples" },
@@ -666,7 +666,7 @@ describe("Langfuse Core", () => {
             ],
           };
 
-          const langchainPrompt = client.update(placeholders).getLangchainPrompt();
+          const langchainPrompt = client.getLangchainPrompt({ placeholders });
 
           expect(langchainPrompt).toHaveLength(4);
           expect(langchainPrompt[0]).toEqual({
@@ -714,7 +714,7 @@ describe("Langfuse Core", () => {
           });
         });
 
-        it("should compile prompt with placeholders set in update()", () => {
+        it("should compile prompt with placeholders provided in compile() method", () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
             { type: ChatMessageType.Placeholder, name: "examples" },
@@ -729,29 +729,24 @@ describe("Langfuse Core", () => {
             ],
           };
 
-          client.update(placeholders);
-          const prompt = client.prompt;
+          const compiled = client.compile({ role: "helpful", task: "coding" }, placeholders);
 
-          expect(prompt).toHaveLength(4);
-          expect(prompt[0]).toEqual({
-            type: ChatMessageType.ChatMessage,
+          expect(compiled).toHaveLength(4);
+          expect(compiled[0]).toEqual({
             role: "system",
-            content: "You are a {{role}} assistant",
+            content: "You are a helpful assistant",
           });
-          expect(prompt[1]).toEqual({
-            type: ChatMessageType.ChatMessage,
+          expect(compiled[1]).toEqual({
             role: "user",
             content: "Example question?",
           });
-          expect(prompt[2]).toEqual({
-            type: ChatMessageType.ChatMessage,
+          expect(compiled[2]).toEqual({
             role: "assistant",
             content: "Example answer.",
           });
-          expect(prompt[3]).toEqual({
-            type: ChatMessageType.ChatMessage,
+          expect(compiled[3]).toEqual({
             role: "user",
-            content: "Help me with {{task}}",
+            content: "Help me with coding",
           });
         });
       });
@@ -796,25 +791,39 @@ describe("Langfuse Core", () => {
           name: string;
           variables: Record<string, string>;
           placeholders: Record<string, ChatMessage[]> | undefined;
-          expected: string[];
+          expected: (string | { type: string; name: string })[];
         }> = [
           {
             name: "variables only (undefined placeholders parameter)",
             variables: { role: "helpful", task: "coding" },
             placeholders: undefined,
-            expected: ["You are a helpful assistant", "Help me with coding"],
+            expected: [
+              "You are a helpful assistant",
+              { type: "placeholder", name: "examples" },
+              "Help me with coding",
+              { type: "placeholder", name: "extra_history" },
+            ],
           },
           {
             name: "variables only (empty placeholders)",
             variables: { role: "helpful", task: "coding" },
             placeholders: {},
-            expected: ["You are a helpful assistant", "Help me with coding"],
+            expected: [
+              "You are a helpful assistant",
+              { type: "placeholder", name: "examples" },
+              "Help me with coding",
+              { type: "placeholder", name: "extra_history" },
+            ],
           },
           {
             name: "empty placeholder array",
             variables: { role: "helpful", task: "coding" },
             placeholders: { examples: [] },
-            expected: ["You are a helpful assistant", "Help me with coding"],
+            expected: [
+              "You are a helpful assistant",
+              "Help me with coding",
+              { type: "placeholder", name: "extra_history" },
+            ],
           },
           {
             name: "both variables and multiple placeholders",
@@ -833,7 +842,12 @@ describe("Langfuse Core", () => {
               unused: [{ role: "user", content: "Won't appear" }],
               examples: [{ role: "user", content: "Will appear" }],
             },
-            expected: ["You are a helpful assistant", "Will appear", "Help me with coding"],
+            expected: [
+              "You are a helpful assistant",
+              "Will appear",
+              "Help me with coding",
+              { type: "placeholder", name: "extra_history" },
+            ],
           },
         ];
 
@@ -843,8 +857,13 @@ describe("Langfuse Core", () => {
             const result = client.compile(variables, placeholders);
 
             expect(result).toHaveLength(expected.length);
-            expected.forEach((expectedContent, i) => {
-              expect(result[i].content).toBe(expectedContent);
+            expected.forEach((expectedItem, i) => {
+              if (typeof expectedItem === "string") {
+                expect(result[i]).toHaveProperty("content", expectedItem);
+              } else {
+                expect(result[i]).toHaveProperty("type", ChatMessageType.Placeholder);
+                expect(result[i]).toHaveProperty("name", expectedItem.name);
+              }
             });
           });
         });
