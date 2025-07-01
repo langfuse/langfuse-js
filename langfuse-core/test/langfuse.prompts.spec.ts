@@ -729,6 +729,32 @@ describe("Langfuse Core", () => {
           });
         });
 
+        it("should handle non-standard placeholder values by stringifying them", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: ChatMessageType.Placeholder, name: "invalid_data" },
+            { role: "user", content: "Help me with {{task}}" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const placeholders = {
+            invalid_data: "just a string", // Non-standard, not a message array
+          };
+
+          const langchainPrompt = client.getLangchainPrompt({ placeholders });
+
+          expect(langchainPrompt).toHaveLength(3);
+          expect(langchainPrompt[0]).toEqual({
+            role: "system",
+            content: "You are a {role} assistant",
+          });
+          expect(langchainPrompt[1]).toBe('"just a string"'); // Stringified invalid value
+          expect(langchainPrompt[2]).toEqual({
+            role: "user",
+            content: "Help me with {task}",
+          });
+        });
+
         it("should integrate properly with Langchain when using MessagesPlaceholder", async () => {
           const mockPrompt = createMockPrompt([
             { role: "system", content: "You are a {{role}} assistant" },
@@ -952,6 +978,31 @@ describe("Langfuse Core", () => {
                 expect(result[i]).toHaveProperty("name", expectedItem.name);
               }
             });
+          });
+        });
+
+        it("should handle invalid placeholder values in compile() by stringifying them", () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a {{role}} assistant" },
+            { type: ChatMessageType.Placeholder, name: "invalid_data" },
+            { role: "user", content: "Help me with {{task}}" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+          const result = client.compile(
+            { role: "helpful", task: "coding" },
+            { invalid_data: "just a string" } // Invalid - not an array of messages
+          );
+
+          expect(result).toHaveLength(3);
+          expect(result[0]).toEqual({
+            role: "system",
+            content: "You are a helpful assistant",
+          });
+          expect(result[1]).toBe('"just a string"'); // Stringified invalid value
+          expect(result[2]).toEqual({
+            role: "user",
+            content: "Help me with coding",
           });
         });
       });

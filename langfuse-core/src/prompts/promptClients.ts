@@ -43,11 +43,11 @@ abstract class BasePromptClient {
   abstract compile(
     variables?: Record<string, string>,
     placeholders?: Record<string, any>
-  ): string | ChatMessage[] | ChatMessageOrPlaceholder[];
+  ): string | ChatMessage[] | (ChatMessageOrPlaceholder | any)[];
 
   public abstract getLangchainPrompt(options?: {
     placeholders?: Record<string, any>;
-  }): string | ChatMessage[] | ChatMessageOrPlaceholder[] | (ChatMessage | LangchainMessagesPlaceholder)[];
+  }): string | ChatMessage[] | ChatMessageOrPlaceholder[] | (ChatMessage | LangchainMessagesPlaceholder | any)[];
 
   protected _transformToLangchainVariables(content: string): string {
     const jsonEscapedContent = this.escapeJsonForLangchain(content);
@@ -192,7 +192,7 @@ export class ChatPromptClient extends BasePromptClient {
     });
   }
 
-  compile(variables?: Record<string, string>, placeholders?: Record<string, any>): ChatMessageOrPlaceholder[] {
+  compile(variables?: Record<string, string>, placeholders?: Record<string, any>): (ChatMessageOrPlaceholder | any)[] {
     /**
      * Compiles the chat prompt by replacing placeholders and variables with provided values.
      *
@@ -205,7 +205,7 @@ export class ChatPromptClient extends BasePromptClient {
      * @param placeholders - Key-value pairs where keys are placeholder names and values can be ChatMessage arrays
      * @returns Array of ChatMessage objects and placeholder objects with placeholders replaced and variables rendered
      */
-    const messagesWithPlaceholdersReplaced: ChatMessageOrPlaceholder[] = [];
+    const messagesWithPlaceholdersReplaced: (ChatMessageOrPlaceholder | any)[] = [];
     const placeholderValues = placeholders ?? {};
 
     for (const item of this.prompt) {
@@ -219,6 +219,9 @@ export class ChatPromptClient extends BasePromptClient {
           messagesWithPlaceholdersReplaced.push(...(placeholderValue as ChatMessage[]));
         } else if (Array.isArray(placeholderValue) && placeholderValue.length === 0) {
           // Empty array provided - skip placeholder (don't include it)
+        } else if (placeholderValue !== undefined) {
+          // Non-standard placeholder value format, just stringfiy
+          messagesWithPlaceholdersReplaced.push(JSON.stringify(placeholderValue));
         } else {
           // Keep unresolved placeholder in the output
           messagesWithPlaceholdersReplaced.push(item as { type: ChatMessageType.Placeholder } & typeof item);
@@ -231,14 +234,14 @@ export class ChatPromptClient extends BasePromptClient {
       }
     }
 
-    return messagesWithPlaceholdersReplaced.map<ChatMessageOrPlaceholder>((item) => {
+    return messagesWithPlaceholdersReplaced.map((item) => {
       if ("role" in item && "content" in item) {
         return {
           ...item,
           content: mustache.render(item.content, variables ?? {}),
         };
       } else {
-        // Return placeholder as-is
+        // Return placeholder or stringified value as-is
         return item;
       }
     });
@@ -246,7 +249,7 @@ export class ChatPromptClient extends BasePromptClient {
 
   public getLangchainPrompt(options?: {
     placeholders?: Record<string, any>;
-  }): (ChatMessage | LangchainMessagesPlaceholder)[] {
+  }): (ChatMessage | LangchainMessagesPlaceholder | any)[] {
     /*
      * Converts Langfuse prompt into format compatible with Langchain PromptTemplate.
      *
@@ -263,7 +266,7 @@ export class ChatPromptClient extends BasePromptClient {
      * client.getLangchainPrompt({ placeholders: { examples: [{ role: "user", content: "Hello" }] } });
      * ```
      */
-    const messagesWithPlaceholdersReplaced: (ChatMessage | LangchainMessagesPlaceholder)[] = [];
+    const messagesWithPlaceholdersReplaced: (ChatMessage | LangchainMessagesPlaceholder | any)[] = [];
     const placeholderValues = options?.placeholders ?? {};
 
     for (const item of this.prompt) {
@@ -284,6 +287,10 @@ export class ChatPromptClient extends BasePromptClient {
             })
           );
         } else if (Array.isArray(placeholderValue) && placeholderValue.length === 0) {
+          // Skip empty array placeholder
+        } else if (placeholderValue !== undefined) {
+          // Non-standard placeholder value, just stringify and add directly
+          messagesWithPlaceholdersReplaced.push(JSON.stringify(placeholderValue));
         } else {
           // Convert unresolved placeholder to Langchain MessagesPlaceholder
           messagesWithPlaceholdersReplaced.push({
