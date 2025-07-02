@@ -81,12 +81,20 @@ export type LangfuseMetadataProperties = {
 };
 
 // ASYNC
-export type CreateLangfuseTraceBody = FixTypes<components["schemas"]["TraceBody"]>;
+export type CreateLangfuseTraceBody = FixTypes<
+  components["schemas"]["TraceBody"]
+>;
 
-export type CreateLangfuseEventBody = FixTypes<components["schemas"]["CreateEventBody"]>;
+export type CreateLangfuseEventBody = FixTypes<
+  components["schemas"]["CreateEventBody"]
+>;
 
-export type CreateLangfuseSpanBody = FixTypes<components["schemas"]["CreateSpanBody"]>;
-export type UpdateLangfuseSpanBody = FixTypes<components["schemas"]["UpdateSpanBody"]>;
+export type CreateLangfuseSpanBody = FixTypes<
+  components["schemas"]["CreateSpanBody"]
+>;
+export type UpdateLangfuseSpanBody = FixTypes<
+  components["schemas"]["UpdateSpanBody"]
+>;
 export type EventBody =
   | CreateLangfuseTraceBody
   | CreateLangfuseEventBody
@@ -98,27 +106,39 @@ export type EventBody =
 
 export type Usage = FixTypes<components["schemas"]["IngestionUsage"]>;
 export type UsageDetails = FixTypes<components["schemas"]["UsageDetails"]>;
-export type CreateLangfuseGenerationBody = FixTypes<components["schemas"]["CreateGenerationBody"]>;
-export type UpdateLangfuseGenerationBody = FixTypes<components["schemas"]["UpdateGenerationBody"]>;
+export type CreateLangfuseGenerationBody = FixTypes<
+  components["schemas"]["CreateGenerationBody"]
+>;
+export type UpdateLangfuseGenerationBody = FixTypes<
+  components["schemas"]["UpdateGenerationBody"]
+>;
 
-export type CreateLangfuseScoreBody = FixTypes<components["schemas"]["ScoreBody"]>;
+export type CreateLangfuseScoreBody = FixTypes<
+  components["schemas"]["ScoreBody"]
+>;
 
 // SYNC
-export type GetLangfuseTracesQuery = FixTypes<paths["/api/public/traces"]["get"]["parameters"]["query"]>;
+export type GetLangfuseTracesQuery = FixTypes<
+  paths["/api/public/traces"]["get"]["parameters"]["query"]
+>;
 export type GetLangfuseTracesResponse = FixTypes<
   paths["/api/public/traces"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type GetLangfuseTraceResponse = FixTypes<
   paths["/api/public/traces/{traceId}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
-export type GetLangfuseObservationsQuery = FixTypes<paths["/api/public/observations"]["get"]["parameters"]["query"]>;
+export type GetLangfuseObservationsQuery = FixTypes<
+  paths["/api/public/observations"]["get"]["parameters"]["query"]
+>;
 export type GetLangfuseObservationsResponse = FixTypes<
   paths["/api/public/observations"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
 export type GetLangfuseObservationResponse = FixTypes<
   paths["/api/public/observations/{observationId}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
-export type GetLangfuseSessionsQuery = FixTypes<paths["/api/public/sessions"]["get"]["parameters"]["query"]>;
+export type GetLangfuseSessionsQuery = FixTypes<
+  paths["/api/public/sessions"]["get"]["parameters"]["query"]
+>;
 export type GetLangfuseSessionsResponse = FixTypes<
   paths["/api/public/sessions"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
@@ -128,7 +148,8 @@ export type GetLangfuseDatasetParams = FixTypes<
 export type GetLangfuseDatasetResponse = FixTypes<
   paths["/api/public/v2/datasets/{datasetName}"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
-export type GetLangfuseDatasetItemsQuery = paths["/api/public/dataset-items"]["get"]["parameters"]["query"];
+export type GetLangfuseDatasetItemsQuery =
+  paths["/api/public/dataset-items"]["get"]["parameters"]["query"];
 export type GetLangfuseDatasetItemsResponse = FixTypes<
   paths["/api/public/dataset-items"]["get"]["responses"]["200"]["content"]["application/json"]
 >;
@@ -157,7 +178,8 @@ export type GetLangfuseDatasetRunResponse = FixTypes<
 >;
 export type GetLangfuseDatasetRunsQuery =
   paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["query"];
-export type GetLangfuseDatasetRunsPath = paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["path"];
+export type GetLangfuseDatasetRunsPath =
+  paths["/api/public/datasets/{datasetName}/runs"]["get"]["parameters"]["path"];
 
 export type GetLangfuseDatasetRunsResponse = FixTypes<
   paths["/api/public/datasets/{datasetName}/runs"]["get"]["responses"]["200"]["content"]["application/json"]
@@ -183,20 +205,40 @@ export type GetLangfusePromptResponse =
   | { fetchResult: "failure"; data: GetLangfusePromptFailureData };
 
 export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
-export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
-export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
+export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & {
+  type: "chat";
+};
+export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & {
+  type: "text";
+};
 
 // Media
-export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
-export type GetMediaUploadUrlResponse = FixTypes<components["schemas"]["GetMediaUploadUrlResponse"]>;
+export type GetMediaUploadUrlRequest = FixTypes<
+  components["schemas"]["GetMediaUploadUrlRequest"]
+>;
+export type GetMediaUploadUrlResponse = FixTypes<
+  components["schemas"]["GetMediaUploadUrlResponse"]
+>;
 export type MediaContentType = components["schemas"]["MediaContentType"];
 export type PatchMediaBody = FixTypes<components["schemas"]["PatchMediaBody"]>;
-export type GetMediaResponse = FixTypes<components["schemas"]["GetMediaResponse"]>;
+export type GetMediaResponse = FixTypes<
+  components["schemas"]["GetMediaResponse"]
+>;
 
-type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptRequest"]>;
-type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
-export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
-export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
+type CreateTextPromptRequest = FixTypes<
+  components["schemas"]["CreateTextPromptRequest"]
+>;
+type CreateChatPromptRequest = FixTypes<
+  components["schemas"]["CreateChatPromptRequest"]
+>;
+export type CreateTextPromptBody = { type?: "text" } & Omit<
+  CreateTextPromptRequest,
+  "type"
+> & { isActive?: boolean }; // isActive is optional for backward compatibility
+export type CreateChatPromptBody = { type: "chat" } & Omit<
+  CreateChatPromptRequest,
+  "type"
+> & { isActive?: boolean }; // isActive is optional for backward compatibility
 
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 
@@ -204,7 +246,13 @@ export type PromptInput = {
   prompt?: LangfusePromptRecord | LangfusePromptClient;
 };
 
-export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>;
+export type JsonType =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonType }
+  | Array<JsonType>;
 
 type OptionalTypes<T> = T extends null | undefined ? T : never;
 
@@ -225,7 +273,12 @@ type FixTypes<T> = T extends undefined
           | "toStartTime"
           ? // Dates instead of strings
             Date | OptionalTypes<T[P]>
-          : P extends "metadata" | "input" | "output" | "completion" | "expectedOutput"
+          : P extends
+                | "metadata"
+                | "input"
+                | "output"
+                | "completion"
+                | "expectedOutput"
             ? // JSON instead of strings
               any | OptionalTypes<T[P]>
             : T[P];
@@ -257,4 +310,6 @@ export type DatasetItem = DatasetItemData & { link: LinkDatasetItem };
 
 export type MaskFunction = (params: { data: any }) => any;
 
-export type LangfusePromptRecord = (TextPrompt | ChatPrompt) & { isFallback: boolean };
+export type LangfusePromptRecord = (TextPrompt | ChatPrompt) & {
+  isFallback: boolean;
+};

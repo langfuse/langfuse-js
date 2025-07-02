@@ -2,6 +2,8 @@ import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { TracerProvider, trace, ProxyTracerProvider } from "@opentelemetry/api";
 
 import { LANGFUSE_VERSION } from "./constants";
+import { LangfuseSpanAttributes } from "./types";
+import { LangfuseSpan } from "./spanWrapper";
 
 export type MaskFunction = (params: { data: any }) => any;
 export type LangfuseInitOptions = {
@@ -44,13 +46,13 @@ export class Langfuse {
       .getTracer("langfuse-sdk", LANGFUSE_VERSION);
   }
 
-  public startSpan() {
-    this.tracer.startActiveSpan("parent", (span) => {
-      span.setAttribute("key", "value");
+  public startSpan(name: string, attributes?: LangfuseSpanAttributes) {
+    const otelSpan = this.tracer.startSpan(name);
 
-      this.tracer.startSpan("test").end();
-
-      span.end();
+    return new LangfuseSpan({
+      otelSpan,
+      attributes,
+      client: this,
     });
   }
 

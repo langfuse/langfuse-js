@@ -9,7 +9,7 @@ describe("Langfuse OTEL SDK", () => {
 
       const langfuse = new Langfuse();
 
-      langfuse.startSpan();
+      langfuse.startSpan("hello").end();
 
       await langfuse.flush();
     });
