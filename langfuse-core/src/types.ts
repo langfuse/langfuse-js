@@ -183,8 +183,27 @@ export type GetLangfusePromptResponse =
   | { fetchResult: "failure"; data: GetLangfusePromptFailureData };
 
 export type ChatMessage = FixTypes<components["schemas"]["ChatMessage"]>;
+export type PlaceholderMessage = FixTypes<components["schemas"]["PlaceholderMessage"]>;
+export type ChatMessageWithPlaceholders = FixTypes<components["schemas"]["ChatMessageWithPlaceholders"]>;
 export type ChatPrompt = FixTypes<components["schemas"]["ChatPrompt"]> & { type: "chat" };
 export type TextPrompt = FixTypes<components["schemas"]["TextPrompt"]> & { type: "text" };
+
+// Make ChatPromptClient constructor backwards compatible with normal chat messages (probably no one uses it that way, but still)
+export type ChatPromptCompat = Omit<ChatPrompt, "prompt"> & {
+  prompt: ChatMessage[] | ChatMessageWithPlaceholders[];
+};
+
+export enum ChatMessageType {
+  ChatMessage = "chatmessage",
+  Placeholder = "placeholder",
+}
+
+export type ChatMessageOrPlaceholder = ChatMessage | ({ type: ChatMessageType.Placeholder } & PlaceholderMessage);
+
+export type LangchainMessagesPlaceholder = {
+  variableName: string;
+  optional?: boolean;
+};
 
 // Media
 export type GetMediaUploadUrlRequest = FixTypes<components["schemas"]["GetMediaUploadUrlRequest"]>;
@@ -197,6 +216,13 @@ type CreateTextPromptRequest = FixTypes<components["schemas"]["CreateTextPromptR
 type CreateChatPromptRequest = FixTypes<components["schemas"]["CreateChatPromptRequest"]>;
 export type CreateTextPromptBody = { type?: "text" } & Omit<CreateTextPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
 export type CreateChatPromptBody = { type: "chat" } & Omit<CreateChatPromptRequest, "type"> & { isActive?: boolean }; // isActive is optional for backward compatibility
+
+export type CreateChatPromptBodyWithPlaceholders = {
+  type: "chat";
+} & Omit<CreateChatPromptRequest, "type" | "prompt"> & {
+    prompt: (ChatMessage | ChatMessageWithPlaceholders)[];
+    isActive?: boolean;
+  };
 
 export type CreatePromptBody = CreateTextPromptBody | CreateChatPromptBody;
 
