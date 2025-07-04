@@ -721,7 +721,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       let azureRefusalError = "";
       if (typeof err == "object" && "error" in err) {
         try {
-          azureRefusalError = "\n" + JSON.stringify(err["error"], null, 2);
+          azureRefusalError = "\n\nError details:\n" + JSON.stringify(err["error"], null, 2);
         } catch {}
       }
 
@@ -733,7 +733,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         endTime: new Date(),
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, err.toString());
+      this.updateTrace(runId, parentRunId, err.toString() + azureRefusalError);
     } catch (e) {
       this._log(e);
     }
