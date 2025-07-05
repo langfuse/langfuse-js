@@ -484,6 +484,34 @@ describe("Langchain", () => {
       expect(generation?.[0].name).toBe("ChatOpenAI");
     });
 
+    it("create trace for callback with client parameter", async () => {
+      const langfuse = new Langfuse();
+      const handler = new CallbackHandler({ 
+        client: langfuse,
+        sessionId: "test-session-client",
+        userId: "test-user-client",
+        metadata: { source: "client-param" },
+        tags: ["client-test"]
+      });
+
+      const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
+      const res = await llm.invoke("Tell me a short joke", { callbacks: [handler] });
+      await handler.flushAsync();
+      expect(res).toBeDefined();
+
+      expect(handler.traceId).toBeDefined();
+      const returnedTrace = handler.traceId ? await getTrace(handler.traceId) : undefined;
+
+      expect(returnedTrace).toBeDefined();
+      expect(returnedTrace?.sessionId).toBe("test-session-client");
+      expect(returnedTrace?.userId).toBe("test-user-client");
+      expect(returnedTrace?.metadata).toMatchObject({ source: "client-param" });
+      expect(returnedTrace?.tags).toContain("client-test");
+      expect(returnedTrace?.observations.length).toBe(1);
+      const generation = returnedTrace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generation?.length).toBe(1);
+    });
+
     it("create span for callback with span update", async () => {
       const langfuse = new Langfuse();
 
