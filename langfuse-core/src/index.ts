@@ -3,9 +3,9 @@ import { LangfusePromptCache } from "./prompts/promptCache";
 import { ChatPromptClient, TextPromptClient, type LangfusePromptClient } from "./prompts/promptClients";
 import { getCommonReleaseEnvs } from "./release-env";
 import {
+  ChatMessageType,
   LangfusePersistedProperty,
   type ChatMessage,
-  type CreateChatPromptBody,
   type CreateLangfuseDatasetBody,
   type CreateLangfuseDatasetItemBody,
   type CreateLangfuseDatasetItemResponse,
@@ -22,7 +22,8 @@ import {
   type CreateLangfuseScoreBody,
   type CreateLangfuseSpanBody,
   type CreateLangfuseTraceBody,
-  type CreatePromptBody,
+  type CreateChatPromptBody,
+  type CreateChatPromptBodyWithPlaceholders,
   type CreateTextPromptBody,
   type DatasetItem,
   type DeferRuntime,
@@ -44,6 +45,7 @@ import {
   type GetLangfuseTraceResponse,
   type GetLangfuseTracesQuery,
   type GetLangfuseTracesResponse,
+  type GetMediaResponse,
   type IngestionReturnType,
   type LangfuseCoreOptions,
   type LangfuseFetchOptions,
@@ -51,11 +53,11 @@ import {
   type LangfuseObject,
   type LangfuseQueueItem,
   type MaskFunction,
+  type PlaceholderMessage,
   type PromptInput,
   type SingleIngestionEvent,
   type UpdateLangfuseGenerationBody,
   type UpdateLangfuseSpanBody,
-  type GetMediaResponse,
   type UpdatePromptBody,
 } from "./types";
 import { LangfuseMedia, type LangfuseMediaResolveMediaReferencesParams } from "./media/LangfuseMedia";
@@ -1484,15 +1486,26 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
     return returnDataset;
   }
 
-  async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
+  async createPrompt(body: CreateChatPromptBodyWithPlaceholders): Promise<ChatPromptClient>;
   async createPrompt(body: CreateTextPromptBody): Promise<TextPromptClient>;
-  async createPrompt(body: CreatePromptBody): Promise<LangfusePromptClient> {
+  async createPrompt(body: CreateChatPromptBody): Promise<ChatPromptClient>;
+  async createPrompt(
+    body: CreateTextPromptBody | CreateChatPromptBody | CreateChatPromptBodyWithPlaceholders
+  ): Promise<LangfusePromptClient> {
     const labels = body.labels ?? [];
 
     const promptResponse =
       body.type === "chat" // necessary to get types right here
         ? await this.createPromptStateless({
             ...body,
+            prompt: body.prompt.map((item) => {
+              if ("type" in item && item.type === ChatMessageType.Placeholder) {
+                return { type: ChatMessageType.Placeholder, name: (item as PlaceholderMessage).name };
+              } else {
+                // Handle regular ChatMessage (without type field) from API
+                return { type: ChatMessageType.ChatMessage, ...item };
+              }
+            }),
             labels: body.isActive ? [...new Set([...labels, "production"])] : labels, // backward compatibility for isActive
           })
         : await this.createPromptStateless({
@@ -1578,7 +1591,10 @@ export abstract class LangfuseCore extends LangfuseCoreStateless {
               {
                 ...sharedFallbackParams,
                 type: "chat",
-                prompt: options.fallback as ChatMessage[],
+                prompt: (options.fallback as ChatMessage[]).map((msg) => ({
+                  type: ChatMessageType.ChatMessage,
+                  ...msg,
+                })),
               },
               true
             );
