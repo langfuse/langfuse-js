@@ -88,6 +88,8 @@ const MAX_BATCH_SIZE_BYTES = getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES")
   ? Number(getEnv("LANGFUSE_MAX_BATCH_SIZE_BYTES"))
   : 2_500_000;
 const ENVIRONMENT_PATTERN = /^(?!langfuse)[a-z0-9_-]+$/;
+// NOTE: This list whitelists environments that are used for traces ingested by Langfuse. Please mirror edits to this list in the Langfuse ingestion schema.
+const WHITELISTED_LANGFUSE_INTERNAL_ENVIRONMENTS = ["langfuse-prompt-experiment"];
 
 class LangfuseFetchHttpError extends Error {
   name = "LangfuseFetchHttpError";
@@ -240,7 +242,13 @@ abstract class LangfuseCoreStateless {
     }
 
     this.environment = options?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
-    if (this.environment && !ENVIRONMENT_PATTERN.test(this.environment)) {
+    if (
+      this.environment &&
+      !(
+        ENVIRONMENT_PATTERN.test(this.environment) ||
+        WHITELISTED_LANGFUSE_INTERNAL_ENVIRONMENTS.includes(this.environment)
+      )
+    ) {
       this._events.emit(
         "error",
         `Invalid tracing environment set: ${this.environment} . Environment must match regex ${ENVIRONMENT_PATTERN}. Events will be rejected by Langfuse server.`
