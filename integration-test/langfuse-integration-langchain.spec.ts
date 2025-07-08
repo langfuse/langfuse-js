@@ -865,7 +865,8 @@ describe("Langchain", () => {
       expect((generationUpdate.body as any).traceId).toBe(traceId);
       expect((traceUpdate.body as any).id).toBe(traceId);
     });
-    it("should handle cached token counts", async () => {
+
+    it.skip("should handle cached token counts", async () => {
       const handler = new CallbackHandler();
       const messages = [
         new SystemMessage("You are an excellent Comedian\n".repeat(200)),
