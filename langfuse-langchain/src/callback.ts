@@ -297,15 +297,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chain error: ${err} with ID: ${runId}`);
 
+      const azureRefusalError = this.parseAzureRefusalError(err);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
         level: "ERROR",
-        statusMessage: err.toString(),
+        statusMessage: err.toString() + azureRefusalError,
         endTime: new Date(),
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, err.toString());
+      this.updateTrace(runId, parentRunId, err.toString() + azureRefusalError);
     } catch (e) {
       this._log(e);
     }
@@ -718,12 +720,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       // Azure has the refusal status for harmful messages in the error property
       // This would not be logged as the error message is only a generic message
       // that there has been a refusal
-      let azureRefusalError = "";
-      if (typeof err == "object" && "error" in err) {
-        try {
-          azureRefusalError = "\n\nError details:\n" + JSON.stringify(err["error"], null, 2);
-        } catch {}
-      }
+      const azureRefusalError = this.parseAzureRefusalError(err);
 
       this.langfuse._updateGeneration({
         id: runId,
@@ -737,6 +734,20 @@ export class CallbackHandler extends BaseCallbackHandler {
     } catch (e) {
       this._log(e);
     }
+  }
+
+  private parseAzureRefusalError(err: any): string {
+    // Azure has the refusal status for harmful messages in the error property
+    // This would not be logged as the error message is only a generic message
+    // that there has been a refusal
+    let azureRefusalError = "";
+    if (typeof err == "object" && "error" in err) {
+      try {
+        azureRefusalError = "\n\nError details:\n" + JSON.stringify(err["error"], null, 2);
+      } catch {}
+    }
+
+    return azureRefusalError;
   }
 
   updateTrace(runId: string, parentRunId: string | undefined, output: any): void {
