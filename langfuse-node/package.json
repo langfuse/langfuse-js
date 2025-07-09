@@ -32,7 +32,7 @@
     }
   },
   "dependencies": {
-    "axios": "^1.8.2",
+    "axios": "^1.10.0",
     "langfuse-core": "^3.38.4"
   },
   "devDependencies": {
