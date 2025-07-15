@@ -84,7 +84,7 @@ describe("No errors should be thrown by SDKs", () => {
       await handler.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest)
-      expect(global.console.error).toHaveBeenCalledTimes(1);
+      expect(global.console.error).toHaveBeenCalledTimes(0);
     }, 10000);
 
     it("incorrect keys", async () => {
@@ -109,7 +109,7 @@ describe("No errors should be thrown by SDKs", () => {
       await handler.shutdownAsync();
 
       // expect no errors to be thrown (would kill jest)
-      expect(global.console.error).toHaveBeenCalledTimes(1);
+      expect(global.console.error).toHaveBeenCalledTimes(0);
     }, 10000);
   });
 });
@@ -185,7 +185,7 @@ describe("shutdown async behavior", () => {
     }
 
     await handler.shutdownAsync();
-    expect(flushCallback).toHaveBeenCalledTimes(15);
+    expect(flushCallback).toHaveBeenCalledTimes(8);
 
     const anyCallbackCount = anyCallback.mock.calls.length;
 

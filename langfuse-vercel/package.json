@@ -1,6 +1,6 @@
 {
   "name": "langfuse-vercel",
-  "version": "3.19.0",
+  "version": "3.38.4",
   "engines": {
     "node": ">=18"
   },
@@ -8,6 +8,11 @@
     "name": "Langfuse",
     "email": "hi@langfuse.com",
     "url": "https://langfuse.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/langfuse/langfuse-js.git",
+    "directory": "langfuse-vercel"
   },
   "license": "MIT",
   "main": "lib/index.cjs.js",
@@ -32,15 +37,15 @@
     "lib",
     "Readme.md"
   ],
-  "gitHead": "c3e0ccf0b1ad08049e4ad5d4f7ea8b3b30857091",
+  "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed",
   "dependencies": {
-    "langfuse": "^3.19.0",
-    "langfuse-core": "^3.19.0"
+    "langfuse": "^3.38.4",
+    "langfuse-core": "^3.38.4"
   },
   "peerDependencies": {
     "ai": ">=3.2.44"
   },
   "devDependencies": {
-    "typedoc": "^0.26.5"
+    "typedoc": "^0.26.8"
   }
 }

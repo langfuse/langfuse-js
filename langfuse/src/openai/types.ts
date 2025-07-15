@@ -24,7 +24,11 @@ type LangfuseGenerationConfig = Pick<
   "metadata" | "version" | "promptName" | "promptVersion"
 >;
 
-export type LangfuseNewTraceConfig = LangfuseTraceConfig & { traceId?: string; clientInitParams?: LangfuseInitParams };
+export type LangfuseNewTraceConfig = LangfuseTraceConfig & {
+  traceId?: string;
+  traceName?: string;
+  clientInitParams?: LangfuseInitParams;
+};
 export type LangfuseParent = LangfuseTraceClient | LangfuseSpanClient | LangfuseGenerationClient;
 export type LangfuseWithParentConfig = LangfuseGenerationConfig & { parent: LangfuseParent };
 
@@ -32,4 +36,5 @@ export type LangfuseConfig = (LangfuseNewTraceConfig | LangfuseWithParentConfig)
   generationName?: string;
   langfusePrompt?: LangfusePromptClient;
 };
-export type LangfuseExtension = OpenAI & Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync">;
+export type LangfuseExtension = OpenAI &
+  Pick<ReturnType<typeof LangfuseSingleton.getInstance>, "flushAsync" | "shutdownAsync">;

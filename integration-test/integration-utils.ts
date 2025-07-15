@@ -1,4 +1,5 @@
 import axios, { type AxiosResponse } from "axios";
+import fs from "fs/promises";
 
 import { type components } from "../langfuse-core/src/openapi/server";
 
@@ -18,6 +19,8 @@ export type TraceAndObservations = components["schemas"]["Trace"] & {
 };
 
 export async function getTrace(traceId: string): Promise<TraceAndObservations> {
+  await sleep(2000);
+
   const res = await axios.get<TraceAndObservations>(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
     headers: getHeaders(),
   });
@@ -28,9 +31,28 @@ export async function getTrace(traceId: string): Promise<TraceAndObservations> {
 }
 
 export const fetchTraceById = async (id: string): Promise<AxiosResponse<any, any>> => {
+  await sleep(2000);
+
   const url = `${LANGFUSE_BASEURL}/api/public/traces/${id}`;
   const res = await axios.get(url, {
     headers: getHeaders(),
   });
   return res;
 };
+
+export const encodeFile = async (filePath: string): Promise<string> => {
+  const file = await fs.readFile(filePath);
+  const encoded = Buffer.from(file).toString("base64");
+
+  return encoded;
+};
+
+export async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function getAxiosClient() {
+  await sleep(2000);
+
+  return axios;
+}

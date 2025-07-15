@@ -19,11 +19,12 @@ describe("Langfuse Core", () => {
   });
 
   describe("enqueue", () => {
-    it("should add a message to the queue", () => {
+    it("should add a message to the queue", async () => {
       langfuse.trace({
         id: "123456789",
         name: "test-trace",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(langfuse.getPersistedProperty(LangfusePersistedProperty.Queue)).toHaveLength(1);
 

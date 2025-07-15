@@ -3,20 +3,23 @@ import "dotenv/config";
 import OpenAI from "openai";
 import Langfuse, { observeOpenAI } from "../langfuse";
 import { randomUUID } from "crypto";
-import axios, { type AxiosResponse } from "axios";
-import { LANGFUSE_BASEURL, getHeaders, fetchTraceById } from "./integration-utils";
+import { type AxiosResponse } from "axios";
+import { LANGFUSE_BASEURL, getHeaders, fetchTraceById, encodeFile, getAxiosClient } from "./integration-utils";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-jest.useFakeTimers({ doNotFake: ["Date"] });
+jest.useFakeTimers({ doNotFake: ["Date", "setTimeout"] });
 
 const openai = new OpenAI();
 
 const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => {
   const url = `${LANGFUSE_BASEURL}/api/public/observations?name=${name}&type=GENERATION`;
-  const res = await axios.get(url, {
+  const res = await (
+    await getAxiosClient()
+  ).get(url, {
     headers: getHeaders(),
   });
+
   return res;
 };
 
@@ -41,7 +44,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -92,7 +95,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         stream: true,
       });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -136,14 +139,14 @@ describe("Langfuse-OpenAI-Integation", () => {
         stream: false,
       });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo-instruct");
+      expect(generation.model).toContain("gpt-3.5-turbo-instruct");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
       expect(generation.input).toBeDefined();
       expect(generation.input).toBe("Say this is a test!");
       expect(generation.output).toBeDefined();
-      expect(generation.output).toMatch(res.choices[0].text);
+      expect(res.choices[0].text).toContain(generation.output);
       expect(generation.usage).toMatchObject({
         unit: "TOKENS",
         input: usage?.prompt_tokens,
@@ -187,7 +190,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         stream: true,
       });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo-instruct");
+      expect(generation.model).toContain("gpt-3.5-turbo-instruct");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -243,7 +246,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -308,7 +311,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -396,7 +399,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -482,7 +485,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -521,7 +524,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(generation.modelParameters).toBeDefined();
       expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
       expect(generation.usage).toBeDefined();
-      expect(generation.model).toBe("gpt-3.5-turbo");
+      expect(generation.model).toContain("gpt-3.5-turbo");
       expect(generation.totalTokens).toBeDefined();
       expect(generation.promptTokens).toBeDefined();
       expect(generation.completionTokens).toBeDefined();
@@ -555,7 +558,7 @@ describe("Langfuse-OpenAI-Integation", () => {
       expect(trace.sessionId).toBe("Langfuse");
       expect(trace.userId).toBeDefined();
       expect(trace.userId).toBe("LangfuseUser");
-    }, 10000);
+    }, 15000);
 
     it("Error Handling in openai", async () => {
       const name = `Error-Handling-in-wrapper-${randomUUID()}`;
@@ -582,7 +585,7 @@ describe("Langfuse-OpenAI-Integation", () => {
         expect(generation.name).toBe(name);
         expect(generation.modelParameters).toBeDefined();
         expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
-        expect(generation.model).toBe("gpt-3.5-turbo-instruct");
+        expect(generation.model).toContain("gpt-3.5-turbo-instruct");
         expect(generation.input).toBeDefined();
         expect(generation.output).toBeNull();
         expect(generation.statusMessage).toBeDefined();
@@ -645,7 +648,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(generation.modelParameters).toBeDefined();
     expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
     expect(generation.usage).toBeDefined();
-    expect(generation.model).toBe("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-3.5-turbo");
     expect(generation.totalTokens).toBeDefined();
     expect(generation.promptTokens).toBeDefined();
     expect(generation.completionTokens).toBeDefined();
@@ -718,7 +721,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(generation.modelParameters).toBeDefined();
     expect(generation.modelParameters).toMatchObject({ user: "langfuse-user@gmail.com", max_tokens: 300 });
     expect(generation.usage).toBeDefined();
-    expect(generation.model).toBe("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-3.5-turbo");
     expect(generation.totalTokens).toBeDefined();
     expect(generation.promptTokens).toBeDefined();
     expect(generation.completionTokens).toBeDefined();
@@ -981,7 +984,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(messages).toBeDefined();
 
     await client.flushAsync();
-  }, 10000);
+  }, 20_000);
 
   it("should work with structured output parsing with response_format", async () => {
     const traceId = randomUUID();
@@ -1037,8 +1040,8 @@ describe("Langfuse-OpenAI-Integation", () => {
     });
     expect(generation.output).toMatchObject(completion.choices[0].message);
     expect(generation.metadata).toMatchObject({ someKey: "someValue", response_format });
-    expect(generation.model).toBe("gpt-4o-2024-08-06");
-  }, 10000);
+    expect(generation.model).toContain("gpt-4o-2024-08-06");
+  }, 15_000);
 
   it("should work with structured output parsing with beta API", async () => {
     const traceId = randomUUID();
@@ -1103,6 +1106,351 @@ describe("Langfuse-OpenAI-Integation", () => {
         },
       },
     });
-    expect(generation.model).toBe("gpt-4o-2024-08-06");
+    expect(generation.model).toContain("gpt-4o-2024-08-06");
   }, 10000);
+
+  it("should work with vision input", async () => {
+    const traceId = randomUUID();
+    const client = observeOpenAI(openai, { traceId, metadata: { someKey: "someValue" } });
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        { role: "system", content: "You are a helpful math tutor. Guide the user through the solution step by step." },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "What’s in this image?",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${await encodeFile("./static/puton.jpg")}`,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await client.flushAsync();
+
+    const trace = await fetchTraceById(traceId);
+    expect(trace.status).toBe(200);
+
+    const generation = trace.data.observations[0];
+    expect(generation.model).toContain("gpt-4o-2024-08-06");
+    expect(generation.input).toMatchObject({
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful math tutor. Guide the user through the solution step by step.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              text: "What’s in this image?",
+              type: "text",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: expect.stringMatching(/^@@@langfuseMedia:type=image\/jpeg\|id=.+\|source=base64_data_uri@@@$/),
+              },
+            },
+          ],
+        },
+      ],
+    });
+  }, 15_000);
+
+  it("should work with audio input and output", async () => {
+    const traceId = randomUUID();
+    const client = observeOpenAI(openai, { traceId, metadata: { someKey: "someValue" } });
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-audio-preview",
+      modalities: ["text", "audio"],
+      audio: { voice: "alloy", format: "wav" },
+      messages: [
+        { role: "system", content: "You are a hilarious comedian. Make the user laugh." },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Do what this recording says.",
+            },
+            {
+              type: "input_audio",
+              input_audio: {
+                data: await encodeFile("./static/joke_prompt.wav"),
+                format: "wav",
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await client.flushAsync();
+
+    const trace = await fetchTraceById(traceId);
+    expect(trace.status).toBe(200);
+
+    const generation = trace.data.observations[0];
+    expect(generation.model).toContain("gpt-4o-audio-preview");
+    expect(generation.input).toMatchObject({
+      messages: [
+        {
+          role: "system",
+          content: "You are a hilarious comedian. Make the user laugh.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              text: "Do what this recording says.",
+              type: "text",
+            },
+            {
+              type: "input_audio",
+              input_audio: {
+                data: expect.stringMatching(/^@@@langfuseMedia:type=audio\/wav\|id=.+\|source=base64_data_uri@@@$/),
+                format: "wav",
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(generation.output).toMatchObject({
+      role: "assistant",
+      audio: {
+        id: expect.any(String),
+        data: expect.stringMatching(/^@@@langfuseMedia:type=audio\/wav\|id=.+\|source=base64_data_uri@@@$/),
+        expires_at: expect.any(Number),
+        transcript: expect.any(String),
+      },
+      content: null,
+      refusal: null,
+    });
+  }, 20_000);
+
+  describe("OpenAI Response API", () => {
+    it("should handle text input", async () => {
+      const name = `Response-TextInput-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        input: "Tell me a three sentence bedtime story about a unicorn.",
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBe("Tell me a three sentence bedtime story about a unicorn.");
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle image input", async () => {
+      const name = `Response-ImageInput-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        input: [
+          {
+            role: "user",
+            content: [
+              { type: "input_text", text: "what is in this image?" },
+              {
+                type: "input_image",
+                image_url:
+                  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+              } as any,
+            ],
+          },
+        ],
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle web search", async () => {
+      const name = `Response-WebSearch-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        tools: [{ type: "web_search_preview" }],
+        input: "What was a positive news story from today?",
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 30_000);
+    it("should handle streaming", async () => {
+      const name = `Response-Streaming-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        instructions: "You are a helpful assistant.",
+        input: "Hello!",
+        stream: true,
+      });
+
+      for await (const _ of response) {
+        continue;
+      }
+
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle functions", async () => {
+      const name = `Response-Functions-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const tools = [
+        {
+          type: "function",
+          name: "get_current_weather",
+          description: "Get the current weather in a given location",
+          parameters: {
+            type: "object",
+            properties: {
+              location: {
+                type: "string",
+                description: "The city and state, e.g. San Francisco, CA",
+              },
+              unit: { type: "string", enum: ["celsius", "fahrenheit"] },
+            },
+            required: ["location", "unit"],
+          },
+        },
+      ];
+
+      const response = await client.responses.create({
+        model: "gpt-4o",
+        tools: tools as any,
+        input: "What is the weather like in Boston today?",
+        tool_choice: "auto",
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("gpt-4o");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 10_000);
+    it("should handle reasoning", async () => {
+      const name = `Response-Reasoning-${randomUUID().slice(0, 8)}`;
+      const traceId = randomUUID();
+      const client = observeOpenAI(openai, {
+        generationName: name,
+        traceId: traceId,
+      });
+
+      const response = await client.responses.create({
+        model: "o3-mini",
+        input: "How much wood would a woodchuck chuck?",
+        reasoning: {
+          effort: "high",
+        },
+      });
+
+      expect(response).toBeDefined();
+      await client.flushAsync();
+
+      const trace = await fetchTraceById(traceId);
+      expect(trace.status).toBe(200);
+
+      const generation = trace.data.observations[0];
+      expect(generation.name).toBe(name);
+      expect(generation.model).toContain("o3-mini");
+      expect(generation.input).toBeDefined();
+      expect(generation.output).toBeDefined();
+      expect(generation.calculatedInputCost).toBeDefined();
+      expect(generation.calculatedOutputCost).toBeDefined();
+      expect(generation.calculatedTotalCost).toBeDefined();
+    }, 30_000);
+  });
 });

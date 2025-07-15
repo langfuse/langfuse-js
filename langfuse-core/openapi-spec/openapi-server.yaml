@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: langfuse
-  version: ""
+  version: ''
   description: >-
     ## Authentication
 
@@ -24,6 +24,568 @@ info:
     - Postman collection:
     https://cloud.langfuse.com/generated/postman/collection.json
 paths:
+  /api/public/annotation-queues:
+    get:
+      description: Get all annotation queues
+      operationId: annotationQueues_listQueues
+      tags:
+        - AnnotationQueues
+      parameters:
+        - name: page
+          in: query
+          description: page number, starts at 1
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: limit of items per page
+          required: false
+          schema:
+            type: integer
+            nullable: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAnnotationQueues'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/annotation-queues/{queueId}:
+    get:
+      description: Get an annotation queue by ID
+      operationId: annotationQueues_getQueue
+      tags:
+        - AnnotationQueues
+      parameters:
+        - name: queueId
+          in: path
+          description: The unique identifier of the annotation queue
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationQueue'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/annotation-queues/{queueId}/items:
+    get:
+      description: Get items for a specific annotation queue
+      operationId: annotationQueues_listQueueItems
+      tags:
+        - AnnotationQueues
+      parameters:
+        - name: queueId
+          in: path
+          description: The unique identifier of the annotation queue
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by status
+          required: false
+          schema:
+            $ref: '#/components/schemas/AnnotationQueueStatus'
+            nullable: true
+        - name: page
+          in: query
+          description: page number, starts at 1
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: limit of items per page
+          required: false
+          schema:
+            type: integer
+            nullable: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAnnotationQueueItems'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+    post:
+      description: Add an item to an annotation queue
+      operationId: annotationQueues_createQueueItem
+      tags:
+        - AnnotationQueues
+      parameters:
+        - name: queueId
+          in: path
+          description: The unique identifier of the annotation queue
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationQueueItem'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAnnotationQueueItemRequest'
+  /api/public/annotation-queues/{queueId}/items/{itemId}:
+    get:
+      description: Get a specific item from an annotation queue
+      operationId: annotationQueues_getQueueItem
+      tags:
+        - AnnotationQueues
+      parameters:
+        - name: queueId
+          in: path
+          description: The unique identifier of the annotation queue
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          description: The unique identifier of the annotation queue item
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationQueueItem'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+    patch:
+      description: Update an annotation queue item
+      operationId: annotationQueues_updateQueueItem
+      tags:
+        - AnnotationQueues
+      parameters:
+        - name: queueId
+          in: path
+          description: The unique identifier of the annotation queue
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          description: The unique identifier of the annotation queue item
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationQueueItem'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAnnotationQueueItemRequest'
+    delete:
+      description: Remove an item from an annotation queue
+      operationId: annotationQueues_deleteQueueItem
+      tags:
+        - AnnotationQueues
+      parameters:
+        - name: queueId
+          in: path
+          description: The unique identifier of the annotation queue
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          description: The unique identifier of the annotation queue item
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteAnnotationQueueItemResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/comments:
+    post:
+      description: >-
+        Create a comment. Comments may be attached to different object types
+        (trace, observation, session, prompt).
+      operationId: comments_create
+      tags:
+        - Comments
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCommentResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+    get:
+      description: Get all comments
+      operationId: comments_get
+      tags:
+        - Comments
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starts at 1.
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: >-
+            Limit of items per page. If you encounter api issues due to too
+            large page sizes, try to reduce the limit
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: objectType
+          in: query
+          description: >-
+            Filter comments by object type (trace, observation, session,
+            prompt).
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: objectId
+          in: query
+          description: >-
+            Filter comments by object id. If objectType is not provided, an
+            error will be thrown.
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: authorUserId
+          in: query
+          description: Filter comments by author user id.
+          required: false
+          schema:
+            type: string
+            nullable: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCommentsResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/comments/{commentId}:
+    get:
+      description: Get a comment by id
+      operationId: comments_get-by-id
+      tags:
+        - Comments
+      parameters:
+        - name: commentId
+          in: path
+          description: The unique langfuse identifier of a comment
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/dataset-items:
     post:
       description: Create a dataset item
@@ -32,45 +594,45 @@ paths:
         - DatasetItems
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DatasetItem"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/DatasetItem'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: &ref_0
+      security:
         - BasicAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateDatasetItemRequest"
+              $ref: '#/components/schemas/CreateDatasetItemRequest'
     get:
       description: Get dataset items
       operationId: datasetItems_list
@@ -110,38 +672,39 @@ paths:
             type: integer
             nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaginatedDatasetItems"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/PaginatedDatasetItems'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/dataset-items/{id}:
     get:
       description: Get a dataset item
@@ -155,38 +718,86 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DatasetItem"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/DatasetItem'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+    delete:
+      description: >-
+        Delete a dataset item and all its run items. This action is
+        irreversible.
+      operationId: datasetItems_delete
+      tags:
+        - DatasetItems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteDatasetItemResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/dataset-run-items:
     post:
       description: Create a dataset run item
@@ -195,44 +806,110 @@ paths:
         - DatasetRunItems
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DatasetRunItem"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/DatasetRunItem'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateDatasetRunItemRequest"
+              $ref: '#/components/schemas/CreateDatasetRunItemRequest'
+    get:
+      description: List dataset run items
+      operationId: datasetRunItems_list
+      tags:
+        - DatasetRunItems
+      parameters:
+        - name: datasetId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: runName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: page number, starts at 1
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: limit
+          in: query
+          description: limit of items per page
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: response
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/PaginatedDatasetRunItems'
+      responses:
+        '204':
+          description: ''
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/v2/datasets:
     get:
       description: Get all datasets
@@ -255,38 +932,39 @@ paths:
             type: integer
             nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaginatedDatasets"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/PaginatedDatasets'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
     post:
       description: Create a dataset
       operationId: datasets_create
@@ -294,44 +972,45 @@ paths:
         - Datasets
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dataset"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Dataset'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateDatasetRequest"
+              $ref: '#/components/schemas/CreateDatasetRequest'
   /api/public/v2/datasets/{datasetName}:
     get:
       description: Get a dataset
@@ -345,38 +1024,39 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dataset"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Dataset'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/datasets/{datasetName}/runs/{runName}:
     get:
       description: Get a dataset run and its items
@@ -395,38 +1075,89 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DatasetRunWithItems"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/DatasetRunWithItems'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+    delete:
+      description: Delete a dataset run and all its run items. This action is irreversible.
+      operationId: datasets_deleteRun
+      tags:
+        - Datasets
+      parameters:
+        - name: datasetName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: runName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteDatasetRunResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/datasets/{datasetName}/runs:
     get:
       description: Get dataset runs
@@ -454,38 +1185,39 @@ paths:
             type: integer
             nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaginatedDatasetRuns"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/PaginatedDatasetRuns'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/health:
     get:
       description: Check health of API and database
@@ -494,49 +1226,71 @@ paths:
         - Health
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/HealthResponse'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-        "503":
-          description: ""
+        '503':
+          description: ''
   /api/public/ingestion:
     post:
       description: >-
-        Batched ingestion for Langfuse Tracing. If you want to use tracing via
-        the API, such as to build your own Langfuse client implementation, this
-        is the only API route you need to implement.
+        Batched ingestion for Langfuse Tracing.
+
+        If you want to use tracing via the API, such as to build your own
+        Langfuse client implementation, this is the only API route you need to
+        implement.
+
+
+        Within each batch, there can be multiple events.
+
+        Each event has a type, an id, a timestamp, metadata and a body.
+
+        Internally, we refer to this as the "event envelope" as it tells us
+        something about the event but not the trace.
+
+        We use the event id within this envelope to deduplicate messages to
+        avoid processing the same event twice, i.e. the event id should be
+        unique per request.
+
+        The event.body.id is the ID of the actual trace and will be used for
+        updates and will be visible within the Langfuse App.
+
+        I.e. if you want to update a trace, you'd use the same body id, but
+        separate event IDs.
 
 
         Notes:
 
+        - Introduction to data model:
+        https://langfuse.com/docs/tracing-data-model
 
         - Batch sizes are limited to 3.5 MB in total. You need to adjust the
         number of events per batch accordingly.
@@ -549,38 +1303,58 @@ paths:
         - Ingestion
       parameters: []
       responses:
-        "200":
-          description: ""
+        '207':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IngestionResponse"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/IngestionResponse'
+              examples:
+                Example1:
+                  value:
+                    successes:
+                      - id: abcdef-1234-5678-90ab
+                        status: 201
+                    errors: []
+                Example2:
+                  value:
+                    successes:
+                      - id: abcdef-1234-5678-90ab
+                        status: 201
+                    errors: []
+                Example3:
+                  value:
+                    successes:
+                      - id: abcdef-1234-5678-90ab
+                        status: 201
+                    errors: []
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
       requestBody:
         required: true
         content:
@@ -591,7 +1365,7 @@ paths:
                 batch:
                   type: array
                   items:
-                    $ref: "#/components/schemas/IngestionEvent"
+                    $ref: '#/components/schemas/IngestionEvent'
                   description: >-
                     Batch of tracing events to be ingested. Discriminated by
                     attribute `type`.
@@ -602,103 +1376,286 @@ paths:
                     debugging.
               required:
                 - batch
-  /api/public/metrics/daily:
+            examples:
+              Example1:
+                value:
+                  batch:
+                    - id: abcdef-1234-5678-90ab
+                      timestamp: '2022-01-01T00:00:00.000Z'
+                      type: trace-create
+                      body:
+                        id: abcdef-1234-5678-90ab
+                        timestamp: '2022-01-01T00:00:00.000Z'
+                        environment: production
+                        name: My Trace
+                        userId: 1234-5678-90ab-cdef
+                        input: My input
+                        output: My output
+                        sessionId: 1234-5678-90ab-cdef
+                        release: 1.0.0
+                        version: 1.0.0
+                        metadata: My metadata
+                        tags:
+                          - tag1
+                          - tag2
+                        public: true
+              Example2:
+                value:
+                  batch:
+                    - id: abcdef-1234-5678-90ab
+                      timestamp: '2022-01-01T00:00:00.000Z'
+                      type: span-create
+                      body:
+                        id: abcdef-1234-5678-90ab
+                        traceId: 1234-5678-90ab-cdef
+                        startTime: '2022-01-01T00:00:00.000Z'
+                        environment: test
+              Example3:
+                value:
+                  batch:
+                    - id: abcdef-1234-5678-90ab
+                      timestamp: '2022-01-01T00:00:00.000Z'
+                      type: score-create
+                      body:
+                        id: abcdef-1234-5678-90ab
+                        traceId: 1234-5678-90ab-cdef
+                        name: My Score
+                        value: 0.9
+                        environment: default
+  /api/public/media/{mediaId}:
     get:
-      description: Get daily metrics of the Langfuse project
-      operationId: metrics_daily
+      description: Get a media record
+      operationId: media_get
       tags:
-        - Metrics
+        - Media
       parameters:
-        - name: page
-          in: query
-          description: page number, starts at 1
-          required: false
-          schema:
-            type: integer
-            nullable: true
-        - name: limit
-          in: query
-          description: limit of items per page
-          required: false
-          schema:
-            type: integer
-            nullable: true
-        - name: traceName
-          in: query
-          description: Optional filter by the name of the trace
-          required: false
+        - name: mediaId
+          in: path
+          description: The unique langfuse identifier of a media record
+          required: true
           schema:
             type: string
-            nullable: true
-        - name: userId
-          in: query
-          description: Optional filter by the userId associated with the trace
-          required: false
-          schema:
-            type: string
-            nullable: true
-        - name: tags
-          in: query
-          description: Optional filter for metrics where traces include all of these tags
-          required: false
-          schema:
-            type: array
-            items:
-              type: string
-              nullable: true
-        - name: fromTimestamp
-          in: query
-          description: >-
-            Optional filter to only include traces on or after a certain
-            datetime (ISO 8601)
-          required: false
-          schema:
-            type: string
-            format: date-time
-            nullable: true
-        - name: toTimestamp
-          in: query
-          description: >-
-            Optional filter to only include traces before a certain datetime
-            (ISO 8601)
-          required: false
-          schema:
-            type: string
-            format: date-time
-            nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DailyMetrics"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/GetMediaResponse'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+    patch:
+      description: Patch a media record
+      operationId: media_patch
+      tags:
+        - Media
+      parameters:
+        - name: mediaId
+          in: path
+          description: The unique langfuse identifier of a media record
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchMediaBody'
+  /api/public/media:
+    post:
+      description: Get a presigned upload URL for a media record
+      operationId: media_getUploadUrl
+      tags:
+        - Media
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMediaUploadUrlResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetMediaUploadUrlRequest'
+  /api/public/metrics:
+    get:
+      description: Get metrics from the Langfuse project using a query object
+      operationId: metrics_metrics
+      tags:
+        - Metrics
+      parameters:
+        - name: query
+          in: query
+          description: >-
+            JSON string containing the query parameters with the following
+            structure:
+
+            ```json
+
+            {
+              "view": string,           // Required. One of "traces", "observations", "scores-numeric", "scores-categorical"
+              "dimensions": [           // Optional. Default: []
+                {
+                  "field": string       // Field to group by, e.g. "name", "userId", "sessionId"
+                }
+              ],
+              "metrics": [              // Required. At least one metric must be provided
+                {
+                  "measure": string,    // What to measure, e.g. "count", "latency", "value"
+                  "aggregation": string // How to aggregate, e.g. "count", "sum", "avg", "p95", "histogram"
+                }
+              ],
+              "filters": [              // Optional. Default: []
+                {
+                  "column": string,     // Column to filter on
+                  "operator": string,   // Operator, e.g. "=", ">", "<", "contains"
+                  "value": any,         // Value to compare against
+                  "type": string,       // Data type, e.g. "string", "number", "stringObject"
+                  "key": string         // Required only when filtering on metadata
+                }
+              ],
+              "timeDimension": {        // Optional. Default: null. If provided, results will be grouped by time
+                "granularity": string   // One of "minute", "hour", "day", "week", "month", "auto"
+              },
+              "fromTimestamp": string,  // Required. ISO datetime string for start of time range
+              "toTimestamp": string,    // Required. ISO datetime string for end of time range
+              "orderBy": [              // Optional. Default: null
+                {
+                  "field": string,      // Field to order by
+                  "direction": string   // "asc" or "desc"
+                }
+              ],
+              "config": {               // Optional. Query-specific configuration
+                "bins": number,         // Optional. Number of bins for histogram (1-100), default: 10
+                "row_limit": number     // Optional. Row limit for results (1-1000)
+              }
+            }
+
+            ```
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/models:
     post:
       description: Create a model
@@ -707,44 +1664,45 @@ paths:
         - Models
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Model"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Model'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateModelRequest"
+              $ref: '#/components/schemas/CreateModelRequest'
     get:
       description: Get all models
       operationId: models_list
@@ -766,38 +1724,39 @@ paths:
             type: integer
             nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaginatedModels"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/PaginatedModels'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/models/{id}:
     get:
       description: Get a model
@@ -811,38 +1770,39 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Model"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Model'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
     delete:
       description: >-
         Delete a model. Cannot delete models managed by Langfuse. You can create
@@ -858,34 +1818,35 @@ paths:
           schema:
             type: string
       responses:
-        "204":
-          description: ""
-        "400":
-          description: ""
+        '204':
+          description: ''
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/observations/{observationId}:
     get:
       description: Get a observation
@@ -902,38 +1863,39 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ObservationsView"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/ObservationsView'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/observations:
     get:
       description: Get a list of observations
@@ -987,10 +1949,21 @@ paths:
           schema:
             type: string
             nullable: true
+        - name: environment
+          in: query
+          description: >-
+            Optional filter for observations where the environment is one of the
+            provided values.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              nullable: true
         - name: fromStartTime
           in: query
           description: >-
-            Retrieve only observations with a start_time or or after this
+            Retrieve only observations with a start_time on or after this
             datetime (ISO 8601).
           required: false
           schema:
@@ -1007,39 +1980,283 @@ paths:
             type: string
             format: date-time
             nullable: true
+        - name: version
+          in: query
+          description: Optional filter to only include observations with a certain version.
+          required: false
+          schema:
+            type: string
+            nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ObservationsViews"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/ObservationsViews'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+  /api/public/organizations/memberships:
+    get:
+      description: >-
+        Get all memberships for the organization associated with the API key
+        (requires organization-scoped API key)
+      operationId: organizations_getOrganizationMemberships
+      tags:
+        - Organizations
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipsResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+    put:
+      description: >-
+        Create or update a membership for the organization associated with the
+        API key (requires organization-scoped API key)
+      operationId: organizations_updateOrganizationMembership
+      tags:
+        - Organizations
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+  /api/public/projects/{projectId}/memberships:
+    get:
+      description: >-
+        Get all memberships for a specific project (requires organization-scoped
+        API key)
+      operationId: organizations_getProjectMemberships
+      tags:
+        - Organizations
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipsResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+    put:
+      description: >-
+        Create or update a membership for a specific project (requires
+        organization-scoped API key). The user must already be a member of the
+        organization.
+      operationId: organizations_updateProjectMembership
+      tags:
+        - Organizations
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+  /api/public/organizations/projects:
+    get:
+      description: >-
+        Get all projects for the organization associated with the API key
+        (requires organization-scoped API key)
+      operationId: organizations_getOrganizationProjects
+      tags:
+        - Organizations
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationProjectsResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/projects:
     get:
       description: Get Project associated with API key
@@ -1048,38 +2265,443 @@ paths:
         - Projects
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Projects"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Projects'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+    post:
+      description: Create a new project (requires organization-scoped API key)
+      operationId: projects_create
+      tags:
+        - Projects
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  nullable: true
+                  description: Optional metadata for the project
+                retention:
+                  type: integer
+                  description: >-
+                    Number of days to retain data. Must be 0 or at least 3 days.
+                    Requires data-retention entitlement for non-zero values.
+                    Optional.
+              required:
+                - name
+                - retention
+  /api/public/projects/{projectId}:
+    put:
+      description: Update a project by ID (requires organization-scoped API key).
+      operationId: projects_update
+      tags:
+        - Projects
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  nullable: true
+                  description: Optional metadata for the project
+                retention:
+                  type: integer
+                  description: >-
+                    Number of days to retain data. Must be 0 or at least 3 days.
+                    Requires data-retention entitlement for non-zero values.
+                    Optional.
+              required:
+                - name
+                - retention
+    delete:
+      description: >-
+        Delete a project by ID (requires organization-scoped API key). Project
+        deletion is processed asynchronously.
+      operationId: projects_delete
+      tags:
+        - Projects
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDeletionResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/projects/{projectId}/apiKeys:
+    get:
+      description: Get all API keys for a project (requires organization-scoped API key)
+      operationId: projects_getApiKeys
+      tags:
+        - Projects
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyList'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+    post:
+      description: >-
+        Create a new API key for a project (requires organization-scoped API
+        key)
+      operationId: projects_createApiKey
+      tags:
+        - Projects
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                  nullable: true
+                  description: Optional note for the API key
+  /api/public/projects/{projectId}/apiKeys/{apiKeyId}:
+    delete:
+      description: Delete an API key for a project (requires organization-scoped API key)
+      operationId: projects_deleteApiKey
+      tags:
+        - Projects
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: apiKeyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyDeletionResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/v2/prompts/{name}/versions/{version}:
+    patch:
+      description: Update labels for a specific prompt version
+      operationId: promptVersion_update
+      tags:
+        - PromptVersion
+      parameters:
+        - name: name
+          in: path
+          description: The name of the prompt
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: Version of the prompt to update
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prompt'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newLabels:
+                  type: array
+                  items:
+                    type: string
+                  description: >-
+                    New labels for the prompt version. Labels are unique across
+                    versions. The "latest" label is reserved and managed by
+                    Langfuse.
+              required:
+                - newLabels
   /api/public/v2/prompts/{promptName}:
     get:
       description: Get a prompt
@@ -1110,38 +2732,39 @@ paths:
             type: string
             nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Prompt"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Prompt'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/v2/prompts:
     get:
       description: Get a list of prompt names with versions and labels
@@ -1181,84 +2804,459 @@ paths:
           schema:
             type: integer
             nullable: true
+        - name: fromUpdatedAt
+          in: query
+          description: >-
+            Optional filter to only include prompt versions created/updated on
+            or after a certain datetime (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
+        - name: toUpdatedAt
+          in: query
+          description: >-
+            Optional filter to only include prompt versions created/updated
+            before a certain datetime (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PromptMetaListResponse"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/PromptMetaListResponse'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
     post:
-      description: Create a prompt
+      description: Create a new version for the prompt with the given `name`
       operationId: prompts_create
       tags:
         - Prompts
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Prompt"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Prompt'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreatePromptRequest"
+              $ref: '#/components/schemas/CreatePromptRequest'
+  /api/public/scim/ServiceProviderConfig:
+    get:
+      description: >-
+        Get SCIM Service Provider Configuration (requires organization-scoped
+        API key)
+      operationId: scim_getServiceProviderConfig
+      tags:
+        - Scim
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceProviderConfig'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/scim/ResourceTypes:
+    get:
+      description: Get SCIM Resource Types (requires organization-scoped API key)
+      operationId: scim_getResourceTypes
+      tags:
+        - Scim
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceTypesResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/scim/Schemas:
+    get:
+      description: Get SCIM Schemas (requires organization-scoped API key)
+      operationId: scim_getSchemas
+      tags:
+        - Scim
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemasResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+  /api/public/scim/Users:
+    get:
+      description: List users in the organization (requires organization-scoped API key)
+      operationId: scim_listUsers
+      tags:
+        - Scim
+      parameters:
+        - name: filter
+          in: query
+          description: Filter expression (e.g. userName eq "value")
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: startIndex
+          in: query
+          description: 1-based index of the first result to return (default 1)
+          required: false
+          schema:
+            type: integer
+            nullable: true
+        - name: count
+          in: query
+          description: Maximum number of results to return (default 100)
+          required: false
+          schema:
+            type: integer
+            nullable: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScimUsersListResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+    post:
+      description: >-
+        Create a new user in the organization (requires organization-scoped API
+        key)
+      operationId: scim_createUser
+      tags:
+        - Scim
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScimUser'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userName:
+                  type: string
+                  description: User's email address (required)
+                name:
+                  $ref: '#/components/schemas/ScimName'
+                  description: User's name information
+                emails:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ScimEmail'
+                  nullable: true
+                  description: User's email addresses
+                active:
+                  type: boolean
+                  nullable: true
+                  description: Whether the user is active
+                password:
+                  type: string
+                  nullable: true
+                  description: Initial password for the user
+              required:
+                - userName
+                - name
+  /api/public/scim/Users/{userId}:
+    get:
+      description: Get a specific user by ID (requires organization-scoped API key)
+      operationId: scim_getUser
+      tags:
+        - Scim
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScimUser'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+    delete:
+      description: >-
+        Remove a user from the organization (requires organization-scoped API
+        key). Note that this only removes the user from the organization but
+        does not delete the user entity itself.
+      operationId: scim_deleteUser
+      tags:
+        - Scim
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/score-configs:
     post:
       description: >-
@@ -1269,44 +3267,45 @@ paths:
         - ScoreConfigs
       parameters: []
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ScoreConfig"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/ScoreConfig'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateScoreConfigRequest"
+              $ref: '#/components/schemas/CreateScoreConfigRequest'
     get:
       description: Get all score configs
       operationId: scoreConfigs_get
@@ -1330,38 +3329,39 @@ paths:
             type: integer
             nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ScoreConfigs"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/ScoreConfigs'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/score-configs/{configId}:
     get:
       description: Get a score config
@@ -1376,89 +3376,45 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ScoreConfig"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/ScoreConfig'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
-  /api/public/scores:
-    post:
-      description: Create a score
-      operationId: score_create
-      tags:
-        - Score
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CreateScoreResponse"
-        "400":
-          description: ""
-          content:
-            application/json:
-              schema: {}
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema: {}
-        "403":
-          description: ""
-          content:
-            application/json:
-              schema: {}
-        "404":
-          description: ""
-          content:
-            application/json:
-              schema: {}
-        "405":
-          description: ""
-          content:
-            application/json:
-              schema: {}
-      security: *ref_0
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateScoreRequest"
+      security:
+        - BasicAuth: []
+  /api/public/v2/scores:
     get:
-      description: Get a list of scores
-      operationId: score_get
+      description: Get a list of scores (supports both trace and session scores)
+      operationId: scoreV2_get
       tags:
-        - Score
+        - ScoreV2
       parameters:
         - name: page
           in: query
@@ -1510,12 +3466,23 @@ paths:
             type: string
             format: date-time
             nullable: true
+        - name: environment
+          in: query
+          description: >-
+            Optional filter for scores where the environment is one of the
+            provided values.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              nullable: true
         - name: source
           in: query
           description: Retrieve only scores from a specific source.
           required: false
           schema:
-            $ref: "#/components/schemas/ScoreSource"
+            $ref: '#/components/schemas/ScoreSource'
             nullable: true
         - name: operator
           in: query
@@ -1546,52 +3513,71 @@ paths:
           schema:
             type: string
             nullable: true
+        - name: queueId
+          in: query
+          description: Retrieve only scores with a specific annotation queueId.
+          required: false
+          schema:
+            type: string
+            nullable: true
         - name: dataType
           in: query
           description: Retrieve only scores with a specific dataType.
           required: false
           schema:
-            $ref: "#/components/schemas/ScoreDataType"
+            $ref: '#/components/schemas/ScoreDataType'
             nullable: true
+        - name: traceTags
+          in: query
+          description: >-
+            Only scores linked to traces that include all of these tags will be
+            returned.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Scores"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/GetScoresResponse'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
-  /api/public/scores/{scoreId}:
+      security:
+        - BasicAuth: []
+  /api/public/v2/scores/{scoreId}:
     get:
-      description: Get a score
-      operationId: score_get-by-id
+      description: Get a score (supports both trace and session scores)
+      operationId: scoreV2_get-by-id
       tags:
-        - Score
+        - ScoreV2
       parameters:
         - name: scoreId
           in: path
@@ -1600,40 +3586,89 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Score"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Score'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+  /api/public/scores:
+    post:
+      description: Create a score (supports both trace and session scores)
+      operationId: score_create
+      tags:
+        - Score
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateScoreResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScoreRequest'
+  /api/public/scores/{scoreId}:
     delete:
-      description: Delete a score
+      description: Delete a score (supports both trace and session scores)
       operationId: score_delete
       tags:
         - Score
@@ -1645,37 +3680,38 @@ paths:
           schema:
             type: string
       responses:
-        "204":
-          description: ""
-        "400":
-          description: ""
+        '204':
+          description: ''
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/sessions:
     get:
-      description: Get sessions.
+      description: Get sessions
       operationId: sessions_list
       tags:
         - Sessions
@@ -1716,39 +3752,51 @@ paths:
             type: string
             format: date-time
             nullable: true
+        - name: environment
+          in: query
+          description: >-
+            Optional filter for sessions where the environment is one of the
+            provided values.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaginatedSessions"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/PaginatedSessions'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/sessions/{sessionId}:
     get:
       description: >-
@@ -1766,38 +3814,39 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SessionWithTraces"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/SessionWithTraces'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
   /api/public/traces/{traceId}:
     get:
       description: Get a specific trace
@@ -1812,41 +3861,88 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TraceWithFullDetails"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/TraceWithFullDetails'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+    delete:
+      description: Delete a specific trace
+      operationId: trace_delete
+      tags:
+        - Trace
+      parameters:
+        - name: traceId
+          in: path
+          description: The unique langfuse identifier of the trace to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTraceResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
   /api/public/traces:
     get:
-      description: Get list of traces.
+      description: Get list of traces
       operationId: trace_list
       tags:
         - Trace
@@ -1924,41 +4020,315 @@ paths:
             items:
               type: string
               nullable: true
+        - name: version
+          in: query
+          description: Optional filter to only include traces with a certain version.
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: release
+          in: query
+          description: Optional filter to only include traces with a certain release.
+          required: false
+          schema:
+            type: string
+            nullable: true
+        - name: environment
+          in: query
+          description: >-
+            Optional filter for traces where the environment is one of the
+            provided values.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              nullable: true
+        - name: fields
+          in: query
+          description: >-
+            Comma-separated list of fields to include in the response. Available
+            field groups are 'core' (always included), 'io' (input, output,
+            metadata), 'scores', 'observations', 'metrics'. If not provided, all
+            fields are included. Example: 'core,scores,metrics'
+          required: false
+          schema:
+            type: string
+            nullable: true
       responses:
-        "200":
-          description: ""
+        '200':
+          description: ''
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Traces"
-        "400":
-          description: ""
+                $ref: '#/components/schemas/Traces'
+        '400':
+          description: ''
           content:
             application/json:
               schema: {}
-        "401":
-          description: ""
+        '401':
+          description: ''
           content:
             application/json:
               schema: {}
-        "403":
-          description: ""
+        '403':
+          description: ''
           content:
             application/json:
               schema: {}
-        "404":
-          description: ""
+        '404':
+          description: ''
           content:
             application/json:
               schema: {}
-        "405":
-          description: ""
+        '405':
+          description: ''
           content:
             application/json:
               schema: {}
-      security: *ref_0
+      security:
+        - BasicAuth: []
+    delete:
+      description: Delete multiple traces
+      operationId: trace_deleteMultiple
+      tags:
+        - Trace
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTraceResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+        '405':
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                traceIds:
+                  type: array
+                  items:
+                    type: string
+                  description: List of trace IDs to delete
+              required:
+                - traceIds
 components:
   schemas:
+    AnnotationQueueStatus:
+      title: AnnotationQueueStatus
+      type: string
+      enum:
+        - PENDING
+        - COMPLETED
+    AnnotationQueueObjectType:
+      title: AnnotationQueueObjectType
+      type: string
+      enum:
+        - TRACE
+        - OBSERVATION
+    AnnotationQueue:
+      title: AnnotationQueue
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        scoreConfigIds:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - scoreConfigIds
+        - createdAt
+        - updatedAt
+    AnnotationQueueItem:
+      title: AnnotationQueueItem
+      type: object
+      properties:
+        id:
+          type: string
+        queueId:
+          type: string
+        objectId:
+          type: string
+        objectType:
+          $ref: '#/components/schemas/AnnotationQueueObjectType'
+        status:
+          $ref: '#/components/schemas/AnnotationQueueStatus'
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - queueId
+        - objectId
+        - objectType
+        - status
+        - createdAt
+        - updatedAt
+    PaginatedAnnotationQueues:
+      title: PaginatedAnnotationQueues
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnotationQueue'
+        meta:
+          $ref: '#/components/schemas/utilsMetaResponse'
+      required:
+        - data
+        - meta
+    PaginatedAnnotationQueueItems:
+      title: PaginatedAnnotationQueueItems
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnotationQueueItem'
+        meta:
+          $ref: '#/components/schemas/utilsMetaResponse'
+      required:
+        - data
+        - meta
+    CreateAnnotationQueueItemRequest:
+      title: CreateAnnotationQueueItemRequest
+      type: object
+      properties:
+        objectId:
+          type: string
+        objectType:
+          $ref: '#/components/schemas/AnnotationQueueObjectType'
+        status:
+          $ref: '#/components/schemas/AnnotationQueueStatus'
+          nullable: true
+          description: Defaults to PENDING for new queue items
+      required:
+        - objectId
+        - objectType
+    UpdateAnnotationQueueItemRequest:
+      title: UpdateAnnotationQueueItemRequest
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/AnnotationQueueStatus'
+          nullable: true
+    DeleteAnnotationQueueItemResponse:
+      title: DeleteAnnotationQueueItemResponse
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+    CreateCommentRequest:
+      title: CreateCommentRequest
+      type: object
+      properties:
+        projectId:
+          type: string
+          description: The id of the project to attach the comment to.
+        objectType:
+          type: string
+          description: >-
+            The type of the object to attach the comment to (trace, observation,
+            session, prompt).
+        objectId:
+          type: string
+          description: >-
+            The id of the object to attach the comment to. If this does not
+            reference a valid existing object, an error will be thrown.
+        content:
+          type: string
+          description: >-
+            The content of the comment. May include markdown. Currently limited
+            to 3000 characters.
+        authorUserId:
+          type: string
+          nullable: true
+          description: The id of the user who created the comment.
+      required:
+        - projectId
+        - objectType
+        - objectId
+        - content
+    CreateCommentResponse:
+      title: CreateCommentResponse
+      type: object
+      properties:
+        id:
+          type: string
+          description: The id of the created object in Langfuse
+      required:
+        - id
+    GetCommentsResponse:
+      title: GetCommentsResponse
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        meta:
+          $ref: '#/components/schemas/utilsMetaResponse'
+      required:
+        - data
+        - meta
     Trace:
       title: Trace
       type: object
@@ -1969,36 +4339,55 @@ components:
         timestamp:
           type: string
           format: date-time
+          description: The timestamp when the trace was created
         name:
           type: string
           nullable: true
+          description: The name of the trace
         input:
           nullable: true
+          description: The input data of the trace. Can be any JSON.
         output:
           nullable: true
+          description: The output data of the trace. Can be any JSON.
         sessionId:
           type: string
           nullable: true
+          description: The session identifier associated with the trace
         release:
           type: string
           nullable: true
+          description: The release version of the application when the trace was created
         version:
           type: string
           nullable: true
+          description: The version of the trace
         userId:
           type: string
           nullable: true
+          description: The user identifier associated with the trace
         metadata:
           nullable: true
+          description: The metadata associated with the trace. Can be any JSON.
         tags:
           type: array
           items:
             type: string
           nullable: true
+          description: >-
+            The tags associated with the trace. Can be an array of strings or
+            null.
         public:
           type: boolean
           nullable: true
           description: Public traces are accessible via url without login
+        environment:
+          type: string
+          nullable: true
+          description: >-
+            The environment from which this trace originated. Can be any
+            lowercase alphanumeric string with hyphens and underscores that does
+            not start with 'langfuse'.
       required:
         - id
         - timestamp
@@ -2034,7 +4423,7 @@ components:
         - observations
         - scores
       allOf:
-        - $ref: "#/components/schemas/Trace"
+        - $ref: '#/components/schemas/Trace'
     TraceWithFullDetails:
       title: TraceWithFullDetails
       type: object
@@ -2053,12 +4442,12 @@ components:
         observations:
           type: array
           items:
-            $ref: "#/components/schemas/ObservationsView"
+            $ref: '#/components/schemas/ObservationsView'
           description: List of observations
         scores:
           type: array
           items:
-            $ref: "#/components/schemas/Score"
+            $ref: '#/components/schemas/ScoreV1'
           description: List of scores
       required:
         - htmlPath
@@ -2067,7 +4456,7 @@ components:
         - observations
         - scores
       allOf:
-        - $ref: "#/components/schemas/Trace"
+        - $ref: '#/components/schemas/Trace'
     Session:
       title: Session
       type: object
@@ -2079,6 +4468,10 @@ components:
           format: date-time
         projectId:
           type: string
+        environment:
+          type: string
+          nullable: true
+          description: The environment from which this session originated.
       required:
         - id
         - createdAt
@@ -2090,67 +4483,113 @@ components:
         traces:
           type: array
           items:
-            $ref: "#/components/schemas/Trace"
+            $ref: '#/components/schemas/Trace'
       required:
         - traces
       allOf:
-        - $ref: "#/components/schemas/Session"
+        - $ref: '#/components/schemas/Session'
     Observation:
       title: Observation
       type: object
       properties:
         id:
           type: string
+          description: The unique identifier of the observation
         traceId:
           type: string
           nullable: true
+          description: The trace ID associated with the observation
         type:
           type: string
+          description: The type of the observation
         name:
           type: string
           nullable: true
+          description: The name of the observation
         startTime:
           type: string
           format: date-time
+          description: The start time of the observation
         endTime:
           type: string
           format: date-time
           nullable: true
+          description: The end time of the observation.
         completionStartTime:
           type: string
           format: date-time
           nullable: true
+          description: The completion start time of the observation
         model:
           type: string
           nullable: true
+          description: The model used for the observation
         modelParameters:
           type: object
           additionalProperties:
-            $ref: "#/components/schemas/MapValue"
+            $ref: '#/components/schemas/MapValue'
           nullable: true
+          description: The parameters of the model used for the observation
         input:
           nullable: true
+          description: The input data of the observation
         version:
           type: string
           nullable: true
+          description: The version of the observation
         metadata:
           nullable: true
+          description: Additional metadata of the observation
         output:
           nullable: true
+          description: The output data of the observation
         usage:
-          $ref: "#/components/schemas/Usage"
+          $ref: '#/components/schemas/Usage'
           nullable: true
+          description: >-
+            (Deprecated. Use usageDetails and costDetails instead.) The usage
+            data of the observation
         level:
-          $ref: "#/components/schemas/ObservationLevel"
+          $ref: '#/components/schemas/ObservationLevel'
+          description: The level of the observation
         statusMessage:
           type: string
           nullable: true
+          description: The status message of the observation
         parentObservationId:
           type: string
           nullable: true
+          description: The parent observation ID
         promptId:
           type: string
           nullable: true
+          description: The prompt ID associated with the observation
+        usageDetails:
+          type: object
+          additionalProperties:
+            type: integer
+          nullable: true
+          description: >-
+            The usage details of the observation. Key is the name of the usage
+            metric, value is the number of units consumed. The total key is the
+            sum of all (non-total) usage metrics or the total value ingested.
+        costDetails:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          nullable: true
+          description: >-
+            The cost details of the observation. Key is the name of the cost
+            metric, value is the cost in USD. The total key is the sum of all
+            (non-total) cost metrics or the total value ingested.
+        environment:
+          type: string
+          nullable: true
+          description: >-
+            The environment from which this observation originated. Can be any
+            lowercase alphanumeric string with hyphens and underscores that does
+            not start with 'langfuse'.
       required:
         - id
         - type
@@ -2160,47 +4599,72 @@ components:
       title: ObservationsView
       type: object
       properties:
+        promptName:
+          type: string
+          nullable: true
+          description: The name of the prompt associated with the observation
+        promptVersion:
+          type: integer
+          nullable: true
+          description: The version of the prompt associated with the observation
         modelId:
           type: string
           nullable: true
+          description: The unique identifier of the model
         inputPrice:
           type: number
           format: double
           nullable: true
+          description: The price of the input in USD
         outputPrice:
           type: number
           format: double
           nullable: true
+          description: The price of the output in USD.
         totalPrice:
           type: number
           format: double
           nullable: true
+          description: The total price in USD.
         calculatedInputCost:
           type: number
           format: double
           nullable: true
+          description: >-
+            (Deprecated. Use usageDetails and costDetails instead.) The
+            calculated cost of the input in USD
         calculatedOutputCost:
           type: number
           format: double
           nullable: true
+          description: >-
+            (Deprecated. Use usageDetails and costDetails instead.) The
+            calculated cost of the output in USD
         calculatedTotalCost:
           type: number
           format: double
           nullable: true
+          description: >-
+            (Deprecated. Use usageDetails and costDetails instead.) The
+            calculated total cost in USD
         latency:
           type: number
           format: double
           nullable: true
+          description: The latency in seconds.
         timeToFirstToken:
           type: number
           format: double
           nullable: true
+          description: The time to the first token in seconds
       allOf:
-        - $ref: "#/components/schemas/Observation"
+        - $ref: '#/components/schemas/Observation'
     Usage:
       title: Usage
       type: object
-      description: Standard interface for usage and cost
+      description: >-
+        (Deprecated. Use usageDetails and costDetails instead.) Standard
+        interface for usage and cost
       properties:
         input:
           type: integer
@@ -2215,7 +4679,7 @@ components:
           nullable: true
           description: Defaults to input+output if not set
         unit:
-          $ref: "#/components/schemas/ModelUsageUnit"
+          $ref: '#/components/schemas/ModelUsageUnit'
           nullable: true
         inputCost:
           type: number
@@ -2250,7 +4714,7 @@ components:
         projectId:
           type: string
         dataType:
-          $ref: "#/components/schemas/ScoreDataType"
+          $ref: '#/components/schemas/ScoreDataType'
         isArchived:
           type: boolean
           description: Whether the score config is archived. Defaults to false
@@ -2271,7 +4735,7 @@ components:
         categories:
           type: array
           items:
-            $ref: "#/components/schemas/ConfigCategory"
+            $ref: '#/components/schemas/ConfigCategory'
           nullable: true
           description: Configures custom categories for categorical scores
         description:
@@ -2297,8 +4761,8 @@ components:
       required:
         - value
         - label
-    BaseScore:
-      title: BaseScore
+    BaseScoreV1:
+      title: BaseScoreV1
       type: object
       properties:
         id:
@@ -2308,7 +4772,7 @@ components:
         name:
           type: string
         source:
-          $ref: "#/components/schemas/ScoreSource"
+          $ref: '#/components/schemas/ScoreSource'
         observationId:
           type: string
           nullable: true
@@ -2327,6 +4791,8 @@ components:
         comment:
           type: string
           nullable: true
+        metadata:
+          nullable: true
         configId:
           type: string
           nullable: true
@@ -2334,9 +4800,176 @@ components:
             Reference a score config on a score. When set, config and score name
             must be equal and value must comply to optionally defined numerical
             range
+        queueId:
+          type: string
+          nullable: true
+          description: >-
+            Reference an annotation queue on a score. Populated if the score was
+            initially created in an annotation queue.
+        environment:
+          type: string
+          nullable: true
+          description: >-
+            The environment from which this score originated. Can be any
+            lowercase alphanumeric string with hyphens and underscores that does
+            not start with 'langfuse'.
       required:
         - id
         - traceId
+        - name
+        - source
+        - timestamp
+        - createdAt
+        - updatedAt
+    NumericScoreV1:
+      title: NumericScoreV1
+      type: object
+      properties:
+        value:
+          type: number
+          format: double
+          description: The numeric value of the score
+      required:
+        - value
+      allOf:
+        - $ref: '#/components/schemas/BaseScoreV1'
+    BooleanScoreV1:
+      title: BooleanScoreV1
+      type: object
+      properties:
+        value:
+          type: number
+          format: double
+          description: >-
+            The numeric value of the score. Equals 1 for "True" and 0 for
+            "False"
+        stringValue:
+          type: string
+          description: >-
+            The string representation of the score value. Is inferred from the
+            numeric value and equals "True" or "False"
+      required:
+        - value
+        - stringValue
+      allOf:
+        - $ref: '#/components/schemas/BaseScoreV1'
+    CategoricalScoreV1:
+      title: CategoricalScoreV1
+      type: object
+      properties:
+        value:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Only defined if a config is linked. Represents the numeric category
+            mapping of the stringValue
+        stringValue:
+          type: string
+          description: >-
+            The string representation of the score value. If no config is
+            linked, can be any string. Otherwise, must map to a config category
+      required:
+        - stringValue
+      allOf:
+        - $ref: '#/components/schemas/BaseScoreV1'
+    ScoreV1:
+      title: ScoreV1
+      oneOf:
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                dataType:
+                  type: string
+                  enum:
+                    - NUMERIC
+            - $ref: '#/components/schemas/NumericScoreV1'
+          required:
+            - dataType
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                dataType:
+                  type: string
+                  enum:
+                    - CATEGORICAL
+            - $ref: '#/components/schemas/CategoricalScoreV1'
+          required:
+            - dataType
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                dataType:
+                  type: string
+                  enum:
+                    - BOOLEAN
+            - $ref: '#/components/schemas/BooleanScoreV1'
+          required:
+            - dataType
+    BaseScore:
+      title: BaseScore
+      type: object
+      properties:
+        id:
+          type: string
+        traceId:
+          type: string
+          nullable: true
+        sessionId:
+          type: string
+          nullable: true
+        observationId:
+          type: string
+          nullable: true
+        datasetRunId:
+          type: string
+          nullable: true
+        name:
+          type: string
+        source:
+          $ref: '#/components/schemas/ScoreSource'
+        timestamp:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        authorUserId:
+          type: string
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        metadata:
+          nullable: true
+        configId:
+          type: string
+          nullable: true
+          description: >-
+            Reference a score config on a score. When set, config and score name
+            must be equal and value must comply to optionally defined numerical
+            range
+        queueId:
+          type: string
+          nullable: true
+          description: >-
+            Reference an annotation queue on a score. Populated if the score was
+            initially created in an annotation queue.
+        environment:
+          type: string
+          nullable: true
+          description: >-
+            The environment from which this score originated. Can be any
+            lowercase alphanumeric string with hyphens and underscores that does
+            not start with 'langfuse'.
+      required:
+        - id
         - name
         - source
         - timestamp
@@ -2353,7 +4986,7 @@ components:
       required:
         - value
       allOf:
-        - $ref: "#/components/schemas/BaseScore"
+        - $ref: '#/components/schemas/BaseScore'
     BooleanScore:
       title: BooleanScore
       type: object
@@ -2373,7 +5006,7 @@ components:
         - value
         - stringValue
       allOf:
-        - $ref: "#/components/schemas/BaseScore"
+        - $ref: '#/components/schemas/BaseScore'
     CategoricalScore:
       title: CategoricalScore
       type: object
@@ -2393,7 +5026,7 @@ components:
       required:
         - stringValue
       allOf:
-        - $ref: "#/components/schemas/BaseScore"
+        - $ref: '#/components/schemas/BaseScore'
     Score:
       title: Score
       oneOf:
@@ -2405,7 +5038,7 @@ components:
                   type: string
                   enum:
                     - NUMERIC
-            - $ref: "#/components/schemas/NumericScore"
+            - $ref: '#/components/schemas/NumericScore'
           required:
             - dataType
         - type: object
@@ -2416,7 +5049,7 @@ components:
                   type: string
                   enum:
                     - CATEGORICAL
-            - $ref: "#/components/schemas/CategoricalScore"
+            - $ref: '#/components/schemas/CategoricalScore'
           required:
             - dataType
         - type: object
@@ -2427,7 +5060,7 @@ components:
                   type: string
                   enum:
                     - BOOLEAN
-            - $ref: "#/components/schemas/BooleanScore"
+            - $ref: '#/components/schemas/BooleanScore'
           required:
             - dataType
     CreateScoreValue:
@@ -2439,6 +5072,37 @@ components:
       description: >-
         The value of the score. Must be passed as string for categorical scores,
         and numeric for boolean and numeric scores
+    Comment:
+      title: Comment
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        objectType:
+          $ref: '#/components/schemas/CommentObjectType'
+        objectId:
+          type: string
+        content:
+          type: string
+        authorUserId:
+          type: string
+          nullable: true
+      required:
+        - id
+        - projectId
+        - createdAt
+        - updatedAt
+        - objectType
+        - objectId
+        - content
     Dataset:
       title: Dataset
       type: object
@@ -2473,7 +5137,7 @@ components:
         id:
           type: string
         status:
-          $ref: "#/components/schemas/DatasetStatus"
+          $ref: '#/components/schemas/DatasetStatus'
         input:
           nullable: true
         expectedOutput:
@@ -2540,23 +5204,31 @@ components:
       properties:
         id:
           type: string
+          description: Unique identifier of the dataset run
         name:
           type: string
+          description: Name of the dataset run
         description:
           type: string
           nullable: true
+          description: Description of the run
         metadata:
           nullable: true
+          description: Metadata of the dataset run
         datasetId:
           type: string
+          description: Id of the associated dataset
         datasetName:
           type: string
+          description: Name of the associated dataset
         createdAt:
           type: string
           format: date-time
+          description: The date and time when the dataset run was created
         updatedAt:
           type: string
           format: date-time
+          description: The date and time when the dataset run was last updated
       required:
         - id
         - name
@@ -2571,11 +5243,11 @@ components:
         datasetRunItems:
           type: array
           items:
-            $ref: "#/components/schemas/DatasetRunItem"
+            $ref: '#/components/schemas/DatasetRunItem'
       required:
         - datasetRunItems
       allOf:
-        - $ref: "#/components/schemas/DatasetRun"
+        - $ref: '#/components/schemas/DatasetRun'
     Model:
       title: Model
       type: object
@@ -2600,28 +5272,30 @@ components:
             to exact match, use `(?i)^modelname$`
         startDate:
           type: string
+          format: date-time
           nullable: true
           description: Apply only to generations which are newer than this ISO date.
         unit:
-          $ref: "#/components/schemas/ModelUsageUnit"
+          $ref: '#/components/schemas/ModelUsageUnit'
+          nullable: true
           description: Unit used by this model.
         inputPrice:
           type: number
           format: double
           nullable: true
-          description: Price (USD) per input unit
+          description: Deprecated. See 'prices' instead. Price (USD) per input unit
         outputPrice:
           type: number
           format: double
           nullable: true
-          description: Price (USD) per output unit
+          description: Deprecated. See 'prices' instead. Price (USD) per output unit
         totalPrice:
           type: number
           format: double
           nullable: true
           description: >-
-            Price (USD) per total unit. Cannot be set if input or output price
-            is set.
+            Deprecated. See 'prices' instead. Price (USD) per total unit. Cannot
+            be set if input or output price is set.
         tokenizerId:
           type: string
           nullable: true
@@ -2635,12 +5309,26 @@ components:
             JSON. See docs for more details.
         isLangfuseManaged:
           type: boolean
+        prices:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ModelPrice'
+          description: Price (USD) by usage type
       required:
         - id
         - modelName
         - matchPattern
-        - unit
         - isLangfuseManaged
+        - prices
+    ModelPrice:
+      title: ModelPrice
+      type: object
+      properties:
+        price:
+          type: number
+          format: double
+      required:
+        - price
     ModelUsageUnit:
       title: ModelUsageUnit
       type: string
@@ -2673,6 +5361,14 @@ components:
           items:
             type: string
           nullable: true
+    CommentObjectType:
+      title: CommentObjectType
+      type: string
+      enum:
+        - TRACE
+        - OBSERVATION
+        - SESSION
+        - PROMPT
     DatasetStatus:
       title: DatasetStatus
       type: string
@@ -2693,6 +5389,15 @@ components:
         - NUMERIC
         - BOOLEAN
         - CATEGORICAL
+    DeleteDatasetItemResponse:
+      title: DeleteDatasetItemResponse
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message after deletion
+      required:
+        - message
     CreateDatasetItemRequest:
       title: CreateDatasetItemRequest
       type: object
@@ -2715,10 +5420,10 @@ components:
           type: string
           nullable: true
           description: >-
-            Dataset items are upserted on their id. Id needs to be globally
-            unique and cannot be reused across datasets.
+            Dataset items are upserted on their id. Id needs to be unique
+            (project-level) and cannot be reused across datasets.
         status:
-          $ref: "#/components/schemas/DatasetStatus"
+          $ref: '#/components/schemas/DatasetStatus'
           nullable: true
           description: Defaults to ACTIVE for newly created items
       required:
@@ -2730,9 +5435,9 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/DatasetItem"
+            $ref: '#/components/schemas/DatasetItem'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
@@ -2763,6 +5468,19 @@ components:
       required:
         - runName
         - datasetItemId
+    PaginatedDatasetRunItems:
+      title: PaginatedDatasetRunItems
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatasetRunItem'
+        meta:
+          $ref: '#/components/schemas/utilsMetaResponse'
+      required:
+        - data
+        - meta
     PaginatedDatasets:
       title: PaginatedDatasets
       type: object
@@ -2770,9 +5488,9 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Dataset"
+            $ref: '#/components/schemas/Dataset'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
@@ -2796,12 +5514,20 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/DatasetRun"
+            $ref: '#/components/schemas/DatasetRun'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
+    DeleteDatasetRunResponse:
+      title: DeleteDatasetRunResponse
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     HealthResponse:
       title: HealthResponse
       type: object
@@ -2827,7 +5553,7 @@ components:
                   type: string
                   enum:
                     - trace-create
-            - $ref: "#/components/schemas/TraceEvent"
+            - $ref: '#/components/schemas/TraceEvent'
           required:
             - type
         - type: object
@@ -2838,7 +5564,7 @@ components:
                   type: string
                   enum:
                     - score-create
-            - $ref: "#/components/schemas/ScoreEvent"
+            - $ref: '#/components/schemas/ScoreEvent'
           required:
             - type
         - type: object
@@ -2849,7 +5575,7 @@ components:
                   type: string
                   enum:
                     - span-create
-            - $ref: "#/components/schemas/CreateSpanEvent"
+            - $ref: '#/components/schemas/CreateSpanEvent'
           required:
             - type
         - type: object
@@ -2860,7 +5586,7 @@ components:
                   type: string
                   enum:
                     - span-update
-            - $ref: "#/components/schemas/UpdateSpanEvent"
+            - $ref: '#/components/schemas/UpdateSpanEvent'
           required:
             - type
         - type: object
@@ -2871,7 +5597,7 @@ components:
                   type: string
                   enum:
                     - generation-create
-            - $ref: "#/components/schemas/CreateGenerationEvent"
+            - $ref: '#/components/schemas/CreateGenerationEvent'
           required:
             - type
         - type: object
@@ -2882,7 +5608,7 @@ components:
                   type: string
                   enum:
                     - generation-update
-            - $ref: "#/components/schemas/UpdateGenerationEvent"
+            - $ref: '#/components/schemas/UpdateGenerationEvent'
           required:
             - type
         - type: object
@@ -2893,7 +5619,7 @@ components:
                   type: string
                   enum:
                     - event-create
-            - $ref: "#/components/schemas/CreateEventEvent"
+            - $ref: '#/components/schemas/CreateEventEvent'
           required:
             - type
         - type: object
@@ -2904,7 +5630,7 @@ components:
                   type: string
                   enum:
                     - sdk-log
-            - $ref: "#/components/schemas/SDKLogEvent"
+            - $ref: '#/components/schemas/SDKLogEvent'
           required:
             - type
         - type: object
@@ -2915,7 +5641,7 @@ components:
                   type: string
                   enum:
                     - observation-create
-            - $ref: "#/components/schemas/CreateObservationEvent"
+            - $ref: '#/components/schemas/CreateObservationEvent'
           required:
             - type
         - type: object
@@ -2926,7 +5652,7 @@ components:
                   type: string
                   enum:
                     - observation-update
-            - $ref: "#/components/schemas/UpdateObservationEvent"
+            - $ref: '#/components/schemas/UpdateObservationEvent'
           required:
             - type
     ObservationType:
@@ -2939,8 +5665,8 @@ components:
     IngestionUsage:
       title: IngestionUsage
       oneOf:
-        - $ref: "#/components/schemas/Usage"
-        - $ref: "#/components/schemas/OpenAIUsage"
+        - $ref: '#/components/schemas/Usage'
+        - $ref: '#/components/schemas/OpenAIUsage'
     OpenAIUsage:
       title: OpenAIUsage
       type: object
@@ -2976,7 +5702,7 @@ components:
         output:
           nullable: true
         level:
-          $ref: "#/components/schemas/ObservationLevel"
+          $ref: '#/components/schemas/ObservationLevel'
           nullable: true
         statusMessage:
           type: string
@@ -2987,6 +5713,9 @@ components:
         version:
           type: string
           nullable: true
+        environment:
+          type: string
+          nullable: true
     CreateEventBody:
       title: CreateEventBody
       type: object
@@ -2995,7 +5724,7 @@ components:
           type: string
           nullable: true
       allOf:
-        - $ref: "#/components/schemas/OptionalObservationBody"
+        - $ref: '#/components/schemas/OptionalObservationBody'
     UpdateEventBody:
       title: UpdateEventBody
       type: object
@@ -3005,7 +5734,7 @@ components:
       required:
         - id
       allOf:
-        - $ref: "#/components/schemas/OptionalObservationBody"
+        - $ref: '#/components/schemas/OptionalObservationBody'
     CreateSpanBody:
       title: CreateSpanBody
       type: object
@@ -3015,7 +5744,7 @@ components:
           format: date-time
           nullable: true
       allOf:
-        - $ref: "#/components/schemas/CreateEventBody"
+        - $ref: '#/components/schemas/CreateEventBody'
     UpdateSpanBody:
       title: UpdateSpanBody
       type: object
@@ -3025,7 +5754,7 @@ components:
           format: date-time
           nullable: true
       allOf:
-        - $ref: "#/components/schemas/UpdateEventBody"
+        - $ref: '#/components/schemas/UpdateEventBody'
     CreateGenerationBody:
       title: CreateGenerationBody
       type: object
@@ -3040,10 +5769,19 @@ components:
         modelParameters:
           type: object
           additionalProperties:
-            $ref: "#/components/schemas/MapValue"
+            $ref: '#/components/schemas/MapValue'
           nullable: true
         usage:
-          $ref: "#/components/schemas/IngestionUsage"
+          $ref: '#/components/schemas/IngestionUsage'
+          nullable: true
+        usageDetails:
+          $ref: '#/components/schemas/UsageDetails'
+          nullable: true
+        costDetails:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
           nullable: true
         promptName:
           type: string
@@ -3052,7 +5790,7 @@ components:
           type: integer
           nullable: true
       allOf:
-        - $ref: "#/components/schemas/CreateSpanBody"
+        - $ref: '#/components/schemas/CreateSpanBody'
     UpdateGenerationBody:
       title: UpdateGenerationBody
       type: object
@@ -3067,19 +5805,28 @@ components:
         modelParameters:
           type: object
           additionalProperties:
-            $ref: "#/components/schemas/MapValue"
+            $ref: '#/components/schemas/MapValue'
           nullable: true
         usage:
-          $ref: "#/components/schemas/IngestionUsage"
+          $ref: '#/components/schemas/IngestionUsage'
           nullable: true
         promptName:
           type: string
+          nullable: true
+        usageDetails:
+          $ref: '#/components/schemas/UsageDetails'
+          nullable: true
+        costDetails:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
           nullable: true
         promptVersion:
           type: integer
           nullable: true
       allOf:
-        - $ref: "#/components/schemas/UpdateSpanBody"
+        - $ref: '#/components/schemas/UpdateSpanBody'
     ObservationBody:
       title: ObservationBody
       type: object
@@ -3091,7 +5838,7 @@ components:
           type: string
           nullable: true
         type:
-          $ref: "#/components/schemas/ObservationType"
+          $ref: '#/components/schemas/ObservationType'
         name:
           type: string
           nullable: true
@@ -3113,7 +5860,7 @@ components:
         modelParameters:
           type: object
           additionalProperties:
-            $ref: "#/components/schemas/MapValue"
+            $ref: '#/components/schemas/MapValue'
           nullable: true
         input:
           nullable: true
@@ -3125,15 +5872,18 @@ components:
         output:
           nullable: true
         usage:
-          $ref: "#/components/schemas/Usage"
+          $ref: '#/components/schemas/Usage'
           nullable: true
         level:
-          $ref: "#/components/schemas/ObservationLevel"
+          $ref: '#/components/schemas/ObservationLevel'
           nullable: true
         statusMessage:
           type: string
           nullable: true
         parentObservationId:
+          type: string
+          nullable: true
+        environment:
           type: string
           nullable: true
       required:
@@ -3175,6 +5925,9 @@ components:
           items:
             type: string
           nullable: true
+        environment:
+          type: string
+          nullable: true
         public:
           type: boolean
           nullable: true
@@ -3195,24 +5948,35 @@ components:
           nullable: true
         traceId:
           type: string
-          example: cdef-1234-5678-90ab
+          nullable: true
+        sessionId:
+          type: string
+          nullable: true
+        observationId:
+          type: string
+          nullable: true
+        datasetRunId:
+          type: string
+          nullable: true
         name:
           type: string
           example: novelty
+        environment:
+          type: string
+          nullable: true
         value:
-          $ref: "#/components/schemas/CreateScoreValue"
+          $ref: '#/components/schemas/CreateScoreValue'
           description: >-
             The value of the score. Must be passed as string for categorical
             scores, and numeric for boolean and numeric scores. Boolean score
             values must equal either 1 or 0 (true or false)
-        observationId:
-          type: string
-          nullable: true
         comment:
           type: string
           nullable: true
+        metadata:
+          nullable: true
         dataType:
-          $ref: "#/components/schemas/ScoreDataType"
+          $ref: '#/components/schemas/ScoreDataType'
           nullable: true
           description: >-
             When set, must match the score value's type. If not set, will be
@@ -3227,7 +5991,6 @@ components:
             config category. Numeric scores might be constrained by the score
             config's max and min values
       required:
-        - traceId
         - name
         - value
     BaseEvent:
@@ -3255,101 +6018,101 @@ components:
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/TraceBody"
+          $ref: '#/components/schemas/TraceBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     CreateObservationEvent:
       title: CreateObservationEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/ObservationBody"
+          $ref: '#/components/schemas/ObservationBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     UpdateObservationEvent:
       title: UpdateObservationEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/ObservationBody"
+          $ref: '#/components/schemas/ObservationBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     ScoreEvent:
       title: ScoreEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/ScoreBody"
+          $ref: '#/components/schemas/ScoreBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     SDKLogEvent:
       title: SDKLogEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/SDKLogBody"
+          $ref: '#/components/schemas/SDKLogBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     CreateGenerationEvent:
       title: CreateGenerationEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/CreateGenerationBody"
+          $ref: '#/components/schemas/CreateGenerationBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     UpdateGenerationEvent:
       title: UpdateGenerationEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/UpdateGenerationBody"
+          $ref: '#/components/schemas/UpdateGenerationBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     CreateSpanEvent:
       title: CreateSpanEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/CreateSpanBody"
+          $ref: '#/components/schemas/CreateSpanBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     UpdateSpanEvent:
       title: UpdateSpanEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/UpdateSpanBody"
+          $ref: '#/components/schemas/UpdateSpanBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     CreateEventEvent:
       title: CreateEventEvent
       type: object
       properties:
         body:
-          $ref: "#/components/schemas/CreateEventBody"
+          $ref: '#/components/schemas/CreateEventBody'
       required:
         - body
       allOf:
-        - $ref: "#/components/schemas/BaseEvent"
+        - $ref: '#/components/schemas/BaseEvent'
     IngestionSuccess:
       title: IngestionSuccess
       type: object
@@ -3384,86 +6147,227 @@ components:
         successes:
           type: array
           items:
-            $ref: "#/components/schemas/IngestionSuccess"
+            $ref: '#/components/schemas/IngestionSuccess'
         errors:
           type: array
           items:
-            $ref: "#/components/schemas/IngestionError"
+            $ref: '#/components/schemas/IngestionError'
       required:
         - successes
         - errors
-    DailyMetrics:
-      title: DailyMetrics
+    OpenAICompletionUsageSchema:
+      title: OpenAICompletionUsageSchema
+      type: object
+      description: OpenAI Usage schema from (Chat-)Completion APIs
+      properties:
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+        prompt_tokens_details:
+          type: object
+          additionalProperties:
+            type: integer
+            nullable: true
+          nullable: true
+        completion_tokens_details:
+          type: object
+          additionalProperties:
+            type: integer
+            nullable: true
+          nullable: true
+      required:
+        - prompt_tokens
+        - completion_tokens
+        - total_tokens
+    OpenAIResponseUsageSchema:
+      title: OpenAIResponseUsageSchema
+      type: object
+      description: OpenAI Usage schema from Response API
+      properties:
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+        input_tokens_details:
+          type: object
+          additionalProperties:
+            type: integer
+            nullable: true
+          nullable: true
+        output_tokens_details:
+          type: object
+          additionalProperties:
+            type: integer
+            nullable: true
+          nullable: true
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+    UsageDetails:
+      title: UsageDetails
+      oneOf:
+        - type: object
+          additionalProperties:
+            type: integer
+        - $ref: '#/components/schemas/OpenAICompletionUsageSchema'
+        - $ref: '#/components/schemas/OpenAIResponseUsageSchema'
+    GetMediaResponse:
+      title: GetMediaResponse
+      type: object
+      properties:
+        mediaId:
+          type: string
+          description: The unique langfuse identifier of a media record
+        contentType:
+          type: string
+          description: The MIME type of the media record
+        contentLength:
+          type: integer
+          description: The size of the media record in bytes
+        uploadedAt:
+          type: string
+          format: date-time
+          description: The date and time when the media record was uploaded
+        url:
+          type: string
+          description: The download URL of the media record
+        urlExpiry:
+          type: string
+          description: The expiry date and time of the media record download URL
+      required:
+        - mediaId
+        - contentType
+        - contentLength
+        - uploadedAt
+        - url
+        - urlExpiry
+    PatchMediaBody:
+      title: PatchMediaBody
+      type: object
+      properties:
+        uploadedAt:
+          type: string
+          format: date-time
+          description: The date and time when the media record was uploaded
+        uploadHttpStatus:
+          type: integer
+          description: The HTTP status code of the upload
+        uploadHttpError:
+          type: string
+          nullable: true
+          description: The HTTP error message of the upload
+        uploadTimeMs:
+          type: integer
+          nullable: true
+          description: The time in milliseconds it took to upload the media record
+      required:
+        - uploadedAt
+        - uploadHttpStatus
+    GetMediaUploadUrlRequest:
+      title: GetMediaUploadUrlRequest
+      type: object
+      properties:
+        traceId:
+          type: string
+          description: The trace ID associated with the media record
+        observationId:
+          type: string
+          nullable: true
+          description: >-
+            The observation ID associated with the media record. If the media
+            record is associated directly with a trace, this will be null.
+        contentType:
+          $ref: '#/components/schemas/MediaContentType'
+        contentLength:
+          type: integer
+          description: The size of the media record in bytes
+        sha256Hash:
+          type: string
+          description: The SHA-256 hash of the media record
+        field:
+          type: string
+          description: >-
+            The trace / observation field the media record is associated with.
+            This can be one of `input`, `output`, `metadata`
+      required:
+        - traceId
+        - contentType
+        - contentLength
+        - sha256Hash
+        - field
+    GetMediaUploadUrlResponse:
+      title: GetMediaUploadUrlResponse
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          nullable: true
+          description: >-
+            The presigned upload URL. If the asset is already uploaded, this
+            will be null
+        mediaId:
+          type: string
+          description: The unique langfuse identifier of a media record
+      required:
+        - mediaId
+    MediaContentType:
+      title: MediaContentType
+      type: string
+      enum:
+        - image/png
+        - image/jpeg
+        - image/jpg
+        - image/webp
+        - image/gif
+        - image/svg+xml
+        - image/tiff
+        - image/bmp
+        - audio/mpeg
+        - audio/mp3
+        - audio/wav
+        - audio/ogg
+        - audio/oga
+        - audio/aac
+        - audio/mp4
+        - audio/flac
+        - video/mp4
+        - video/webm
+        - text/plain
+        - text/html
+        - text/css
+        - text/csv
+        - application/pdf
+        - application/msword
+        - application/vnd.ms-excel
+        - application/zip
+        - application/json
+        - application/xml
+        - application/octet-stream
+      description: The MIME type of the media record
+    MetricsResponse:
+      title: MetricsResponse
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/DailyMetricsDetails"
-          description: A list of daily metrics, only days with ingested data are included.
-        meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+            type: object
+            additionalProperties: true
+          description: >-
+            The metrics data. Each item in the list contains the metric values
+            and dimensions requested in the query.
+
+            Format varies based on the query parameters.
+
+            Histograms will return an array with [lower, upper, height] tuples.
       required:
         - data
-        - meta
-    DailyMetricsDetails:
-      title: DailyMetricsDetails
-      type: object
-      properties:
-        date:
-          type: string
-        countTraces:
-          type: integer
-        countObservations:
-          type: integer
-        totalCost:
-          type: number
-          format: double
-          description: Total model cost in USD
-        usage:
-          type: array
-          items:
-            $ref: "#/components/schemas/UsageByModel"
-      required:
-        - date
-        - countTraces
-        - countObservations
-        - totalCost
-        - usage
-    UsageByModel:
-      title: UsageByModel
-      type: object
-      description: >-
-        Daily usage of a given model. Usage corresponds to the unit set for the
-        specific model (e.g. tokens).
-      properties:
-        model:
-          type: string
-          nullable: true
-        inputUsage:
-          type: integer
-          description: Total number of generation input units (e.g. tokens)
-        outputUsage:
-          type: integer
-          description: Total number of generation output units (e.g. tokens)
-        totalUsage:
-          type: integer
-          description: Total number of generation total units (e.g. tokens)
-        countTraces:
-          type: integer
-        countObservations:
-          type: integer
-        totalCost:
-          type: number
-          format: double
-          description: Total model cost in USD
-      required:
-        - inputUsage
-        - outputUsage
-        - totalUsage
-        - countTraces
-        - countObservations
-        - totalCost
     PaginatedModels:
       title: PaginatedModels
       type: object
@@ -3471,9 +6375,9 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Model"
+            $ref: '#/components/schemas/Model'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
@@ -3496,10 +6400,12 @@ components:
             to exact match, use `(?i)^modelname$`
         startDate:
           type: string
+          format: date-time
           nullable: true
           description: Apply only to generations which are newer than this ISO date.
         unit:
-          $ref: "#/components/schemas/ModelUsageUnit"
+          $ref: '#/components/schemas/ModelUsageUnit'
+          nullable: true
           description: Unit used by this model.
         inputPrice:
           type: number
@@ -3532,7 +6438,6 @@ components:
       required:
         - modelName
         - matchPattern
-        - unit
     Observations:
       title: Observations
       type: object
@@ -3540,9 +6445,9 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Observation"
+            $ref: '#/components/schemas/Observation'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
@@ -3553,12 +6458,91 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/ObservationsView"
+            $ref: '#/components/schemas/ObservationsView'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
+    MembershipRole:
+      title: MembershipRole
+      type: string
+      enum:
+        - OWNER
+        - ADMIN
+        - MEMBER
+        - VIEWER
+    MembershipRequest:
+      title: MembershipRequest
+      type: object
+      properties:
+        userId:
+          type: string
+        role:
+          $ref: '#/components/schemas/MembershipRole'
+      required:
+        - userId
+        - role
+    MembershipResponse:
+      title: MembershipResponse
+      type: object
+      properties:
+        userId:
+          type: string
+        role:
+          $ref: '#/components/schemas/MembershipRole'
+        email:
+          type: string
+        name:
+          type: string
+      required:
+        - userId
+        - role
+        - email
+        - name
+    MembershipsResponse:
+      title: MembershipsResponse
+      type: object
+      properties:
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/MembershipResponse'
+      required:
+        - memberships
+    OrganizationProject:
+      title: OrganizationProject
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+        - updatedAt
+    OrganizationProjectsResponse:
+      title: OrganizationProjectsResponse
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationProject'
+      required:
+        - projects
     Projects:
       title: Projects
       type: object
@@ -3566,7 +6550,7 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Project"
+            $ref: '#/components/schemas/Project'
       required:
         - data
     Project:
@@ -3577,9 +6561,106 @@ components:
           type: string
         name:
           type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Metadata for the project
+        retentionDays:
+          type: integer
+          nullable: true
+          description: >-
+            Number of days to retain data. Null or 0 means no retention. Omitted
+            if no retention is configured.
       required:
         - id
         - name
+        - metadata
+    ProjectDeletionResponse:
+      title: ProjectDeletionResponse
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+    ApiKeyList:
+      title: ApiKeyList
+      type: object
+      description: List of API keys for a project
+      properties:
+        apiKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKeySummary'
+      required:
+        - apiKeys
+    ApiKeySummary:
+      title: ApiKeySummary
+      type: object
+      description: Summary of an API key
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        publicKey:
+          type: string
+        displaySecretKey:
+          type: string
+      required:
+        - id
+        - createdAt
+        - publicKey
+        - displaySecretKey
+    ApiKeyResponse:
+      title: ApiKeyResponse
+      type: object
+      description: Response for API key creation
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        publicKey:
+          type: string
+        secretKey:
+          type: string
+        displaySecretKey:
+          type: string
+        note:
+          type: string
+          nullable: true
+      required:
+        - id
+        - createdAt
+        - publicKey
+        - secretKey
+        - displaySecretKey
+    ApiKeyDeletionResponse:
+      title: ApiKeyDeletionResponse
+      type: object
+      description: Response for API key deletion
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
     PromptMetaListResponse:
       title: PromptMetaListResponse
       type: object
@@ -3587,9 +6668,9 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/PromptMeta"
+            $ref: '#/components/schemas/PromptMeta'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
@@ -3611,11 +6692,20 @@ components:
           type: array
           items:
             type: string
+        lastUpdatedAt:
+          type: string
+          format: date-time
+        lastConfig:
+          description: >-
+            Config object of the most recent prompt version that matches the
+            filters (if any are provided)
       required:
         - name
         - versions
         - labels
         - tags
+        - lastUpdatedAt
+        - lastConfig
     CreatePromptRequest:
       title: CreatePromptRequest
       oneOf:
@@ -3627,7 +6717,7 @@ components:
                   type: string
                   enum:
                     - chat
-            - $ref: "#/components/schemas/CreateChatPromptRequest"
+            - $ref: '#/components/schemas/CreateChatPromptRequest'
           required:
             - type
         - type: object
@@ -3638,7 +6728,7 @@ components:
                   type: string
                   enum:
                     - text
-            - $ref: "#/components/schemas/CreateTextPromptRequest"
+            - $ref: '#/components/schemas/CreateTextPromptRequest'
           required:
             - type
     CreateChatPromptRequest:
@@ -3650,7 +6740,7 @@ components:
         prompt:
           type: array
           items:
-            $ref: "#/components/schemas/ChatMessage"
+            $ref: '#/components/schemas/ChatMessageWithPlaceholders'
         config:
           nullable: true
         labels:
@@ -3665,6 +6755,10 @@ components:
             type: string
           nullable: true
           description: List of tags to apply to all versions of this prompt.
+        commitMessage:
+          type: string
+          nullable: true
+          description: Commit message for this prompt version.
       required:
         - name
         - prompt
@@ -3690,6 +6784,10 @@ components:
             type: string
           nullable: true
           description: List of tags to apply to all versions of this prompt.
+        commitMessage:
+          type: string
+          nullable: true
+          description: Commit message for this prompt version.
       required:
         - name
         - prompt
@@ -3704,7 +6802,7 @@ components:
                   type: string
                   enum:
                     - chat
-            - $ref: "#/components/schemas/ChatPrompt"
+            - $ref: '#/components/schemas/ChatPrompt'
           required:
             - type
         - type: object
@@ -3715,7 +6813,7 @@ components:
                   type: string
                   enum:
                     - text
-            - $ref: "#/components/schemas/TextPrompt"
+            - $ref: '#/components/schemas/TextPrompt'
           required:
             - type
     BasePrompt:
@@ -3739,12 +6837,48 @@ components:
           description: >-
             List of tags. Used to filter via UI and API. The same across
             versions of a prompt.
+        commitMessage:
+          type: string
+          nullable: true
+          description: Commit message for this prompt version.
+        resolutionGraph:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: >-
+            The dependency resolution graph for the current prompt. Null if
+            prompt has no dependencies.
       required:
         - name
         - version
         - config
         - labels
         - tags
+    ChatMessageWithPlaceholders:
+      title: ChatMessageWithPlaceholders
+      oneOf:
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - chatmessage
+            - $ref: '#/components/schemas/ChatMessage'
+          required:
+            - type
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - placeholder
+            - $ref: '#/components/schemas/PlaceholderMessage'
+          required:
+            - type
     ChatMessage:
       title: ChatMessage
       type: object
@@ -3756,6 +6890,14 @@ components:
       required:
         - role
         - content
+    PlaceholderMessage:
+      title: PlaceholderMessage
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
     TextPrompt:
       title: TextPrompt
       type: object
@@ -3765,7 +6907,7 @@ components:
       required:
         - prompt
       allOf:
-        - $ref: "#/components/schemas/BasePrompt"
+        - $ref: '#/components/schemas/BasePrompt'
     ChatPrompt:
       title: ChatPrompt
       type: object
@@ -3773,11 +6915,306 @@ components:
         prompt:
           type: array
           items:
-            $ref: "#/components/schemas/ChatMessage"
+            $ref: '#/components/schemas/ChatMessageWithPlaceholders'
       required:
         - prompt
       allOf:
-        - $ref: "#/components/schemas/BasePrompt"
+        - $ref: '#/components/schemas/BasePrompt'
+    ServiceProviderConfig:
+      title: ServiceProviderConfig
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        documentationUri:
+          type: string
+        patch:
+          $ref: '#/components/schemas/ScimFeatureSupport'
+        bulk:
+          $ref: '#/components/schemas/BulkConfig'
+        filter:
+          $ref: '#/components/schemas/FilterConfig'
+        changePassword:
+          $ref: '#/components/schemas/ScimFeatureSupport'
+        sort:
+          $ref: '#/components/schemas/ScimFeatureSupport'
+        etag:
+          $ref: '#/components/schemas/ScimFeatureSupport'
+        authenticationSchemes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthenticationScheme'
+        meta:
+          $ref: '#/components/schemas/ResourceMeta'
+      required:
+        - schemas
+        - documentationUri
+        - patch
+        - bulk
+        - filter
+        - changePassword
+        - sort
+        - etag
+        - authenticationSchemes
+        - meta
+    ScimFeatureSupport:
+      title: ScimFeatureSupport
+      type: object
+      properties:
+        supported:
+          type: boolean
+      required:
+        - supported
+    BulkConfig:
+      title: BulkConfig
+      type: object
+      properties:
+        supported:
+          type: boolean
+        maxOperations:
+          type: integer
+        maxPayloadSize:
+          type: integer
+      required:
+        - supported
+        - maxOperations
+        - maxPayloadSize
+    FilterConfig:
+      title: FilterConfig
+      type: object
+      properties:
+        supported:
+          type: boolean
+        maxResults:
+          type: integer
+      required:
+        - supported
+        - maxResults
+    ResourceMeta:
+      title: ResourceMeta
+      type: object
+      properties:
+        resourceType:
+          type: string
+        location:
+          type: string
+      required:
+        - resourceType
+        - location
+    AuthenticationScheme:
+      title: AuthenticationScheme
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        specUri:
+          type: string
+        type:
+          type: string
+        primary:
+          type: boolean
+      required:
+        - name
+        - description
+        - specUri
+        - type
+        - primary
+    ResourceTypesResponse:
+      title: ResourceTypesResponse
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        totalResults:
+          type: integer
+        Resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceType'
+      required:
+        - schemas
+        - totalResults
+        - Resources
+    ResourceType:
+      title: ResourceType
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+          nullable: true
+        id:
+          type: string
+        name:
+          type: string
+        endpoint:
+          type: string
+        description:
+          type: string
+        schema:
+          type: string
+        schemaExtensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaExtension'
+        meta:
+          $ref: '#/components/schemas/ResourceMeta'
+      required:
+        - id
+        - name
+        - endpoint
+        - description
+        - schema
+        - schemaExtensions
+        - meta
+    SchemaExtension:
+      title: SchemaExtension
+      type: object
+      properties:
+        schema:
+          type: string
+        required:
+          type: boolean
+      required:
+        - schema
+        - required
+    SchemasResponse:
+      title: SchemasResponse
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        totalResults:
+          type: integer
+        Resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaResource'
+      required:
+        - schemas
+        - totalResults
+        - Resources
+    SchemaResource:
+      title: SchemaResource
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        attributes:
+          type: array
+          items: {}
+        meta:
+          $ref: '#/components/schemas/ResourceMeta'
+      required:
+        - id
+        - name
+        - description
+        - attributes
+        - meta
+    ScimUsersListResponse:
+      title: ScimUsersListResponse
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        totalResults:
+          type: integer
+        startIndex:
+          type: integer
+        itemsPerPage:
+          type: integer
+        Resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScimUser'
+      required:
+        - schemas
+        - totalResults
+        - startIndex
+        - itemsPerPage
+        - Resources
+    ScimUser:
+      title: ScimUser
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        userName:
+          type: string
+        name:
+          $ref: '#/components/schemas/ScimName'
+        emails:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScimEmail'
+        meta:
+          $ref: '#/components/schemas/UserMeta'
+      required:
+        - schemas
+        - id
+        - userName
+        - name
+        - emails
+        - meta
+    UserMeta:
+      title: UserMeta
+      type: object
+      properties:
+        resourceType:
+          type: string
+        created:
+          type: string
+          nullable: true
+        lastModified:
+          type: string
+          nullable: true
+      required:
+        - resourceType
+    ScimName:
+      title: ScimName
+      type: object
+      properties:
+        formatted:
+          type: string
+          nullable: true
+    ScimEmail:
+      title: ScimEmail
+      type: object
+      properties:
+        primary:
+          type: boolean
+        value:
+          type: string
+        type:
+          type: string
+      required:
+        - primary
+        - value
+        - type
+    EmptyResponse:
+      title: EmptyResponse
+      type: object
+      description: Empty response for 204 No Content responses
+      properties: {}
     ScoreConfigs:
       title: ScoreConfigs
       type: object
@@ -3785,9 +7222,9 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/ScoreConfig"
+            $ref: '#/components/schemas/ScoreConfig'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
@@ -3798,11 +7235,11 @@ components:
         name:
           type: string
         dataType:
-          $ref: "#/components/schemas/ScoreDataType"
+          $ref: '#/components/schemas/ScoreDataType'
         categories:
           type: array
           items:
-            $ref: "#/components/schemas/ConfigCategory"
+            $ref: '#/components/schemas/ConfigCategory'
           nullable: true
           description: >-
             Configure custom categories for categorical scores. Pass a list of
@@ -3832,6 +7269,100 @@ components:
       required:
         - name
         - dataType
+    GetScoresResponseTraceData:
+      title: GetScoresResponseTraceData
+      type: object
+      properties:
+        userId:
+          type: string
+          nullable: true
+          description: The user ID associated with the trace referenced by score
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: A list of tags associated with the trace referenced by score
+        environment:
+          type: string
+          nullable: true
+          description: The environment of the trace referenced by score
+    GetScoresResponseDataNumeric:
+      title: GetScoresResponseDataNumeric
+      type: object
+      properties:
+        trace:
+          $ref: '#/components/schemas/GetScoresResponseTraceData'
+          nullable: true
+      allOf:
+        - $ref: '#/components/schemas/NumericScore'
+    GetScoresResponseDataCategorical:
+      title: GetScoresResponseDataCategorical
+      type: object
+      properties:
+        trace:
+          $ref: '#/components/schemas/GetScoresResponseTraceData'
+          nullable: true
+      allOf:
+        - $ref: '#/components/schemas/CategoricalScore'
+    GetScoresResponseDataBoolean:
+      title: GetScoresResponseDataBoolean
+      type: object
+      properties:
+        trace:
+          $ref: '#/components/schemas/GetScoresResponseTraceData'
+          nullable: true
+      allOf:
+        - $ref: '#/components/schemas/BooleanScore'
+    GetScoresResponseData:
+      title: GetScoresResponseData
+      oneOf:
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                dataType:
+                  type: string
+                  enum:
+                    - NUMERIC
+            - $ref: '#/components/schemas/GetScoresResponseDataNumeric'
+          required:
+            - dataType
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                dataType:
+                  type: string
+                  enum:
+                    - CATEGORICAL
+            - $ref: '#/components/schemas/GetScoresResponseDataCategorical'
+          required:
+            - dataType
+        - type: object
+          allOf:
+            - type: object
+              properties:
+                dataType:
+                  type: string
+                  enum:
+                    - BOOLEAN
+            - $ref: '#/components/schemas/GetScoresResponseDataBoolean'
+          required:
+            - dataType
+    GetScoresResponse:
+      title: GetScoresResponse
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetScoresResponseData'
+        meta:
+          $ref: '#/components/schemas/utilsMetaResponse'
+      required:
+        - data
+        - meta
     CreateScoreRequest:
       title: CreateScoreRequest
       type: object
@@ -3841,24 +7372,39 @@ components:
           nullable: true
         traceId:
           type: string
-          example: cdef-1234-5678-90ab
+          nullable: true
+        sessionId:
+          type: string
+          nullable: true
+        observationId:
+          type: string
+          nullable: true
+        datasetRunId:
+          type: string
+          nullable: true
         name:
           type: string
           example: novelty
         value:
-          $ref: "#/components/schemas/CreateScoreValue"
+          $ref: '#/components/schemas/CreateScoreValue'
           description: >-
             The value of the score. Must be passed as string for categorical
             scores, and numeric for boolean and numeric scores. Boolean score
             values must equal either 1 or 0 (true or false)
-        observationId:
-          type: string
-          nullable: true
         comment:
           type: string
           nullable: true
+        metadata:
+          nullable: true
+        environment:
+          type: string
+          nullable: true
+          description: >-
+            The environment of the score. Can be any lowercase alphanumeric
+            string with hyphens and underscores that does not start with
+            'langfuse'.
         dataType:
-          $ref: "#/components/schemas/ScoreDataType"
+          $ref: '#/components/schemas/ScoreDataType'
           nullable: true
           description: >-
             The data type of the score. When passing a configId this field is
@@ -3872,7 +7418,6 @@ components:
             of a score config. When passing this field, the dataType and
             stringValue fields are automatically populated.
       required:
-        - traceId
         - name
         - value
     CreateScoreResponse:
@@ -3884,19 +7429,6 @@ components:
           description: The id of the created object in Langfuse
       required:
         - id
-    Scores:
-      title: Scores
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/Score"
-        meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
-      required:
-        - data
-        - meta
     PaginatedSessions:
       title: PaginatedSessions
       type: object
@@ -3904,9 +7436,9 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Session"
+            $ref: '#/components/schemas/Session'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
@@ -3917,12 +7449,20 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/TraceWithDetails"
+            $ref: '#/components/schemas/TraceWithDetails'
         meta:
-          $ref: "#/components/schemas/utilsMetaResponse"
+          $ref: '#/components/schemas/utilsMetaResponse'
       required:
         - data
         - meta
+    DeleteTraceResponse:
+      title: DeleteTraceResponse
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     Sort:
       title: Sort
       type: object

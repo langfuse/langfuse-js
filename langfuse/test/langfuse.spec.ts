@@ -29,7 +29,7 @@ describe("langfuseWeb", () => {
   });
 
   describe("init", () => {
-    it("should initialise", () => {
+    it("should initialise", async () => {
       const langfuse = new Langfuse({
         publicKey: "pk",
         secretKey: "sk",
@@ -38,6 +38,7 @@ describe("langfuseWeb", () => {
       expect(langfuse.baseUrl).toEqual(LANGFUSE_BASEURL);
 
       langfuse.trace({ name: "test-trace-1" });
+      await jest.runAllTimersAsync();
 
       expect(fetch).toHaveBeenCalledTimes(1);
     });
@@ -50,6 +51,7 @@ describe("langfuseWeb", () => {
       });
 
       langfuse.trace({ name: "test-trace-1", id: "test-id" });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(fetch).toHaveBeenCalledWith(`${LANGFUSE_BASEURL}/api/public/ingestion`, {
         body: expect.stringMatching(/.*"id"\s*:\s*"test-id".*"name"\s*:\s*"test-trace-1".*/),

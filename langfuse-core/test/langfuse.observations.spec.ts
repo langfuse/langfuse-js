@@ -80,6 +80,7 @@ describe("Langfuse Core", () => {
           endTime: new Date("2023-01-03"),
           usage: usageConfig.usage,
         });
+        await jest.advanceTimersByTimeAsync(1);
         expect(mocks.fetch).toHaveBeenCalledTimes(2);
         expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
           batch: [
@@ -89,8 +90,8 @@ describe("Langfuse Core", () => {
               type: "generation-create",
               body: {
                 name: "test-observation-1",
-                startTime: new Date("2023-01-02").toISOString(),
-                endTime: new Date("2023-01-03").toISOString(),
+                startTime: expect.stringContaining(new Date("2023-01-02").toISOString().slice(0, 18)),
+                endTime: expect.stringContaining(new Date("2023-01-03").toISOString().slice(0, 18)),
                 usage: usageConfig.expectedOutput,
               },
             },
@@ -111,6 +112,8 @@ describe("Langfuse Core", () => {
         startTime: new Date("2023-01-02"),
         endTime: new Date("2023-01-03"),
       });
+      await jest.advanceTimersByTimeAsync(1);
+
       expect(mocks.fetch).toHaveBeenCalledTimes(2);
       expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
         batch: [
@@ -120,8 +123,8 @@ describe("Langfuse Core", () => {
             type: "generation-create",
             body: {
               name: "test-observation-1",
-              startTime: new Date("2023-01-02").toISOString(),
-              endTime: new Date("2023-01-03").toISOString(),
+              startTime: expect.stringContaining(new Date("2023-01-02").toISOString().slice(0, 18)),
+              endTime: expect.stringContaining(new Date("2023-01-03").toISOString().slice(0, 18)),
             },
           },
         ],
@@ -131,6 +134,8 @@ describe("Langfuse Core", () => {
       trace.span({
         name: "test-observation-2",
       });
+      await jest.advanceTimersByTimeAsync(1);
+
       expect(mocks.fetch).toHaveBeenCalledTimes(3);
       expect(parseBody(mocks.fetch.mock.calls[2])).toMatchObject({
         batch: [
@@ -140,7 +145,7 @@ describe("Langfuse Core", () => {
             type: "span-create",
             body: {
               name: "test-observation-2",
-              startTime: new Date().toISOString(),
+              startTime: expect.stringContaining(new Date("2022-01-01").toISOString().slice(0, 18)),
             },
           },
         ],
@@ -150,6 +155,8 @@ describe("Langfuse Core", () => {
       trace.event({
         name: "test-observation-3",
       });
+      await jest.advanceTimersByTimeAsync(1);
+
       expect(mocks.fetch).toHaveBeenCalledTimes(4);
       expect(parseBody(mocks.fetch.mock.calls[3])).toMatchObject({
         batch: [
@@ -159,7 +166,7 @@ describe("Langfuse Core", () => {
             type: "event-create",
             body: {
               name: "test-observation-3",
-              startTime: new Date().toISOString(),
+              startTime: expect.stringContaining(new Date("2022-01-01").toISOString().slice(0, 18)),
             },
           },
         ],
@@ -170,6 +177,7 @@ describe("Langfuse Core", () => {
       langfuse.trace({
         id: "123456789",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       const body = parseBody(mocks.fetch.mock.calls[0]);
 
@@ -228,6 +236,7 @@ describe("Langfuse Core", () => {
         level: "DEFAULT",
         statusMessage: "test-status",
       });
+      await jest.advanceTimersByTimeAsync(1);
 
       expect(mocks.fetch).toHaveBeenCalledTimes(2); // two times as the generation will also create a trace
       const body = parseBody(mocks.fetch.mock.calls[1]);

@@ -1,15 +1,16 @@
+import { randomUUID } from "crypto";
 import { ConversationChain } from "langchain/chains";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
-import { PromptTemplate } from "@langchain/core/prompts";
+import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI, OpenAI } from "@langchain/openai";
 
 import { CallbackHandler, Langfuse, type LlmMessage } from "../langfuse-langchain";
-import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
-
-import { getHeaders, getTrace, LANGFUSE_BASEURL, LANGFUSE_PUBLIC_KEY } from "./integration-utils";
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import { getTrace } from "./integration-utils";
 
 describe("Langchain", () => {
   jest.setTimeout(30_000);
@@ -145,7 +146,7 @@ describe("Langchain", () => {
 
     it("should execute simple non chat llm call", async () => {
       const handler = new CallbackHandler({});
-      const llm = new OpenAI({ modelName: "gpt-4-1106-preview", maxTokens: 20 });
+      const llm = new OpenAI({ modelName: "gpt-3.5-turbo-instruct", maxTokens: 20 });
       const res = await llm.invoke("Tell me a joke on a non chat api", { callbacks: [handler] });
       const traceId = handler.traceId;
       await handler.flushAsync();
@@ -168,7 +169,7 @@ describe("Langchain", () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const singleGeneration = generation![0];
 
-      expect(singleGeneration.name).toBe("OpenAIChat");
+      expect(singleGeneration.name).toBe("OpenAI");
       expect(singleGeneration.input).toMatchObject(["Tell me a joke on a non chat api"]);
       expect(singleGeneration.usage?.input).toBeDefined();
       expect(singleGeneration.usage?.output).toBeDefined();
@@ -604,6 +605,297 @@ describe("Langchain", () => {
       expect(returnedNewGeneration?.length).toBe(2);
       // Returned observations within traces are currently not sorted, so we can't guarantee the order of the returned observations
       expect(returnedNewGeneration?.some((gen) => gen.id === handler.getLangchainRunId())).toBe(true);
+    });
+
+    it("links a langfuse chat prompt to a langchain run", async () => {
+      const langfuse = new Langfuse();
+      const traceName = "test-link-chat-prompt-to-lc-run";
+
+      const jokePromptName = "joke-prompt" + randomUUID().slice(0, 5);
+      const jokePromptString = "Tell me a one-line joke about {{topic}}";
+
+      await langfuse.createPrompt({
+        name: jokePromptName,
+        type: "chat",
+        prompt: [{ role: "user", content: jokePromptString }],
+        labels: ["production"],
+      });
+
+      // Fetch prompts
+      const langfuseJokePrompt = await langfuse.getPrompt(jokePromptName, undefined, { type: "chat" });
+
+      const langchainJokePrompt = ChatPromptTemplate.fromMessages(langfuseJokePrompt.getLangchainPrompt()).withConfig({
+        metadata: { langfusePrompt: langfuseJokePrompt },
+      });
+
+      const model = new OpenAI();
+      const chain = langchainJokePrompt.pipe(model).pipe(new StringOutputParser());
+
+      const handler = new CallbackHandler();
+
+      await chain.invoke(
+        { topic: "vacation" },
+        {
+          callbacks: [handler],
+          runName: traceName,
+          tags: ["langchain-tag"],
+        }
+      );
+      await handler.shutdownAsync();
+
+      expect(handler.traceId).toBeDefined();
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
+
+      expect(trace).toBeDefined();
+      expect(trace?.name).toBe(traceName);
+
+      const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+      expect(generations?.length).toBe(1);
+
+      const generation = generations?.[0];
+      expect(generation).toBeDefined();
+      expect((generation as any)["promptName"]).toBe(jokePromptName);
+      expect((generation as any)["promptVersion"]).toBe(langfuseJokePrompt.version);
+    });
+
+    it("links a langfuse prompt to a langchain run", async () => {
+      const langfuse = new Langfuse();
+      const traceName = "test-link-prompt-to-lc-run";
+      const sessionId = "session_" + randomUUID().slice(0, 8);
+      const userId = "user_" + randomUUID().slice(0, 8);
+
+      // Create prompts
+      const jokePromptName = "joke-prompt" + randomUUID().slice(0, 5);
+      const explainPromptName = "explain-prompt" + randomUUID().slice(0, 5);
+
+      const jokePromptString = "Tell me a one-line joke about {{topic}}";
+      const explainPromptString = "Explain the following joke: {{joke}}";
+
+      await Promise.all([
+        langfuse.createPrompt({
+          name: jokePromptName,
+          prompt: jokePromptString,
+          labels: ["production"],
+        }),
+        langfuse.createPrompt({
+          name: explainPromptName,
+          prompt: explainPromptString,
+          labels: ["production"],
+        }),
+      ]);
+
+      // Fetch prompts
+      const [langfuseJokePrompt, langfuseExplainPrompt] = await Promise.all([
+        langfuse.getPrompt(jokePromptName),
+        langfuse.getPrompt(explainPromptName),
+      ]);
+
+      const langchainJokePrompt = PromptTemplate.fromTemplate(langfuseJokePrompt.getLangchainPrompt()).withConfig({
+        metadata: { langfusePrompt: langfuseJokePrompt },
+      });
+      const langchainExplainPrompt = PromptTemplate.fromTemplate(langfuseExplainPrompt.getLangchainPrompt()).withConfig(
+        {
+          metadata: { langfusePrompt: langfuseExplainPrompt },
+        }
+      );
+
+      const model = new OpenAI();
+      const chain = langchainJokePrompt
+        .pipe(model)
+        .pipe(new StringOutputParser())
+        .pipe((input: string) => ({ joke: input }))
+        .pipe(langchainExplainPrompt)
+        .pipe(model);
+
+      const handler = new CallbackHandler();
+
+      await chain.invoke(
+        { topic: "vacation" },
+        {
+          callbacks: [handler],
+          runName: traceName,
+          tags: ["langchain-tag"],
+          metadata: { langfuseUserId: userId, langfuseSessionId: sessionId },
+        }
+      );
+      await handler.shutdownAsync();
+
+      if (!handler.traceId) {
+        throw Error("No traceId on handler");
+      }
+
+      const dbTrace = await getTrace(handler.traceId);
+
+      expect(dbTrace.tags).toEqual(["langchain-tag"]);
+      expect(dbTrace.userId).toBe(userId);
+      expect(dbTrace.sessionId).toBe(sessionId);
+
+      const generations = dbTrace.observations
+        .filter((o) => o.type === "GENERATION")
+        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+      expect(generations.length).toBe(2);
+      const [jokeGeneration, explainGeneration] = generations;
+
+      expect((jokeGeneration as any)["promptName"]).toBe(langfuseJokePrompt.name);
+      expect((jokeGeneration as any)["promptVersion"]).toBe(langfuseJokePrompt.version);
+
+      expect((explainGeneration as any)["promptName"]).toBe(langfuseExplainPrompt.name);
+      expect((explainGeneration as any)["promptVersion"]).toBe(langfuseExplainPrompt.version);
+    });
+
+    it("should export events in admin mode", async () => {
+      const projectId = "test-project-id";
+      const handler = new CallbackHandler({
+        sessionId: "test-session",
+        userId: "test-user",
+        metadata: {
+          foo: "bar",
+          array: ["a", "b"],
+        },
+        tags: ["test-tag", "test-tag-2"],
+        _projectId: projectId,
+        _isLocalEventExportEnabled: true,
+        version: "1.0.0",
+      });
+
+      handler.debug(true);
+
+      const messages = [new SystemMessage("You are an excellent Comedian"), new HumanMessage("Tell me a joke")];
+
+      const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
+      await llm.invoke(messages, { callbacks: [handler] });
+
+      await handler.flushAsync();
+      const shutdownResult = await handler.langfuse._exportLocalEvents(projectId);
+      if (!shutdownResult) {
+        throw new Error("No shutdown result");
+      }
+
+      console.log(JSON.stringify(shutdownResult, null, 2));
+
+      const events = shutdownResult;
+
+      expect(events.length).toBe(4);
+      const [traceCreate, generationCreate, generationUpdate, traceUpdate] = events;
+
+      // Check trace create event
+      expect(traceCreate.type).toBe("trace-create");
+      expect(traceCreate.body).toMatchObject({
+        name: "ChatOpenAI",
+        metadata: {
+          ls_provider: "openai",
+          ls_model_name: "gpt-4-turbo-preview",
+          ls_model_type: "chat",
+          ls_temperature: 1,
+          foo: "bar",
+          array: ["a", "b"],
+        },
+        userId: "test-user",
+        version: "1.0.0",
+        sessionId: "test-session",
+        input: [
+          {
+            content: "You are an excellent Comedian",
+            role: "system",
+          },
+          {
+            content: "Tell me a joke",
+            role: "user",
+          },
+        ],
+        tags: ["test-tag", "test-tag-2"],
+      });
+
+      // Check generation create event
+      expect(generationCreate.type).toBe("generation-create");
+      expect(generationCreate.body).toMatchObject({
+        name: "ChatOpenAI",
+        metadata: {
+          ls_provider: "openai",
+          ls_model_name: "gpt-4-turbo-preview",
+          ls_model_type: "chat",
+          ls_temperature: 1,
+        },
+        input: [
+          {
+            content: "You are an excellent Comedian",
+            role: "system",
+          },
+          {
+            content: "Tell me a joke",
+            role: "user",
+          },
+        ],
+        model: "gpt-4-turbo-preview",
+        modelParameters: {
+          temperature: 1,
+          top_p: 1,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+        },
+        version: "1.0.0",
+      });
+
+      // Check generation update event
+      expect(generationUpdate.type).toBe("generation-update");
+      expect(generationUpdate.body).toMatchObject({
+        output: {
+          role: "assistant",
+        },
+        usage: {
+          input: expect.any(Number),
+          output: expect.any(Number),
+          total: expect.any(Number),
+        },
+        version: "1.0.0",
+      });
+
+      // Check trace update event
+      expect(traceUpdate.type).toBe("trace-create");
+      expect(traceUpdate.body).toMatchObject({
+        output: {
+          role: "assistant",
+        },
+      });
+
+      // Check IDs match between events
+      const traceId = (traceCreate.body as any).id;
+      expect((generationCreate.body as any).traceId).toBe(traceId);
+      expect((generationUpdate.body as any).traceId).toBe(traceId);
+      expect((traceUpdate.body as any).id).toBe(traceId);
+    });
+
+    it.skip("should handle cached token counts", async () => {
+      const handler = new CallbackHandler();
+      const messages = [
+        new SystemMessage("You are an excellent Comedian\n".repeat(200)),
+        new HumanMessage("Tell me a joke"),
+      ];
+
+      const llm = new ChatOpenAI({ modelName: "gpt-4o-mini" });
+
+      await llm.invoke(messages, { callbacks: [handler] });
+
+      // Execute again to force cached token usage
+      await llm.invoke(messages, { callbacks: [handler] });
+
+      await handler.flushAsync();
+
+      const trace = handler.traceId ? await getTrace(handler.traceId) : undefined;
+      expect(trace).toBeDefined();
+
+      const generations = trace?.observations.filter((o) => o.type === "GENERATION");
+
+      generations?.forEach((generation) => {
+        expect(generation.usageDetails).toBeDefined();
+        expect(generation.usageDetails?.input_cache_read).toBeGreaterThan(0);
+        expect(
+          (generation.usageDetails?.input ?? 0) +
+            (generation.usageDetails?.input_cache_read ?? 0) +
+            (generation.usageDetails?.output ?? 0)
+        ).toEqual(generation.usageDetails?.total ?? 0);
+      });
     });
   });
 });

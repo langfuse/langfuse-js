@@ -10,6 +10,7 @@ import {
   HumanMessage,
   SystemMessage,
   ToolMessage,
+  type UsageMetadata,
   type BaseMessageFields,
   type MessageContent,
 } from "@langchain/core/messages";
@@ -20,7 +21,9 @@ import type { ChainValues } from "@langchain/core/utils/types";
 import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { Document } from "@langchain/core/documents";
 
-import type { components, LangfuseSpanClient, LangfuseTraceClient } from "langfuse-core";
+import type { ChatPromptClient, LangfuseSpanClient, LangfuseTraceClient, TextPromptClient } from "langfuse-core";
+
+const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
 
 export type LlmMessage = {
   role: string;
@@ -67,6 +70,8 @@ export class CallbackHandler extends BaseCallbackHandler {
   updateRoot: boolean = false;
   debugEnabled: boolean = false;
   completionStartTimes: Record<string, Date> = {};
+  private promptToParentRunMap;
+  private traceUpdates;
 
   constructor(params?: ConstructorParams) {
     super();
@@ -76,6 +81,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.traceId = params.root.traceId;
       this.rootProvided = true;
       this.updateRoot = params.updateRoot ?? false;
+      this.metadata = params.metadata;
     } else {
       this.langfuse = new Langfuse({
         ...params,
@@ -88,6 +94,8 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.tags = params?.tags;
     }
     this.version = params?.version;
+    this.promptToParentRunMap = new Map<string, TextPromptClient | ChatPromptClient>();
+    this.traceUpdates = new Map<string, { userId?: string; sessionId?: string; tags?: string[] }>();
   }
 
   async flushAsync(): Promise<any> {
@@ -186,19 +194,69 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const runName = name ?? chain.id.at(-1)?.toString() ?? "Langchain Run";
 
-      this.generateTrace(runName, runId, parentRunId, tags, metadata, inputs);
+      this.registerLangfusePrompt(parentRunId, metadata);
+
+      // In chains, inputs can be a string or an array of BaseMessage
+      let finalInput: string | ChainValues = inputs;
+      if (
+        typeof inputs === "object" &&
+        "input" in inputs &&
+        Array.isArray(inputs["input"]) &&
+        inputs["input"].every((m) => m instanceof BaseMessage)
+      ) {
+        finalInput = inputs["input"].map((m) => this.extractChatMessageContent(m));
+      } else if (typeof inputs === "object" && "content" in inputs && typeof inputs["content"] === "string") {
+        finalInput = inputs["content"];
+      }
+
+      this.generateTrace(runName, runId, parentRunId, tags, metadata, finalInput);
       this.langfuse.span({
         id: runId,
         traceId: this.traceId,
         parentObservationId: parentRunId ?? this.rootObservationId,
         name: runName,
         metadata: this.joinTagsAndMetaData(tags, metadata),
-        input: inputs,
+        input: finalInput,
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
+
+      // If there's no parent run, this is a top-level chain execution.
+      // We store trace-level metadata (tags, userId, sessionId) for later use.
+      // This information will be used to update on handleChainEnd
+      if (!parentRunId) {
+        this.traceUpdates.set(runId, {
+          tags,
+          userId:
+            metadata && "langfuseUserId" in metadata && typeof metadata["langfuseUserId"] === "string"
+              ? metadata["langfuseUserId"]
+              : undefined,
+          sessionId:
+            metadata && "langfuseSessionId" in metadata && typeof metadata["langfuseSessionId"] === "string"
+              ? metadata["langfuseSessionId"]
+              : undefined,
+        });
+      }
     } catch (e) {
       this._log(e);
     }
+  }
+
+  private registerLangfusePrompt(parentRunId?: string, metadata?: Record<string, unknown>): void {
+    /*
+    Register a prompt for linking to a generation with the same parentRunId.
+
+    `parentRunId` must exist when we want to do any prompt linking to a generation. If it does not exist, it means the execution is solely a Prompt template formatting without any following LLM invocation, so no generation will be created to link to.
+    For the simplest chain, a parent run is always created to wrap the individual runs consisting of prompt template formatting and LLM invocation.
+    So, we do not need to register any prompt for linking if parentRunId is missing.
+    */
+    if (metadata && "langfusePrompt" in metadata && parentRunId) {
+      this.promptToParentRunMap.set(parentRunId, metadata.langfusePrompt as TextPromptClient | ChatPromptClient);
+    }
+  }
+
+  private deregisterLangfusePrompt(runId: string): void {
+    this.promptToParentRunMap.delete(runId);
   }
 
   async handleAgentAction(action: AgentAction, runId?: string, parentRunId?: string): Promise<void> {
@@ -239,15 +297,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chain error: ${err} with ID: ${runId}`);
 
+      const azureRefusalError = this.parseAzureRefusalError(err);
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
         level: "ERROR",
-        statusMessage: err.toString(),
+        statusMessage: err.toString() + azureRefusalError,
         endTime: new Date(),
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, err.toString());
+      this.updateTrace(runId, parentRunId, err.toString() + azureRefusalError);
     } catch (e) {
       this._log(e);
     }
@@ -286,7 +346,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     if (this.rootProvided && this.updateRoot) {
       if (this.rootObservationId) {
-        this.langfuse._updateSpan({ id: this.rootObservationId, ...params });
+        this.langfuse._updateSpan({ id: this.rootObservationId, traceId: this.traceId, ...params });
       } else {
         this.langfuse.trace({ id: this.traceId, ...params });
       }
@@ -336,8 +396,16 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     let extractedModelName: string | undefined;
     if (extraParams) {
-      const params = extraParams.invocation_params as InvocationParams;
-      extractedModelName = params.model;
+      const invocationParamsModelName = (extraParams.invocation_params as InvocationParams).model;
+      const metadataModelName =
+        metadata && "ls_model_name" in metadata ? (metadata["ls_model_name"] as string) : undefined;
+
+      extractedModelName = invocationParamsModelName ?? metadataModelName;
+    }
+
+    const registeredPrompt = this.promptToParentRunMap.get(parentRunId ?? "root");
+    if (registeredPrompt && parentRunId) {
+      this.deregisterLangfusePrompt(parentRunId);
     }
 
     this.langfuse.generation({
@@ -350,6 +418,8 @@ export class CallbackHandler extends BaseCallbackHandler {
       model: extractedModelName,
       modelParameters: modelParameters,
       version: this.version,
+      prompt: registeredPrompt,
+      level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
     });
   }
 
@@ -378,14 +448,20 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`Chain end with ID: ${runId}`);
 
+      let finalOutput: ChainValues | string = outputs;
+      if (typeof outputs === "object" && "output" in outputs && typeof outputs["output"] === "string") {
+        finalOutput = outputs["output"];
+      }
+
       this.langfuse._updateSpan({
         id: runId,
         traceId: this.traceId,
-        output: outputs,
+        output: finalOutput,
         endTime: new Date(),
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, outputs);
+      this.updateTrace(runId, parentRunId, finalOutput);
+      this.deregisterLangfusePrompt(runId);
     } catch (e) {
       this._log(e);
     }
@@ -430,6 +506,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: input,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
     } catch (e) {
       this._log(e);
@@ -456,6 +533,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         input: query,
         metadata: this.joinTagsAndMetaData(tags, metadata),
         version: this.version,
+        level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       });
     } catch (e) {
       this._log(e);
@@ -524,8 +602,34 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
+      const llmUsage = this.extractUsageMetadata(lastResponse) ?? output.llmOutput?.["tokenUsage"];
+      const modelName = this.extractModelNameFromMetadata(lastResponse);
 
-      const llmUsage = output.llmOutput?.["tokenUsage"] ?? this.extractUsageMetadata(lastResponse);
+      const usageDetails: Record<string, any> = {
+        input: llmUsage?.input_tokens ?? ("promptTokens" in llmUsage ? llmUsage?.promptTokens : undefined),
+        output: llmUsage?.output_tokens ?? ("completionTokens" in llmUsage ? llmUsage?.completionTokens : undefined),
+        total: llmUsage?.total_tokens ?? ("totalTokens" in llmUsage ? llmUsage?.totalTokens : undefined),
+      };
+
+      if (llmUsage && "input_token_details" in llmUsage) {
+        for (const [key, val] of Object.entries(llmUsage["input_token_details"] ?? {})) {
+          usageDetails[`input_${key}`] = val;
+
+          if ("input" in usageDetails && typeof val === "number") {
+            usageDetails["input"] = Math.max(0, usageDetails["input"] - val);
+          }
+        }
+      }
+
+      if (llmUsage && "output_token_details" in llmUsage) {
+        for (const [key, val] of Object.entries(llmUsage["output_token_details"] ?? {})) {
+          usageDetails[`output_${key}`] = val;
+
+          if ("output" in usageDetails && typeof val === "number") {
+            usageDetails["output"] = Math.max(0, usageDetails["output"] - val);
+          }
+        }
+      }
 
       const extractedOutput =
         "message" in lastResponse && lastResponse["message"] instanceof BaseMessage
@@ -534,11 +638,13 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       this.langfuse._updateGeneration({
         id: runId,
+        model: modelName,
         traceId: this.traceId,
         output: extractedOutput,
         endTime: new Date(),
         completionStartTime: runId in this.completionStartTimes ? this.completionStartTimes[runId] : undefined,
-        usage: llmUsage,
+        usage: usageDetails,
+        usageDetails: usageDetails,
         version: this.version,
       });
 
@@ -553,7 +659,7 @@ export class CallbackHandler extends BaseCallbackHandler {
   }
 
   /** Not all models supports tokenUsage in llmOutput, can use AIMessage.usage_metadata instead */
-  private extractUsageMetadata(generation: Generation): components["schemas"]["IngestionUsage"] | undefined {
+  private extractUsageMetadata(generation: Generation): UsageMetadata | undefined {
     try {
       const usageMetadata =
         "message" in generation &&
@@ -561,20 +667,21 @@ export class CallbackHandler extends BaseCallbackHandler {
           ? generation["message"].usage_metadata
           : undefined;
 
-      if (!usageMetadata) {
-        return;
-      }
-
-      return {
-        promptTokens: usageMetadata.input_tokens,
-        completionTokens: usageMetadata.output_tokens,
-        totalTokens: usageMetadata.total_tokens,
-      };
+      return usageMetadata;
     } catch (err) {
       this._log(`Error extracting usage metadata: ${err}`);
 
       return;
     }
+  }
+
+  private extractModelNameFromMetadata(generation: any): string | undefined {
+    try {
+      return "message" in generation &&
+        (generation["message"] instanceof AIMessage || generation["message"] instanceof AIMessageChunk)
+        ? generation["message"].response_metadata.model_name
+        : undefined;
+    } catch {}
   }
 
   private extractChatMessageContent(message: BaseMessage): LlmMessage | AnonymousLlmMessage | MessageContent {
@@ -583,7 +690,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     if (message instanceof HumanMessage) {
       response = { content: message.content, role: "user" };
     } else if (message instanceof ChatMessage) {
-      response = { content: message.content, role: message.name };
+      response = { content: message.content, role: message.role };
     } else if (message instanceof AIMessage) {
       response = { content: message.content, role: "assistant" };
     } else if (message instanceof SystemMessage) {
@@ -610,30 +717,52 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this._log(`LLM error ${err} with ID: ${runId}`);
 
+      // Azure has the refusal status for harmful messages in the error property
+      // This would not be logged as the error message is only a generic message
+      // that there has been a refusal
+      const azureRefusalError = this.parseAzureRefusalError(err);
+
       this.langfuse._updateGeneration({
         id: runId,
         traceId: this.traceId,
         level: "ERROR",
-        statusMessage: err.toString(),
+        statusMessage: err.toString() + azureRefusalError,
         endTime: new Date(),
         version: this.version,
       });
-      this.updateTrace(runId, parentRunId, err.toString());
+      this.updateTrace(runId, parentRunId, err.toString() + azureRefusalError);
     } catch (e) {
       this._log(e);
     }
   }
 
+  private parseAzureRefusalError(err: any): string {
+    // Azure has the refusal status for harmful messages in the error property
+    // This would not be logged as the error message is only a generic message
+    // that there has been a refusal
+    let azureRefusalError = "";
+    if (typeof err == "object" && "error" in err) {
+      try {
+        azureRefusalError = "\n\nError details:\n" + JSON.stringify(err["error"], null, 2);
+      } catch {}
+    }
+
+    return azureRefusalError;
+  }
+
   updateTrace(runId: string, parentRunId: string | undefined, output: any): void {
+    const traceUpdates = this.traceUpdates.get(runId);
+    this.traceUpdates.delete(runId);
+
     if (!parentRunId && this.traceId && this.traceId === runId) {
-      this.langfuse.trace({ id: this.traceId, output: output });
+      this.langfuse.trace({ id: this.traceId, output: output, ...traceUpdates });
     }
 
     if (!parentRunId && this.traceId && this.rootProvided && this.updateRoot) {
       if (this.rootObservationId) {
-        this.langfuse._updateSpan({ id: this.rootObservationId, output });
+        this.langfuse._updateSpan({ id: this.rootObservationId, traceId: this.traceId, output });
       } else {
-        this.langfuse.trace({ id: this.traceId, output });
+        this.langfuse.trace({ id: this.traceId, output, ...traceUpdates });
       }
     }
   }
@@ -642,7 +771,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata1?: Record<string, unknown> | undefined,
     metadata2?: Record<string, unknown> | undefined
-  ): Record<string, unknown> {
+  ): Record<string, unknown> | undefined {
     const finalDict: Record<string, unknown> = {};
     if (tags && tags.length > 0) {
       finalDict.tags = tags;
@@ -653,6 +782,16 @@ export class CallbackHandler extends BaseCallbackHandler {
     if (metadata2) {
       Object.assign(finalDict, metadata2);
     }
-    return finalDict;
+    return this.stripLangfuseKeysFromMetadata(finalDict);
+  }
+
+  private stripLangfuseKeysFromMetadata(metadata?: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!metadata) {
+      return;
+    }
+
+    const langfuseKeys = ["langfusePrompt", "langfuseUserId", "langfuseSessionId"];
+
+    return Object.fromEntries(Object.entries(metadata).filter(([key, _]) => !langfuseKeys.includes(key)));
   }
 }

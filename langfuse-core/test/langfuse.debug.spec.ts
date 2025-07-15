@@ -18,7 +18,7 @@ describe("Langfuse Core", () => {
   });
 
   describe("debug", () => {
-    it("should log emitted events when enabled", () => {
+    it("should log emitted events when enabled", async () => {
       const spy = jest.spyOn(console, "log");
 
       langfuse.trace({ name: "test-trace1" });
@@ -26,12 +26,16 @@ describe("Langfuse Core", () => {
 
       langfuse.debug();
       langfuse.trace({ name: "test-trace2" });
-      expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith("Langfuse Debug", "trace-create", expect.stringContaining("test-trace2"));
+      await jest.advanceTimersByTimeAsync(1);
+      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledWith("[Langfuse Debug]", "trace-create", expect.stringContaining("test-trace2"));
+      expect(spy).toHaveBeenCalledWith("[Langfuse Debug]", "flush", expect.stringContaining("test-trace2"));
 
       spy.mockReset();
       langfuse.debug(false);
       langfuse.trace({ name: "test-trace3" });
+      await jest.advanceTimersByTimeAsync(1);
+
       expect(spy).toHaveBeenCalledTimes(0);
     });
   });
