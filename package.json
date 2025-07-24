@@ -63,7 +63,7 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^6.21.0",
     "ai": "^4.0.6",
-    "axios": "^1.8.2",
+    "axios": "^1.11.0",
     "babel-jest": "^29.7.0",
     "dotenv-cli": "^7.4.2",
     "eslint": "^8.57.0",
