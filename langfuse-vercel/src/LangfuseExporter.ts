@@ -330,9 +330,11 @@ export class LangfuseExporter implements SpanExporter {
       ? [...chatMessages, ...(Array.isArray(tools) ? tools : [])]
       : "ai.prompt" in attributes
         ? attributes["ai.prompt"]
-        : "ai.toolCall.args" in attributes
-          ? attributes["ai.toolCall.args"]
-          : undefined;
+        : "ai.toolCall.input" in attributes
+          ? attributes["ai.toolCall.input"]
+          : "ai.toolCall.args" in attributes // Legacy support for ai SDK versions < 5.0.0
+            ? attributes["ai.toolCall.args"]
+            : undefined;
   }
 
   private parseOutput(span: ReadableSpan): (typeof span.attributes)[0] | undefined {
@@ -342,17 +344,19 @@ export class LangfuseExporter implements SpanExporter {
       ? attributes["ai.response.text"]
       : "ai.result.text" in attributes // Legacy support for ai SDK versions < 4.0.0
         ? attributes["ai.result.text"]
-        : "ai.toolCall.result" in attributes
-          ? attributes["ai.toolCall.result"]
-          : "ai.response.object" in attributes
-            ? attributes["ai.response.object"]
-            : "ai.result.object" in attributes // Legacy support for ai SDK versions < 4.0.0
-              ? attributes["ai.result.object"]
-              : "ai.response.toolCalls" in attributes
-                ? attributes["ai.response.toolCalls"]
-                : "ai.result.toolCalls" in attributes // Legacy support for ai SDK versions < 4.0.0
-                  ? attributes["ai.result.toolCalls"]
-                  : undefined;
+        : "ai.toolCall.output" in attributes
+          ? attributes["ai.toolCall.output"]
+          : "ai.toolCall.result" in attributes // Legacy support for ai SDK versions < 5.0.0
+            ? attributes["ai.toolCall.result"]
+            : "ai.response.object" in attributes
+              ? attributes["ai.response.object"]
+              : "ai.result.object" in attributes // Legacy support for ai SDK versions < 4.0.0
+                ? attributes["ai.result.object"]
+                : "ai.response.toolCalls" in attributes
+                  ? attributes["ai.response.toolCalls"]
+                  : "ai.result.toolCalls" in attributes // Legacy support for ai SDK versions < 4.0.0
+                    ? attributes["ai.result.toolCalls"]
+                    : undefined;
   }
 
   private parseTraceId(spans: ReadableSpan[]): string | undefined {
