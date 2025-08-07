@@ -23,8 +23,7 @@
     "ci": "pnpm build && pnpm test && pnpm lint && pnpm typecheck && pnpm format:check",
     "clean": "pnpm -r run clean && rm -rf packages/*/dist && rm -f packages/*/tsconfig.tsbuildinfo",
     "nuke": "pnpm clean && rm -rf node_modules && rm -rf packages/*/node_modules && pnpm install",
-    "prepare": "husky",
-    "prepublishonly": "pnpm clean && pnpm build"
+    "prepare": "husky"
   },
   "author": "Langfuse",
   "license": "MIT",
