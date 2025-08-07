@@ -56,7 +56,7 @@ End-to-end tests require a running Langfuse platform instance (dev server) to te
 
 1. Start local Langfuse server
 2. Create testing project
-3. Set environment variables: `LANGFUSE_BASEURL`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`
+3. Set environment variables: `LANGFUSE_BASE_URL`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`
 
 **Run**
 

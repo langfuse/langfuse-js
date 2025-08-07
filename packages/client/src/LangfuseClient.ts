@@ -101,6 +101,7 @@ export class LangfuseClient {
     this.baseUrl =
       params?.baseUrl ??
       getEnv("LANGFUSE_BASE_URL") ??
+      getEnv("LANGFUSE_BASEURL") ?? // legacy v2
       "https://cloud.langfuse.com";
 
     if (!publicKey) {
