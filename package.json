@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
+    "docs": "pnpm build && typedoc --options ./typedoc.config.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "pnpm run build && vitest run --project=integration",
