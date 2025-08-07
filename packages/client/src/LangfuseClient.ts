@@ -10,19 +10,100 @@ import { MediaManager } from "./media/index.js";
 import { PromptManager } from "./prompt/index.js";
 import { ScoreManager } from "./score/index.js";
 
+/**
+ * Configuration parameters for initializing a LangfuseClient instance.
+ *
+ * @public
+ */
 export interface LangfuseClientParams {
+  /**
+   * Public API key for authentication with Langfuse.
+   * Can also be provided via LANGFUSE_PUBLIC_KEY environment variable.
+   */
   publicKey?: string;
+
+  /**
+   * Secret API key for authentication with Langfuse.
+   * Can also be provided via LANGFUSE_SECRET_KEY environment variable.
+   */
   secretKey?: string;
+
+  /**
+   * Base URL of the Langfuse instance to connect to.
+   * Can also be provided via LANGFUSE_BASE_URL environment variable.
+   *
+   * @defaultValue "https://cloud.langfuse.com"
+   */
   baseUrl?: string;
+
+  /**
+   * Request timeout in seconds.
+   * Can also be provided via LANGFUSE_TIMEOUT environment variable.
+   *
+   * @defaultValue 5
+   */
   timeout?: number;
+
+  /**
+   * Additional HTTP headers to include with API requests.
+   */
   additionalHeaders?: Record<string, string>;
 }
 
+/**
+ * Main client for interacting with the Langfuse API.
+ *
+ * The LangfuseClient provides access to all Langfuse functionality including:
+ * - Prompt management and retrieval
+ * - Dataset operations
+ * - Score creation and management
+ * - Media upload and handling
+ * - Direct API access for advanced use cases
+ *
+ * @example
+ * ```typescript
+ * // Initialize with explicit credentials
+ * const langfuse = new LangfuseClient({
+ *   publicKey: "pk_...",
+ *   secretKey: "sk_...",
+ *   baseUrl: "https://cloud.langfuse.com"
+ * });
+ *
+ * // Or use environment variables
+ * const langfuse = new LangfuseClient();
+ *
+ * // Use the client
+ * const prompt = await langfuse.prompt.get("my-prompt");
+ * const compiledPrompt = prompt.compile({ variable: "value" });
+ * ```
+ *
+ * @public
+ */
 export class LangfuseClient {
+  /**
+   * Direct access to the underlying Langfuse API client.
+   * Use this for advanced API operations not covered by the high-level managers.
+   */
   public api: LangfuseAPIClient;
+
+  /**
+   * Manager for prompt operations including creation, retrieval, and caching.
+   */
   public prompt: PromptManager;
+
+  /**
+   * Manager for dataset operations including retrieval and item linking.
+   */
   public dataset: DatasetManager;
+
+  /**
+   * Manager for score creation and batch processing.
+   */
   public score: ScoreManager;
+
+  /**
+   * Manager for media upload and reference resolution.
+   */
   public media: MediaManager;
 
   private baseUrl: string;
@@ -93,6 +174,26 @@ export class LangfuseClient {
    */
   public resolveMediaReferences: typeof MediaManager.prototype.resolveReferences;
 
+  /**
+   * Creates a new LangfuseClient instance.
+   *
+   * @param params - Configuration parameters. If not provided, will use environment variables.
+   *
+   * @throws Will log warnings if required credentials are not provided
+   *
+   * @example
+   * ```typescript
+   * // With explicit configuration
+   * const client = new LangfuseClient({
+   *   publicKey: "pk_...",
+   *   secretKey: "sk_...",
+   *   baseUrl: "https://your-instance.langfuse.com"
+   * });
+   *
+   * // Using environment variables
+   * const client = new LangfuseClient();
+   * ```
+   */
   constructor(params?: LangfuseClientParams) {
     const logger = getGlobalLogger();
 
@@ -158,14 +259,55 @@ export class LangfuseClient {
     this.resolveMediaReferences = this.media.resolveReferences;
   }
 
+  /**
+   * Flushes any pending score events to the Langfuse API.
+   *
+   * This method ensures all queued scores are sent immediately rather than
+   * waiting for the automatic flush interval or batch size threshold.
+   *
+   * @returns Promise that resolves when all pending scores have been sent
+   *
+   * @example
+   * ```typescript
+   * langfuse.score.create({ name: "quality", value: 0.8 });
+   * await langfuse.flush(); // Ensures the score is sent immediately
+   * ```
+   */
   public async flush() {
     return this.score.flush();
   }
 
+  /**
+   * Gracefully shuts down the client by flushing all pending data.
+   *
+   * This method should be called before your application exits to ensure
+   * all data is sent to Langfuse.
+   *
+   * @returns Promise that resolves when shutdown is complete
+   *
+   * @example
+   * ```typescript
+   * // Before application exit
+   * await langfuse.shutdown();
+   * ```
+   */
   public async shutdown() {
     return this.score.shutdown();
   }
 
+  /**
+   * Generates a URL to view a specific trace in the Langfuse UI.
+   *
+   * @param traceId - The ID of the trace to generate a URL for
+   * @returns Promise that resolves to the trace URL
+   *
+   * @example
+   * ```typescript
+   * const traceId = "trace-123";
+   * const url = await langfuse.getTraceUrl(traceId);
+   * console.log(`View trace at: ${url}`);
+   * ```
+   */
   public async getTraceUrl(traceId: string) {
     let projectId = this.projectId;
 

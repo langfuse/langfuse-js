@@ -6,34 +6,54 @@ import {
   uint8ArrayToBase64,
 } from "@langfuse/core";
 
+/**
+ * Parameters for resolving media references in objects.
+ *
+ * @template T - The type of the object being processed
+ * @public
+ */
 export type LangfuseMediaResolveMediaReferencesParams<T> = {
+  /** The object to process for media references */
   obj: T;
+  /** The format to resolve media references to (currently only "base64DataUri" is supported) */
   resolveWith: "base64DataUri";
+  /** Maximum depth to traverse when processing nested objects (default: 10) */
   maxDepth?: number;
 };
 
+/**
+ * Manager for media operations in Langfuse.
+ *
+ * Provides methods to resolve media references in objects by replacing
+ * them with actual media content (e.g., base64 data URIs).
+ *
+ * @public
+ */
 export class MediaManager {
   private apiClient: LangfuseAPIClient;
 
+  /**
+   * Creates a new MediaManager instance.
+   *
+   * @param params - Configuration object containing the API client
+   * @internal
+   */
   constructor(params: { apiClient: LangfuseAPIClient }) {
     this.apiClient = params.apiClient;
   }
 
   /**
-   * Replaces the media reference strings in an object with base64 data URIs for the media content.
+   * Replaces media reference strings in an object with base64 data URIs.
    *
-   * This method recursively traverses an object (up to a maximum depth of 10) looking for media reference strings
-   * in the format "@@@langfuseMedia:...@@@". When found, it fetches the actual media content using the provided
-   * Langfuse client and replaces the reference string with a base64 data URI.
+   * This method recursively traverses an object looking for media reference strings
+   * in the format "@@@langfuseMedia:...@@@". When found, it fetches the actual media
+   * content from Langfuse and replaces the reference string with a base64 data URI.
    *
-   * If fetching media content fails for a reference string, a warning is logged and the reference string is left unchanged.
+   * If fetching media content fails for a reference string, a warning is logged
+   * and the reference string is left unchanged.
    *
    * @param params - Configuration object
-   * @param params.obj - The object to process. Can be a primitive value, array, or nested object
-   * @param params.resolveWith - The representation of the media content to replace the media reference string with. Currently only "base64DataUri" is supported.
-   * @param params.maxDepth - Optional. Default is 10. The maximum depth to traverse the object.
-   *
-   * @returns A deep copy of the input object with all media references replaced with base64 data URIs where possible
+   * @returns A deep copy of the input object with media references resolved
    *
    * @example
    * ```typescript
@@ -44,9 +64,9 @@ export class MediaManager {
    *   }
    * };
    *
-   * const result = await LangfuseMedia.resolveMediaReferences({
+   * const result = await langfuse.media.resolveReferences({
    *   obj,
-   *   langfuseClient
+   *   resolveWith: "base64DataUri"
    * });
    *
    * // Result:

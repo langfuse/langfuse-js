@@ -16,16 +16,37 @@ mustache.escape = function (text) {
   return text;
 };
 
+/**
+ * Base class for all prompt clients.
+ *
+ * @internal
+ */
 abstract class BasePromptClient {
+  /** The name of the prompt */
   public readonly name: string;
+  /** The version number of the prompt */
   public readonly version: number;
+  /** Configuration object associated with the prompt */
   public readonly config: unknown;
+  /** Labels associated with the prompt */
   public readonly labels: string[];
+  /** Tags associated with the prompt */
   public readonly tags: string[];
+  /** Whether this prompt client is using fallback content */
   public readonly isFallback: boolean;
+  /** The type of prompt ("text" or "chat") */
   public readonly type: "text" | "chat";
+  /** Optional commit message for the prompt version */
   public readonly commitMessage: string | null | undefined;
 
+  /**
+   * Creates a new BasePromptClient instance.
+   *
+   * @param prompt - The base prompt data
+   * @param isFallback - Whether this is fallback content
+   * @param type - The prompt type
+   * @internal
+   */
   constructor(prompt: BasePrompt, isFallback = false, type: "text" | "chat") {
     this.name = prompt.name;
     this.version = prompt.version;
@@ -37,14 +58,31 @@ abstract class BasePromptClient {
     this.commitMessage = prompt.commitMessage;
   }
 
+  /** Gets the raw prompt content */
   abstract get prompt(): string | ChatMessageWithPlaceholders[];
+
+  /** Sets the raw prompt content */
   abstract set prompt(value: string | ChatMessageWithPlaceholders[]);
 
+  /**
+   * Compiles the prompt by substituting variables and resolving placeholders.
+   *
+   * @param variables - Key-value pairs for variable substitution
+   * @param placeholders - Key-value pairs for placeholder resolution
+   * @returns The compiled prompt content
+   */
   abstract compile(
     variables?: Record<string, string>,
     placeholders?: Record<string, any>,
   ): string | ChatMessage[] | (ChatMessageOrPlaceholder | any)[];
 
+  /**
+   * Converts the prompt to a format compatible with LangChain.
+   *
+   * @param options - Options for conversion
+   * @param options.placeholders - Placeholders to resolve during conversion
+   * @returns The prompt in LangChain-compatible format
+   */
   public abstract getLangchainPrompt(options?: {
     placeholders?: Record<string, any>;
   }):
@@ -124,19 +162,56 @@ abstract class BasePromptClient {
     return out.join("");
   }
 
+  /**
+   * Serializes the prompt client to JSON.
+   *
+   * @returns JSON string representation of the prompt
+   */
   public abstract toJSON(): string;
 }
 
+/**
+ * Client for working with text-based prompts.
+ *
+ * Provides methods to compile text prompts with variable substitution
+ * and convert them to LangChain-compatible formats.
+ *
+ * @public
+ */
 export class TextPromptClient extends BasePromptClient {
+  /** The original prompt response from the API */
   public readonly promptResponse: Prompt.Text;
+  /** The text content of the prompt */
   public readonly prompt: string;
 
+  /**
+   * Creates a new TextPromptClient instance.
+   *
+   * @param prompt - The text prompt data
+   * @param isFallback - Whether this is fallback content
+   */
   constructor(prompt: Prompt.Text, isFallback = false) {
     super(prompt, isFallback, "text");
     this.promptResponse = prompt;
     this.prompt = prompt.prompt;
   }
 
+  /**
+   * Compiles the text prompt by substituting variables.
+   *
+   * Uses Mustache templating to replace {{variable}} placeholders with provided values.
+   *
+   * @param variables - Key-value pairs for variable substitution
+   * @param _placeholders - Ignored for text prompts
+   * @returns The compiled text with variables substituted
+   *
+   * @example
+   * ```typescript
+   * const prompt = await langfuse.prompt.get("greeting", { type: "text" });
+   * const compiled = prompt.compile({ name: "Alice" });
+   * // If prompt is "Hello {{name}}!", result is "Hello Alice!"
+   * ```
+   */
   compile(
     variables?: Record<string, string>,
     _placeholders?: Record<string, any>,
@@ -144,17 +219,24 @@ export class TextPromptClient extends BasePromptClient {
     return mustache.render(this.promptResponse.prompt, variables ?? {});
   }
 
+  /**
+   * Converts the prompt to LangChain PromptTemplate format.
+   *
+   * Transforms Mustache-style {{variable}} syntax to LangChain's {variable} format.
+   *
+   * @param _options - Ignored for text prompts
+   * @returns The prompt string compatible with LangChain PromptTemplate
+   *
+   * @example
+   * ```typescript
+   * const prompt = await langfuse.prompt.get("greeting", { type: "text" });
+   * const langchainFormat = prompt.getLangchainPrompt();
+   * // Transforms "Hello {{name}}!" to "Hello {name}!"
+   * ```
+   */
   public getLangchainPrompt(_options?: {
     placeholders?: Record<string, any>;
   }): string {
-    /**
-     * Converts Langfuse prompt into string compatible with Langchain PromptTemplate.
-     *
-     * It specifically adapts the mustache-style double curly braces {{variable}} used in Langfuse
-     * to the single curly brace {variable} format expected by Langchain.
-     *
-     * @returns {string} The string that can be plugged into Langchain's PromptTemplate.
-     */
     return this._transformToLangchainVariables(this.prompt);
   }
 
@@ -172,10 +254,26 @@ export class TextPromptClient extends BasePromptClient {
   }
 }
 
+/**
+ * Client for working with chat-based prompts.
+ *
+ * Provides methods to compile chat prompts with variable substitution and
+ * placeholder resolution, and convert them to LangChain-compatible formats.
+ *
+ * @public
+ */
 export class ChatPromptClient extends BasePromptClient {
+  /** The original prompt response from the API */
   public readonly promptResponse: Prompt.Chat;
+  /** The chat messages that make up the prompt */
   public readonly prompt: ChatMessageWithPlaceholders[];
 
+  /**
+   * Creates a new ChatPromptClient instance.
+   *
+   * @param prompt - The chat prompt data
+   * @param isFallback - Whether this is fallback content
+   */
   constructor(prompt: Prompt.Chat, isFallback = false) {
     const normalizedPrompt = ChatPromptClient.normalizePrompt(prompt.prompt);
     const typedPrompt: Prompt.Chat = {
@@ -206,22 +304,30 @@ export class ChatPromptClient extends BasePromptClient {
     });
   }
 
+  /**
+   * Compiles the chat prompt by replacing placeholders and variables.
+   *
+   * First resolves placeholders with provided values, then applies variable substitution
+   * to message content using Mustache templating. Unresolved placeholders remain
+   * as placeholder objects in the output.
+   *
+   * @param variables - Key-value pairs for Mustache variable substitution in message content
+   * @param placeholders - Key-value pairs where keys are placeholder names and values are ChatMessage arrays
+   * @returns Array of ChatMessage objects and unresolved placeholder objects
+   *
+   * @example
+   * ```typescript
+   * const prompt = await langfuse.prompt.get("conversation", { type: "chat" });
+   * const compiled = prompt.compile(
+   *   { user_name: "Alice" },
+   *   { examples: [{ role: "user", content: "Hello" }, { role: "assistant", content: "Hi!" }] }
+   * );
+   * ```
+   */
   compile(
     variables?: Record<string, string>,
     placeholders?: Record<string, any>,
   ): (ChatMessageOrPlaceholder | any)[] {
-    /**
-     * Compiles the chat prompt by replacing placeholders and variables with provided values.
-     *
-     * First fills-in placeholders by from the provided placeholder parameter.
-     * Then compiles variables into the message content.
-     * Unresolved placeholders are included in the output as placeholder objects.
-     * If you only want to fill-in placeholders, pass an empty object for variables.
-     *
-     * @param variables - Key-value pairs for Mustache variable substitution in message content
-     * @param placeholders - Key-value pairs where keys are placeholder names and values can be ChatMessage arrays
-     * @returns Array of ChatMessage objects and placeholder objects with placeholders replaced and variables rendered
-     */
     const messagesWithPlaceholdersReplaced: (ChatMessageOrPlaceholder | any)[] =
       [];
     const placeholderValues = placeholders ?? {};
@@ -286,25 +392,28 @@ export class ChatPromptClient extends BasePromptClient {
     });
   }
 
+  /**
+   * Converts the prompt to LangChain ChatPromptTemplate format.
+   *
+   * Resolves placeholders with provided values and converts unresolved ones
+   * to LangChain MessagesPlaceholder objects. Transforms variables from
+   * {{var}} to {var} format without rendering them.
+   *
+   * @param options - Configuration object
+   * @param options.placeholders - Key-value pairs for placeholder resolution
+   * @returns Array of ChatMessage objects and LangChain MessagesPlaceholder objects
+   *
+   * @example
+   * ```typescript
+   * const prompt = await langfuse.prompt.get("conversation", { type: "chat" });
+   * const langchainFormat = prompt.getLangchainPrompt({
+   *   placeholders: { examples: [{ role: "user", content: "Hello" }] }
+   * });
+   * ```
+   */
   public getLangchainPrompt(options?: {
     placeholders?: Record<string, any>;
   }): (ChatMessage | LangchainMessagesPlaceholder | any)[] {
-    /*
-     * Converts Langfuse prompt into format compatible with Langchain PromptTemplate.
-     *
-     * Fills-in placeholders from provided values and converts unresolved ones to Langchain MessagesPlaceholder objects.
-     * Transforms variables from {{var}} to {var} format for Langchain without rendering them.
-     *
-     * @param options - Configuration object
-     * @param options.placeholders - Key-value pairs where keys are placeholder names and values can be ChatMessage arrays
-     * @returns Array of ChatMessage objects and Langchain MessagesPlaceholder objects with variables transformed for Langchain compatibility.
-     *
-     * @example
-     * ```typescript
-     * const client = new ChatPromptClient(prompt);
-     * client.getLangchainPrompt({ placeholders: { examples: [{ role: "user", content: "Hello" }] } });
-     * ```
-     */
     const messagesWithPlaceholdersReplaced: (
       | ChatMessage
       | LangchainMessagesPlaceholder
@@ -384,4 +493,9 @@ export class ChatPromptClient extends BasePromptClient {
   }
 }
 
+/**
+ * Union type representing either a text or chat prompt client.
+ *
+ * @public
+ */
 export type LangfusePromptClient = TextPromptClient | ChatPromptClient;

@@ -13,6 +13,15 @@ import { Span, trace } from "@opentelemetry/api";
 const MAX_QUEUE_SIZE = 100_000; // prevent memory leaks
 const MAX_BATCH_SIZE = 100;
 
+/**
+ * Manager for creating and batching score events in Langfuse.
+ *
+ * The ScoreManager handles automatic batching and flushing of score events
+ * to optimize API usage. Scores are automatically sent when the queue reaches
+ * a certain size or after a time interval.
+ *
+ * @public
+ */
 export class ScoreManager {
   private apiClient: LangfuseAPIClient;
   private eventQueue: IngestionEvent[] = [];
@@ -21,6 +30,12 @@ export class ScoreManager {
   private flushAtCount: number;
   private flushIntervalSeconds: number;
 
+  /**
+   * Creates a new ScoreManager instance.
+   *
+   * @param params - Configuration object containing the API client
+   * @internal
+   */
   constructor(params: { apiClient: LangfuseAPIClient }) {
     this.apiClient = params.apiClient;
 
@@ -37,6 +52,25 @@ export class ScoreManager {
     return getGlobalLogger();
   }
 
+  /**
+   * Creates a new score event and adds it to the processing queue.
+   *
+   * Scores are queued and sent in batches for efficiency. The score will be
+   * automatically sent when the queue reaches the flush threshold or after
+   * the flush interval expires.
+   *
+   * @param data - The score data to create
+   *
+   * @example
+   * ```typescript
+   * langfuse.score.create({
+   *   name: "quality",
+   *   value: 0.85,
+   *   traceId: "trace-123",
+   *   comment: "High quality response"
+   * });
+   * ```
+   */
   public create(data: ScoreBody): void {
     const scoreData: ScoreBody = {
       ...data,
@@ -69,6 +103,26 @@ export class ScoreManager {
     }
   }
 
+  /**
+   * Creates a score for a specific observation using its OpenTelemetry span.
+   *
+   * This method automatically extracts the trace ID and observation ID from
+   * the provided span context.
+   *
+   * @param observation - Object containing the OpenTelemetry span
+   * @param data - Score data (traceId and observationId will be auto-populated)
+   *
+   * @example
+   * ```typescript
+   * import { startSpan } from '@langfuse/tracing';
+   *
+   * const span = startSpan({ name: "my-operation" });
+   * langfuse.score.observation(
+   *   { otelSpan: span },
+   *   { name: "accuracy", value: 0.92 }
+   * );
+   * ```
+   */
   public observation(
     observation: { otelSpan: Span },
     data: Omit<
@@ -85,6 +139,26 @@ export class ScoreManager {
     });
   }
 
+  /**
+   * Creates a score for a trace using an OpenTelemetry span.
+   *
+   * This method automatically extracts the trace ID from the provided
+   * span context and creates a trace-level score.
+   *
+   * @param observation - Object containing the OpenTelemetry span
+   * @param data - Score data (traceId will be auto-populated)
+   *
+   * @example
+   * ```typescript
+   * import { startSpan } from '@langfuse/tracing';
+   *
+   * const span = startSpan({ name: "my-operation" });
+   * langfuse.score.trace(
+   *   { otelSpan: span },
+   *   { name: "overall_quality", value: 0.88 }
+   * );
+   * ```
+   */
   public trace(
     observation: { otelSpan: Span },
     data: Omit<
@@ -100,6 +174,28 @@ export class ScoreManager {
     });
   }
 
+  /**
+   * Creates a score for the currently active observation.
+   *
+   * This method automatically detects the active OpenTelemetry span and
+   * creates an observation-level score. If no active span is found,
+   * a warning is logged and the operation is skipped.
+   *
+   * @param data - Score data (traceId and observationId will be auto-populated)
+   *
+   * @example
+   * ```typescript
+   * import { startActiveSpan } from '@langfuse/tracing';
+   *
+   * startActiveSpan({ name: "my-operation" }, (span) => {
+   *   // Inside the active span
+   *   langfuse.score.activeObservation({
+   *     name: "relevance",
+   *     value: 0.95
+   *   });
+   * });
+   * ```
+   */
   public activeObservation(
     data: Omit<
       ScoreBody,
@@ -122,6 +218,29 @@ export class ScoreManager {
     });
   }
 
+  /**
+   * Creates a score for the currently active trace.
+   *
+   * This method automatically detects the active OpenTelemetry span and
+   * creates a trace-level score. If no active span is found,
+   * a warning is logged and the operation is skipped.
+   *
+   * @param data - Score data (traceId will be auto-populated)
+   *
+   * @example
+   * ```typescript
+   * import { startActiveSpan } from '@langfuse/tracing';
+   *
+   * startActiveSpan({ name: "my-operation" }, (span) => {
+   *   // Inside the active span
+   *   langfuse.score.activeTrace({
+   *     name: "user_satisfaction",
+   *     value: 4,
+   *     comment: "User rated 4 out of 5 stars"
+   *   });
+   * });
+   * ```
+   */
   public activeTrace(
     data: Omit<
       ScoreBody,
@@ -177,10 +296,38 @@ export class ScoreManager {
     }
   }
 
+  /**
+   * Flushes all pending score events to the Langfuse API.
+   *
+   * This method ensures all queued scores are sent immediately rather than
+   * waiting for the automatic flush interval or batch size threshold.
+   *
+   * @returns Promise that resolves when all pending scores have been sent
+   *
+   * @example
+   * ```typescript
+   * langfuse.score.create({ name: "quality", value: 0.8 });
+   * await langfuse.score.flush(); // Ensures the score is sent immediately
+   * ```
+   */
   public async flush() {
     return this.flushPromise ?? this.handleFlush();
   }
 
+  /**
+   * Gracefully shuts down the score manager by flushing all pending scores.
+   *
+   * This method should be called before your application exits to ensure
+   * all score data is sent to Langfuse.
+   *
+   * @returns Promise that resolves when shutdown is complete
+   *
+   * @example
+   * ```typescript
+   * // Before application exit
+   * await langfuse.score.shutdown();
+   * ```
+   */
   public async shutdown() {
     await this.flush();
   }
