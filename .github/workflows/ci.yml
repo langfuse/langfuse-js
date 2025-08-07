@@ -20,7 +20,6 @@ jobs:
       LANGFUSE_SECRET_KEY: "sk-lf-1234567890"
       LANGFUSE_PUBLIC_KEY: "pk-lf-1234567890"
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-    name: Integration Tests on Node 20
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
