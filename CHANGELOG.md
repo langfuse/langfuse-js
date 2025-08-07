@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.0-beta.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0-alpha.3...v4.0.0-beta.0) (2025-08-07)
+
+### 🔧 Maintenance
+
+* **client:** make params optional ([d55ab80](https://github.com/langfuse/langfuse-js/commit/d55ab8012ee7b7ed37eb27b1d925e8fea0e78e8b))
+* **otel:** export types ([1febde7](https://github.com/langfuse/langfuse-js/commit/1febde7380276225b2622cbd3b6b6594c4b69868))
+
 ## [4.0.0-alpha.3](https://github.com/langfuse/langfuse-js/compare/v4.0.0-alpha.2...v4.0.0-alpha.3) (2025-08-07)
 
 ### 🔧 Maintenance
