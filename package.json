@@ -15,7 +15,7 @@
     "lint:fix": "eslint \"packages/*/src/**/*.ts\" --fix",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b --noEmit",
     "release": "tag=latest release-it",
     "release:alpha": "tag=alpha release-it --preRelease=alpha",
     "release:beta": "tag=beta release-it --preRelease=beta",
