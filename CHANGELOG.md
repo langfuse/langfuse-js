@@ -1,5 +1,7 @@
 # Changelog
 
+## [4.0.0-alpha.1](https://github.com/langfuse/langfuse-js/compare/v4.0.0-alpha.0...v4.0.0-alpha.1) (2025-08-07)
+
 ## [4.0.0-alpha.0](https://github.com/langfuse/langfuse-js/compare/v3.38.4...v4.0.0-alpha.0) (2025-08-07)
 
 ### ✨ Features
