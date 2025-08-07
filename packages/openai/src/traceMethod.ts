@@ -13,8 +13,25 @@ import {
 import type { LangfuseConfig } from "./types.js";
 import { isAsyncIterable } from "./utils.js";
 
+/**
+ * Generic method type for any function that can be traced.
+ * @internal
+ */
 type GenericMethod = (...args: unknown[]) => unknown;
 
+/**
+ * Wraps a method with Langfuse tracing functionality.
+ *
+ * This function creates a wrapper around OpenAI SDK methods that automatically
+ * creates Langfuse generations, captures input/output data, handles streaming
+ * responses, and records usage metrics and errors.
+ *
+ * @param tracedMethod - The OpenAI SDK method to wrap with tracing
+ * @param config - Configuration for the trace and generation
+ * @returns A wrapped version of the method that creates Langfuse traces
+ *
+ * @internal
+ */
 export const withTracing = <T extends GenericMethod>(
   tracedMethod: T,
   config?: LangfuseConfig & Required<{ generationName: string }>,
@@ -22,6 +39,20 @@ export const withTracing = <T extends GenericMethod>(
   return (...args) => wrapMethod(tracedMethod, config, ...args);
 };
 
+/**
+ * Internal method that handles the actual tracing logic for OpenAI SDK methods.
+ *
+ * This function creates a Langfuse generation, executes the original method,
+ * and captures all relevant data including input, output, usage, and errors.
+ * It handles both streaming and non-streaming responses appropriately.
+ *
+ * @param tracedMethod - The original OpenAI SDK method to execute
+ * @param config - Langfuse configuration options
+ * @param args - Arguments to pass to the original method
+ * @returns The result from the original method, potentially wrapped for streaming
+ *
+ * @internal
+ */
 const wrapMethod = <T extends GenericMethod>(
   tracedMethod: T,
   config?: LangfuseConfig,
@@ -127,6 +158,19 @@ const wrapMethod = <T extends GenericMethod>(
   }
 };
 
+/**
+ * Wraps an async iterable (streaming response) with Langfuse tracing.
+ *
+ * This function handles streaming OpenAI responses by collecting chunks,
+ * parsing usage information, and updating the Langfuse generation with
+ * the complete output and usage details once the stream is consumed.
+ *
+ * @param iterable - The async iterable from OpenAI (streaming response)
+ * @param generation - The Langfuse generation to update with stream data
+ * @returns An async generator that yields original chunks while collecting data
+ *
+ * @internal
+ */
 function wrapAsyncIterable<R>(
   iterable: AsyncIterable<unknown>,
   generation: LangfuseGeneration,

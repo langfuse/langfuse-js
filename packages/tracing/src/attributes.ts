@@ -7,6 +7,32 @@ import {
   LangfuseTraceAttributes,
 } from "./types.js";
 
+/**
+ * Creates OpenTelemetry attributes from Langfuse trace attributes.
+ *
+ * Converts user-friendly trace attributes into the internal OpenTelemetry
+ * attribute format required by the span processor.
+ *
+ * @param attributes - Langfuse trace attributes to convert
+ * @returns OpenTelemetry attributes object with non-null values
+ *
+ * @example
+ * ```typescript
+ * import { createTraceAttributes } from '@langfuse/tracing';
+ *
+ * const otelAttributes = createTraceAttributes({
+ *   name: 'user-checkout-flow',
+ *   userId: 'user-123',
+ *   sessionId: 'session-456',
+ *   tags: ['checkout', 'payment'],
+ *   metadata: { version: '2.1.0' }
+ * });
+ *
+ * span.setAttributes(otelAttributes);
+ * ```
+ *
+ * @public
+ */
 export function createTraceAttributes({
   name,
   userId,
@@ -39,6 +65,31 @@ export function createTraceAttributes({
   );
 }
 
+/**
+ * Creates OpenTelemetry attributes from Langfuse span attributes.
+ *
+ * Converts user-friendly span attributes into the internal OpenTelemetry
+ * attribute format required by the span processor.
+ *
+ * @param attributes - Langfuse span attributes to convert
+ * @returns OpenTelemetry attributes object with non-null values
+ *
+ * @example
+ * ```typescript
+ * import { createSpanAttributes } from '@langfuse/tracing';
+ *
+ * const otelAttributes = createSpanAttributes({
+ *   input: { query: 'SELECT * FROM users' },
+ *   output: { rowCount: 42 },
+ *   level: 'DEFAULT',
+ *   metadata: { database: 'prod' }
+ * });
+ *
+ * span.setAttributes(otelAttributes);
+ * ```
+ *
+ * @public
+ */
 export function createSpanAttributes({
   metadata,
   input,
@@ -62,6 +113,38 @@ export function createSpanAttributes({
   );
 }
 
+/**
+ * Creates OpenTelemetry attributes from Langfuse generation attributes.
+ *
+ * Converts user-friendly generation attributes into the internal OpenTelemetry
+ * attribute format required by the span processor. Includes special handling
+ * for LLM-specific fields like model parameters, usage, and costs.
+ *
+ * @param attributes - Langfuse generation attributes to convert
+ * @returns OpenTelemetry attributes object with non-null values
+ *
+ * @example
+ * ```typescript
+ * import { createGenerationAttributes } from '@langfuse/tracing';
+ *
+ * const otelAttributes = createGenerationAttributes({
+ *   input: [{ role: 'user', content: 'Hello!' }],
+ *   output: { role: 'assistant', content: 'Hi there!' },
+ *   model: 'gpt-4',
+ *   modelParameters: { temperature: 0.7 },
+ *   usageDetails: {
+ *     promptTokens: 10,
+ *     completionTokens: 15,
+ *     totalTokens: 25
+ *   },
+ *   costDetails: { totalCost: 0.001 }
+ * });
+ *
+ * span.setAttributes(otelAttributes);
+ * ```
+ *
+ * @public
+ */
 export function createGenerationAttributes({
   completionStartTime,
   metadata,
@@ -107,6 +190,31 @@ export function createGenerationAttributes({
   ) as Attributes;
 }
 
+/**
+ * Creates OpenTelemetry attributes from Langfuse event attributes.
+ *
+ * Converts user-friendly event attributes into the internal OpenTelemetry
+ * attribute format required by the span processor. Events are point-in-time
+ * observations that are automatically ended when created.
+ *
+ * @param attributes - Langfuse event attributes to convert
+ * @returns OpenTelemetry attributes object with non-null values
+ *
+ * @example
+ * ```typescript
+ * import { createEventAttributes } from '@langfuse/tracing';
+ *
+ * const otelAttributes = createEventAttributes({
+ *   input: { action: 'button_click', elementId: 'submit' },
+ *   level: 'DEFAULT',
+ *   metadata: { page: '/checkout', userId: '123' }
+ * });
+ *
+ * span.setAttributes(otelAttributes);
+ * ```
+ *
+ * @public
+ */
 export function createEventAttributes({
   metadata,
   input,
@@ -130,6 +238,13 @@ export function createEventAttributes({
   );
 }
 
+/**
+ * Safely serializes an object to JSON string.
+ *
+ * @param obj - Object to serialize
+ * @returns JSON string or undefined if null/undefined, error message if serialization fails
+ * @internal
+ */
 function _serialize(obj: unknown): string | undefined {
   try {
     return obj != null ? JSON.stringify(obj) : undefined;
@@ -138,6 +253,18 @@ function _serialize(obj: unknown): string | undefined {
   }
 }
 
+/**
+ * Flattens and serializes metadata into OpenTelemetry attribute format.
+ *
+ * Converts nested metadata objects into dot-notation attribute keys.
+ * For example, `{ database: { host: 'localhost' } }` becomes
+ * `{ 'langfuse.metadata.database.host': 'localhost' }`.
+ *
+ * @param metadata - Metadata object to flatten
+ * @param type - Whether this is for observation or trace metadata
+ * @returns Flattened metadata attributes
+ * @internal
+ */
 function _flattenAndSerializeMetadata(
   metadata: unknown,
   type: "observation" | "trace",
