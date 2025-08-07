@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/openai",
-  "version": "4.0.1-alpha.3",
+  "version": "3.99.0",
   "description": "Langfuse integration for OpenAI SDK",
   "type": "module",
   "sideEffects": false,

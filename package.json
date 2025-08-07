@@ -1,6 +1,6 @@
 {
   "name": "langfuse-js",
-  "version": "4.0.1-alpha.3",
+  "version": "3.99.0",
   "description": "Langfuse JavaScript / TypeScript SDK",
   "private": true,
   "type": "module",
