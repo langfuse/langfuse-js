@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - master
   workflow_dispatch:
 
 concurrency:
@@ -13,35 +12,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tests:
+  test-integration:
     timeout-minutes: 3
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20]
     env:
-      LANGFUSE_BASEURL: "http://localhost:3000"
+      LANGFUSE_BASE_URL: "http://localhost:3000"
       LANGFUSE_SECRET_KEY: "sk-lf-1234567890"
       LANGFUSE_PUBLIC_KEY: "pk-lf-1234567890"
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-    name: Test on Node ${{ matrix.node-version }}
     steps:
       - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.5.0
       - uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
-      - run: yarn install
-      - run: yarn test
+          node-version: 20
+      - run: pnpm install
+      - run: pnpm test:integration
 
-  integration-test:
+  test-e2e:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      LANGFUSE_BASEURL: "http://localhost:3000"
+      LANGFUSE_BASE_URL: "http://localhost:3000"
       LANGFUSE_SECRET_KEY: "sk-lf-1234567890"
       LANGFUSE_PUBLIC_KEY: "pk-lf-1234567890"
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      LANGCHAIN_VERSION: 1
 
     steps:
       - uses: actions/checkout@v3
@@ -117,27 +114,29 @@ jobs:
           done
           echo "Langfuse server is up and running!"
 
-      - run: yarn install
-      - run: yarn compile
-      - run: yarn test:integration
+      - run: pnpm install
+      - run: pnpm test:e2e
 
   lint:
     timeout-minutes: 3
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.5.0
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
 
-      - run: yarn install
-      - run: yarn compile
-      - run: yarn lint
-      - run: yarn prettier:check
+      - run: pnpm install
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm format:check
+
   all-tests-passed:
-    # This allows us to have a branch protection rule for tests and deploys with matrix
     runs-on: ubuntu-latest
-    needs: [tests, integration-test, lint]
+    needs: [test-e2e, test-integration, lint]
     if: always()
     steps:
       - name: Successful deploy

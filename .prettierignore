@@ -1,2 +1,37 @@
-lib
+# Dependencies
+node_modules/
+.pnpm-store/
 
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Package files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Generated files
+CHANGELOG.md
+
+# Git
+.git/
