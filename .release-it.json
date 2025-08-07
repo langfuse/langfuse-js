@@ -18,6 +18,10 @@
       "pnpm -r publish --access public --no-git-checks --tag $tag --otp $otp"
     ]
   },
+  "github": {
+    "release": true,
+    "web": true
+  },
   "plugins": {
     "@release-it/bumper": {
       "out": ["packages/*/package.json"]
