@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@langfuse/client": ["../packages/client/dist/index.d.ts"],
+      "@langfuse/core": ["../packages/core/src/index.ts"],
+      "@langfuse/tracing": ["../packages/tracing/src/index.ts"],
+      "@langfuse/otel": ["../packages/otel/src/index.ts"],
+      "@langfuse/langchain": ["../packages/langchain/src/index.ts"],
+      "@langfuse/openai": ["../packages/openai/src/index.ts"]
+    },
+    "types": ["vitest/globals", "@types/node"]
+  },
+  "include": ["**/*.ts", "**/*.js"],
+  "exclude": ["node_modules", "dist"]
+}

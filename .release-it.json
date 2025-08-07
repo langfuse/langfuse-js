@@ -1,0 +1,68 @@
+{
+  "git": {
+    "requireBranch": "main",
+    "requireCleanWorkingDir": true,
+    "requireUpstream": true,
+    "addUntrackedFiles": false,
+    "commit": true,
+    "commitMessage": "chore: release v${version}",
+    "tag": true,
+    "tagName": "v${version}",
+    "push": true,
+    "pushArgs": ["--follow-tags"]
+  },
+  "hooks": {
+    "before:init": ["pnpm clean", "pnpm install"],
+    "before:release": ["pnpm build"],
+    "after:release": [
+      "pnpm -r publish --access public --no-git-checks --tag $tag --otp $otp"
+    ]
+  },
+  "plugins": {
+    "@release-it/bumper": {
+      "out": ["packages/*/package.json"]
+    },
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits",
+        "types": [
+          {
+            "type": "feat",
+            "section": "✨ Features"
+          },
+          {
+            "type": "fix",
+            "section": "🐛 Bug Fixes"
+          },
+          {
+            "type": "chore",
+            "section": "🔧 Maintenance"
+          },
+          {
+            "type": "docs",
+            "section": "📚 Documentation"
+          },
+          {
+            "type": "style",
+            "section": "💄 Styling"
+          },
+          {
+            "type": "refactor",
+            "section": "♻️ Code Refactoring"
+          },
+          {
+            "type": "perf",
+            "section": "⚡ Performance Improvements"
+          },
+          {
+            "type": "test",
+            "section": "🧪 Tests"
+          }
+        ]
+      },
+      "infile": "CHANGELOG.md",
+      "header": "# Changelog",
+      "ignoreRecommendedBump": true
+    }
+  }
+}

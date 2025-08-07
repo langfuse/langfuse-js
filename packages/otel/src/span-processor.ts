@@ -1,0 +1,458 @@
+import {
+  Logger,
+  getGlobalLogger,
+  generateUUID,
+  LangfuseAPIClient,
+  LANGFUSE_SDK_VERSION,
+  LangfuseOtelSpanAttributes,
+  getEnv,
+} from "@langfuse/core";
+import { hrTimeToMilliseconds } from "@opentelemetry/core";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import {
+  Span,
+  BatchSpanProcessor,
+  SpanExporter,
+  ReadableSpan,
+} from "@opentelemetry/sdk-trace-base";
+
+import { isCryptoAvailable } from "./hash.js";
+import { LangfuseMedia } from "./media.js";
+
+export type MaskFunction = (params: { data: any }) => any;
+export type ShouldExportSpan = (params: { otelSpan: ReadableSpan }) => boolean;
+
+export interface LangfuseSpanProcessorParams {
+  exporter?: SpanExporter;
+  publicKey?: string;
+  secretKey?: string;
+  baseUrl?: string;
+  flushAt?: number;
+  flushInterval?: number;
+  mask?: MaskFunction;
+  shouldExportSpan?: ShouldExportSpan;
+  environment?: string;
+  release?: string;
+  timeout?: number;
+  additionalHeaders?: Record<string, string>;
+}
+
+export class LangfuseSpanProcessor extends BatchSpanProcessor {
+  private pendingMediaUploads: Record<string, Promise<any>> = {};
+
+  private publicKey?: string;
+  private baseUrl?: string;
+  private environment?: string;
+  private release?: string;
+  private mask?: MaskFunction;
+  private shouldExportSpan?: ShouldExportSpan;
+  private apiClient: LangfuseAPIClient;
+
+  constructor(params: LangfuseSpanProcessorParams) {
+    const logger = getGlobalLogger();
+
+    const publicKey = params.publicKey ?? getEnv("LANGFUSE_PUBLIC_KEY");
+    const secretKey = params.secretKey ?? getEnv("LANGFUSE_SECRET_KEY");
+    const baseUrl =
+      params.baseUrl ??
+      getEnv("LANGFUSE_BASE_URL") ??
+      "https://cloud.langfuse.com";
+
+    if (!params.exporter && !publicKey) {
+      logger.warn(
+        "No exporter configured and no public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Span exports will fail.",
+      );
+    }
+    if (!params.exporter && !secretKey) {
+      logger.warn(
+        "No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail.",
+      );
+    }
+    const flushAt = params.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
+    const flushIntervalSeconds =
+      params.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
+
+    const authHeaderValue = Buffer.from(`${publicKey}:${secretKey}`).toString(
+      "base64",
+    );
+    const timeoutSeconds =
+      params.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
+
+    const exporter =
+      params.exporter ??
+      new OTLPTraceExporter({
+        url: `${baseUrl}/api/public/otel/v1/traces`,
+        headers: {
+          Authorization: `Basic ${authHeaderValue}`,
+          x_langfuse_sdk_name: "javascript",
+          x_langfuse_sdk_version: LANGFUSE_SDK_VERSION,
+          x_langfuse_public_key: publicKey ?? "<missing>",
+          ...params.additionalHeaders,
+        },
+        timeoutMillis: timeoutSeconds * 1_000,
+      });
+
+    super(exporter, {
+      maxExportBatchSize: flushAt ? Number(flushAt) : undefined,
+      scheduledDelayMillis: flushIntervalSeconds
+        ? Number(flushIntervalSeconds) * 1_000
+        : undefined,
+    });
+
+    this.publicKey = publicKey;
+    this.baseUrl = baseUrl;
+    this.environment =
+      params.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
+    this.release = params.release ?? getEnv("LANGFUSE_RELEASE");
+    this.mask = params.mask;
+    this.shouldExportSpan = params.shouldExportSpan;
+    this.apiClient = new LangfuseAPIClient({
+      baseUrl: this.baseUrl,
+      username: this.publicKey,
+      password: secretKey,
+      xLangfusePublicKey: this.publicKey,
+      xLangfuseSdkVersion: LANGFUSE_SDK_VERSION,
+      xLangfuseSdkName: "javascript",
+      environment: "", // noop as baseUrl is set
+      headers: params.additionalHeaders,
+    });
+
+    logger.debug("Initialized LangfuseSpanProcessor with params:", {
+      publicKey,
+      baseUrl,
+      environment: this.environment,
+      release: this.release,
+      timeoutSeconds,
+      flushAt,
+      flushIntervalSeconds,
+    });
+
+    // Warn if crypto is not available
+    if (!isCryptoAvailable) {
+      logger.warn(
+        "[Langfuse] Crypto module not available in this runtime. Media upload functionality will be disabled. " +
+          "Spans will still be processed normally, but any media content in base64 data URIs will not be uploaded to Langfuse.",
+      );
+    }
+  }
+
+  private get logger(): Logger {
+    return getGlobalLogger();
+  }
+
+  public onStart(span: Span, parentContext: any): void {
+    span.setAttributes({
+      [LangfuseOtelSpanAttributes.ENVIRONMENT]: this.environment,
+      [LangfuseOtelSpanAttributes.RELEASE]: this.release,
+    });
+
+    return super.onStart(span, parentContext);
+  }
+
+  public onEnd(span: ReadableSpan): void {
+    if (this.shouldExportSpan) {
+      try {
+        if (this.shouldExportSpan({ otelSpan: span }) === false) return;
+      } catch (err) {
+        this.logger.error(
+          "ShouldExportSpan failed with error. Excluding span. Error: ",
+          err,
+        );
+
+        return;
+      }
+    }
+
+    this.applyMaskInPlace(span);
+    this.handleMediaInPlace(span);
+
+    this.logger.debug(
+      `Processed span:\n${JSON.stringify(
+        {
+          name: span.name,
+          traceId: span.spanContext().traceId,
+          spanId: span.spanContext().spanId,
+          parentSpanId: span.parentSpanContext?.spanId ?? null,
+          attributes: span.attributes,
+          startTime: new Date(hrTimeToMilliseconds(span.startTime)),
+          endTime: new Date(hrTimeToMilliseconds(span.endTime)),
+          durationMs: hrTimeToMilliseconds(span.duration),
+          kind: span.kind,
+          status: span.status,
+          resource: span.resource.attributes,
+          instrumentationScope: span.instrumentationScope,
+        },
+        null,
+        2,
+      )}`,
+    );
+
+    super.onEnd(span);
+  }
+
+  private async flush(): Promise<void> {
+    await Promise.all(Object.values(this.pendingMediaUploads)).catch((e) => {
+      this.logger.error(
+        e instanceof Error ? e.message : "Unhandled media upload error",
+      );
+    });
+  }
+
+  public async forceFlush(): Promise<void> {
+    await this.flush();
+
+    return super.forceFlush();
+  }
+
+  public async shutdown(): Promise<void> {
+    await this.flush();
+
+    return super.shutdown();
+  }
+
+  private handleMediaInPlace(span: ReadableSpan): void {
+    // Skip media handling if crypto is not available
+    if (!isCryptoAvailable) {
+      this.logger.debug(
+        "[Langfuse] Crypto not available, skipping media processing",
+      );
+      return;
+    }
+
+    const mediaAttributes = [
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      LangfuseOtelSpanAttributes.TRACE_INPUT,
+      LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+      LangfuseOtelSpanAttributes.TRACE_OUTPUT,
+      LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
+      LangfuseOtelSpanAttributes.TRACE_METADATA,
+    ];
+
+    for (const mediaAttribute of mediaAttributes) {
+      const mediaRelevantAttributeKeys = Object.keys(span.attributes).filter(
+        (attributeName) => attributeName.startsWith(mediaAttribute),
+      );
+
+      for (const key of mediaRelevantAttributeKeys) {
+        const value = span.attributes[key];
+
+        if (typeof value !== "string") {
+          this.logger.warn(
+            `Span attribute ${mediaAttribute} is not a stringified object. Skipping media handling.`,
+          );
+
+          continue;
+        }
+
+        // Find media base64 data URI
+        let mediaReplacedValue = value;
+        const regex = /data:[^;]+;base64,[A-Za-z0-9+/]+=*/g;
+        const foundMedia = [...new Set(value.match(regex) ?? [])];
+
+        if (foundMedia.length === 0) continue;
+
+        for (const mediaDataUri of foundMedia) {
+          // For each media, create media tag and initiate upload
+          const media = new LangfuseMedia({
+            base64DataUri: mediaDataUri,
+            source: "base64_data_uri",
+          });
+
+          if (!media.tag) {
+            this.logger.warn(
+              "Failed to create Langfuse media tag. Skipping media item.",
+            );
+
+            continue;
+          }
+
+          const uploadPromise: Promise<void> = this.processMediaItem({
+            media,
+            traceId: span.spanContext().traceId,
+            observationId: span.spanContext().spanId,
+            field: mediaAttribute.includes("input")
+              ? "input"
+              : mediaAttribute.includes("output")
+                ? "output"
+                : "metadata", // todo: make more robust
+          });
+
+          const promiseId = generateUUID();
+          this.pendingMediaUploads[promiseId] = uploadPromise;
+
+          uploadPromise.finally(() => {
+            delete this.pendingMediaUploads[promiseId];
+          });
+
+          // Replace original attribute with media escaped attribute
+          mediaReplacedValue = mediaReplacedValue.replaceAll(
+            mediaDataUri,
+            media.tag,
+          );
+        }
+
+        span.attributes[key] = mediaReplacedValue;
+      }
+    }
+  }
+
+  private applyMaskInPlace(span: ReadableSpan): void {
+    const maskCandidates = [
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      LangfuseOtelSpanAttributes.TRACE_INPUT,
+      LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+      LangfuseOtelSpanAttributes.TRACE_OUTPUT,
+      LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
+      LangfuseOtelSpanAttributes.TRACE_METADATA,
+    ];
+
+    for (const maskCandidate of maskCandidates) {
+      if (maskCandidate in span.attributes) {
+        span.attributes[maskCandidate] = this.applyMask(
+          span.attributes[maskCandidate],
+        );
+      }
+    }
+  }
+
+  private applyMask<T>(data: T): T | string {
+    if (!this.mask) return data;
+
+    try {
+      return this.mask({ data });
+    } catch (err) {
+      this.logger.warn(
+        `Applying mask function failed due to error, fully masking property. Error: ${err}`,
+      );
+
+      return "<fully masked due to failed mask function>";
+    }
+  }
+
+  private async processMediaItem({
+    media,
+    traceId,
+    observationId,
+    field,
+  }: {
+    media: LangfuseMedia;
+    traceId: string;
+    observationId?: string;
+    field: string;
+  }): Promise<void> {
+    try {
+      if (
+        !media.contentLength ||
+        !media._contentType ||
+        !media.contentSha256Hash ||
+        !media._contentBytes
+      ) {
+        return;
+      }
+
+      const { uploadUrl, mediaId } = await this.apiClient.media.getUploadUrl({
+        contentLength: media.contentLength,
+        traceId,
+        observationId,
+        field,
+        contentType: media._contentType,
+        sha256Hash: media.contentSha256Hash,
+      });
+
+      if (!uploadUrl) {
+        this.logger.debug(
+          `Media status: Media with ID ${media.id} already uploaded. Skipping duplicate upload.`,
+        );
+
+        return;
+      }
+
+      if (media.id !== mediaId) {
+        this.logger.error(
+          `Media integrity error: Media ID mismatch between SDK (${media.id}) and Server (${mediaId}). Upload cancelled. Please check media ID generation logic.`,
+        );
+
+        return;
+      }
+
+      this.logger.debug(`Uploading media ${mediaId}...`);
+
+      const startTime = Date.now();
+
+      const uploadResponse = await this.uploadMediaWithBackoff({
+        uploadUrl,
+        contentBytes: media._contentBytes,
+        contentType: media._contentType,
+        contentSha256Hash: media.contentSha256Hash,
+        maxRetries: 3,
+        baseDelay: 1000,
+      });
+
+      if (!uploadResponse) {
+        throw Error("Media upload process failed");
+      }
+
+      await this.apiClient.media.patch(mediaId, {
+        uploadedAt: new Date().toISOString(),
+        uploadHttpStatus: uploadResponse.status,
+        uploadHttpError: await uploadResponse.text(),
+        uploadTimeMs: Date.now() - startTime,
+      });
+
+      this.logger.debug(`Media upload status reported for ${mediaId}`);
+    } catch (err) {
+      this.logger.error(`Error processing media item: ${err}`);
+    }
+  }
+
+  private async uploadMediaWithBackoff(params: {
+    uploadUrl: string;
+    contentType: string;
+    contentSha256Hash: string;
+    contentBytes: Buffer;
+    maxRetries: number;
+    baseDelay: number;
+  }) {
+    const {
+      uploadUrl,
+      contentType,
+      contentSha256Hash,
+      contentBytes,
+      maxRetries,
+      baseDelay,
+    } = params;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          body: contentBytes,
+          headers: {
+            "Content-Type": contentType,
+            "x-amz-checksum-sha256": contentSha256Hash,
+            "x-ms-blob-type": "BlockBlob",
+          },
+        });
+
+        if (
+          attempt < maxRetries &&
+          uploadResponse.status !== 200 &&
+          uploadResponse.status !== 201
+        ) {
+          throw new Error(`Upload failed with status ${uploadResponse.status}`);
+        }
+
+        return uploadResponse;
+      } catch (e) {
+        if (attempt === maxRetries) {
+          throw e;
+        }
+
+        const delay = baseDelay * Math.pow(2, attempt);
+        const jitter = Math.random() * 1000;
+
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+      }
+    }
+  }
+}
