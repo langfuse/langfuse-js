@@ -140,9 +140,9 @@ export class LangfuseClient {
     this.media = new MediaManager({ apiClient: this.api });
 
     // Keep v3 compat by exposing old interface
-    this.getPrompt = this.prompt.get;
-    this.createPrompt = this.prompt.create;
-    this.updatePrompt = this.prompt.update;
+    this.getPrompt = this.prompt.get.bind(this.prompt); // keep correct this context for cache access
+    this.createPrompt = this.prompt.create.bind(this.prompt);
+    this.updatePrompt = this.prompt.update.bind(this.prompt);
     this.getDataset = this.dataset.get;
     this.fetchTrace = this.api.trace.get;
     this.fetchTraces = this.api.trace.list;
