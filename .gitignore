@@ -96,5 +96,5 @@ temp/
 # TypeScript
 *.d.ts.map
 
-# Changesets (keep config but ignore generated files)
-.changeset/README.md
+# typedoc
+docs/

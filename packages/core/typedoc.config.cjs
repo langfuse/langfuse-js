@@ -1,4 +1,4 @@
 /** @type {import('typedoc').TypeDocOptions} */
 module.exports = {
-  entryPoints: ["./index.ts"],
+  entryPoints: ["./src/index.ts"],
 };
