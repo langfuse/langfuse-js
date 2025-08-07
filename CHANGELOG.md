@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.0-beta.1](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.0...v4.0.0-beta.1) (2025-08-07)
+
+### 🔧 Maintenance
+
+* add Github release to release-it ([184cd81](https://github.com/langfuse/langfuse-js/commit/184cd819a667d594bc5fb955e453031a032b3daf))
+* add package readmes ([031760c](https://github.com/langfuse/langfuse-js/commit/031760c925302581441ff62b50ecf8d465b39426))
+
 ## [4.0.0-beta.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0-alpha.3...v4.0.0-beta.0) (2025-08-07)
 
 ### 🔧 Maintenance
