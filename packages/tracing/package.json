@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/tracing",
-  "version": "4.0.0-alpha.2",
+  "version": "4.0.0-alpha.3",
   "author": "Langfuse",
   "license": "MIT",
   "engines": {

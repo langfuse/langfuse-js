@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.0-alpha.3](https://github.com/langfuse/langfuse-js/compare/v4.0.0-alpha.2...v4.0.0-alpha.3) (2025-08-07)
+
+### 🔧 Maintenance
+
+* remove build files from typecheck ([d7498a6](https://github.com/langfuse/langfuse-js/commit/d7498a62020f6232c016237dd4bd15f7b1ac19e5))
+
 ## [4.0.0-alpha.2](https://github.com/langfuse/langfuse-js/compare/v4.0.0-alpha.1...v4.0.0-alpha.2) (2025-08-07)
 
 ### 🔧 Maintenance
