@@ -48,39 +48,39 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
   private shouldExportSpan?: ShouldExportSpan;
   private apiClient: LangfuseAPIClient;
 
-  constructor(params: LangfuseSpanProcessorParams) {
+  constructor(params?: LangfuseSpanProcessorParams) {
     const logger = getGlobalLogger();
 
-    const publicKey = params.publicKey ?? getEnv("LANGFUSE_PUBLIC_KEY");
-    const secretKey = params.secretKey ?? getEnv("LANGFUSE_SECRET_KEY");
+    const publicKey = params?.publicKey ?? getEnv("LANGFUSE_PUBLIC_KEY");
+    const secretKey = params?.secretKey ?? getEnv("LANGFUSE_SECRET_KEY");
     const baseUrl =
-      params.baseUrl ??
+      params?.baseUrl ??
       getEnv("LANGFUSE_BASE_URL") ??
       getEnv("LANGFUSE_BASEURL") ?? // legacy v2
       "https://cloud.langfuse.com";
 
-    if (!params.exporter && !publicKey) {
+    if (!params?.exporter && !publicKey) {
       logger.warn(
         "No exporter configured and no public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Span exports will fail.",
       );
     }
-    if (!params.exporter && !secretKey) {
+    if (!params?.exporter && !secretKey) {
       logger.warn(
         "No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail.",
       );
     }
-    const flushAt = params.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
+    const flushAt = params?.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
     const flushIntervalSeconds =
-      params.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
+      params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
 
     const authHeaderValue = Buffer.from(`${publicKey}:${secretKey}`).toString(
       "base64",
     );
     const timeoutSeconds =
-      params.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
+      params?.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
 
     const exporter =
-      params.exporter ??
+      params?.exporter ??
       new OTLPTraceExporter({
         url: `${baseUrl}/api/public/otel/v1/traces`,
         headers: {
@@ -88,7 +88,7 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
           x_langfuse_sdk_name: "javascript",
           x_langfuse_sdk_version: LANGFUSE_SDK_VERSION,
           x_langfuse_public_key: publicKey ?? "<missing>",
-          ...params.additionalHeaders,
+          ...params?.additionalHeaders,
         },
         timeoutMillis: timeoutSeconds * 1_000,
       });
@@ -103,10 +103,10 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
     this.publicKey = publicKey;
     this.baseUrl = baseUrl;
     this.environment =
-      params.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
-    this.release = params.release ?? getEnv("LANGFUSE_RELEASE");
-    this.mask = params.mask;
-    this.shouldExportSpan = params.shouldExportSpan;
+      params?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
+    this.release = params?.release ?? getEnv("LANGFUSE_RELEASE");
+    this.mask = params?.mask;
+    this.shouldExportSpan = params?.shouldExportSpan;
     this.apiClient = new LangfuseAPIClient({
       baseUrl: this.baseUrl,
       username: this.publicKey,
@@ -115,7 +115,7 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
       xLangfuseSdkVersion: LANGFUSE_SDK_VERSION,
       xLangfuseSdkName: "javascript",
       environment: "", // noop as baseUrl is set
-      headers: params.additionalHeaders,
+      headers: params?.additionalHeaders,
     });
 
     logger.debug("Initialized LangfuseSpanProcessor with params:", {
