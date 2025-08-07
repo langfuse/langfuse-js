@@ -132,7 +132,7 @@ jobs:
       - run: pnpm install
       - run: pnpm build
       - run: pnpm lint
-      - run: pnpm prettier:check
+      - run: pnpm format:check
 
   all-tests-passed:
     runs-on: ubuntu-latest

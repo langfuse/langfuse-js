@@ -159,7 +159,7 @@ export class ScoreManager {
           this.apiClient.ingestion
             .batch({ batch })
             .then((res) => {
-              if (res.errors.length > 0) {
+              if (res.errors?.length > 0) {
                 this.logger.error("Error ingesting scores:", res.errors);
               }
             })
