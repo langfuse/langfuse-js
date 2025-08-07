@@ -29,7 +29,7 @@ jobs:
       - run: pnpm install
       - run: pnpm test:integration
 
-  e2e-test:
+  test-e2e:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
