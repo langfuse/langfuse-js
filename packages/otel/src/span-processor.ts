@@ -6,6 +6,7 @@ import {
   LANGFUSE_SDK_VERSION,
   LangfuseOtelSpanAttributes,
   getEnv,
+  uint8ArrayToBase64,
 } from "@langfuse/core";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
@@ -73,8 +74,8 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
     const flushIntervalSeconds =
       params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
 
-    const authHeaderValue = Buffer.from(`${publicKey}:${secretKey}`).toString(
-      "base64",
+    const authHeaderValue = uint8ArrayToBase64(
+      new TextEncoder().encode(`${publicKey}:${secretKey}`),
     );
     const timeoutSeconds =
       params?.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
