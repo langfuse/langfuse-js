@@ -1,8 +1,0 @@
-49 error Error: Command failed with exit code 128: git tag v1.0.14 -m v1.0.14
-49 error fatal: tag 'v1.0.14' already exists
-49 error     at makeError (/Users/maximiliandeichmann/development/github.com/langfuse/langfuse-js/node_modules/execa/lib/error.js:60:11)
-49 error     at handlePromise (/Users/maximiliandeichmann/development/github.com/langfuse/langfuse-js/node_modules/execa/index.js:118:26)
-49 error     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-49 error     at async VersionCommand.gitCommitAndTagVersion (/Users/maximiliandeichmann/development/github.com/langfuse/langfuse-js/node_modules/lerna/dist/index.js:8370:9)
-49 error     at async VersionCommand.commitAndTagUpdates (/Users/maximiliandeichmann/development/github.com/langfuse/langfuse-js/node_modules/lerna/dist/index.js:8340:18)
-49 error     at async Promise.all (index 0)

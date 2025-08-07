@@ -13,24 +13,34 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 ## Packages
 
 > [!IMPORTANT]
-> The SDK was rewritten in v2 and released on December 18, 2023. Refer to the [v2 migration guide](https://langfuse.com/docs/sdk/typescript#upgrade1to2) for instructions on updating your code.
+> The SDK was rewritten in v4 and released in August, 2025. Refer to the [v4 migration guide](https://langfuse.com/docs/sdk/typescript#updateToV4) for instructions on updating your code.
 
-| Package                                                                                     | NPM                                                                                                                                   | Environments          |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| [langfuse](https://github.com/langfuse/langfuse-js/tree/main/langfuse)                      | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)                     | Node >= 18, Web, Edge |
-| [langfuse-node](https://github.com/langfuse/langfuse-js/tree/main/langfuse-node)            | [![npm package](https://img.shields.io/npm/v/langfuse-node?style=flat-square)](https://www.npmjs.com/package/langfuse-node)           | Node < 18             |
-| [langfuse-langchain](https://github.com/langfuse/langfuse-js/tree/main/langfuse-langchain)  | [![npm package](https://img.shields.io/npm/v/langfuse-langchain?style=flat-square)](https://www.npmjs.com/package/langfuse-langchain) | Node >= 20, Web, Edge |
-| [langfuse-vercel (beta)](https://github.com/langfuse/langfuse-js/tree/main/langfuse-vercel) | [![npm package](https://img.shields.io/npm/v/langfuse-vercel?style=flat-square)](https://www.npmjs.com/package/langfuse-vercel)       | Node >= 20, Web, Edge |
+| Package                                     | NPM                                                                                                               | Description                                               | Environments |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------ |
+| [@langfuse/client](./packages/client)       | [![NPM](https://img.shields.io/npm/v/@langfuse/client.svg)](https://www.npmjs.com/package/@langfuse/client)       | Langfuse API client for universal JavaScript environments | Universal JS |
+| [@langfuse/tracing](./packages/tracing)     | [![NPM](https://img.shields.io/npm/v/@langfuse/tracing.svg)](https://www.npmjs.com/package/@langfuse/tracing)     | Langfuse instrumentation methods based on OpenTelemetry   | Node.js 20+  |
+| [@langfuse/otel](./packages/otel)           | [![NPM](https://img.shields.io/npm/v/@langfuse/otel.svg)](https://www.npmjs.com/package/@langfuse/otel)           | Langfuse OpenTelemetry export helpers                     | Node.js 20+  |
+| [@langfuse/openai](./packages/openai)       | [![NPM](https://img.shields.io/npm/v/@langfuse/openai.svg)](https://www.npmjs.com/package/@langfuse/openai)       | Langfuse integration for OpenAI SDK                       | Universal JS |
+| [@langfuse/langchain](./packages/langchain) | [![NPM](https://img.shields.io/npm/v/@langfuse/langchain.svg)](https://www.npmjs.com/package/@langfuse/langchain) | Langfuse integration for LangChain                        | Universal JS |
 
 ## Documentation
 
 - Docs: https://langfuse.com/docs/sdk/typescript
 - Reference: https://js.reference.langfuse.com
 
+## Development
+
+This is a monorepo managed with pnpm. See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development instructions.
+
+Quick start:
+
+```bash
+pnpm install    # Install dependencies
+pnpm build      # Build all packages
+pnpm test       # Run tests
+pnpm ci         # Run full CI suite
+```
+
 ## License
 
 [MIT](LICENSE)
-
-## Credits
-
-Thanks to the PostHog team for the awesome work on [posthog-js-lite](https://github.com/PostHog/posthog-js-lite). This project is based on it as it was the best starting point to build a modular SDK repo to support various environments.
