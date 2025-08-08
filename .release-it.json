@@ -20,6 +20,8 @@
   },
   "github": {
     "release": true,
+    "releaseName": "${version}",
+    "autoGenerate": true,
     "web": true
   },
   "plugins": {
