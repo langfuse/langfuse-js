@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0-beta.2](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2025-08-08)
+
+### 🐛 Bug Fixes
+
+* **span-processor:** drop dep on Buffer ([28c9985](https://github.com/langfuse/langfuse-js/commit/28c9985781efda45586d0c8c17b0154c56765b43))
+
+### 📚 Documentation
+
+* add jsdoc for client and otel package ([16c6366](https://github.com/langfuse/langfuse-js/commit/16c6366cece574fd5ba33121467f32df06fdac0d))
+* add jsdoc for openai and tracing package ([e2182ec](https://github.com/langfuse/langfuse-js/commit/e2182ece84feae754d0827d06ffdeec2d9361ae0))
+
 ## [4.0.0-beta.1](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.0...v4.0.0-beta.1) (2025-08-07)
 
 ### 🔧 Maintenance
