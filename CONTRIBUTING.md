@@ -100,6 +100,7 @@ pnpm release
 
 The release process is fully automated and will:
 
+- Fetch the NPM token from 1Password
 - Prompt for the version bump type (patch, minor, major)
 - Generate a changelog based on conventional commits
 - Update all package.json files in the monorepo to maintain version consistency
