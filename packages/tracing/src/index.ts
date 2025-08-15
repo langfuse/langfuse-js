@@ -19,13 +19,13 @@ import {
   LangfuseGeneration,
   LangfuseSpan,
 } from "./spanWrapper.js";
+import { getLangfuseTracer } from "./tracerProvider.js";
 import {
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
   LangfuseTraceAttributes,
 } from "./types.js";
-import { getLangfuseTracer } from "./utils.js";
 
 export type {
   LangfuseObservationType,
@@ -43,6 +43,11 @@ export {
   createSpanAttributes,
   createGenerationAttributes,
 } from "./attributes.js";
+export {
+  setLangfuseTracerProvider,
+  getLangfuseTracerProvider,
+  getLangfuseTracer,
+} from "./tracerProvider.js";
 
 export { LangfuseOtelSpanAttributes } from "@langfuse/core";
 

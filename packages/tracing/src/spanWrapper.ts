@@ -6,13 +6,13 @@ import {
   createSpanAttributes,
   createTraceAttributes,
 } from "./attributes.js";
+import { getLangfuseTracer } from "./tracerProvider.js";
 import {
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
   LangfuseEventAttributes,
   LangfuseTraceAttributes,
 } from "./types.js";
-import { getLangfuseTracer } from "./utils.js";
 
 import { createEvent, startGeneration, startSpan } from "./index.js";
 
