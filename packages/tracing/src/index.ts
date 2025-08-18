@@ -802,3 +802,16 @@ function uint8ArrayToHex(array: Uint8Array): string {
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
+
+/**
+ * Gets the current active trace ID.
+ *
+ * If there is no span in the current context, returns undefined.
+ *
+ * @returns The trace ID of the currently active span, or undefined if no span is active
+ *
+ * @public
+ */
+export function getActiveTraceId(): string | undefined {
+  return trace.getActiveSpan()?.spanContext().traceId;
+}
