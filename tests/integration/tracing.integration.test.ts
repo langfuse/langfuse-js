@@ -11,6 +11,7 @@ import {
   updateActiveTrace,
   LangfuseOtelSpanAttributes,
   createTraceId,
+  getActiveTraceId,
 } from "@langfuse/tracing";
 import {
   setupTestEnvironment,
@@ -4346,6 +4347,25 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       // Verify trace IDs are valid hex
       expect(traceId1).toHaveLength(32);
       expect(traceId1).toMatch(/^[0-9a-f]{32}$/);
+    });
+  });
+
+  describe("getActiveTraceId methos", () => {
+    it("should get the trace ID of the current active span", async () => {
+      let capturedTraceId: string | undefined;
+
+      const span = await startActiveSpan("test-span", (span) => {
+        capturedTraceId = getActiveTraceId();
+
+        return span;
+      });
+
+      expect(span.traceId).toBe(capturedTraceId);
+    });
+
+    it("should return undefined if there is no active span", async () => {
+      const traceId = getActiveTraceId();
+      expect(traceId).toBeUndefined();
     });
   });
 });
