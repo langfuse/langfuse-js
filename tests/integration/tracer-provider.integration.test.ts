@@ -1,19 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
-import { trace, context, SpanKind } from "@opentelemetry/api";
 import { LangfuseSpanProcessor } from "@langfuse/otel";
 import {
   setLangfuseTracerProvider,
   getLangfuseTracerProvider,
   getLangfuseTracer,
 } from "@langfuse/tracing";
+import { trace, context, SpanKind } from "@opentelemetry/api";
+import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
+import { MockSpanExporter } from "./helpers/MockSpanExporter.js";
 import {
   setupTestEnvironment,
   teardownTestEnvironment,
   waitForSpanExport,
   type TestEnvironment,
 } from "./helpers/testSetup.js";
-import { MockSpanExporter } from "./helpers/MockSpanExporter.js";
 
 describe("Tracer Provider Isolation Integration Tests", () => {
   let testEnv: TestEnvironment;
