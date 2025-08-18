@@ -4350,7 +4350,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
   });
 
-  describe("getActiveTraceId methos", () => {
+  describe("getActiveTraceId method", () => {
     it("should get the trace ID of the current active span", async () => {
       let capturedTraceId: string | undefined;
 
