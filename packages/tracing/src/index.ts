@@ -815,3 +815,16 @@ function uint8ArrayToHex(array: Uint8Array): string {
 export function getActiveTraceId(): string | undefined {
   return trace.getActiveSpan()?.spanContext().traceId;
 }
+
+/**
+ * Gets the current active observation ID.
+ *
+ * If there is no OTEL span in the current context, returns undefined.
+ *
+ * @returns The ID of the currently active OTEL span, or undefined if no OTEL span is active
+ *
+ * @public
+ */
+export function getActiveSpanId(): string | undefined {
+  return trace.getActiveSpan()?.spanContext().spanId;
+}

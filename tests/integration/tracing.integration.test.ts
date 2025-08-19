@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   startSpan,
   startGeneration,
@@ -13,13 +12,15 @@ import {
   createTraceId,
   getActiveTraceId,
 } from "@langfuse/tracing";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
+import { SpanAssertions } from "./helpers/assertions.js";
 import {
   setupTestEnvironment,
   teardownTestEnvironment,
   waitForSpanExport,
   type TestEnvironment,
 } from "./helpers/testSetup.js";
-import { SpanAssertions } from "./helpers/assertions.js";
 
 describe("Tracing Methods Interoperability E2E Tests", () => {
   let testEnv: TestEnvironment;
