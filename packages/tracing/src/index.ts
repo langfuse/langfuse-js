@@ -553,6 +553,8 @@ export interface ObserveOptions {
   captureInput?: boolean;
   /** Whether to capture function output as observation output */
   captureOutput?: boolean;
+  /** Parent span context to attach this observation to */
+  parentSpanContext?: SpanContext;
 }
 
 /**
@@ -619,6 +621,7 @@ export function observe<T extends (...args: unknown[]) => unknown>(
     asType = "span",
     captureInput = true,
     captureOutput = true,
+    parentSpanContext = undefined,
   } = options;
 
   const wrappedFunction = (...args: Parameters<T>): ReturnType<T> => {
@@ -628,8 +631,12 @@ export function observe<T extends (...args: unknown[]) => unknown>(
     // Create the appropriate observation type
     const observation =
       asType === "generation"
-        ? startGeneration(name, inputData ? { input: inputData } : {})
-        : startSpan(name, inputData ? { input: inputData } : {});
+        ? startGeneration(name, inputData ? { input: inputData } : {}, {
+            parentSpanContext,
+          })
+        : startSpan(name, inputData ? { input: inputData } : {}, {
+            parentSpanContext,
+          });
 
     // Set the observation span as active in the context
     const activeContext = trace.setSpan(context.active(), observation.otelSpan);
