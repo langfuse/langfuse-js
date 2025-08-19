@@ -1,5 +1,30 @@
 # Changelog
 
+## [4.0.0-beta.3](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2025-08-19)
+
+### ✨ Features
+
+* **tracing:** add getActiveSpanId ([63015d8](https://github.com/langfuse/langfuse-js/commit/63015d80b2e6c299476191ac3278278e7ed652db))
+* **tracing:** add getActiveTraceID ([#589](https://github.com/langfuse/langfuse-js/issues/589)) ([ec8a54c](https://github.com/langfuse/langfuse-js/commit/ec8a54ca3dfad4fcdeb5f6d4fa705149432ac409))
+* **tracing:** add parentSpanContext to observe wrapper ([1349804](https://github.com/langfuse/langfuse-js/commit/134980477d63edf8203ee0477f70449f8effc270))
+* **tracing:** isolated tracer provider ([#588](https://github.com/langfuse/langfuse-js/issues/588)) ([5755686](https://github.com/langfuse/langfuse-js/commit/57556864e2aa9d2d902a7bd26f8b472c07dd661d))
+
+### 🐛 Bug Fixes
+
+* **observe:** preserve this context ([39f5c2d](https://github.com/langfuse/langfuse-js/commit/39f5c2d70a8f387b99bc1f9571a4e9235b89baba))
+
+### 🔧 Maintenance
+
+* auto access npm OTP ([2ba7da2](https://github.com/langfuse/langfuse-js/commit/2ba7da2c3baa981ac6674664acfd2526fabf3f98))
+* bump vitest and remove outdated esbuild ([#587](https://github.com/langfuse/langfuse-js/issues/587)) ([4e320da](https://github.com/langfuse/langfuse-js/commit/4e320dac55ecccd2d7dfa9cc70a4beed4f57aa24))
+* **deps-dev:** bump happy-dom from 14.12.3 to 15.10.2 ([#584](https://github.com/langfuse/langfuse-js/issues/584)) ([836ba31](https://github.com/langfuse/langfuse-js/commit/836ba317756595bc44f11a8da9a44a23889651b1))
+* update eslint ([8459b4e](https://github.com/langfuse/langfuse-js/commit/8459b4ee775ce8edfeaafddb43dea72503a0753a))
+* update release it Github release flow ([7f26462](https://github.com/langfuse/langfuse-js/commit/7f26462b8c63556e3f9b91858cb674b6a296ac2a))
+
+### 📚 Documentation
+
+* update contributing.md ([d54ba62](https://github.com/langfuse/langfuse-js/commit/d54ba628956c01387ed51cbad15a957167821ab7))
+
 ## [4.0.0-beta.2](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2025-08-08)
 
 ### 🐛 Bug Fixes
