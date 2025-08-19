@@ -2690,6 +2690,35 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions.expectSpanCount(1);
         assertions.expectSpanWithName("originalFunc");
       });
+
+      it("should preserve 'this' context when wrapping object methods", async () => {
+        // Simple object with method that relies on 'this'
+        const mockClient = {
+          cache: new Map(),
+
+          get(name: string) {
+            if (!this.cache) {
+              throw new Error("this.cache is undefined - 'this' context lost");
+            }
+            return { name, cached: this.cache.size };
+          },
+        };
+
+        // Wrap the method with observe
+        const observedGet = observe(mockClient.get, {
+          name: "mock-client-get",
+          captureInput: true,
+          captureOutput: true,
+        });
+
+        // This currently fails because 'this' context is lost, but should work after fix
+        const result = observedGet.call(mockClient, "test-prompt");
+        expect(result).toEqual({ name: "test-prompt", cached: 0 });
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+        assertions.expectSpanCount(1);
+        assertions.expectSpanWithName("mock-client-get");
+      });
     });
 
     describe("Options configuration", () => {

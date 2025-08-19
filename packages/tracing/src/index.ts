@@ -624,7 +624,10 @@ export function observe<T extends (...args: unknown[]) => unknown>(
     parentSpanContext = undefined,
   } = options;
 
-  const wrappedFunction = (...args: Parameters<T>): ReturnType<T> => {
+  const wrappedFunction = function (
+    this: any,
+    ...args: Parameters<T>
+  ): ReturnType<T> {
     // Prepare input data
     const inputData = captureInput ? _captureArguments(args) : undefined;
 
@@ -642,7 +645,7 @@ export function observe<T extends (...args: unknown[]) => unknown>(
     const activeContext = trace.setSpan(context.active(), observation.otelSpan);
 
     try {
-      const result = context.with(activeContext, () => fn(...args));
+      const result = context.with(activeContext, () => fn.apply(this, args));
 
       // Handle async functions - check if result is a Promise
       // TODO: handle returned generators for streamed responses
