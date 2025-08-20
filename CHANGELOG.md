@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.0-beta.5](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.4...v4.0.0-beta.5) (2025-08-20)
+
+### ✨ Features
+
+* **span-processor:** add export modes ([#590](https://github.com/langfuse/langfuse-js/issues/590)) ([d2f7386](https://github.com/langfuse/langfuse-js/commit/d2f73865fffd07d61bf697904e5945841b45693b))
+
 ## [4.0.0-beta.4](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.3...v4.0.0-beta.4) (2025-08-20)
 
 ### ✨ Features

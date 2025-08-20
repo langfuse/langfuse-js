@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/client",
-  "version": "4.0.0-beta.4",
+  "version": "4.0.0-beta.5",
   "description": "Langfuse API client for universal JavaScript environments",
   "type": "module",
   "sideEffects": false,
