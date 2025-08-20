@@ -64,6 +64,18 @@ export type StartObservationOptions = {
 };
 
 /**
+ * Options for starting an observations set to active in context
+ *
+ * Extends StartObservationOptions with additional context-specific configuration.
+ *
+ * @public
+ */
+export type StartActiveObservationContext = StartObservationOptions & {
+  /** Whether to automatically end the observation when exiting the context. Default is true */
+  endOnExit?: boolean;
+};
+
+/**
  * Creates an OpenTelemetry span with the Langfuse tracer.
  *
  * @param params - Parameters for span creation
@@ -105,20 +117,28 @@ function createParentContext(
  * @returns The wrapped promise
  * @internal
  */
-function wrapPromise<T>(promise: Promise<T>, span: Span): Promise<T> {
+function wrapPromise<T>(
+  promise: Promise<T>,
+  span: Span,
+  endOnExit: boolean | undefined,
+): Promise<T> {
   return promise.then(
     (value) => {
-      span.end(); // End span AFTER Promise resolves
+      if (endOnExit !== false) {
+        span.end(); // End span AFTER Promise resolves
+      }
 
       return value;
     },
     (err: unknown) => {
-      span
-        .setStatus({
-          code: SpanStatusCode.ERROR,
-          message: err instanceof Error ? err.message : "Unknown error",
-        })
-        .end(); // End span AFTER Promise rejects
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: err instanceof Error ? err.message : "Unknown error",
+      });
+
+      if (endOnExit !== false) {
+        span.end(); // End span AFTER Promise rejects
+      }
 
       throw err;
     },
@@ -326,7 +346,7 @@ export function createEvent(
 export function startActiveSpan<F extends (span: LangfuseSpan) => unknown>(
   name: string,
   fn: F,
-  options?: StartObservationOptions,
+  options?: StartActiveObservationContext,
 ): ReturnType<F> {
   return getLangfuseTracer().startActiveSpan(
     name,
@@ -337,19 +357,23 @@ export function startActiveSpan<F extends (span: LangfuseSpan) => unknown>(
         const result = fn(new LangfuseSpan({ otelSpan: span }));
 
         if (result instanceof Promise) {
-          return wrapPromise(result, span) as ReturnType<F>;
+          return wrapPromise(result, span, options?.endOnExit) as ReturnType<F>;
         } else {
-          span.end();
+          if (options?.endOnExit !== false) {
+            span.end();
+          }
 
           return result as ReturnType<F>;
         }
       } catch (err) {
-        span
-          .setStatus({
-            code: SpanStatusCode.ERROR,
-            message: err instanceof Error ? err.message : "Unknown error",
-          })
-          .end();
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: err instanceof Error ? err.message : "Unknown error",
+        });
+
+        if (options?.endOnExit !== false) {
+          span.end();
+        }
 
         throw err;
       }
@@ -394,7 +418,7 @@ export function startActiveSpan<F extends (span: LangfuseSpan) => unknown>(
  */
 export function startActiveGeneration<
   F extends (span: LangfuseGeneration) => unknown,
->(name: string, fn: F, options?: StartObservationOptions): ReturnType<F> {
+>(name: string, fn: F, options?: StartActiveObservationContext): ReturnType<F> {
   return getLangfuseTracer().startActiveSpan(
     name,
     { startTime: options?.startTime },
@@ -404,19 +428,23 @@ export function startActiveGeneration<
         const result = fn(new LangfuseGeneration({ otelSpan: span }));
 
         if (result instanceof Promise) {
-          return wrapPromise(result, span) as ReturnType<F>;
+          return wrapPromise(result, span, options?.endOnExit) as ReturnType<F>;
         } else {
-          span.end();
+          if (options?.endOnExit !== false) {
+            span.end();
+          }
 
           return result as ReturnType<F>;
         }
       } catch (err) {
-        span
-          .setStatus({
-            code: SpanStatusCode.ERROR,
-            message: err instanceof Error ? err.message : "Unknown error",
-          })
-          .end();
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: err instanceof Error ? err.message : "Unknown error",
+        });
+
+        if (options?.endOnExit !== false) {
+          span.end();
+        }
 
         throw err;
       }
@@ -555,6 +583,8 @@ export interface ObserveOptions {
   captureOutput?: boolean;
   /** Parent span context to attach this observation to */
   parentSpanContext?: SpanContext;
+  /** Whether to automatically end the observation when exiting the context. Default is true */
+  endOnExit?: boolean;
 }
 
 /**
@@ -655,20 +685,25 @@ export function observe<T extends (...args: unknown[]) => unknown>(
             if (captureOutput) {
               observation.update({ output: _captureOutput(value) });
             }
-            observation.end();
+
+            if (options?.endOnExit !== false) {
+              observation.end();
+            }
 
             return value;
           },
           (error: unknown) => {
-            observation
-              .update({
-                level: "ERROR",
-                statusMessage:
-                  (error instanceof Error ? error.message : String(error)) ||
-                  "Function threw an error",
-                output: captureOutput ? { error: String(error) } : undefined,
-              })
-              .end();
+            observation.update({
+              level: "ERROR",
+              statusMessage:
+                (error instanceof Error ? error.message : String(error)) ||
+                "Function threw an error",
+              output: captureOutput ? { error: String(error) } : undefined,
+            });
+
+            if (options?.endOnExit !== false) {
+              observation.end();
+            }
 
             throw error;
           },
@@ -678,21 +713,25 @@ export function observe<T extends (...args: unknown[]) => unknown>(
         if (captureOutput) {
           observation.update({ output: _captureOutput(result) });
         }
-        observation.end();
+
+        if (options?.endOnExit !== false) {
+          observation.end();
+        }
 
         return result as ReturnType<T>;
       }
     } catch (error: unknown) {
-      observation
-        .update({
-          level: "ERROR",
-          statusMessage:
-            (error instanceof Error ? error.message : String(error)) ||
-            "Function threw an error",
-          output: captureOutput ? { error: String(error) } : undefined,
-        })
-        .end();
+      observation.update({
+        level: "ERROR",
+        statusMessage:
+          (error instanceof Error ? error.message : String(error)) ||
+          "Function threw an error",
+        output: captureOutput ? { error: String(error) } : undefined,
+      });
 
+      if (options?.endOnExit !== false) {
+        observation.end();
+      }
       throw error;
     }
   };

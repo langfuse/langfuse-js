@@ -1303,6 +1303,107 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions.expectSpanParent("level-2-span", "level-1-span");
       });
     });
+
+    describe("endOnExit option", () => {
+      it("should end span by default (endOnExit=true)", async () => {
+        let spanFromFunction: any = null;
+
+        const result = startActiveSpan("span-end-on-exit-default", (span) => {
+          spanFromFunction = span;
+          span.update({ input: { test: "endOnExit default" } });
+          return "result";
+        });
+
+        expect(result).toBe("result");
+        expect(spanFromFunction).toBeDefined();
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanWithName("span-end-on-exit-default");
+
+        // Verify span is ended by checking it was exported
+        const testSpan = testEnv.mockExporter.getSpanByName(
+          "span-end-on-exit-default",
+        );
+        expect(testSpan).toBeDefined();
+      });
+
+      it("should end span when endOnExit=true explicitly", async () => {
+        let spanFromFunction: any = null;
+
+        const result = startActiveSpan(
+          "span-end-on-exit-true",
+          (span) => {
+            spanFromFunction = span;
+            span.update({ input: { test: "endOnExit true" } });
+            return "result";
+          },
+          { endOnExit: true },
+        );
+
+        expect(result).toBe("result");
+        expect(spanFromFunction).toBeDefined();
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanWithName("span-end-on-exit-true");
+
+        // Verify span is ended
+        const testSpan = testEnv.mockExporter.getSpanByName(
+          "span-end-on-exit-true",
+        );
+        expect(testSpan).toBeDefined();
+      });
+
+      it("should not end span when endOnExit=false", async () => {
+        let spanFromFunction: any = null;
+
+        const result = startActiveSpan(
+          "span-no-end-on-exit",
+          (span) => {
+            spanFromFunction = span;
+            span.update({ input: { test: "endOnExit false" } });
+            return "result";
+          },
+          { endOnExit: false },
+        );
+
+        expect(result).toBe("result");
+        expect(spanFromFunction).toBeDefined();
+
+        // Give some time for any potential export
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Span should not be exported yet since it wasn't ended
+        assertions.expectSpanCount(0);
+      });
+
+      it("should handle endOnExit=false with async function", async () => {
+        let spanFromFunction: any = null;
+
+        const result = await startActiveSpan(
+          "span-async-no-end-on-exit",
+          async (span) => {
+            spanFromFunction = span;
+            span.update({ input: { test: "async endOnExit false" } });
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            return "async result";
+          },
+          { endOnExit: false },
+        );
+
+        expect(result).toBe("async result");
+        expect(spanFromFunction).toBeDefined();
+
+        // Give some time for any potential export
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Span should not be exported yet since it wasn't ended
+        assertions.expectSpanCount(0);
+      });
+    });
   });
 
   describe("startActiveGeneration method", () => {
@@ -2614,6 +2715,132 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       // Performance check: should create all observations quickly
       expect(endTime - startTime).toBeLessThan(2000);
+    });
+
+    describe("endOnExit option", () => {
+      it("should end generation by default (endOnExit=true)", async () => {
+        let generationFromFunction: any = null;
+
+        const result = startActiveGeneration(
+          "generation-end-on-exit-default",
+          (generation) => {
+            generationFromFunction = generation;
+            generation.update({
+              model: "gpt-4",
+              input: { prompt: "endOnExit default test" },
+              output: { content: "default response" },
+            });
+            return { success: true };
+          },
+        );
+
+        expect(result).toEqual({ success: true });
+        expect(generationFromFunction).toBeDefined();
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanWithName("generation-end-on-exit-default");
+
+        // Verify generation is ended by checking it was exported
+        const testSpan = testEnv.mockExporter.getSpanByName(
+          "generation-end-on-exit-default",
+        );
+        expect(testSpan).toBeDefined();
+      });
+
+      it("should end generation when endOnExit=true explicitly", async () => {
+        let generationFromFunction: any = null;
+
+        const result = startActiveGeneration(
+          "generation-end-on-exit-true",
+          (generation) => {
+            generationFromFunction = generation;
+            generation.update({
+              model: "gpt-3.5-turbo",
+              input: { prompt: "endOnExit true test" },
+              output: { content: "explicit true response" },
+            });
+            return { success: true };
+          },
+          { endOnExit: true },
+        );
+
+        expect(result).toEqual({ success: true });
+        expect(generationFromFunction).toBeDefined();
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanWithName("generation-end-on-exit-true");
+
+        // Verify generation is ended
+        const testSpan = testEnv.mockExporter.getSpanByName(
+          "generation-end-on-exit-true",
+        );
+        expect(testSpan).toBeDefined();
+      });
+
+      it("should not end generation when endOnExit=false", async () => {
+        let generationFromFunction: any = null;
+
+        const result = startActiveGeneration(
+          "generation-no-end-on-exit",
+          (generation) => {
+            generationFromFunction = generation;
+            generation.update({
+              model: "claude-3",
+              input: { prompt: "endOnExit false test" },
+              output: { content: "manual end response" },
+            });
+            return { success: true };
+          },
+          { endOnExit: false },
+        );
+
+        expect(result).toEqual({ success: true });
+        expect(generationFromFunction).toBeDefined();
+
+        // Give some time for any potential export
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Generation should not be exported yet since it wasn't ended
+        assertions.expectSpanCount(0);
+      });
+
+      it("should handle endOnExit=false with async generation", async () => {
+        let generationFromFunction: any = null;
+
+        const result = await startActiveGeneration(
+          "generation-async-no-end-on-exit",
+          async (generation) => {
+            generationFromFunction = generation;
+            generation.update({
+              model: "gpt-4",
+              input: { prompt: "async endOnExit false test" },
+            });
+
+            // Simulate async LLM call
+            await new Promise((resolve) => setTimeout(resolve, 50));
+
+            generation.update({
+              output: { content: "async manual end response" },
+            });
+
+            return { success: true, async: true };
+          },
+          { endOnExit: false },
+        );
+
+        expect(result).toEqual({ success: true, async: true });
+        expect(generationFromFunction).toBeDefined();
+
+        // Give some time for any potential export
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Generation should not be exported yet since it wasn't ended
+        assertions.expectSpanCount(0);
+      });
     });
   });
 
@@ -4377,6 +4604,123 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       // Verify trace IDs are valid hex
       expect(traceId1).toHaveLength(32);
       expect(traceId1).toMatch(/^[0-9a-f]{32}$/);
+    });
+
+    describe("endOnExit option", () => {
+      it("should end observation by default (endOnExit=true)", async () => {
+        const originalFunc = (input: string): string => {
+          return `processed: ${input}`;
+        };
+
+        const wrappedFunc = observe(originalFunc, {
+          name: "observe-end-on-exit-default",
+        });
+
+        const result = wrappedFunc("test input");
+
+        expect(result).toBe("processed: test input");
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanWithName("observe-end-on-exit-default");
+
+        // Verify observation is ended by checking it was exported
+        const testSpan = testEnv.mockExporter.getSpanByName(
+          "observe-end-on-exit-default",
+        );
+        expect(testSpan).toBeDefined();
+      });
+
+      it("should end observation when endOnExit=true explicitly", async () => {
+        const originalFunc = (input: string): string => {
+          return `explicit true: ${input}`;
+        };
+
+        const wrappedFunc = observe(originalFunc, {
+          name: "observe-end-on-exit-true",
+          endOnExit: true,
+        });
+
+        const result = wrappedFunc("test input");
+
+        expect(result).toBe("explicit true: test input");
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanWithName("observe-end-on-exit-true");
+
+        // Verify observation is ended
+        const testSpan = testEnv.mockExporter.getSpanByName(
+          "observe-end-on-exit-true",
+        );
+        expect(testSpan).toBeDefined();
+      });
+
+      it("should not end observation when endOnExit=false", async () => {
+        const originalFunc = (input: string): string => {
+          return `manual end: ${input}`;
+        };
+
+        const wrappedFunc = observe(originalFunc, {
+          name: "observe-no-end-on-exit",
+          endOnExit: false,
+        });
+
+        const result = wrappedFunc("test input");
+
+        expect(result).toBe("manual end: test input");
+
+        // Give some time for any potential export
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Observation should not be exported yet since it wasn't ended
+        assertions.expectSpanCount(0);
+      });
+
+      it("should handle endOnExit=false with async function", async () => {
+        const originalFunc = async (input: string): Promise<string> => {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          return `async manual end: ${input}`;
+        };
+
+        const wrappedFunc = observe(originalFunc, {
+          name: "observe-async-no-end-on-exit",
+          endOnExit: false,
+        });
+
+        const result = await wrappedFunc("test input");
+
+        expect(result).toBe("async manual end: test input");
+
+        // Give some time for any potential export
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Observation should not be exported yet since it wasn't ended
+        assertions.expectSpanCount(0);
+      });
+
+      it("should handle endOnExit=false with error in function", async () => {
+        const originalFunc = (input: string): string => {
+          throw new Error(`test error: ${input}`);
+        };
+
+        const wrappedFunc = observe(originalFunc, {
+          name: "observe-error-no-end-on-exit",
+          endOnExit: false,
+        });
+
+        expect(() => wrappedFunc("error input")).toThrow(
+          "test error: error input",
+        );
+
+        // Give some time for any potential export
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Observation should not be exported yet since it wasn't ended (even on error)
+        assertions.expectSpanCount(0);
+      });
     });
   });
 
