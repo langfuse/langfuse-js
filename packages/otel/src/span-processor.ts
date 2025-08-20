@@ -13,8 +13,10 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
   Span,
   BatchSpanProcessor,
+  SimpleSpanProcessor,
   SpanExporter,
   ReadableSpan,
+  SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 
 import { isCryptoAvailable } from "./hash.js";
@@ -127,6 +129,17 @@ export interface LangfuseSpanProcessorParams {
    * Additional HTTP headers to include with requests.
    */
   additionalHeaders?: Record<string, string>;
+  /**
+   * Span export mode to use.
+   *
+   * - **batched**: Recommended for production environments with long-running processes.
+   *   Spans are batched and exported in groups for optimal performance.
+   * - **immediate**: Recommended for short-lived environments such as serverless functions.
+   *   Spans are exported immediately to prevent data loss when the process terminates / is frozen.
+   *
+   * @defaultValue "batched"
+   */
+  exportMode?: "immediate" | "batched";
 }
 
 /**
@@ -164,7 +177,7 @@ export interface LangfuseSpanProcessorParams {
  *
  * @public
  */
-export class LangfuseSpanProcessor extends BatchSpanProcessor {
+export class LangfuseSpanProcessor implements SpanProcessor {
   private pendingMediaUploads: Record<string, Promise<any>> = {};
 
   private publicKey?: string;
@@ -174,6 +187,7 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
   private mask?: MaskFunction;
   private shouldExportSpan?: ShouldExportSpan;
   private apiClient: LangfuseAPIClient;
+  private processor: SpanProcessor;
 
   /**
    * Creates a new LangfuseSpanProcessor instance.
@@ -246,12 +260,15 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
         timeoutMillis: timeoutSeconds * 1_000,
       });
 
-    super(exporter, {
-      maxExportBatchSize: flushAt ? Number(flushAt) : undefined,
-      scheduledDelayMillis: flushIntervalSeconds
-        ? Number(flushIntervalSeconds) * 1_000
-        : undefined,
-    });
+    this.processor =
+      params?.exportMode === "immediate"
+        ? new SimpleSpanProcessor(exporter)
+        : new BatchSpanProcessor(exporter, {
+            maxExportBatchSize: flushAt ? Number(flushAt) : undefined,
+            scheduledDelayMillis: flushIntervalSeconds
+              ? Number(flushIntervalSeconds) * 1_000
+              : undefined,
+          });
 
     this.publicKey = publicKey;
     this.baseUrl = baseUrl;
@@ -308,7 +325,7 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
       [LangfuseOtelSpanAttributes.RELEASE]: this.release,
     });
 
-    return super.onStart(span, parentContext);
+    return this.processor.onStart(span, parentContext);
   }
 
   /**
@@ -363,7 +380,7 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
       )}`,
     );
 
-    super.onEnd(span);
+    this.processor.onEnd(span);
   }
 
   private async flush(): Promise<void> {
@@ -384,7 +401,7 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
   public async forceFlush(): Promise<void> {
     await this.flush();
 
-    return super.forceFlush();
+    return this.processor.forceFlush();
   }
 
   /**
@@ -397,7 +414,7 @@ export class LangfuseSpanProcessor extends BatchSpanProcessor {
   public async shutdown(): Promise<void> {
     await this.flush();
 
-    return super.shutdown();
+    return this.processor.shutdown();
   }
 
   private handleMediaInPlace(span: ReadableSpan): void {
