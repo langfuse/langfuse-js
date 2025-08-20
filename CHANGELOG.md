@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.0-beta.4](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.3...v4.0.0-beta.4) (2025-08-20)
+
+### ✨ Features
+
+* **tracing:** add endOnExit option ([15568d9](https://github.com/langfuse/langfuse-js/commit/15568d99fa42277ebf870211c980326883f7c85a))
+
 ## [4.0.0-beta.3](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2025-08-19)
 
 ### ✨ Features
