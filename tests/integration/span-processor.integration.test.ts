@@ -461,4 +461,210 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions.expectSpanCount(0);
     });
   });
+
+  describe("Export Mode Selection", () => {
+    it("should use BatchSpanProcessor by default", async () => {
+      // Default testEnv uses batched mode
+      const span1 = startSpan("default-batch-1");
+      span1.end();
+
+      // Should not export immediately due to batching (default flushAt is 1 in tests)
+      const span2 = startSpan("default-batch-2");
+      span2.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+
+      assertions.expectSpanCount(2);
+      assertions.expectSpanWithName("default-batch-1");
+      assertions.expectSpanWithName("default-batch-2");
+    });
+
+    it("should use BatchSpanProcessor when exportMode is 'batched'", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "batched",
+          flushAt: 2,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      // First span should not export yet
+      const span1 = startSpan("batched-span-1");
+      span1.end();
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(testEnv.mockExporter.getSpanCount()).toBe(0);
+
+      // Second span should trigger batch export
+      const span2 = startSpan("batched-span-2");
+      span2.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+
+      assertions.expectSpanCount(2);
+      assertions.expectSpanWithName("batched-span-1");
+      assertions.expectSpanWithName("batched-span-2");
+    });
+
+    it("should use SimpleSpanProcessor when exportMode is 'immediate'", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "immediate",
+          flushAt: 10, // This should be ignored for immediate mode
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      // Each span should export immediately regardless of flushAt
+      const span1 = startSpan("immediate-span-1");
+      span1.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("immediate-span-1");
+
+      const span2 = startSpan("immediate-span-2");
+      span2.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      assertions.expectSpanCount(2);
+      assertions.expectSpanWithName("immediate-span-2");
+    });
+  });
+
+  describe("Export Mode Behavior Differences", () => {
+    it("should export spans immediately with immediate mode", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "immediate",
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startSpan("immediate-test");
+      span.end();
+
+      // Should export almost immediately
+      await waitForSpanExport(testEnv.mockExporter, 1, 200);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("immediate-test");
+    });
+
+    it("should ignore batch configuration in immediate mode", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "immediate",
+          flushAt: 100, // Should be ignored
+          flushIntervalSeconds: 60, // Should be ignored
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      // Should still export immediately despite batch config
+      const span = startSpan("ignore-batch-config");
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1, 200);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("ignore-batch-config");
+    });
+
+    it("should respect batch configuration in batched mode", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "batched",
+          flushAt: 3,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      // Create two spans - should not export yet
+      const span1 = startSpan("batch-1");
+      span1.end();
+      const span2 = startSpan("batch-2");
+      span2.end();
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(testEnv.mockExporter.getSpanCount()).toBe(0);
+
+      // Third span should trigger batch export
+      const span3 = startSpan("batch-3");
+      span3.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      assertions.expectSpanCount(3);
+    });
+  });
+
+  describe("Method Delegation", () => {
+    it("should delegate forceFlush correctly for both modes", async () => {
+      // Test batched mode
+      await teardownTestEnvironment(testEnv);
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "batched",
+          flushAt: 10,
+        },
+      });
+
+      const span1 = startSpan("batch-force-flush");
+      span1.end();
+
+      // Should not export yet
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(testEnv.mockExporter.getSpanCount()).toBe(0);
+
+      // Force flush should export the span
+      await testEnv.spanProcessor.forceFlush();
+      expect(testEnv.mockExporter.getSpanCount()).toBe(1);
+
+      // Test immediate mode
+      await teardownTestEnvironment(testEnv);
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "immediate",
+        },
+      });
+
+      const span2 = startSpan("immediate-force-flush");
+      span2.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      // Force flush should still work (even though span already exported)
+      await expect(testEnv.spanProcessor.forceFlush()).resolves.not.toThrow();
+    });
+
+    it("should delegate shutdown correctly for both modes", async () => {
+      // Test with batched mode
+      await teardownTestEnvironment(testEnv);
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "batched",
+        },
+      });
+
+      await expect(testEnv.spanProcessor.shutdown()).resolves.not.toThrow();
+
+      // Test with immediate mode
+      await teardownTestEnvironment(testEnv);
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          exportMode: "immediate",
+        },
+      });
+
+      await expect(testEnv.spanProcessor.shutdown()).resolves.not.toThrow();
+    });
+  });
 });
