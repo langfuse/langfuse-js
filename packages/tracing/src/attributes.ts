@@ -247,6 +247,8 @@ export function createEventAttributes({
  */
 function _serialize(obj: unknown): string | undefined {
   try {
+    if (typeof obj === "string") return obj;
+
     return obj != null ? JSON.stringify(obj) : undefined;
   } catch {
     return "<failed to serialize>";

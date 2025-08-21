@@ -3999,7 +3999,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions.expectSpanAttribute(
           "testFunc",
           LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
-          '"processed: test input"',
+          "processed: test input",
         );
       });
     });

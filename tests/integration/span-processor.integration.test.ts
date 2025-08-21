@@ -1,12 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { startSpan } from "@langfuse/tracing";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
+import { SpanAssertions } from "./helpers/assertions.js";
 import {
   setupTestEnvironment,
   teardownTestEnvironment,
   waitForSpanExport,
   type TestEnvironment,
 } from "./helpers/testSetup.js";
-import { SpanAssertions } from "./helpers/assertions.js";
 
 describe("LangfuseSpanProcessor E2E Tests", () => {
   let testEnv: TestEnvironment;
