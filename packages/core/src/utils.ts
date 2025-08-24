@@ -55,16 +55,33 @@ export function safeSetTimeout(fn: () => void, timeout: number): any {
   return t;
 }
 
-export function uint8ArrayToBase64(arr: Uint8Array): string {
-  // Try Buffer first (Node.js)
+export function base64ToBytes(base64: string): Uint8Array {
+  const binString = atob(base64);
+
+  return Uint8Array.from(binString, (m) => m.codePointAt(0)!);
+}
+
+export function bytesToBase64(bytes: Uint8Array): string {
+  const binString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join(
+    "",
+  );
+  return btoa(binString);
+}
+
+export function base64Encode(input: string): string {
   if (typeof Buffer !== "undefined") {
-    return Buffer.from(arr).toString("base64");
+    return Buffer.from(input, "utf8").toString("base64");
   }
 
-  // Use btoa for browsers and edge runtimes
-  if (typeof btoa !== "undefined") {
-    return btoa(String.fromCharCode(...arr));
+  const bytes = new TextEncoder().encode(input);
+  return bytesToBase64(bytes);
+}
+
+export function base64Decode(input: string): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(input, "base64").toString("utf8");
   }
 
-  throw new Error("Base64 encoding not available");
+  const bytes = base64ToBytes(input);
+  return new TextDecoder().decode(bytes);
 }

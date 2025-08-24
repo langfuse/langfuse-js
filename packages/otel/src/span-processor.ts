@@ -1,12 +1,11 @@
 import {
   Logger,
   getGlobalLogger,
-  generateUUID,
   LangfuseAPIClient,
   LANGFUSE_SDK_VERSION,
   LangfuseOtelSpanAttributes,
   getEnv,
-  uint8ArrayToBase64,
+  base64Encode,
 } from "@langfuse/core";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
@@ -19,7 +18,6 @@ import {
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 
-import { isCryptoAvailable } from "./hash.js";
 import { LangfuseMedia } from "./media.js";
 
 /**
@@ -178,7 +176,8 @@ export interface LangfuseSpanProcessorParams {
  * @public
  */
 export class LangfuseSpanProcessor implements SpanProcessor {
-  private pendingMediaUploads: Record<string, Promise<any>> = {};
+  private pendingMediaUploads: Set<Promise<void>> = new Set();
+  private pendingEndedSpans: Set<Promise<void>> = new Set();
 
   private publicKey?: string;
   private baseUrl?: string;
@@ -240,9 +239,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     const flushIntervalSeconds =
       params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
 
-    const authHeaderValue = uint8ArrayToBase64(
-      new TextEncoder().encode(`${publicKey}:${secretKey}`),
-    );
+    const authHeaderValue = base64Encode(`${publicKey}:${secretKey}`);
     const timeoutSeconds =
       params?.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
 
@@ -297,14 +294,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       flushAt,
       flushIntervalSeconds,
     });
-
-    // Warn if crypto is not available
-    if (!isCryptoAvailable) {
-      logger.warn(
-        "[Langfuse] Crypto module not available in this runtime. Media upload functionality will be disabled. " +
-          "Spans will still be processed normally, but any media content in base64 data URIs will not be uploaded to Langfuse.",
-      );
-    }
   }
 
   private get logger(): Logger {
@@ -343,6 +332,19 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onEnd(span: ReadableSpan): void {
+    const processEndedSpanPromise = this.processEndedSpan(span).catch((err) => {
+      this.logger.error(err);
+    });
+
+    // Enqueue this export to the pending list so it can be flushed by the user.
+    this.pendingEndedSpans.add(processEndedSpanPromise);
+
+    void processEndedSpanPromise.finally(() =>
+      this.pendingEndedSpans.delete(processEndedSpanPromise),
+    );
+  }
+
+  private async processEndedSpan(span: ReadableSpan) {
     if (this.shouldExportSpan) {
       try {
         if (this.shouldExportSpan({ otelSpan: span }) === false) return;
@@ -384,11 +386,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private async flush(): Promise<void> {
-    await Promise.all(Object.values(this.pendingMediaUploads)).catch((e) => {
-      this.logger.error(
-        e instanceof Error ? e.message : "Unhandled media upload error",
-      );
-    });
+    await Promise.all(Array.from(this.pendingEndedSpans));
+    await Promise.all(Array.from(this.pendingMediaUploads));
   }
 
   /**
@@ -417,15 +416,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     return this.processor.shutdown();
   }
 
-  private handleMediaInPlace(span: ReadableSpan): void {
-    // Skip media handling if crypto is not available
-    if (!isCryptoAvailable) {
-      this.logger.debug(
-        "[Langfuse] Crypto not available, skipping media processing",
-      );
-      return;
-    }
-
+  private async handleMediaInPlace(span: ReadableSpan) {
     const mediaAttributes = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       LangfuseOtelSpanAttributes.TRACE_INPUT,
@@ -465,7 +456,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
             source: "base64_data_uri",
           });
 
-          if (!media.tag) {
+          const langfuseMediaTag = await media.getTag();
+
+          if (!langfuseMediaTag) {
             this.logger.warn(
               "Failed to create Langfuse media tag. Skipping media item.",
             );
@@ -482,19 +475,20 @@ export class LangfuseSpanProcessor implements SpanProcessor {
               : mediaAttribute.includes("output")
                 ? "output"
                 : "metadata", // todo: make more robust
+          }).catch((err) => {
+            this.logger.error("Media upload failed with error: ", err);
           });
 
-          const promiseId = generateUUID();
-          this.pendingMediaUploads[promiseId] = uploadPromise;
+          this.pendingMediaUploads.add(uploadPromise);
 
           uploadPromise.finally(() => {
-            delete this.pendingMediaUploads[promiseId];
+            this.pendingMediaUploads.delete(uploadPromise);
           });
 
           // Replace original attribute with media escaped attribute
           mediaReplacedValue = mediaReplacedValue.replaceAll(
             mediaDataUri,
-            media.tag,
+            langfuseMediaTag,
           );
         }
 
@@ -548,10 +542,12 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     field: string;
   }): Promise<void> {
     try {
+      const contentSha256Hash = await media.getSha256Hash();
+
       if (
         !media.contentLength ||
         !media._contentType ||
-        !media.contentSha256Hash ||
+        !contentSha256Hash ||
         !media._contentBytes
       ) {
         return;
@@ -563,20 +559,21 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         observationId,
         field,
         contentType: media._contentType,
-        sha256Hash: media.contentSha256Hash,
+        sha256Hash: contentSha256Hash,
       });
 
       if (!uploadUrl) {
         this.logger.debug(
-          `Media status: Media with ID ${media.id} already uploaded. Skipping duplicate upload.`,
+          `Media status: Media with ID ${mediaId} already uploaded. Skipping duplicate upload.`,
         );
 
         return;
       }
 
-      if (media.id !== mediaId) {
+      const clientSideMediaId = await media.getId();
+      if (clientSideMediaId !== mediaId) {
         this.logger.error(
-          `Media integrity error: Media ID mismatch between SDK (${media.id}) and Server (${mediaId}). Upload cancelled. Please check media ID generation logic.`,
+          `Media integrity error: Media ID mismatch between SDK (${clientSideMediaId}) and Server (${mediaId}). Upload cancelled. Please check media ID generation logic.`,
         );
 
         return;
@@ -590,7 +587,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         uploadUrl,
         contentBytes: media._contentBytes,
         contentType: media._contentType,
-        contentSha256Hash: media.contentSha256Hash,
+        contentSha256Hash: contentSha256Hash,
         maxRetries: 3,
         baseDelay: 1000,
       });
@@ -616,7 +613,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     uploadUrl: string;
     contentType: string;
     contentSha256Hash: string;
-    contentBytes: Buffer;
+    contentBytes: Uint8Array;
     maxRetries: number;
     baseDelay: number;
   }) {
