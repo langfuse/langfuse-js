@@ -8,3 +8,4 @@ export {
 export { LangfuseAPIClient } from "./api/Client.js";
 export * from "./utils.js";
 export * from "./types.js";
+export * from "./media.js";

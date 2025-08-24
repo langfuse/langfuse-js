@@ -2,6 +2,7 @@ import {
   Logger,
   getGlobalLogger,
   LangfuseAPIClient,
+  LangfuseMedia,
   LANGFUSE_SDK_VERSION,
   LangfuseOtelSpanAttributes,
   getEnv,
@@ -17,8 +18,6 @@ import {
   ReadableSpan,
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
-
-import { LangfuseMedia } from "./media.js";
 
 /**
  * Function type for masking sensitive data in spans before export.
