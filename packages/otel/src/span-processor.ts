@@ -359,7 +359,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     }
 
     this.applyMaskInPlace(span);
-    this.handleMediaInPlace(span);
+    await this.handleMediaInPlace(span);
 
     this.logger.debug(
       `Processed span:\n${JSON.stringify(
