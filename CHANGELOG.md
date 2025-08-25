@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.0-beta.6](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.5...v4.0.0-beta.6) (2025-08-25)
+
+### 🐛 Bug Fixes
+
+* **processor:** move to crypto.subtle ([#592](https://github.com/langfuse/langfuse-js/issues/592)) ([f05a777](https://github.com/langfuse/langfuse-js/commit/f05a777e00c4c6a49b7b4f0bc9a7c658cc681445))
+* **serializer:** do not serialize string primitives ([#591](https://github.com/langfuse/langfuse-js/issues/591)) ([df9b0b8](https://github.com/langfuse/langfuse-js/commit/df9b0b8d2e3acaa51af25b9fc5d3d3fcaac011ef))
+
 ## [4.0.0-beta.5](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.4...v4.0.0-beta.5) (2025-08-20)
 
 ### ✨ Features
