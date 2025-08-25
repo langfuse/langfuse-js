@@ -1,6 +1,6 @@
-import { getGlobalLogger, type MediaContentType } from "@langfuse/core";
-
-import { getSha256HashFromBytes, isCryptoAvailable } from "./hash.js";
+import { MediaContentType } from "./api/api/index.js";
+import { getGlobalLogger } from "./logger/index.js";
+import { base64ToBytes, bytesToBase64 } from "./utils.js";
 
 /**
  * Parameters for creating a LangfuseMedia instance.
@@ -22,7 +22,7 @@ export type LangfuseMediaParams =
       /** Indicates the media is provided as raw bytes */
       source: "bytes";
       /** The raw content bytes */
-      contentBytes: Buffer;
+      contentBytes: Uint8Array;
       /** The MIME type of the content */
       contentType: MediaContentType;
     };
@@ -48,7 +48,7 @@ export type LangfuseMediaParams =
  * // From raw bytes
  * const media2 = new LangfuseMedia({
  *   source: "bytes",
- *   contentBytes: Buffer.from("Hello World"),
+ *   contentBytes: new Uint8Array([72, 101, 108, 108, 111])
  *   contentType: "text/plain"
  * });
  *
@@ -58,8 +58,8 @@ export type LangfuseMediaParams =
  *
  * @public
  */
-class LangfuseMedia {
-  _contentBytes?: Buffer;
+export class LangfuseMedia {
+  _contentBytes?: Uint8Array;
   _contentType?: MediaContentType;
   _source?: string;
 
@@ -103,7 +103,7 @@ class LangfuseMedia {
    */
   private parseBase64DataUri(
     data: string,
-  ): [Buffer | undefined, MediaContentType | undefined] {
+  ): [Uint8Array | undefined, MediaContentType | undefined] {
     try {
       if (!data || typeof data !== "string") {
         throw new Error("Data URI is not a string");
@@ -128,10 +128,7 @@ class LangfuseMedia {
         throw new Error("Content type is empty");
       }
 
-      return [
-        Buffer.from(actualData, "base64"),
-        contentType as MediaContentType,
-      ];
+      return [base64ToBytes(actualData), contentType as MediaContentType];
     } catch (error) {
       getGlobalLogger().error("Error parsing base64 data URI", error);
       return [undefined, undefined];
@@ -152,10 +149,11 @@ class LangfuseMedia {
    * console.log(media.id); // "A1B2C3D4E5F6G7H8I9J0K1"
    * ```
    */
-  get id(): string | null {
-    if (!this.contentSha256Hash) return null;
+  async getId(): Promise<string | null> {
+    const contentSha256Hash = await this.getSha256Hash();
+    if (!contentSha256Hash) return null;
 
-    const urlSafeContentHash = this.contentSha256Hash
+    const urlSafeContentHash = contentSha256Hash
       .replaceAll("+", "-")
       .replaceAll("/", "_");
 
@@ -179,13 +177,15 @@ class LangfuseMedia {
    *
    * @returns The base64-encoded SHA-256 hash, or undefined if unavailable
    */
-  get contentSha256Hash(): string | undefined {
-    if (!this._contentBytes || !isCryptoAvailable) {
+  async getSha256Hash(): Promise<string | undefined> {
+    if (!this._contentBytes) {
       return undefined;
     }
 
     try {
-      return getSha256HashFromBytes(this._contentBytes);
+      const hash = await crypto.subtle.digest("SHA-256", this._contentBytes);
+
+      return bytesToBase64(new Uint8Array(hash));
     } catch (error) {
       getGlobalLogger().warn(
         "[Langfuse] Failed to generate SHA-256 hash for media content:",
@@ -212,10 +212,12 @@ class LangfuseMedia {
    * // "@@@langfuseMedia:type=image/png|id=A1B2C3D4E5F6G7H8I9J0K1|source=base64_data_uri@@@"
    * ```
    */
-  get tag(): string | null {
-    if (!this._contentType || !this._source || !this.id) return null;
+  async getTag(): Promise<string | null> {
+    const id = await this.getId();
 
-    return `@@@langfuseMedia:type=${this._contentType}|id=${this.id}|source=${this._source}@@@`;
+    if (!this._contentType || !this._source || !id) return null;
+
+    return `@@@langfuseMedia:type=${this._contentType}|id=${id}|source=${this._source}@@@`;
   }
 
   /**
@@ -233,7 +235,7 @@ class LangfuseMedia {
   get base64DataUri(): string | null {
     if (!this._contentBytes) return null;
 
-    return `data:${this._contentType};base64,${Buffer.from(this._contentBytes).toString("base64")}`;
+    return `data:${this._contentType};base64,${bytesToBase64(this._contentBytes)}`;
   }
 
   /**
@@ -245,5 +247,3 @@ class LangfuseMedia {
     return this.base64DataUri;
   }
 }
-
-export { LangfuseMedia, type MediaContentType };

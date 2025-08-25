@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll } from "vitest";
-import { resetGlobalLogger } from "@langfuse/core";
-import { startSpan } from "@langfuse/tracing";
-import { LangfuseMedia } from "@langfuse/otel";
 import { LangfuseClient } from "@langfuse/client";
+import { resetGlobalLogger, LangfuseMedia } from "@langfuse/core";
+import { startSpan } from "@langfuse/tracing";
+import { nanoid } from "nanoid";
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from "vitest";
+
+import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
   waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
-import { ServerAssertions } from "./helpers/serverAssertions.js";
-import { nanoid } from "nanoid";
 
 describe("Media E2E Tests", () => {
   let testEnv: ServerTestEnvironment;

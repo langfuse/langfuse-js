@@ -3,7 +3,7 @@ import {
   ParsedMediaReference,
   MediaContentType,
   getGlobalLogger,
-  uint8ArrayToBase64,
+  bytesToBase64,
 } from "@langfuse/core";
 
 /**
@@ -119,7 +119,7 @@ export class MediaManager {
                 await mediaContent.arrayBuffer(),
               );
 
-              const base64MediaContent = uint8ArrayToBase64(uint8Content);
+              const base64MediaContent = bytesToBase64(uint8Content);
               const base64DataUri = `data:${mediaData.contentType};base64,${base64MediaContent}`;
 
               referenceStringToMediaContentMap.set(
