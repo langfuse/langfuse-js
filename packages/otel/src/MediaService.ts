@@ -77,7 +77,11 @@ export class MediaService {
           this.scheduleUpload({
             span,
             media,
-            attributeKey: mediaAttribute,
+            field: mediaAttribute.includes("input")
+              ? "input"
+              : mediaAttribute.includes("output")
+                ? "output"
+                : "metadata", // todo: make more robust
           });
 
           // Replace original attribute with media escaped attribute
@@ -147,7 +151,7 @@ export class MediaService {
                     this.scheduleUpload({
                       span,
                       media,
-                      attributeKey: mediaAttribute,
+                      field: "input",
                     });
 
                     // Replace original attribute with media escaped attribute
@@ -174,20 +178,16 @@ export class MediaService {
 
   private scheduleUpload(params: {
     span: ReadableSpan;
-    attributeKey: string;
+    field: string;
     media: LangfuseMedia;
   }) {
-    const { span, attributeKey, media } = params;
+    const { span, field, media } = params;
 
     const uploadPromise: Promise<void> = this.handleUpload({
       media,
       traceId: span.spanContext().traceId,
       observationId: span.spanContext().spanId,
-      field: attributeKey.includes("input")
-        ? "input"
-        : attributeKey.includes("output")
-          ? "output"
-          : "metadata", // todo: make more robust
+      field,
     }).catch((err) => {
       this.logger.error("Media upload failed with error: ", err);
     });
