@@ -2,7 +2,6 @@ import {
   Logger,
   getGlobalLogger,
   LangfuseAPIClient,
-  LangfuseMedia,
   LANGFUSE_SDK_VERSION,
   LangfuseOtelSpanAttributes,
   getEnv,
@@ -18,6 +17,8 @@ import {
   ReadableSpan,
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
+
+import { MediaService } from "./MediaService.js";
 
 /**
  * Function type for masking sensitive data in spans before export.
@@ -175,7 +176,6 @@ export interface LangfuseSpanProcessorParams {
  * @public
  */
 export class LangfuseSpanProcessor implements SpanProcessor {
-  private pendingMediaUploads: Set<Promise<void>> = new Set();
   private pendingEndedSpans: Set<Promise<void>> = new Set();
 
   private publicKey?: string;
@@ -186,6 +186,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private shouldExportSpan?: ShouldExportSpan;
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
+  private mediaService: MediaService;
 
   /**
    * Creates a new LangfuseSpanProcessor instance.
@@ -284,6 +285,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       headers: params?.additionalHeaders,
     });
 
+    this.mediaService = new MediaService({ apiClient: this.apiClient });
+
     logger.debug("Initialized LangfuseSpanProcessor with params:", {
       publicKey,
       baseUrl,
@@ -343,50 +346,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     );
   }
 
-  private async processEndedSpan(span: ReadableSpan) {
-    if (this.shouldExportSpan) {
-      try {
-        if (this.shouldExportSpan({ otelSpan: span }) === false) return;
-      } catch (err) {
-        this.logger.error(
-          "ShouldExportSpan failed with error. Excluding span. Error: ",
-          err,
-        );
-
-        return;
-      }
-    }
-
-    this.applyMaskInPlace(span);
-    await this.handleMediaInPlace(span);
-
-    this.logger.debug(
-      `Processed span:\n${JSON.stringify(
-        {
-          name: span.name,
-          traceId: span.spanContext().traceId,
-          spanId: span.spanContext().spanId,
-          parentSpanId: span.parentSpanContext?.spanId ?? null,
-          attributes: span.attributes,
-          startTime: new Date(hrTimeToMilliseconds(span.startTime)),
-          endTime: new Date(hrTimeToMilliseconds(span.endTime)),
-          durationMs: hrTimeToMilliseconds(span.duration),
-          kind: span.kind,
-          status: span.status,
-          resource: span.resource.attributes,
-          instrumentationScope: span.instrumentationScope,
-        },
-        null,
-        2,
-      )}`,
-    );
-
-    this.processor.onEnd(span);
-  }
-
   private async flush(): Promise<void> {
     await Promise.all(Array.from(this.pendingEndedSpans));
-    await Promise.all(Array.from(this.pendingMediaUploads));
+    await this.mediaService.flush();
   }
 
   /**
@@ -415,87 +377,46 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     return this.processor.shutdown();
   }
 
-  private async handleMediaInPlace(span: ReadableSpan) {
-    const mediaAttributes = [
-      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
-      LangfuseOtelSpanAttributes.TRACE_INPUT,
-      LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
-      LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-      LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
-      LangfuseOtelSpanAttributes.TRACE_METADATA,
-    ];
+  private async processEndedSpan(span: ReadableSpan) {
+    if (this.shouldExportSpan) {
+      try {
+        if (this.shouldExportSpan({ otelSpan: span }) === false) return;
+      } catch (err) {
+        this.logger.error(
+          "ShouldExportSpan failed with error. Excluding span. Error: ",
+          err,
+        );
 
-    for (const mediaAttribute of mediaAttributes) {
-      const mediaRelevantAttributeKeys = Object.keys(span.attributes).filter(
-        (attributeName) => attributeName.startsWith(mediaAttribute),
-      );
-
-      for (const key of mediaRelevantAttributeKeys) {
-        const value = span.attributes[key];
-
-        if (typeof value !== "string") {
-          this.logger.warn(
-            `Span attribute ${mediaAttribute} is not a stringified object. Skipping media handling.`,
-          );
-
-          continue;
-        }
-
-        // Find media base64 data URI
-        let mediaReplacedValue = value;
-        const regex = /data:[^;]+;base64,[A-Za-z0-9+/]+=*/g;
-        const foundMedia = [...new Set(value.match(regex) ?? [])];
-
-        if (foundMedia.length === 0) continue;
-
-        for (const mediaDataUri of foundMedia) {
-          // For each media, create media tag and initiate upload
-          const media = new LangfuseMedia({
-            base64DataUri: mediaDataUri,
-            source: "base64_data_uri",
-          });
-
-          const langfuseMediaTag = await media.getTag();
-
-          if (!langfuseMediaTag) {
-            this.logger.warn(
-              "Failed to create Langfuse media tag. Skipping media item.",
-            );
-
-            continue;
-          }
-
-          const uploadPromise: Promise<void> = this.processMediaItem({
-            media,
-            traceId: span.spanContext().traceId,
-            observationId: span.spanContext().spanId,
-            field: mediaAttribute.includes("input")
-              ? "input"
-              : mediaAttribute.includes("output")
-                ? "output"
-                : "metadata", // todo: make more robust
-          }).catch((err) => {
-            this.logger.error("Media upload failed with error: ", err);
-          });
-
-          this.pendingMediaUploads.add(uploadPromise);
-
-          uploadPromise.finally(() => {
-            this.pendingMediaUploads.delete(uploadPromise);
-          });
-
-          // Replace original attribute with media escaped attribute
-          mediaReplacedValue = mediaReplacedValue.replaceAll(
-            mediaDataUri,
-            langfuseMediaTag,
-          );
-        }
-
-        span.attributes[key] = mediaReplacedValue;
+        return;
       }
     }
-  }
 
+    this.applyMaskInPlace(span);
+    await this.mediaService.process(span);
+
+    this.logger.debug(
+      `Processed span:\n${JSON.stringify(
+        {
+          name: span.name,
+          traceId: span.spanContext().traceId,
+          spanId: span.spanContext().spanId,
+          parentSpanId: span.parentSpanContext?.spanId ?? null,
+          attributes: span.attributes,
+          startTime: new Date(hrTimeToMilliseconds(span.startTime)),
+          endTime: new Date(hrTimeToMilliseconds(span.endTime)),
+          durationMs: hrTimeToMilliseconds(span.duration),
+          kind: span.kind,
+          status: span.status,
+          resource: span.resource.attributes,
+          instrumentationScope: span.instrumentationScope,
+        },
+        null,
+        2,
+      )}`,
+    );
+
+    this.processor.onEnd(span);
+  }
   private applyMaskInPlace(span: ReadableSpan): void {
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
@@ -526,136 +447,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       );
 
       return "<fully masked due to failed mask function>";
-    }
-  }
-
-  private async processMediaItem({
-    media,
-    traceId,
-    observationId,
-    field,
-  }: {
-    media: LangfuseMedia;
-    traceId: string;
-    observationId?: string;
-    field: string;
-  }): Promise<void> {
-    try {
-      const contentSha256Hash = await media.getSha256Hash();
-
-      if (
-        !media.contentLength ||
-        !media._contentType ||
-        !contentSha256Hash ||
-        !media._contentBytes
-      ) {
-        return;
-      }
-
-      const { uploadUrl, mediaId } = await this.apiClient.media.getUploadUrl({
-        contentLength: media.contentLength,
-        traceId,
-        observationId,
-        field,
-        contentType: media._contentType,
-        sha256Hash: contentSha256Hash,
-      });
-
-      if (!uploadUrl) {
-        this.logger.debug(
-          `Media status: Media with ID ${mediaId} already uploaded. Skipping duplicate upload.`,
-        );
-
-        return;
-      }
-
-      const clientSideMediaId = await media.getId();
-      if (clientSideMediaId !== mediaId) {
-        this.logger.error(
-          `Media integrity error: Media ID mismatch between SDK (${clientSideMediaId}) and Server (${mediaId}). Upload cancelled. Please check media ID generation logic.`,
-        );
-
-        return;
-      }
-
-      this.logger.debug(`Uploading media ${mediaId}...`);
-
-      const startTime = Date.now();
-
-      const uploadResponse = await this.uploadMediaWithBackoff({
-        uploadUrl,
-        contentBytes: media._contentBytes,
-        contentType: media._contentType,
-        contentSha256Hash: contentSha256Hash,
-        maxRetries: 3,
-        baseDelay: 1000,
-      });
-
-      if (!uploadResponse) {
-        throw Error("Media upload process failed");
-      }
-
-      await this.apiClient.media.patch(mediaId, {
-        uploadedAt: new Date().toISOString(),
-        uploadHttpStatus: uploadResponse.status,
-        uploadHttpError: await uploadResponse.text(),
-        uploadTimeMs: Date.now() - startTime,
-      });
-
-      this.logger.debug(`Media upload status reported for ${mediaId}`);
-    } catch (err) {
-      this.logger.error(`Error processing media item: ${err}`);
-    }
-  }
-
-  private async uploadMediaWithBackoff(params: {
-    uploadUrl: string;
-    contentType: string;
-    contentSha256Hash: string;
-    contentBytes: Uint8Array;
-    maxRetries: number;
-    baseDelay: number;
-  }) {
-    const {
-      uploadUrl,
-      contentType,
-      contentSha256Hash,
-      contentBytes,
-      maxRetries,
-      baseDelay,
-    } = params;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "PUT",
-          body: contentBytes,
-          headers: {
-            "Content-Type": contentType,
-            "x-amz-checksum-sha256": contentSha256Hash,
-            "x-ms-blob-type": "BlockBlob",
-          },
-        });
-
-        if (
-          attempt < maxRetries &&
-          uploadResponse.status !== 200 &&
-          uploadResponse.status !== 201
-        ) {
-          throw new Error(`Upload failed with status ${uploadResponse.status}`);
-        }
-
-        return uploadResponse;
-      } catch (e) {
-        if (attempt === maxRetries) {
-          throw e;
-        }
-
-        const delay = baseDelay * Math.pow(2, attempt);
-        const jitter = Math.random() * 1000;
-
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-      }
     }
   }
 }
