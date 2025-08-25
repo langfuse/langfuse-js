@@ -1,4 +1,9 @@
-import { describe, it, beforeEach, afterEach, expect } from "vitest";
+import { randomUUID } from "crypto";
+import fs from "fs/promises";
+
+import { openai } from "@ai-sdk/openai";
+import { LangfuseClient } from "@langfuse/client";
+import { startActiveSpan } from "@langfuse/tracing";
 import {
   embed,
   generateObject,
@@ -7,25 +12,21 @@ import {
   streamText,
   tool,
 } from "ai";
-import { LangfuseClient } from "@langfuse/client";
-import { randomUUID } from "crypto";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import z from "zod";
+
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
   waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
-import { startActiveSpan } from "@langfuse/tracing";
-
-import { openai } from "@ai-sdk/openai";
 
 const weatherTool = tool({
   description: "Get the weather in a location",
-  parameters: z.object({
+  inputSchema: z.object({
     location: z.string().describe("The location to get the weather for"),
   }),
-  // location below is inferred to be a string:
   execute: async ({ location }) => ({
     location,
     temperature: 72 + Math.floor(Math.random() * 21) - 10,
@@ -74,7 +75,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const [result, span] = await startActiveSpan(functionId, async (span) => {
       const result = await generateText({
         model: openai(modelName),
-        maxTokens,
+        maxOutputTokens: maxTokens,
         prompt,
         experimental_telemetry: {
           isEnabled: true,
@@ -155,9 +156,8 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const [result, span] = await startActiveSpan(functionId, async (span) => {
       const result = await generateText({
         model: openai(modelName),
-        maxTokens,
+        maxOutputTokens: maxTokens,
         prompt,
-        maxSteps: 3,
         tools: {
           weather: weatherTool,
         },
@@ -240,7 +240,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const [result, span] = await startActiveSpan(functionId, async (span) => {
       const stream = streamText({
         model: openai(modelName),
-        maxTokens,
+        maxOutputTokens: maxTokens,
         prompt,
         experimental_telemetry: {
           isEnabled: true,
@@ -396,7 +396,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
   it("should trace a streamObject call", async () => {
     const testParams = {
       functionId: "test-vercel-streamObject",
-      modelName: "gpt-4-turbo-2024-04-09",
+      modelName: "gpt-4o",
       maxTokens: 512,
       prompt: "Generate a lasagna recipe.",
       userId: "some-user-id",
@@ -472,7 +472,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
     for (const generation of generations) {
       expect(generation.input).toBeDefined();
       expect(generation.output).toBeDefined();
-      expect(generation.model).toBe(modelName);
+      expect(generation.model).toContain(modelName);
       expect(generation.calculatedInputCost).toBeGreaterThan(0);
       expect(generation.calculatedOutputCost).toBeGreaterThan(0);
       expect(generation.calculatedTotalCost).toBeGreaterThan(0);
@@ -585,7 +585,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const [result, span] = await startActiveSpan(functionId, async (span) => {
       const stream = streamText({
         model: openai(modelName),
-        maxTokens,
+        maxOutputTokens: maxTokens,
         prompt,
         experimental_telemetry: {
           isEnabled: true,
@@ -646,4 +646,136 @@ describe("Vercel AI SDK integration E2E tests", () => {
       expect(generation.promptVersion).toBe(fetchedPrompt.version);
     }
   }, 20_000);
+
+  it("should trace a call with file attachment", async () => {
+    const attachmentPath = "tests/static/bitcoin.pdf";
+    const attachment = await fs.readFile(attachmentPath);
+
+    const [result, span] = await startActiveSpan(
+      "generateText",
+      async (span) => {
+        const result = await generateText({
+          model: openai("gpt-5-nano"),
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Give me a summary" },
+                {
+                  type: "file",
+                  mediaType: "application/pdf",
+                  data: attachment,
+                },
+              ],
+            },
+          ],
+          providerOptions: {
+            openai: {
+              reasoningEffort: "minimal",
+            },
+          },
+          experimental_telemetry: {
+            isEnabled: true,
+          },
+        });
+
+        return [result, span] as const;
+      },
+    );
+
+    await testEnv.spanProcessor.forceFlush();
+    await waitForServerIngestion(2000);
+
+    // Fetch trace
+    const traceId = span.traceId;
+    const trace = await langfuseClient.api.trace.get(traceId);
+
+    expect(trace.id).toBe(traceId);
+
+    // Validate generations
+    expect(trace.observations.length).toBeGreaterThan(0);
+    const generations = trace.observations.filter(
+      (o: any) => o.type === "GENERATION",
+    );
+
+    expect(generations.length).toBe(2);
+
+    const generation = generations.find((g) => g.name?.includes("doGenerate"))!;
+
+    expect(generation.input).toBeDefined();
+    expect(generation.output).toBeDefined();
+
+    const inputStr = JSON.stringify(generation.input);
+
+    expect(inputStr).toMatch(
+      /@@@langfuseMedia:type=application\/pdf\|id=.+\|source=bytes@@@/,
+    );
+
+    // Should not contain the original base64 data
+    expect(inputStr).not.toContain(Buffer.from(attachment).toString("base64"));
+  });
+
+  it("should trace a call with image", async () => {
+    const imagePath = "tests/static/puton.jpg";
+    const image = await fs.readFile(imagePath);
+
+    const [result, span] = await startActiveSpan(
+      "generateText",
+      async (span) => {
+        const result = await generateText({
+          model: openai("gpt-5-nano"),
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Give me a summary" },
+                { type: "image", mediaType: "image/jpeg", image },
+              ],
+            },
+          ],
+          providerOptions: {
+            openai: {
+              reasoningEffort: "minimal",
+            },
+          },
+          experimental_telemetry: {
+            isEnabled: true,
+          },
+        });
+
+        return [result, span] as const;
+      },
+    );
+
+    await testEnv.spanProcessor.forceFlush();
+    await waitForServerIngestion(2000);
+
+    // Fetch trace
+    const traceId = span.traceId;
+    const trace = await langfuseClient.api.trace.get(traceId);
+
+    expect(trace.id).toBe(traceId);
+
+    // Validate generations
+    expect(trace.observations.length).toBeGreaterThan(0);
+    const generations = trace.observations.filter(
+      (o: any) => o.type === "GENERATION",
+    );
+
+    expect(generations.length).toBe(2);
+
+    const generation = generations.find((g) => g.name?.includes("doGenerate"))!;
+
+    expect(generation.input).toBeDefined();
+    expect(generation.output).toBeDefined();
+
+    const inputStr = JSON.stringify(generation.input);
+
+    expect(inputStr).toMatch(
+      /@@@langfuseMedia:type=image\/jpeg\|id=.+\|source=bytes@@@/,
+    );
+
+    // Should not contain the original base64 data
+    expect(inputStr).not.toContain(Buffer.from(image).toString("base64"));
+  });
 });
