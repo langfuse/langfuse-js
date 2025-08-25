@@ -7,7 +7,7 @@ import {
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 import { nanoid } from "nanoid";
-import { startActiveSpan } from "@langfuse/tracing";
+import { startActiveObservation } from "@langfuse/tracing";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { CallbackHandler } from "@langfuse/langchain";
@@ -291,7 +291,7 @@ describe("Langchain integration E2E tests", () => {
     const chain = prompt.pipe(llm);
 
     // Create a parent span manually first
-    const [result, traceId] = await startActiveSpan(
+    const [result, traceId] = await startActiveObservation(
       testConfig.parentSpanName,
       async (span) => {
         span.update({

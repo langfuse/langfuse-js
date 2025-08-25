@@ -3,7 +3,7 @@ import { LangfuseClient } from "@langfuse/client";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatOpenAI } from "@langchain/openai";
-import { startSpan, startGeneration } from "@langfuse/tracing";
+import { startObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
 
 describe("Langfuse Datasets E2E", () => {
@@ -60,10 +60,14 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       // Create a generation using the tracing SDK for linking
-      const generation = startGeneration("test-observation", {
-        input: "generation input",
-        model: "gpt-3.5-turbo",
-      });
+      const generation = startObservation(
+        "test-observation",
+        {
+          input: "generation input",
+          model: "gpt-3.5-turbo",
+        },
+        { asType: "generation" },
+      );
       generation.update({ output: "generation output" });
       generation.end();
 
@@ -252,7 +256,7 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       // Create trace and generation using the tracing SDK
-      const span = startSpan("test-trace-" + datasetName, {
+      const span = startObservation("test-trace-" + datasetName, {
         input: "input",
         output: "Hello world traced",
       });
@@ -338,7 +342,7 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       // Create base trace and generation using tracing SDK
-      const span = startSpan("test-trace-" + datasetName, {
+      const span = startObservation("test-trace-" + datasetName, {
         input: "input",
         output: "Hello world traced",
       });
@@ -447,7 +451,7 @@ describe("Langfuse Datasets E2E", () => {
 
       for (const item of dataset.items) {
         // Create trace for this run using tracing SDK
-        const span = startSpan("langchain-execution", {
+        const span = startObservation("langchain-execution", {
           input: { country: item.input },
           metadata: { chainType: "capital-lookup" },
         });

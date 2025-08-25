@@ -1,4 +1,4 @@
-import { LangfuseGeneration, startGeneration } from "@langfuse/tracing";
+import { LangfuseGeneration, startObservation } from "@langfuse/tracing";
 import type OpenAI from "openai";
 
 import {
@@ -69,7 +69,7 @@ const wrapMethod = <T extends GenericMethod>(
         : undefined,
   };
 
-  const generation = startGeneration(
+  const generation = startObservation(
     config?.generationName ?? "OpenAI-completion",
     {
       model,
@@ -78,7 +78,10 @@ const wrapMethod = <T extends GenericMethod>(
       prompt: config?.langfusePrompt,
       metadata: finalMetadata,
     },
-    { parentSpanContext: config?.parentSpanContext },
+    {
+      asType: "generation",
+      parentSpanContext: config?.parentSpanContext,
+    },
   ).updateTrace({
     userId: config?.userId,
     sessionId: config?.sessionId,

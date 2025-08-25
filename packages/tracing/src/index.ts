@@ -23,6 +23,7 @@ import { getLangfuseTracer } from "./tracerProvider.js";
 import {
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
+  LangfuseObservationType,
   LangfuseSpanAttributes,
   LangfuseTraceAttributes,
 } from "./types.js";
@@ -73,6 +74,26 @@ export type StartObservationOptions = {
 export type StartActiveObservationContext = StartObservationOptions & {
   /** Whether to automatically end the observation when exiting the context. Default is true */
   endOnExit?: boolean;
+};
+
+/**
+ * Options for startObservation function.
+ *
+ * @public
+ */
+export type StartObservationOpts = StartObservationOptions & {
+  /** Type of observation to create. Defaults to 'span' */
+  asType?: LangfuseObservationType;
+};
+
+/**
+ * Options for startActiveObservation function.
+ *
+ * @public
+ */
+export type StartActiveObservationOpts = StartActiveObservationContext & {
+  /** Type of observation to create. Defaults to 'span' */
+  asType?: LangfuseObservationType;
 };
 
 /**
@@ -145,292 +166,183 @@ function wrapPromise<T>(
   );
 }
 
-/**
- * Creates and starts a new Langfuse span for general-purpose tracing.
- *
- * Spans are used to track operations, functions, or logical units of work.
- * They can contain other spans or generations as children.
- *
- * @param name - Name of the span
- * @param attributes - Optional attributes to set on the span
- * @param options - Optional configuration for the span
- * @returns A LangfuseSpan instance
- *
- * @example
- * ```typescript
- * import { startSpan } from '@langfuse/tracing';
- *
- * const span = startSpan('data-processing', {
- *   input: { userId: '123', data: {...} },
- *   metadata: { version: '1.0' },
- *   level: 'DEFAULT'
- * });
- *
- * try {
- *   // Do some work
- *   const result = await processData();
- *
- *   span.update({ output: result });
- * } catch (error) {
- *   span.update({
- *     level: 'ERROR',
- *     statusMessage: error.message
- *   });
- * } finally {
- *   span.end();
- * }
- * ```
- *
- * @public
- */
-export function startSpan(
+// Function overloads for proper type inference
+export function startObservation(
+  name: string,
+  attributes: LangfuseGenerationAttributes,
+  options: StartObservationOpts & { asType: "generation" },
+): LangfuseGeneration;
+export function startObservation(
+  name: string,
+  attributes: LangfuseEventAttributes,
+  options: StartObservationOpts & { asType: "event" },
+): LangfuseEvent;
+export function startObservation(
   name: string,
   attributes?: LangfuseSpanAttributes,
-  options?: {
-    startTime?: TimeInput;
-    parentSpanContext?: SpanContext;
-  },
-): LangfuseSpan {
-  const otelSpan = createOtelSpan({
-    name,
-    ...options,
-  });
-
-  return new LangfuseSpan({ otelSpan, attributes });
-}
+  options?: StartObservationOpts & { asType?: "span" },
+): LangfuseSpan;
 
 /**
- * Creates and starts a new Langfuse generation for tracking LLM calls.
+ * Creates and starts a new Langfuse observation (span, generation, or event).
  *
- * Generations are specialized observations for tracking language model
- * interactions, including model parameters, usage metrics, and costs.
+ * This is a consolidated function that replaces the separate startSpan, startGeneration,
+ * and createEvent functions. The observation type is controlled by the `asType` option,
+ * which defaults to 'span'.
  *
- * @param name - Name of the generation (typically the model or operation)
- * @param attributes - Optional generation-specific attributes
- * @param options - Optional configuration for the generation
- * @returns A LangfuseGeneration instance
+ * @param name - Name of the observation
+ * @param attributes - Attributes to set on the observation (type depends on asType)
+ * @param options - Configuration options including observation type
+ * @returns The created observation (LangfuseSpan, LangfuseGeneration, or LangfuseEvent)
  *
  * @example
  * ```typescript
- * import { startGeneration } from '@langfuse/tracing';
+ * // Create a span (default) - returns LangfuseSpan
+ * const span = startObservation('data-processing', {
+ *   input: { userId: '123' },
+ *   metadata: { version: '1.0' }
+ * });
  *
- * const generation = startGeneration('openai-gpt-4', {
- *   input: [{ role: 'user', content: 'Hello, world!' }],
+ * // Create a generation - returns LangfuseGeneration
+ * const generation = startObservation('openai-gpt-4', {
+ *   input: [{ role: 'user', content: 'Hello!' }],
  *   model: 'gpt-4',
- *   modelParameters: {
- *     temperature: 0.7,
- *     max_tokens: 150
- *   },
- *   metadata: { feature: 'chat' }
- * });
+ *   modelParameters: { temperature: 0.7 }
+ * }, { asType: 'generation' });
  *
- * try {
- *   const response = await callOpenAI(messages);
- *
- *   generation.update({
- *     output: response.choices[0].message,
- *     usageDetails: {
- *       promptTokens: response.usage.prompt_tokens,
- *       completionTokens: response.usage.completion_tokens,
- *       totalTokens: response.usage.total_tokens
- *     }
- *   });
- * } finally {
- *   generation.end();
- * }
- * ```
- *
- * @public
- */
-export function startGeneration(
-  name: string,
-  attributes?: LangfuseGenerationAttributes,
-  options?: StartObservationOptions,
-): LangfuseGeneration {
-  const otelSpan = createOtelSpan({
-    name,
-    ...options,
-  });
-
-  return new LangfuseGeneration({ otelSpan, attributes });
-}
-
-/**
- * Creates a Langfuse event for point-in-time occurrences.
- *
- * Events are used to capture instantaneous occurrences or log entries
- * within a trace. Unlike spans, they represent a single point in time.
- *
- * @param name - Name of the event
- * @param attributes - Optional attributes for the event
- * @param options - Optional configuration for the event
- * @returns A LangfuseEvent instance (automatically ended)
- *
- * @example
- * ```typescript
- * import { createEvent } from '@langfuse/tracing';
- *
- * // Log a user action
- * createEvent('user-click', {
- *   input: { buttonId: 'submit', userId: '123' },
- *   metadata: { page: '/checkout' },
+ * // Create an event - returns LangfuseEvent
+ * const event = startObservation('user-click', {
+ *   input: { buttonId: 'submit' },
  *   level: 'DEFAULT'
- * });
- *
- * // Log an error
- * createEvent('api-error', {
- *   level: 'ERROR',
- *   statusMessage: 'Failed to fetch user data',
- *   metadata: { endpoint: '/api/users/123', statusCode: 500 }
- * });
+ * }, { asType: 'event' });
  * ```
  *
  * @public
  */
-export function createEvent(
+export function startObservation(
   name: string,
-  attributes?: LangfuseEventAttributes,
-  options?: StartObservationOptions,
-) {
-  const timestamp = options?.startTime ?? new Date();
+  attributes?:
+    | LangfuseSpanAttributes
+    | LangfuseGenerationAttributes
+    | LangfuseEventAttributes,
+  options?: StartObservationOpts,
+): LangfuseSpan | LangfuseGeneration | LangfuseEvent {
+  const { asType = "span", ...observationOptions } = options || {};
 
   const otelSpan = createOtelSpan({
     name,
-    ...options,
-    startTime: timestamp,
+    ...observationOptions,
   });
 
-  return new LangfuseEvent({ otelSpan, attributes, timestamp });
+  switch (asType) {
+    case "generation":
+      return new LangfuseGeneration({
+        otelSpan,
+        attributes: attributes as LangfuseGenerationAttributes,
+      });
+    case "event": {
+      const timestamp = observationOptions?.startTime ?? new Date();
+      return new LangfuseEvent({
+        otelSpan,
+        attributes: attributes as LangfuseEventAttributes,
+        timestamp,
+      });
+    }
+    case "span":
+    default:
+      return new LangfuseSpan({
+        otelSpan,
+        attributes: attributes as LangfuseSpanAttributes,
+      });
+  }
 }
 
+// Function overloads for proper type inference
+export function startActiveObservation<
+  F extends (span: LangfuseSpan) => unknown,
+>(
+  name: string,
+  fn: F,
+  options?: StartActiveObservationOpts & { asType?: "span" },
+): ReturnType<F>;
+export function startActiveObservation<
+  F extends (generation: LangfuseGeneration) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "generation" },
+): ReturnType<F>;
+
 /**
- * Starts an active span and executes a function within its context.
+ * Starts an active observation and executes a function within its context.
  *
- * This function creates a span, sets it as the active span in the OpenTelemetry
- * context, executes the provided function, and automatically ends the span.
- * Perfect for wrapping operations where you want child spans to be automatically
- * linked.
+ * This is a consolidated function that replaces the separate startActiveSpan and
+ * startActiveGeneration functions. The observation type is controlled by the `asType`
+ * option, which defaults to 'span'.
  *
- * @param name - Name of the span
- * @param fn - Function to execute within the span context
- * @param options - Optional configuration for the span
+ * The function creates an observation, sets it as active in the OpenTelemetry context,
+ * executes the provided function, and automatically ends the observation.
+ *
+ * @param name - Name of the observation
+ * @param fn - Function to execute within the observation context
+ * @param options - Configuration options including observation type
  * @returns The return value of the executed function
  *
  * @example
  * ```typescript
- * import { startActiveSpan } from '@langfuse/tracing';
- *
- * // Synchronous function
- * const result = startActiveSpan('calculate-metrics', (span) => {
+ * // Create an active span (default) - receives LangfuseSpan
+ * const result = startActiveObservation('calculate-metrics', (span) => {
  *   span.update({ input: { data: rawData } });
- *
  *   const metrics = calculateMetrics(rawData);
  *   span.update({ output: metrics });
- *
  *   return metrics;
  * });
  *
- * // Asynchronous function
- * const data = await startActiveSpan('fetch-user-data', async (span) => {
- *   span.update({ input: { userId: '123' } });
- *
- *   const userData = await api.getUser('123');
- *   span.update({ output: userData });
- *
- *   return userData;
- * });
- * ```
- *
- * @public
- */
-export function startActiveSpan<F extends (span: LangfuseSpan) => unknown>(
-  name: string,
-  fn: F,
-  options?: StartActiveObservationContext,
-): ReturnType<F> {
-  return getLangfuseTracer().startActiveSpan(
-    name,
-    { startTime: options?.startTime },
-    createParentContext(options?.parentSpanContext) ?? context.active(),
-    (span) => {
-      try {
-        const result = fn(new LangfuseSpan({ otelSpan: span }));
-
-        if (result instanceof Promise) {
-          return wrapPromise(result, span, options?.endOnExit) as ReturnType<F>;
-        } else {
-          if (options?.endOnExit !== false) {
-            span.end();
-          }
-
-          return result as ReturnType<F>;
-        }
-      } catch (err) {
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-
-        if (options?.endOnExit !== false) {
-          span.end();
-        }
-
-        throw err;
-      }
-    },
-  );
-}
-
-/**
- * Starts an active generation and executes a function within its context.
- *
- * Similar to startActiveSpan but creates a generation for tracking LLM calls.
- * The generation is automatically ended when the function completes.
- *
- * @param name - Name of the generation
- * @param fn - Function to execute within the generation context
- * @param options - Optional configuration for the generation
- * @returns The return value of the executed function
- *
- * @example
- * ```typescript
- * import { startActiveGeneration } from '@langfuse/tracing';
- *
- * const response = await startActiveGeneration('openai-completion', async (generation) => {
+ * // Create an active generation - receives LangfuseGeneration
+ * const response = await startActiveObservation('openai-completion', async (generation) => {
  *   generation.update({
  *     input: { messages: [...] },
  *     model: 'gpt-4',
  *     modelParameters: { temperature: 0.7 }
  *   });
- *
  *   const result = await openai.chat.completions.create({...});
- *
  *   generation.update({
  *     output: result.choices[0].message,
  *     usageDetails: result.usage
  *   });
- *
  *   return result;
- * });
+ * }, { asType: 'generation' });
  * ```
  *
  * @public
  */
-export function startActiveGeneration<
-  F extends (span: LangfuseGeneration) => unknown,
->(name: string, fn: F, options?: StartActiveObservationContext): ReturnType<F> {
+export function startActiveObservation<
+  F extends (observation: LangfuseSpan | LangfuseGeneration) => unknown,
+>(name: string, fn: F, options?: StartActiveObservationOpts): ReturnType<F> {
+  const { asType = "span", ...observationOptions } = options || {};
+
   return getLangfuseTracer().startActiveSpan(
     name,
-    { startTime: options?.startTime },
-    createParentContext(options?.parentSpanContext) ?? context.active(),
+    { startTime: observationOptions?.startTime },
+    createParentContext(observationOptions?.parentSpanContext) ??
+      context.active(),
     (span) => {
       try {
-        const result = fn(new LangfuseGeneration({ otelSpan: span }));
+        const observation =
+          asType === "generation"
+            ? new LangfuseGeneration({ otelSpan: span })
+            : new LangfuseSpan({ otelSpan: span });
+
+        const result = fn(observation as Parameters<F>[0]);
 
         if (result instanceof Promise) {
-          return wrapPromise(result, span, options?.endOnExit) as ReturnType<F>;
+          return wrapPromise(
+            result,
+            span,
+            observationOptions?.endOnExit,
+          ) as ReturnType<F>;
         } else {
-          if (options?.endOnExit !== false) {
+          if (observationOptions?.endOnExit !== false) {
             span.end();
           }
 
@@ -442,7 +354,7 @@ export function startActiveGeneration<
           message: err instanceof Error ? err.message : "Unknown error",
         });
 
-        if (options?.endOnExit !== false) {
+        if (observationOptions?.endOnExit !== false) {
           span.end();
         }
 
@@ -664,10 +576,11 @@ export function observe<T extends (...args: unknown[]) => unknown>(
     // Create the appropriate observation type
     const observation =
       asType === "generation"
-        ? startGeneration(name, inputData ? { input: inputData } : {}, {
+        ? startObservation(name, inputData ? { input: inputData } : {}, {
+            asType: "generation",
             parentSpanContext,
           })
-        : startSpan(name, inputData ? { input: inputData } : {}, {
+        : startObservation(name, inputData ? { input: inputData } : {}, {
             parentSpanContext,
           });
 
@@ -805,7 +718,7 @@ function _captureOutput(value: unknown): unknown {
  * console.log(randomId1 === randomId2); // false
  *
  * // Use with spans
- * const span = startSpan("my-span", {}, {
+ * const span = startObservation("my-span", {}, {
  *   parentSpanContext: {
  *     traceId: await createTraceId("session-456"),
  *     spanId: "0123456789abcdef",

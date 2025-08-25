@@ -10,7 +10,7 @@ import {
 import { trace } from "@opentelemetry/api";
 import { LangfuseClient } from "@langfuse/client";
 import { resetGlobalLogger } from "@langfuse/core";
-import { startSpan, startGeneration } from "@langfuse/tracing";
+import { startObservation } from "@langfuse/tracing";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
@@ -177,7 +177,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const spanName = `e2e-span-${Date.now()}`;
 
       // Create a span and verify its context
-      const span = startSpan(spanName, {
+      const span = startObservation(spanName, {
         input: { query: "test span scoring" },
         metadata: { testType: "span-integration" },
       });
@@ -244,7 +244,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const parentSpanName = `e2e-parent-${Date.now()}`;
       const activeSpanName = `e2e-active-${Date.now()}`;
 
-      const parentSpan = startSpan(parentSpanName);
+      const parentSpan = startObservation(parentSpanName);
 
       let activeSpanId: string = "";
       let activeTraceId: string = "";
@@ -336,7 +336,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const spanName = `e2e-observation-span-${Date.now()}`;
 
       // Create a span
-      const span = startSpan(spanName, {
+      const span = startObservation(spanName, {
         input: { query: "test observation scoring" },
         metadata: { testType: "observation-scoring" },
       });
@@ -382,7 +382,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const spanName = `e2e-trace-span-${Date.now()}`;
 
       // Create a span
-      const span = startSpan(spanName, {
+      const span = startObservation(spanName, {
         input: { query: "test trace scoring" },
         metadata: { testType: "trace-scoring" },
       });
@@ -425,7 +425,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const parentSpanName = `e2e-parent-span-${Date.now()}`;
       const activeSpanName = `e2e-active-span-${Date.now()}`;
 
-      const parentSpan = startSpan(parentSpanName);
+      const parentSpan = startObservation(parentSpanName);
 
       let activeSpanId: string = "";
       let activeTraceId: string = "";
@@ -470,7 +470,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const parentSpanName = `e2e-parent-trace-${Date.now()}`;
       const activeSpanName = `e2e-active-trace-span-${Date.now()}`;
 
-      const parentSpan = startSpan(parentSpanName);
+      const parentSpan = startObservation(parentSpanName);
 
       let activeTraceId: string = "";
 
@@ -514,11 +514,15 @@ describe("LangfuseClient Score E2E Tests", () => {
       const generationName = `e2e-generation-${Date.now()}`;
 
       // Create a generation
-      const generation = startGeneration(generationName, {
-        model: "gpt-4",
-        input: { messages: [{ role: "user", content: "Test generation" }] },
-        metadata: { testType: "generation-scoring" },
-      });
+      const generation = startObservation(
+        generationName,
+        {
+          model: "gpt-4",
+          input: { messages: [{ role: "user", content: "Test generation" }] },
+          metadata: { testType: "generation-scoring" },
+        },
+        { asType: "generation" },
+      );
 
       const { spanId, traceId } = generation.otelSpan.spanContext();
 
@@ -589,7 +593,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const baseTime = Date.now();
 
       // Create nested span structure using proper parent-child relationships
-      const rootSpan = startSpan(`root-span-${baseTime}`);
+      const rootSpan = startObservation(`root-span-${baseTime}`);
       const childSpan = rootSpan.startSpan(`child-span-${baseTime}`);
       const grandchildSpan = childSpan.startSpan(`grandchild-span-${baseTime}`);
 

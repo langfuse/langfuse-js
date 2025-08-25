@@ -14,7 +14,7 @@ import {
   LangfuseTraceAttributes,
 } from "./types.js";
 
-import { createEvent, startGeneration, startSpan } from "./index.js";
+import { startObservation } from "./index.js";
 
 /**
  * Union type representing any Langfuse observation wrapper.
@@ -162,7 +162,7 @@ export class LangfuseSpan extends LangfuseSpanWrapper {
     name: string,
     attributes?: LangfuseSpanAttributes,
   ): LangfuseSpan {
-    return startSpan(name, attributes, {
+    return startObservation(name, attributes, {
       parentSpanContext: this.otelSpan.spanContext(),
     });
   }
@@ -187,7 +187,8 @@ export class LangfuseSpan extends LangfuseSpanWrapper {
     name: string,
     attributes?: LangfuseGenerationAttributes,
   ): LangfuseGeneration {
-    return startGeneration(name, attributes, {
+    return startObservation(name, attributes || {}, {
+      asType: "generation",
       parentSpanContext: this.otelSpan.spanContext(),
     });
   }
@@ -213,7 +214,8 @@ export class LangfuseSpan extends LangfuseSpanWrapper {
     name: string,
     attributes?: LangfuseEventAttributes,
   ): LangfuseEvent {
-    return createEvent(name, attributes, {
+    return startObservation(name, attributes || {}, {
+      asType: "event",
       parentSpanContext: this.otelSpan.spanContext(),
     });
   }
@@ -293,7 +295,8 @@ export class LangfuseGeneration extends LangfuseSpanWrapper {
     name: string,
     attributes?: LangfuseEventAttributes,
   ): LangfuseEvent {
-    return createEvent(name, attributes, {
+    return startObservation(name, attributes || {}, {
+      asType: "event",
       parentSpanContext: this.otelSpan.spanContext(),
     });
   }

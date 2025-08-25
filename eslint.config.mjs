@@ -38,6 +38,7 @@ export default [
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unnecessary-type-constraint": "error",
       "prettier/prettier": "error",
+      "no-redeclare": "off",
       // Import sorting rules
       "import/order": [
         "error",

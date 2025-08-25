@@ -19,8 +19,7 @@ import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { ChainValues } from "@langchain/core/utils/types";
 import { getGlobalLogger } from "@langfuse/core";
 import {
-  startSpan,
-  startGeneration,
+  startObservation,
   LangfuseGeneration,
   LangfuseSpan,
   LangfuseGenerationAttributes,
@@ -696,28 +695,43 @@ export class CallbackHandler extends BaseCallbackHandler {
     const { type, runName, runId, parentRunId, attributes, metadata, tags } =
       params;
 
-    let func: typeof startSpan | typeof startGeneration;
-    if (type === "generation") {
-      func = startGeneration;
-    } else {
-      func = startSpan;
-    }
-
-    const observation = func(
-      runName,
-      {
-        version: this.version,
-        metadata: this.joinTagsAndMetaData(tags, metadata),
-        level:
-          tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
-        ...attributes,
-      },
-      {
-        parentSpanContext: parentRunId
-          ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
-          : undefined,
-      },
-    );
+    const observation =
+      type === "generation"
+        ? startObservation(
+            runName,
+            {
+              version: this.version,
+              metadata: this.joinTagsAndMetaData(tags, metadata),
+              level:
+                tags && tags.includes(LANGSMITH_HIDDEN_TAG)
+                  ? "DEBUG"
+                  : undefined,
+              ...attributes,
+            },
+            {
+              asType: "generation",
+              parentSpanContext: parentRunId
+                ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
+                : undefined,
+            },
+          )
+        : startObservation(
+            runName,
+            {
+              version: this.version,
+              metadata: this.joinTagsAndMetaData(tags, metadata),
+              level:
+                tags && tags.includes(LANGSMITH_HIDDEN_TAG)
+                  ? "DEBUG"
+                  : undefined,
+              ...attributes,
+            },
+            {
+              parentSpanContext: parentRunId
+                ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
+                : undefined,
+            },
+          );
     this.runMap.set(runId, observation);
 
     return observation;
