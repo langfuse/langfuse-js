@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.0-beta.7](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.6...v4.0.0-beta.7) (2025-08-25)
+
+### ✨ Features
+
+* **vercel-ai-sdk:** add media processing ([#593](https://github.com/langfuse/langfuse-js/issues/593)) ([7d3ee3a](https://github.com/langfuse/langfuse-js/commit/7d3ee3aaf028c3224e3750f8aa1a4da4b95c9cbd))
+
 ## [4.0.0-beta.6](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.5...v4.0.0-beta.6) (2025-08-25)
 
 ### 🐛 Bug Fixes
