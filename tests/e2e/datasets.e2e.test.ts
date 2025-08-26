@@ -5,6 +5,7 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatOpenAI } from "@langchain/openai";
 import { startObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
+import { waitForServerIngestion } from "./helpers/serverSetup.js";
 
 describe("Langfuse Datasets E2E", () => {
   let langfuse: LangfuseClient;
@@ -299,6 +300,8 @@ describe("Langfuse Datasets E2E", () => {
         }
       }
 
+      waitForServerIngestion(2_000);
+
       // Verify the dataset run was created
       const targetRun = await langfuse.api.datasets.getRun(
         datasetName,
@@ -492,6 +495,8 @@ describe("Langfuse Datasets E2E", () => {
 
         span.end();
       }
+
+      waitForServerIngestion(2_000);
 
       // Verify that the dataset run was created correctly
       const targetRun = await langfuse.api.datasets.getRun(
