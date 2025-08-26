@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { LangfuseClient } from "@langfuse/client";
-import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
+import { LangfuseClient } from "@langfuse/client";
 import { startObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
+import { describe, it, expect, beforeEach } from "vitest";
+
 import { waitForServerIngestion } from "./helpers/serverSetup.js";
 
 describe("Langfuse Datasets E2E", () => {
@@ -262,12 +263,13 @@ describe("Langfuse Datasets E2E", () => {
         output: "Hello world traced",
       });
 
-      const generation = span.startGeneration(
+      const generation = span.startObservation(
         "test-generation-" + datasetName,
         {
           input: "input",
           model: "test-model",
         },
+        { asType: "generation" },
       );
       generation.update({ output: "Hello world generated" });
       generation.end();
@@ -350,12 +352,13 @@ describe("Langfuse Datasets E2E", () => {
         output: "Hello world traced",
       });
 
-      const generation = span.startGeneration(
+      const generation = span.startObservation(
         "test-generation-" + datasetName,
         {
           input: "input",
           model: "test-model",
         },
+        { asType: "generation" },
       );
       generation.update({ output: "Hello world generated" });
       generation.end();
