@@ -12,8 +12,15 @@ import {
   LangfuseTraceAttributes,
 } from "./types.js";
 import type {
+  LangfuseAgentAttributes,
+  LangfuseChainAttributes,
+  LangfuseEmbeddingAttributes,
+  LangfuseEvaluatorAttributes,
+  LangfuseGuardrailAttributes,
   LangfuseObservationAttributes,
   LangfuseObservationType,
+  LangfuseRetrieverAttributes,
+  LangfuseToolAttributes,
 } from "./types.js";
 
 import { startObservation } from "./index.js";
@@ -26,10 +33,17 @@ import { startObservation } from "./index.js";
  *
  * @public
  */
-export type LangfuseObservationUnion =
+export type LangfuseObservation =
   | LangfuseSpan
   | LangfuseGeneration
-  | LangfuseEvent;
+  | LangfuseEvent
+  | LangfuseAgent
+  | LangfuseTool
+  | LangfuseChain
+  | LangfuseRetriever
+  | LangfuseEvaluator
+  | LangfuseGuardrail
+  | LangfuseEmbedding;
 
 /**
  * Parameters for creating a Langfuse observation wrapper.
@@ -158,6 +172,41 @@ abstract class LangfuseBaseObservation {
   ): LangfuseEvent;
   public startObservation(
     name: string,
+    attributes: LangfuseAgentAttributes,
+    options: { asType: "agent" },
+  ): LangfuseAgent;
+  public startObservation(
+    name: string,
+    attributes: LangfuseToolAttributes,
+    options: { asType: "tool" },
+  ): LangfuseTool;
+  public startObservation(
+    name: string,
+    attributes: LangfuseChainAttributes,
+    options: { asType: "chain" },
+  ): LangfuseChain;
+  public startObservation(
+    name: string,
+    attributes: LangfuseRetrieverAttributes,
+    options: { asType: "retriever" },
+  ): LangfuseRetriever;
+  public startObservation(
+    name: string,
+    attributes: LangfuseEvaluatorAttributes,
+    options: { asType: "evaluator" },
+  ): LangfuseEvaluator;
+  public startObservation(
+    name: string,
+    attributes: LangfuseGuardrailAttributes,
+    options: { asType: "guardrail" },
+  ): LangfuseGuardrail;
+  public startObservation(
+    name: string,
+    attributes: LangfuseEmbeddingAttributes,
+    options: { asType: "embedding" },
+  ): LangfuseEmbedding;
+  public startObservation(
+    name: string,
     attributes?: LangfuseSpanAttributes,
     options?: { asType?: "span" },
   ): LangfuseSpan;
@@ -166,41 +215,25 @@ abstract class LangfuseBaseObservation {
     attributes?:
       | LangfuseSpanAttributes
       | LangfuseGenerationAttributes
-      | LangfuseEventAttributes,
+      | LangfuseEventAttributes
+      | LangfuseAgentAttributes
+      | LangfuseToolAttributes
+      | LangfuseChainAttributes
+      | LangfuseRetrieverAttributes
+      | LangfuseEvaluatorAttributes
+      | LangfuseGuardrailAttributes
+      | LangfuseEmbeddingAttributes,
     options?: { asType?: LangfuseObservationType },
-  ): LangfuseSpan | LangfuseGeneration | LangfuseEvent {
+  ): LangfuseObservation {
     const { asType = "span" } = options || {};
 
-    if (asType === "generation") {
-      return startObservation(
-        name,
-        attributes as LangfuseGenerationAttributes,
-        {
-          asType: "generation",
-          parentSpanContext: this.otelSpan.spanContext(),
-        },
-      );
-    }
-
-    if (asType === "event") {
-      return startObservation(name, attributes as LangfuseEventAttributes, {
-        asType: "event",
-        parentSpanContext: this.otelSpan.spanContext(),
-      });
-    }
-
-    return startObservation(name, attributes as LangfuseSpanAttributes, {
-      asType: "span",
+    return startObservation(name, attributes, {
+      asType: asType as "span", // typecast necessary as ts cannot narrow the type correctly
       parentSpanContext: this.otelSpan.spanContext(),
     });
   }
 }
 
-/**
- * Parameters for creating a Langfuse span.
- *
- * @internal
- */
 type LangfuseSpanParams = {
   otelSpan: Span;
   attributes?: LangfuseSpanAttributes;
@@ -242,6 +275,108 @@ export class LangfuseSpan extends LangfuseBaseObservation {
   }
 }
 
+type LangfuseAgentParams = {
+  otelSpan: Span;
+  attributes?: LangfuseAgentAttributes;
+};
+
+export class LangfuseAgent extends LangfuseBaseObservation {
+  constructor(params: LangfuseAgentParams) {
+    super({ ...params, type: "span" });
+  }
+
+  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+    super.updateOtelSpanAttributes(attributes);
+
+    return this;
+  }
+}
+
+type LangfuseToolParams = {
+  otelSpan: Span;
+  attributes?: LangfuseToolAttributes;
+};
+
+export class LangfuseTool extends LangfuseBaseObservation {
+  constructor(params: LangfuseToolParams) {
+    super({ ...params, type: "span" });
+  }
+
+  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+    super.updateOtelSpanAttributes(attributes);
+
+    return this;
+  }
+}
+
+type LangfuseChainParams = {
+  otelSpan: Span;
+  attributes?: LangfuseChainAttributes;
+};
+
+export class LangfuseChain extends LangfuseBaseObservation {
+  constructor(params: LangfuseChainParams) {
+    super({ ...params, type: "span" });
+  }
+
+  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+    super.updateOtelSpanAttributes(attributes);
+
+    return this;
+  }
+}
+
+type LangfuseRetrieverParams = {
+  otelSpan: Span;
+  attributes?: LangfuseRetrieverAttributes;
+};
+
+export class LangfuseRetriever extends LangfuseBaseObservation {
+  constructor(params: LangfuseRetrieverParams) {
+    super({ ...params, type: "span" });
+  }
+
+  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+    super.updateOtelSpanAttributes(attributes);
+
+    return this;
+  }
+}
+
+type LangfuseEvaluatorParams = {
+  otelSpan: Span;
+  attributes?: LangfuseEvaluatorAttributes;
+};
+
+export class LangfuseEvaluator extends LangfuseBaseObservation {
+  constructor(params: LangfuseEvaluatorParams) {
+    super({ ...params, type: "span" });
+  }
+
+  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+    super.updateOtelSpanAttributes(attributes);
+
+    return this;
+  }
+}
+
+type LangfuseGuardrailParams = {
+  otelSpan: Span;
+  attributes?: LangfuseGuardrailAttributes;
+};
+
+export class LangfuseGuardrail extends LangfuseBaseObservation {
+  constructor(params: LangfuseGuardrailParams) {
+    super({ ...params, type: "span" });
+  }
+
+  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+    super.updateOtelSpanAttributes(attributes);
+
+    return this;
+  }
+}
+
 /**
  * Parameters for creating a Langfuse generation.
  *
@@ -265,25 +400,23 @@ export class LangfuseGeneration extends LangfuseBaseObservation {
     super({ ...params, type: "generation" });
   }
 
-  /**
-   * Updates this generation with new attributes.
-   *
-   * @param attributes - Generation attributes to set
-   * @returns This generation for method chaining
-   *
-   * @example
-   * ```typescript
-   * generation.update({
-   *   output: { role: 'assistant', content: 'Hello there!' },
-   *   usageDetails: {
-   *     promptTokens: 10,
-   *     completionTokens: 15,
-   *     totalTokens: 25
-   *   },
-   *   costDetails: { totalCost: 0.001 }
-   * });
-   * ```
-   */
+  update(attributes: LangfuseGenerationAttributes): LangfuseGeneration {
+    this.updateOtelSpanAttributes(attributes);
+
+    return this;
+  }
+}
+
+type LangfuseEmbeddingParams = {
+  otelSpan: Span;
+  attributes?: LangfuseEmbeddingAttributes;
+};
+
+export class LangfuseEmbedding extends LangfuseBaseObservation {
+  constructor(params: LangfuseEmbeddingParams) {
+    super({ ...params, type: "generation" });
+  }
+
   update(attributes: LangfuseGenerationAttributes): LangfuseGeneration {
     this.updateOtelSpanAttributes(attributes);
 

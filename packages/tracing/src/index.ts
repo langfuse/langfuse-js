@@ -14,17 +14,33 @@ import {
   createTraceAttributes,
 } from "./attributes.js";
 import {
+  LangfuseAgent,
   LangfuseEvent,
   LangfuseGeneration,
   LangfuseSpan,
+  LangfuseTool,
+  LangfuseChain,
+  LangfuseEmbedding,
+  LangfuseEvaluator,
+  LangfuseGuardrail,
+  LangfuseRetriever,
+  LangfuseObservation,
 } from "./spanWrapper.js";
 import { getLangfuseTracer } from "./tracerProvider.js";
 import {
+  LangfuseChainAttributes,
+  LangfuseEmbeddingAttributes,
+  LangfuseEvaluatorAttributes,
+  LangfuseGuardrailAttributes,
+  LangfuseRetrieverAttributes,
+  LangfuseToolAttributes,
+  LangfuseAgentAttributes,
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
   LangfuseObservationType,
   LangfuseSpanAttributes,
   LangfuseTraceAttributes,
+  LangfuseObservationAttributes,
 } from "./types.js";
 
 export type {
@@ -177,16 +193,46 @@ export function startObservation(
 ): LangfuseEvent;
 export function startObservation(
   name: string,
+  attributes: LangfuseAgentAttributes,
+  options: StartObservationOpts & { asType: "agent" },
+): LangfuseAgent;
+export function startObservation(
+  name: string,
+  attributes: LangfuseToolAttributes,
+  options: StartObservationOpts & { asType: "tool" },
+): LangfuseTool;
+export function startObservation(
+  name: string,
+  attributes: LangfuseChainAttributes,
+  options: StartObservationOpts & { asType: "chain" },
+): LangfuseChain;
+export function startObservation(
+  name: string,
+  attributes: LangfuseRetrieverAttributes,
+  options: StartObservationOpts & { asType: "retriever" },
+): LangfuseRetriever;
+export function startObservation(
+  name: string,
+  attributes: LangfuseEvaluatorAttributes,
+  options: StartObservationOpts & { asType: "evaluator" },
+): LangfuseEvaluator;
+export function startObservation(
+  name: string,
+  attributes: LangfuseGuardrailAttributes,
+  options: StartObservationOpts & { asType: "guardrail" },
+): LangfuseGuardrail;
+export function startObservation(
+  name: string,
+  attributes: LangfuseEmbeddingAttributes,
+  options: StartObservationOpts & { asType: "embedding" },
+): LangfuseEmbedding;
+export function startObservation(
+  name: string,
   attributes?: LangfuseSpanAttributes,
   options?: StartObservationOpts & { asType?: "span" },
 ): LangfuseSpan;
-
 /**
- * Creates and starts a new Langfuse observation (span, generation, or event).
- *
- * This is a consolidated function that replaces the separate startSpan, startGeneration,
- * and createEvent functions. The observation type is controlled by the `asType` option,
- * which defaults to 'span'.
+ * Creates and starts a new Langfuse observation
  *
  * @param name - Name of the observation
  * @param attributes - Attributes to set on the observation (type depends on asType)
@@ -222,9 +268,16 @@ export function startObservation(
   attributes?:
     | LangfuseSpanAttributes
     | LangfuseGenerationAttributes
-    | LangfuseEventAttributes,
+    | LangfuseEventAttributes
+    | LangfuseAgentAttributes
+    | LangfuseToolAttributes
+    | LangfuseChainAttributes
+    | LangfuseRetrieverAttributes
+    | LangfuseEvaluatorAttributes
+    | LangfuseGuardrailAttributes
+    | LangfuseEmbeddingAttributes,
   options?: StartObservationOpts,
-): LangfuseSpan | LangfuseGeneration | LangfuseEvent {
+): LangfuseObservation {
   const { asType = "span", ...observationOptions } = options || {};
 
   const otelSpan = createOtelSpan({
@@ -236,10 +289,54 @@ export function startObservation(
     case "generation":
       return new LangfuseGeneration({
         otelSpan,
-        attributes: attributes as LangfuseGenerationAttributes,
+        attributes,
       });
+
+    case "embedding":
+      return new LangfuseEmbedding({
+        otelSpan,
+        attributes,
+      });
+
+    case "agent":
+      return new LangfuseAgent({
+        otelSpan,
+        attributes,
+      });
+
+    case "tool":
+      return new LangfuseTool({
+        otelSpan,
+        attributes,
+      });
+
+    case "chain":
+      return new LangfuseChain({
+        otelSpan,
+        attributes,
+      });
+
+    case "retriever":
+      return new LangfuseRetriever({
+        otelSpan,
+        attributes,
+      });
+
+    case "evaluator":
+      return new LangfuseEvaluator({
+        otelSpan,
+        attributes,
+      });
+
+    case "guardrail":
+      return new LangfuseGuardrail({
+        otelSpan,
+        attributes,
+      });
+
     case "event": {
       const timestamp = observationOptions?.startTime ?? new Date();
+
       return new LangfuseEvent({
         otelSpan,
         attributes: attributes as LangfuseEventAttributes,
@@ -257,13 +354,6 @@ export function startObservation(
 
 // Function overloads for proper type inference
 export function startActiveObservation<
-  F extends (span: LangfuseSpan) => unknown,
->(
-  name: string,
-  fn: F,
-  options?: StartActiveObservationOpts & { asType?: "span" },
-): ReturnType<F>;
-export function startActiveObservation<
   F extends (generation: LangfuseGeneration) => unknown,
 >(
   name: string,
@@ -271,6 +361,69 @@ export function startActiveObservation<
   options: StartActiveObservationOpts & { asType: "generation" },
 ): ReturnType<F>;
 
+export function startActiveObservation<
+  F extends (embedding: LangfuseEmbedding) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "embedding" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (agent: LangfuseAgent) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "agent" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (tool: LangfuseTool) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "tool" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (chain: LangfuseChain) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "chain" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (retriever: LangfuseRetriever) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "retriever" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (evaluator: LangfuseEvaluator) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "evaluator" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (guardrail: LangfuseGuardrail) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "guardrail" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (span: LangfuseSpan) => unknown,
+>(
+  name: string,
+  fn: F,
+  options?: StartActiveObservationOpts & { asType?: "span" },
+): ReturnType<F>;
 /**
  * Starts an active observation and executes a function within its context.
  *
@@ -326,10 +479,71 @@ export function startActiveObservation<
       context.active(),
     (span) => {
       try {
-        const observation =
-          asType === "generation"
-            ? new LangfuseGeneration({ otelSpan: span })
-            : new LangfuseSpan({ otelSpan: span });
+        let observation: LangfuseObservation;
+
+        switch (asType) {
+          case "generation":
+            observation = new LangfuseGeneration({
+              otelSpan: span,
+            });
+            break;
+
+          case "embedding":
+            observation = new LangfuseEmbedding({
+              otelSpan: span,
+            });
+            break;
+
+          case "agent":
+            observation = new LangfuseAgent({
+              otelSpan: span,
+            });
+            break;
+
+          case "tool":
+            observation = new LangfuseTool({
+              otelSpan: span,
+            });
+            break;
+
+          case "chain":
+            observation = new LangfuseChain({
+              otelSpan: span,
+            });
+            break;
+
+          case "retriever":
+            observation = new LangfuseRetriever({
+              otelSpan: span,
+            });
+            break;
+
+          case "evaluator":
+            observation = new LangfuseEvaluator({
+              otelSpan: span,
+            });
+            break;
+
+          case "guardrail":
+            observation = new LangfuseGuardrail({
+              otelSpan: span,
+            });
+            break;
+
+          case "event": {
+            const timestamp = observationOptions?.startTime ?? new Date();
+            observation = new LangfuseEvent({
+              otelSpan: span,
+              timestamp,
+            });
+            break;
+          }
+          case "span":
+          default:
+            observation = new LangfuseSpan({
+              otelSpan: span,
+            });
+        }
 
         const result = fn(observation as Parameters<F>[0]);
 
@@ -400,29 +614,46 @@ export function updateActiveTrace(attributes: LangfuseTraceAttributes) {
   span.setAttributes(createTraceAttributes(attributes));
 }
 
-/**
- * Updates the currently active span with new attributes.
- *
- * This function finds the currently active OpenTelemetry span and updates
- * it with span-level attributes. If no active span is found, a warning is logged.
- *
- * @param attributes - Span attributes to set
- *
- * @example
- * ```typescript
- * import { updateActiveSpan } from '@langfuse/tracing';
- *
- * // Inside an active span context
- * updateActiveSpan({
- *   level: 'WARNING',
- *   statusMessage: 'Operation completed with warnings',
- *   metadata: { warningCount: 3 }
- * });
- * ```
- *
- * @public
- */
-export function updateActiveSpan(attributes: LangfuseSpanAttributes) {
+export function updateActiveObservation(
+  currentType: "span",
+  attributes: LangfuseSpanAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "generation",
+  attributes: LangfuseGenerationAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "agent",
+  attributes: LangfuseAgentAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "tool",
+  attributes: LangfuseToolAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "chain",
+  attributes: LangfuseChainAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "embedding",
+  attributes: LangfuseEmbeddingAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "evaluator",
+  attributes: LangfuseEvaluatorAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "guardrail",
+  attributes: LangfuseGuardrailAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "retriever",
+  attributes: LangfuseRetrieverAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: LangfuseObservationType,
+  attributes: LangfuseObservationAttributes,
+): void {
   const span = trace.getActiveSpan();
 
   if (!span) {
@@ -433,48 +664,7 @@ export function updateActiveSpan(attributes: LangfuseSpanAttributes) {
     return;
   }
 
-  span.setAttributes(createObservationAttributes("span", attributes));
-}
-
-/**
- * Updates the currently active generation with new attributes.
- *
- * This function finds the currently active OpenTelemetry span and updates
- * it with generation-level attributes. If no active span is found, a warning is logged.
- *
- * @param attributes - Generation attributes to set
- *
- * @example
- * ```typescript
- * import { updateActiveGeneration } from '@langfuse/tracing';
- *
- * // Inside an active generation context
- * updateActiveGeneration({
- *   usageDetails: {
- *     promptTokens: 50,
- *     completionTokens: 100,
- *     totalTokens: 150
- *   },
- *   costDetails: { totalCost: 0.003 }
- * });
- * ```
- *
- * @public
- */
-export function updateActiveGeneration(
-  attributes: LangfuseGenerationAttributes,
-) {
-  const span = trace.getActiveSpan();
-
-  if (!span) {
-    getGlobalLogger().warn(
-      "No active OTEL span in context. Skipping generation update.",
-    );
-
-    return;
-  }
-
-  span.setAttributes(createObservationAttributes("generation", attributes));
+  span.setAttributes(createObservationAttributes(currentType, attributes));
 }
 
 /**
@@ -486,7 +676,7 @@ export interface ObserveOptions {
   /** Name for the observation (defaults to function name) */
   name?: string;
   /** Type of observation to create */
-  asType?: "span" | "generation";
+  asType?: LangfuseObservationType;
   /** Whether to capture function input as observation input */
   captureInput?: boolean;
   /** Whether to capture function output as observation output */
@@ -572,15 +762,14 @@ export function observe<T extends (...args: unknown[]) => unknown>(
     const inputData = captureInput ? _captureArguments(args) : undefined;
 
     // Create the appropriate observation type
-    const observation =
-      asType === "generation"
-        ? startObservation(name, inputData ? { input: inputData } : {}, {
-            asType: "generation",
-            parentSpanContext,
-          })
-        : startObservation(name, inputData ? { input: inputData } : {}, {
-            parentSpanContext,
-          });
+    const observation = startObservation(
+      name,
+      inputData ? { input: inputData } : {},
+      {
+        asType: asType as "span", // typecast necessary as ts cannot narrow down type
+        parentSpanContext,
+      },
+    );
 
     // Set the observation span as active in the context
     const activeContext = trace.setSpan(context.active(), observation.otelSpan);
@@ -589,7 +778,6 @@ export function observe<T extends (...args: unknown[]) => unknown>(
       const result = context.with(activeContext, () => fn.apply(this, args));
 
       // Handle async functions - check if result is a Promise
-      // TODO: handle returned generators for streamed responses
       if (result instanceof Promise) {
         return result.then(
           (value) => {
