@@ -49,13 +49,17 @@ describe("Server Export E2E Tests", () => {
     });
 
     // Create a nested generation using the parent span
-    const generation = parentSpan.startGeneration(generationName, {
-      model: "gpt-4",
-      input: {
-        messages: [{ role: "user", content: "What is OpenTelemetry?" }],
+    const generation = parentSpan.startObservation(
+      generationName,
+      {
+        model: "gpt-4",
+        input: {
+          messages: [{ role: "user", content: "What is OpenTelemetry?" }],
+        },
+        metadata: { temperature: 0.7, maxTokens: 100 },
       },
-      metadata: { temperature: 0.7, maxTokens: 100 },
-    });
+      { asType: "generation" },
+    );
 
     // Simulate LLM response
     generation.update({
@@ -391,7 +395,7 @@ describe("Server Export E2E Tests", () => {
         );
 
         // Create a manual generation in the same context
-        const finalGeneration = coordinatorSpan.startGeneration(
+        const finalGeneration = coordinatorSpan.startObservation(
           finalGenerationName,
           {
             model: "gpt-4",
@@ -403,6 +407,7 @@ describe("Server Export E2E Tests", () => {
             ],
             metadata: { type: "summary", final: true },
           },
+          { asType: "generation" },
         );
 
         finalGeneration.update({
@@ -572,7 +577,7 @@ describe("Server Export E2E Tests", () => {
         });
 
         // Create startup event
-        const startupEvent = coordinatorSpan.createEvent(
+        const startupEvent = coordinatorSpan.startObservation(
           workflowStartedEventName,
           {
             input: {
@@ -628,7 +633,7 @@ describe("Server Export E2E Tests", () => {
             });
 
             // Create completion event
-            const completionEvent = generation.createEvent(
+            const completionEvent = generation.startObservation(
               analysisCompletedEventName,
               {
                 output: {
@@ -759,7 +764,7 @@ Both media items were successfully processed. The image is a minimal transparent
           version: "3.2.1",
         });
 
-        const fileStartEvent = fileProcessingSpan.createEvent(
+        const fileStartEvent = fileProcessingSpan.startObservation(
           fileStartEventName,
           {
             input: {
@@ -781,7 +786,7 @@ Both media items were successfully processed. The image is a minimal transparent
         await new Promise((resolve) => setTimeout(resolve, 15));
 
         // Create file processing completion event
-        const fileCompleteEvent = fileProcessingSpan.createEvent(
+        const fileCompleteEvent = fileProcessingSpan.startObservation(
           fileCompleteEventName,
           {
             output: {
@@ -852,7 +857,7 @@ Both media items were successfully processed. The image is a minimal transparent
         const startTime = Date.now() - 100; // Simulating start time
 
         // Create workflow completion event
-        const workflowCompleteEvent = coordinatorSpan.createEvent(
+        const workflowCompleteEvent = coordinatorSpan.startObservation(
           workflowCompleteEventName,
           {
             output: {

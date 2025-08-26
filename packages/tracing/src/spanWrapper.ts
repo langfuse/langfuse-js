@@ -13,6 +13,7 @@ import {
   LangfuseEventAttributes,
   LangfuseTraceAttributes,
 } from "./types.js";
+import type { LangfuseObservationType } from "./types.js";
 
 import { startObservation } from "./index.js";
 
@@ -24,17 +25,17 @@ import { startObservation } from "./index.js";
  *
  * @public
  */
-export type LangfuseObservation =
+export type LangfuseObservationUnion =
   | LangfuseSpan
   | LangfuseGeneration
   | LangfuseEvent;
 
 /**
- * Parameters for creating a Langfuse span wrapper.
+ * Parameters for creating a Langfuse observation wrapper.
  *
  * @internal
  */
-type LangfuseSpanWrapperParams = {
+type LangfuseObservationParams = {
   otelSpan: Span;
   attributes?:
     | LangfuseSpanAttributes
@@ -51,7 +52,7 @@ type LangfuseSpanWrapperParams = {
  *
  * @internal
  */
-abstract class LangfuseSpanWrapper {
+abstract class LangfuseObservation {
   /** The underlying OpenTelemetry span */
   public readonly otelSpan: Span;
   /** The span ID from the OpenTelemetry span context */
@@ -59,7 +60,7 @@ abstract class LangfuseSpanWrapper {
   /** The trace ID from the OpenTelemetry span context */
   public traceId: string;
 
-  constructor(params: LangfuseSpanWrapperParams) {
+  constructor(params: LangfuseObservationParams) {
     this.otelSpan = params.otelSpan;
     this.id = params.otelSpan.spanContext().spanId;
     this.traceId = params.otelSpan.spanContext().traceId;
@@ -93,6 +94,89 @@ abstract class LangfuseSpanWrapper {
 
     return this;
   }
+
+  /**
+   * Starts a new child observation within this observation.
+   *
+   * This is a consolidated method that replaces the separate startSpan, startGeneration,
+   * and createEvent methods. The observation type is controlled by the `asType` option,
+   * which defaults to 'span'.
+   *
+   * @param name - Name of the observation
+   * @param attributes - Attributes to set on the observation (type depends on asType)
+   * @param options - Configuration options including observation type
+   * @returns The created observation (LangfuseSpan, LangfuseGeneration, or LangfuseEvent)
+   *
+   * @example
+   * ```typescript
+   * // Create a child span (default)
+   * const childSpan = parentObservation.startObservation('database-query', {
+   *   input: { query: 'SELECT * FROM users' },
+   *   metadata: { database: 'primary' }
+   * });
+   *
+   * // Create a child generation
+   * const generation = parentObservation.startObservation('gpt-4', {
+   *   input: [{ role: 'user', content: 'Hello!' }],
+   *   model: 'gpt-4',
+   *   modelParameters: { temperature: 0.7 }
+   * }, { asType: 'generation' });
+   *
+   * // Create an event
+   * const event = parentObservation.startObservation('user-action', {
+   *   input: { action: 'click', button: 'submit' },
+   *   metadata: { userId: '123' }
+   * }, { asType: 'event' });
+   * ```
+   */
+  public startObservation(
+    name: string,
+    attributes: LangfuseGenerationAttributes,
+    options: { asType: "generation" },
+  ): LangfuseGeneration;
+  public startObservation(
+    name: string,
+    attributes: LangfuseEventAttributes,
+    options: { asType: "event" },
+  ): LangfuseEvent;
+  public startObservation(
+    name: string,
+    attributes?: LangfuseSpanAttributes,
+    options?: { asType?: "span" },
+  ): LangfuseSpan;
+  public startObservation(
+    name: string,
+    attributes?:
+      | LangfuseSpanAttributes
+      | LangfuseGenerationAttributes
+      | LangfuseEventAttributes,
+    options?: { asType?: LangfuseObservationType },
+  ): LangfuseSpan | LangfuseGeneration | LangfuseEvent {
+    const { asType = "span" } = options || {};
+
+    if (asType === "generation") {
+      return startObservation(
+        name,
+        attributes as LangfuseGenerationAttributes,
+        {
+          asType: "generation",
+          parentSpanContext: this.otelSpan.spanContext(),
+        },
+      );
+    }
+
+    if (asType === "event") {
+      return startObservation(name, attributes as LangfuseEventAttributes, {
+        asType: "event",
+        parentSpanContext: this.otelSpan.spanContext(),
+      });
+    }
+
+    return startObservation(name, attributes as LangfuseSpanAttributes, {
+      asType: "span",
+      parentSpanContext: this.otelSpan.spanContext(),
+    });
+  }
 }
 
 /**
@@ -114,7 +198,7 @@ type LangfuseSpanParams = {
  *
  * @public
  */
-export class LangfuseSpan extends LangfuseSpanWrapper {
+export class LangfuseSpan extends LangfuseObservation {
   constructor(params: LangfuseSpanParams) {
     super(params);
     if (params.attributes) {
@@ -142,83 +226,6 @@ export class LangfuseSpan extends LangfuseSpanWrapper {
 
     return this;
   }
-
-  /**
-   * Starts a new child span within this span.
-   *
-   * @param name - Name of the child span
-   * @param attributes - Optional attributes for the child span
-   * @returns The new child span
-   *
-   * @example
-   * ```typescript
-   * const childSpan = parentSpan.startSpan('database-query', {
-   *   input: { query: 'SELECT * FROM users' },
-   *   metadata: { database: 'primary' }
-   * });
-   * ```
-   */
-  public startSpan(
-    name: string,
-    attributes?: LangfuseSpanAttributes,
-  ): LangfuseSpan {
-    return startObservation(name, attributes, {
-      parentSpanContext: this.otelSpan.spanContext(),
-    });
-  }
-
-  /**
-   * Starts a new child generation within this span.
-   *
-   * @param name - Name of the generation (typically the model name)
-   * @param attributes - Optional generation-specific attributes
-   * @returns The new child generation
-   *
-   * @example
-   * ```typescript
-   * const generation = parentSpan.startGeneration('gpt-4', {
-   *   input: [{ role: 'user', content: 'Hello!' }],
-   *   model: 'gpt-4',
-   *   modelParameters: { temperature: 0.7 }
-   * });
-   * ```
-   */
-  public startGeneration(
-    name: string,
-    attributes?: LangfuseGenerationAttributes,
-  ): LangfuseGeneration {
-    return startObservation(name, attributes || {}, {
-      asType: "generation",
-      parentSpanContext: this.otelSpan.spanContext(),
-    });
-  }
-
-  /**
-   * Creates a new event within this span.
-   *
-   * Events are point-in-time occurrences and are automatically ended.
-   *
-   * @param name - Name of the event
-   * @param attributes - Optional event attributes
-   * @returns The created event (already ended)
-   *
-   * @example
-   * ```typescript
-   * parentSpan.createEvent('user-action', {
-   *   input: { action: 'click', button: 'submit' },
-   *   metadata: { userId: '123' }
-   * });
-   * ```
-   */
-  public createEvent(
-    name: string,
-    attributes?: LangfuseEventAttributes,
-  ): LangfuseEvent {
-    return startObservation(name, attributes || {}, {
-      asType: "event",
-      parentSpanContext: this.otelSpan.spanContext(),
-    });
-  }
 }
 
 /**
@@ -239,7 +246,7 @@ type LangfuseGenerationParams = {
  *
  * @public
  */
-export class LangfuseGeneration extends LangfuseSpanWrapper {
+export class LangfuseGeneration extends LangfuseObservation {
   constructor(params: LangfuseGenerationParams) {
     super(params);
     if (params.attributes) {
@@ -273,33 +280,6 @@ export class LangfuseGeneration extends LangfuseSpanWrapper {
 
     return this;
   }
-
-  /**
-   * Creates a new event within this generation.
-   *
-   * Events are point-in-time occurrences and are automatically ended.
-   *
-   * @param name - Name of the event
-   * @param attributes - Optional event attributes
-   * @returns The created event (already ended)
-   *
-   * @example
-   * ```typescript
-   * generation.createEvent('token-limit-reached', {
-   *   level: 'WARNING',
-   *   metadata: { requestedTokens: 2000, maxTokens: 1500 }
-   * });
-   * ```
-   */
-  createEvent(
-    name: string,
-    attributes?: LangfuseEventAttributes,
-  ): LangfuseEvent {
-    return startObservation(name, attributes || {}, {
-      asType: "event",
-      parentSpanContext: this.otelSpan.spanContext(),
-    });
-  }
 }
 
 /**
@@ -322,7 +302,7 @@ type LangfuseEventParams = {
  *
  * @public
  */
-export class LangfuseEvent extends LangfuseSpanWrapper {
+export class LangfuseEvent extends LangfuseObservation {
   constructor(params: LangfuseEventParams) {
     super(params);
 
