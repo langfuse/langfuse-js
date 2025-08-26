@@ -700,7 +700,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "test-agent",
         LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
-        "span",
+        "agent",
       );
       assertions.expectSpanAttribute(
         "test-agent",
@@ -759,7 +759,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "weather-tool",
         LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
-        "span",
+        "tool",
       );
       assertions.expectSpanAttribute(
         "weather-tool",
@@ -790,6 +790,11 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       assertions.expectSpanCount(1);
       assertions.expectSpanWithName("rag-chain");
+      assertions.expectSpanAttribute(
+        "rag-chain",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "chain",
+      );
       assertions.expectSpanAttribute(
         "rag-chain",
         LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
@@ -826,6 +831,11 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanWithName("vector-search");
       assertions.expectSpanAttribute(
         "vector-search",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "retriever",
+      );
+      assertions.expectSpanAttribute(
+        "vector-search",
         LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
         '{"query":"machine learning algorithms","topK":5}',
       );
@@ -859,6 +869,11 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanWithName("quality-evaluator");
       assertions.expectSpanAttribute(
         "quality-evaluator",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "evaluator",
+      );
+      assertions.expectSpanAttribute(
+        "quality-evaluator",
         LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
         '{"score":0.92,"passed":true}',
       );
@@ -890,6 +905,11 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       assertions.expectSpanCount(1);
       assertions.expectSpanWithName("content-filter");
+      assertions.expectSpanAttribute(
+        "content-filter",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "guardrail",
+      );
       assertions.expectSpanAttribute(
         "content-filter",
         LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
@@ -929,7 +949,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "text-embedder",
         LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
-        "generation",
+        "embedding",
       );
       assertions.expectSpanAttribute(
         "text-embedder",
@@ -2688,7 +2708,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "text-embedding",
         LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
-        "generation",
+        "embedding",
       );
     });
 

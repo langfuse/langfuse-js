@@ -643,7 +643,7 @@ type LangfuseAgentParams = {
 
 export class LangfuseAgent extends LangfuseBaseObservation {
   constructor(params: LangfuseAgentParams) {
-    super({ ...params, type: "span" });
+    super({ ...params, type: "agent" });
   }
 
   public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
@@ -660,7 +660,7 @@ type LangfuseToolParams = {
 
 export class LangfuseTool extends LangfuseBaseObservation {
   constructor(params: LangfuseToolParams) {
-    super({ ...params, type: "span" });
+    super({ ...params, type: "tool" });
   }
 
   public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
@@ -677,7 +677,7 @@ type LangfuseChainParams = {
 
 export class LangfuseChain extends LangfuseBaseObservation {
   constructor(params: LangfuseChainParams) {
-    super({ ...params, type: "span" });
+    super({ ...params, type: "chain" });
   }
 
   public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
@@ -694,7 +694,7 @@ type LangfuseRetrieverParams = {
 
 export class LangfuseRetriever extends LangfuseBaseObservation {
   constructor(params: LangfuseRetrieverParams) {
-    super({ ...params, type: "span" });
+    super({ ...params, type: "retriever" });
   }
 
   public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
@@ -711,7 +711,7 @@ type LangfuseEvaluatorParams = {
 
 export class LangfuseEvaluator extends LangfuseBaseObservation {
   constructor(params: LangfuseEvaluatorParams) {
-    super({ ...params, type: "span" });
+    super({ ...params, type: "evaluator" });
   }
 
   public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
@@ -728,7 +728,7 @@ type LangfuseGuardrailParams = {
 
 export class LangfuseGuardrail extends LangfuseBaseObservation {
   constructor(params: LangfuseGuardrailParams) {
-    super({ ...params, type: "span" });
+    super({ ...params, type: "guardrail" });
   }
 
   public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
@@ -1028,7 +1028,7 @@ type LangfuseEmbeddingParams = {
 
 export class LangfuseEmbedding extends LangfuseBaseObservation {
   constructor(params: LangfuseEmbeddingParams) {
-    super({ ...params, type: "generation" });
+    super({ ...params, type: "embedding" });
   }
 
   update(attributes: LangfuseGenerationAttributes): LangfuseGeneration {
