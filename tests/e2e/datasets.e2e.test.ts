@@ -300,7 +300,7 @@ describe("Langfuse Datasets E2E", () => {
         }
       }
 
-      waitForServerIngestion(2_000);
+      await waitForServerIngestion(2_000);
 
       // Verify the dataset run was created
       const targetRun = await langfuse.api.datasets.getRun(
