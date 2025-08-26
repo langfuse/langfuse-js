@@ -482,124 +482,47 @@ type LangfuseSpanParams = {
  *
  * @example
  * ```typescript
- * import { startObservation } from '@langfuse/tracing';
- *
- * // Simple operation tracking
+ * // Basic span tracking
  * const span = startObservation('user-authentication', {
  *   input: { username: 'john_doe', method: 'oauth' },
- *   metadata: { provider: 'google', version: '2.0' }
+ *   metadata: { provider: 'google' }
  * });
  *
  * try {
- *   // Perform authentication logic
  *   const user = await authenticateUser(credentials);
- *
  *   span.update({
- *     output: { userId: user.id, success: true },
- *     level: 'DEFAULT',
- *     metadata: { loginTime: Date.now(), sessionId: user.sessionId }
+ *     output: { userId: user.id, success: true }
  *   });
  * } catch (error) {
  *   span.update({
- *     output: { success: false, error: error.message },
  *     level: 'ERROR',
- *     statusMessage: 'Authentication failed'
+ *     output: { success: false, error: error.message }
  *   });
  * } finally {
  *   span.end();
  * }
  *
- * // Complex workflow with nested operations
- * const orderProcessing = startObservation('order-processing', {
- *   input: { orderId: 'ord_123', items: cartItems },
- *   metadata: { customerId: 'cust_456', priority: 'standard' }
+ * // Nested operations
+ * const workflow = startObservation('order-processing', {
+ *   input: { orderId: 'ord_123' }
  * });
  *
- * // Validation step
- * const validation = orderProcessing.startObservation('order-validation', {
- *   input: { items: cartItems, inventory: currentInventory }
+ * const validation = workflow.startObservation('validation', {
+ *   input: { items: cartItems }
  * });
- * validation.update({ output: { valid: true, adjustments: [] } });
+ * validation.update({ output: { valid: true } });
  * validation.end();
  *
- * // Payment processing
- * const payment = orderProcessing.startObservation('payment-processing', {
- *   input: { amount: totalAmount, method: paymentMethod }
+ * const payment = workflow.startObservation('payment', {
+ *   input: { amount: 100 }
  * });
- * payment.update({ output: { transactionId: 'tx_789', status: 'completed' } });
+ * payment.update({ output: { status: 'completed' } });
  * payment.end();
  *
- * // Inventory update with error handling
- * const inventory = orderProcessing.startObservation('inventory-update', {
- *   input: { items: validatedItems, operation: 'decrement' }
+ * workflow.update({
+ *   output: { status: 'confirmed', steps: 2 }
  * });
- *
- * try {
- *   await updateInventory(validatedItems);
- *   inventory.update({ output: { updated: true, newQuantities: quantities } });
- * } catch (error) {
- *   inventory.update({
- *     level: 'ERROR',
- *     statusMessage: 'Inventory update failed',
- *     output: { error: error.message }
- *   });
- *   throw error; // Re-throw to handle at parent level
- * } finally {
- *   inventory.end();
- * }
- *
- * // Complete main workflow
- * orderProcessing.update({
- *   output: {
- *     orderId: 'ord_123',
- *     status: 'confirmed',
- *     completedSteps: ['validation', 'payment', 'inventory'],
- *     totalDuration: Date.now() - startTime
- *   },
- *   metadata: { completedAt: new Date().toISOString() }
- * });
- * orderProcessing.end();
- *
- * // Background job processing
- * const backgroundJob = startObservation('email-campaign-job', {
- *   input: { campaignId: 'camp_123', recipients: 5000 },
- *   metadata: { jobId: 'job_789', priority: 'low', scheduled: true }
- * });
- *
- * // Process in batches
- * let processed = 0;
- * const batchSize = 100;
- *
- * while (processed < recipients.length) {
- *   const batch = recipients.slice(processed, processed + batchSize);
- *
- *   const batchSpan = backgroundJob.startObservation(`email-batch-${Math.floor(processed / batchSize)}`, {
- *     input: { batchSize: batch.length, startIndex: processed }
- *   });
- *
- *   await processBatch(batch);
- *   batchSpan.update({ output: { sent: batch.length, failed: 0 } });
- *   batchSpan.end();
- *
- *   processed += batchSize;
- *
- *   // Update progress on main span
- *   backgroundJob.update({
- *     metadata: {
- *       progress: Math.round((processed / recipients.length) * 100),
- *       processedCount: processed
- *     }
- *   });
- * }
- *
- * backgroundJob.update({
- *   output: {
- *     totalSent: processed,
- *     totalFailed: 0,
- *     campaignStatus: 'completed'
- *   }
- * });
- * backgroundJob.end();
+ * workflow.end();
  * ```
  *
  * @see {@link startObservation} - Factory function for creating spans
@@ -1303,45 +1226,29 @@ type LangfuseGenerationParams = {
  *
  * @example
  * ```typescript
- * import { startObservation } from '@langfuse/tracing';
- *
- * // Basic LLM completion tracking
+ * // Basic LLM generation tracking
  * const generation = startObservation('openai-completion', {
  *   model: 'gpt-4-turbo',
  *   input: [
- *     { role: 'system', content: 'You are a helpful assistant specialized in explaining complex topics.' },
- *     { role: 'user', content: 'Explain quantum computing in simple terms' }
+ *     { role: 'system', content: 'You are a helpful assistant.' },
+ *     { role: 'user', content: 'Explain quantum computing' }
  *   ],
  *   modelParameters: {
  *     temperature: 0.7,
- *     maxTokens: 500,
- *     topP: 1.0,
- *     frequencyPenalty: 0.0,
- *     presencePenalty: 0.0
- *   },
- *   metadata: {
- *     userId: 'user_123',
- *     requestId: 'req_456',
- *     priority: 'high'
+ *     maxTokens: 500
  *   }
  * }, { asType: 'generation' });
  *
  * try {
- *   const startTime = Date.now();
- *
  *   const response = await openai.chat.completions.create({
  *     model: 'gpt-4-turbo',
  *     messages: [
- *       { role: 'system', content: 'You are a helpful assistant specialized in explaining complex topics.' },
- *       { role: 'user', content: 'Explain quantum computing in simple terms' }
+ *       { role: 'system', content: 'You are a helpful assistant.' },
+ *       { role: 'user', content: 'Explain quantum computing' }
  *     ],
  *     temperature: 0.7,
- *     max_tokens: 500,
- *     top_p: 1.0
+ *     max_tokens: 500
  *   });
- *
- *   const duration = Date.now() - startTime;
- *   const tokensPerSecond = response.usage.total_tokens / (duration / 1000);
  *
  *   generation.update({
  *     output: response.choices[0].message,
@@ -1351,175 +1258,36 @@ type LangfuseGenerationParams = {
  *       totalTokens: response.usage.total_tokens
  *     },
  *     costDetails: {
- *       totalCost: calculateCost(response.usage, 'gpt-4-turbo'),
- *       currency: 'USD',
- *       costBreakdown: {
- *         promptCost: response.usage.prompt_tokens * 0.01 / 1000,
- *         completionCost: response.usage.completion_tokens * 0.03 / 1000
- *       }
- *     },
- *     metadata: {
- *       latency: duration,
- *       tokensPerSecond: Math.round(tokensPerSecond),
- *       finishReason: response.choices[0].finish_reason,
- *       responseId: response.id
+ *       totalCost: 0.025,
+ *       currency: 'USD'
  *     }
  *   });
- *
  * } catch (error) {
  *   generation.update({
  *     level: 'ERROR',
- *     statusMessage: `OpenAI API error: ${error.message}`,
- *     output: { error: error.message, errorType: error.type },
- *     metadata: {
- *       errorCode: error.code,
- *       rateLimitHit: error.type === 'rate_limit_exceeded'
- *     }
+ *     statusMessage: `API error: ${error.message}`,
+ *     output: { error: error.message }
  *   });
- *   throw error;
  * } finally {
  *   generation.end();
  * }
  *
- * // Structured prompt with versioning
- * const summarizeGeneration = startObservation('document-summarizer', {
- *   model: 'gpt-4-turbo',
- *   prompt: {
- *     name: 'document-summary-v2',
- *     version: '2.1.0',
- *     variables: {
- *       document: longDocument,
- *       maxWords: 200,
- *       tone: 'professional'
- *     }
- *   },
- *   input: [
- *     { role: 'system', content: 'Summarize documents professionally and concisely.' },
- *     { role: 'user', content: `Summarize this document in ${200} words with a professional tone: ${longDocument}` }
- *   ],
- *   modelParameters: {
- *     temperature: 0.3, // Lower temperature for consistency
- *     maxTokens: 300
- *   }
- * }, { asType: 'generation' });
- *
- * // RAG generation with context injection
- * const ragGeneration = startObservation('rag-answer-generation', {
+ * // RAG generation example
+ * const ragGeneration = startObservation('rag-response', {
  *   model: 'gpt-4',
  *   input: [
- *     {
- *       role: 'system',
- *       content: 'Answer questions based only on the provided context. If the context doesn\'t contain enough information, say so.'
- *     },
- *     {
- *       role: 'user',
- *       content: `Context: ${retrievedDocuments.join('\n\n')}\n\nQuestion: ${userQuestion}`
- *     }
+ *     { role: 'system', content: 'Answer based on provided context.' },
+ *     { role: 'user', content: `Context: ${context}\n\nQuestion: ${question}` }
  *   ],
- *   modelParameters: {
- *     temperature: 0.1, // Low temperature for factual responses
- *     maxTokens: 400
- *   },
- *   metadata: {
- *     retrievalQuery: userQuestion,
- *     contextSources: retrievedDocuments.length,
- *     contextLength: retrievedDocuments.join('').length,
- *     ragVersion: '1.2.0'
- *   }
+ *   modelParameters: { temperature: 0.1 }
  * }, { asType: 'generation' });
  *
- * // Multi-step generation with reflection
- * const reasoningGeneration = startObservation('chain-of-thought', {
- *   model: 'gpt-4-turbo',
- *   input: [
- *     { role: 'system', content: 'Think step by step and show your reasoning.' },
- *     { role: 'user', content: complexProblem }
- *   ],
- *   modelParameters: {
- *     temperature: 0.8,
- *     maxTokens: 1000
- *   }
- * }, { asType: 'generation' });
- *
- * // First reasoning step
- * const initialResponse = await callLLM(reasoningGeneration.input);
- * reasoningGeneration.update({
- *   output: initialResponse,
- *   metadata: { step: 'initial_reasoning' }
+ * const response = await llm.generate({ prompt, context });
+ * ragGeneration.update({
+ *   output: response,
+ *   metadata: { contextSources: 3 }
  * });
- *
- * // Reflection step - create child generation for self-critique
- * const reflection = reasoningGeneration.startObservation('self-reflection', {
- *   model: 'gpt-4-turbo',
- *   input: [
- *     { role: 'system', content: 'Review and improve the reasoning in the previous response.' },
- *     { role: 'user', content: `Previous reasoning: ${initialResponse.content}\n\nOriginal problem: ${complexProblem}` }
- *   ],
- *   modelParameters: { temperature: 0.5, maxTokens: 500 }
- * }, { asType: 'generation' });
- *
- * const improvedResponse = await callLLM(reflection.input);
- * reflection.update({ output: improvedResponse });
- * reflection.end();
- *
- * // Update parent with final refined answer
- * reasoningGeneration.update({
- *   output: improvedResponse,
- *   metadata: {
- *     step: 'refined_reasoning',
- *     reflectionApplied: true,
- *     totalSteps: 2
- *   }
- * });
- * reasoningGeneration.end();
- *
- * // Batch generation processing
- * const batchGeneration = startObservation('batch-content-generation', {
- *   model: 'gpt-3.5-turbo',
- *   input: { batchSize: contentPrompts.length, templates: contentPrompts },
- *   modelParameters: { temperature: 0.9, maxTokens: 200 },
- *   metadata: { batchId: 'batch_789', contentType: 'marketing' }
- * }, { asType: 'generation' });
- *
- * const results = [];
- * let totalTokens = 0;
- * let totalCost = 0;
- *
- * for (let i = 0; i < contentPrompts.length; i++) {
- *   const itemGeneration = batchGeneration.startObservation(`content-item-${i}`, {
- *     model: 'gpt-3.5-turbo',
- *     input: [{ role: 'user', content: contentPrompts[i] }],
- *     modelParameters: { temperature: 0.9, maxTokens: 200 }
- *   }, { asType: 'generation' });
- *
- *   const result = await generateContent(contentPrompts[i]);
- *   results.push(result);
- *
- *   itemGeneration.update({
- *     output: result,
- *     usageDetails: result.usage,
- *     costDetails: result.cost
- *   });
- *   itemGeneration.end();
- *
- *   totalTokens += result.usage.totalTokens;
- *   totalCost += result.cost.totalCost;
- * }
- *
- * batchGeneration.update({
- *   output: {
- *     generatedItems: results.length,
- *     successful: results.filter(r => r.success).length,
- *     failed: results.filter(r => !r.success).length
- *   },
- *   usageDetails: { totalTokens },
- *   costDetails: { totalCost, currency: 'USD' },
- *   metadata: {
- *     avgTokensPerItem: Math.round(totalTokens / results.length),
- *     avgCostPerItem: totalCost / results.length
- *   }
- * });
- * batchGeneration.end();
+ * ragGeneration.end();
  * ```
  *
  * @see {@link startObservation} with `{ asType: 'generation' }` - Factory function
