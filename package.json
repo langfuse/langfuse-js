@@ -51,7 +51,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
-    "happy-dom": "^15.10.2",
+    "happy-dom": "^18.0.1",
     "husky": "^9.1.7",
     "mustache": "^4.2.0",
     "nanoid": "^5.1.5",
