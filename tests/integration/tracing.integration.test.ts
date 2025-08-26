@@ -1,12 +1,8 @@
 import {
-  startSpan,
-  startGeneration,
-  createEvent,
-  startActiveSpan,
-  startActiveGeneration,
+  startObservation,
+  startActiveObservation,
   observe,
-  updateActiveSpan,
-  updateActiveGeneration,
+  updateActiveObservation,
   updateActiveTrace,
   LangfuseOtelSpanAttributes,
   createTraceId,
@@ -35,9 +31,9 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     await teardownTestEnvironment(testEnv);
   });
 
-  describe("startSpan method", () => {
+  describe("startObservation method", () => {
     it("should create and export a simple span", async () => {
-      const span = startSpan("test-span");
+      const span = startObservation("test-span");
       span.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1);
@@ -50,7 +46,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       const traceId = "0123456789abcdef0123456789abcdef";
       const spanId = "0123456789abcdef";
 
-      const span = startSpan(
+      const span = startObservation(
         "test-span",
         {},
         {
@@ -74,7 +70,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     it("should create span with custom attributes", async () => {
-      const span = startSpan("test-span", {
+      const span = startObservation("test-span", {
         metadata: { key: "value" },
         input: { prompt: "test prompt" },
         output: { response: "test response" },
@@ -101,7 +97,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     it("should handle span with error status", async () => {
-      const span = startSpan("error-span");
+      const span = startObservation("error-span");
       // Use update method to set error status in attributes
       span.update({
         statusMessage: "Test error",
@@ -125,7 +121,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
     describe("Nested spans", () => {
       it("should create nested spans with correct parent-child relationships", async () => {
-        const parentSpan = startSpan("parent-span", {
+        const parentSpan = startObservation("parent-span", {
           input: { operation: "parent operation" },
         });
 
@@ -137,10 +133,14 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           tags: ["nested", "test"],
         });
 
-        // Create child span using parent's startSpan method
-        const childSpan = parentSpan.startSpan("child-span", {
-          input: { step: "child operation" },
-        });
+        // Create child span using parent's context
+        const childSpan = startObservation(
+          "child-span",
+          {
+            input: { step: "child operation" },
+          },
+          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+        );
         childSpan.update({ output: { result: "child completed" } });
         childSpan.end();
 
@@ -179,7 +179,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle multiple child spans", async () => {
-        const parentSpan = startSpan("parent-span", {
+        const parentSpan = startObservation("parent-span", {
           input: { operation: "multi-child operation" },
         });
 
@@ -190,17 +190,25 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           metadata: { test_type: "multi-child", version: "1.0" },
         });
 
-        const child1 = parentSpan.startSpan("child-1", {
-          input: { task: "first task" },
-        });
+        const child1 = startObservation(
+          "child-1",
+          {
+            input: { task: "first task" },
+          },
+          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+        );
         child1.update({
           output: { result: "task 1 done" },
           level: "DEFAULT",
         });
 
-        const child2 = parentSpan.startSpan("child-2", {
-          input: { task: "second task" },
-        });
+        const child2 = startObservation(
+          "child-2",
+          {
+            input: { task: "second task" },
+          },
+          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+        );
         child2.update({
           output: { result: "task 2 done" },
           statusMessage: "Child 2 completed successfully",
@@ -257,7 +265,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
     describe("Span timing", () => {
       it("should record span duration correctly", async () => {
-        const span = startSpan("timed-span");
+        const span = startObservation("timed-span");
 
         await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -281,7 +289,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         });
         assertions = new SpanAssertions(testEnv.mockExporter);
 
-        const span = startSpan("env-span");
+        const span = startObservation("env-span");
         span.end();
 
         await waitForSpanExport(testEnv.mockExporter, 1);
@@ -311,9 +319,9 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions = new SpanAssertions(testEnv.mockExporter);
 
         // Create 2 spans - should not flush yet
-        const span1 = startSpan("span-1");
+        const span1 = startObservation("span-1");
         span1.end();
-        const span2 = startSpan("span-2");
+        const span2 = startObservation("span-2");
         span2.end();
 
         // Wait a bit and check no spans exported yet
@@ -321,7 +329,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         expect(testEnv.mockExporter.getSpanCount()).toBe(0);
 
         // Third span should trigger flush
-        const span3 = startSpan("span-3");
+        const span3 = startObservation("span-3");
         span3.end();
 
         await waitForSpanExport(testEnv.mockExporter, 3);
@@ -330,14 +338,18 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
   });
 
-  describe("startGeneration method", () => {
+  describe("startObservation with generation type", () => {
     it("should create generation with proper observation type", async () => {
-      const generation = startGeneration("test-generation", {
-        model: "gpt-4",
-        input: { prompt: "Hello world" },
-        metadata: { test_run: true, version: "1.0" },
-        level: "DEFAULT",
-      });
+      const generation = startObservation(
+        "test-generation",
+        {
+          model: "gpt-4",
+          input: { prompt: "Hello world" },
+          metadata: { test_run: true, version: "1.0" },
+          level: "DEFAULT",
+        },
+        { asType: "generation" },
+      );
 
       // Add trace attributes
       generation.updateTrace({
@@ -428,15 +440,19 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     it("should handle generation with usage tracking", async () => {
-      const generation = startGeneration("usage-generation", {
-        model: "gpt-3.5-turbo",
-        input: { messages: [{ role: "user", content: "test" }] },
-        usageDetails: {
-          promptTokens: 10,
-          completionTokens: 15,
-          totalTokens: 25,
+      const generation = startObservation(
+        "usage-generation",
+        {
+          model: "gpt-3.5-turbo",
+          input: { messages: [{ role: "user", content: "test" }] },
+          usageDetails: {
+            promptTokens: 10,
+            completionTokens: 15,
+            totalTokens: 25,
+          },
         },
-      });
+        { asType: "generation" },
+      );
       generation.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1);
@@ -471,9 +487,9 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
   });
 
-  describe("createEvent method", () => {
+  describe("startObservation with event type", () => {
     it("should create event with proper observation type", async () => {
-      const parentSpan = startSpan("event-parent", {
+      const parentSpan = startObservation("event-parent", {
         input: { workflow: "user interaction workflow" },
       });
 
@@ -484,7 +500,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         metadata: { platform: "web", version: "2.0" },
       });
 
-      const event = createEvent(
+      const event = startObservation(
         "test-event",
         {
           input: { action: "user_click", timestamp: Date.now() },
@@ -492,7 +508,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           level: "DEFAULT",
           output: { success: true, duration_ms: 45 },
         },
-        { parentSpanContext: parentSpan.otelSpan.spanContext() },
+        {
+          asType: "event",
+          parentSpanContext: parentSpan.otelSpan.spanContext(),
+        },
       );
 
       parentSpan.update({ output: { events_created: 1 } });
@@ -564,10 +583,14 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
     it("should create event with custom timestamp", async () => {
       const customTimestamp = new Date(Date.now() - 1000);
-      const parentGen = startGeneration("timestamp-parent", {
-        model: "test-model",
-        input: { query: "test timestamp" },
-      });
+      const parentGen = startObservation(
+        "timestamp-parent",
+        {
+          model: "test-model",
+          input: { query: "test timestamp" },
+        },
+        { asType: "generation" },
+      );
 
       parentGen.updateTrace({
         name: "timestamp-test-trace",
@@ -575,7 +598,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         environment: "test",
       });
 
-      const event = createEvent(
+      const event = startObservation(
         "timestamped-event",
         {
           input: { message: "test", created_at: customTimestamp.toISOString() },
@@ -585,6 +608,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         {
           timestamp: customTimestamp,
           parentSpanContext: parentGen.otelSpan.spanContext(),
+          asType: "event",
         },
       );
 
@@ -657,11 +681,289 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
   });
 
-  describe("startActiveSpan method", () => {
+  describe("startObservation with agent type", () => {
+    it("should create and export an agent observation", async () => {
+      const agent = startObservation(
+        "test-agent",
+        {
+          input: { query: "What's the weather?" },
+          metadata: { model: "gpt-4", tools: ["weather-api"] },
+        },
+        { asType: "agent" },
+      );
+      agent.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("test-agent");
+      assertions.expectSpanAttribute(
+        "test-agent",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "agent",
+      );
+      assertions.expectSpanAttribute(
+        "test-agent",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"query":"What\'s the weather?"}',
+      );
+    });
+
+    it("should allow updating agent attributes", async () => {
+      const agent = startObservation(
+        "agent-with-updates",
+        {
+          input: { task: "analyze document" },
+        },
+        { asType: "agent" },
+      );
+
+      agent.update({
+        output: { analysis: "Document contains 5 sections" },
+        metadata: { processingTime: 150 },
+      });
+
+      agent.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "agent-with-updates",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"analysis":"Document contains 5 sections"}',
+      );
+      assertions.expectSpanAttribute(
+        "agent-with-updates",
+        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".processingTime",
+        "150",
+      );
+    });
+  });
+
+  describe("startObservation with tool type", () => {
+    it("should create and export a tool observation", async () => {
+      const tool = startObservation(
+        "weather-tool",
+        {
+          input: { location: "San Francisco" },
+          metadata: { toolType: "api", timeout: 5000 },
+        },
+        { asType: "tool" },
+      );
+      tool.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("weather-tool");
+      assertions.expectSpanAttribute(
+        "weather-tool",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "tool",
+      );
+      assertions.expectSpanAttribute(
+        "weather-tool",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"location":"San Francisco"}',
+      );
+    });
+  });
+
+  describe("startObservation with chain type", () => {
+    it("should create and export a chain observation", async () => {
+      const chain = startObservation(
+        "rag-chain",
+        {
+          input: { query: "What is machine learning?" },
+          metadata: { steps: ["retrieval", "generation"], model: "gpt-4" },
+        },
+        { asType: "chain" },
+      );
+
+      chain.update({
+        output: { answer: "Machine learning is...", sources: ["doc1", "doc2"] },
+      });
+
+      chain.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("rag-chain");
+      assertions.expectSpanAttribute(
+        "rag-chain",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "chain",
+      );
+      assertions.expectSpanAttribute(
+        "rag-chain",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"answer":"Machine learning is...","sources":["doc1","doc2"]}',
+      );
+    });
+  });
+
+  describe("startObservation with retriever type", () => {
+    it("should create and export a retriever observation", async () => {
+      const retriever = startObservation(
+        "vector-search",
+        {
+          input: { query: "machine learning algorithms", topK: 5 },
+          metadata: { vectorStore: "pinecone", similarity: "cosine" },
+        },
+        { asType: "retriever" },
+      );
+
+      retriever.update({
+        output: {
+          documents: [
+            { id: "doc1", score: 0.95 },
+            { id: "doc2", score: 0.87 },
+          ],
+        },
+      });
+
+      retriever.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("vector-search");
+      assertions.expectSpanAttribute(
+        "vector-search",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "retriever",
+      );
+      assertions.expectSpanAttribute(
+        "vector-search",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"query":"machine learning algorithms","topK":5}',
+      );
+    });
+  });
+
+  describe("startObservation with evaluator type", () => {
+    it("should create and export an evaluator observation", async () => {
+      const evaluator = startObservation(
+        "quality-evaluator",
+        {
+          input: {
+            response: "The sky is blue because of Rayleigh scattering.",
+            expectedAnswer:
+              "Blue light is scattered more by particles in atmosphere.",
+          },
+          metadata: { metric: "semantic-similarity", threshold: 0.8 },
+        },
+        { asType: "evaluator" },
+      );
+
+      evaluator.update({
+        output: { score: 0.92, passed: true },
+      });
+
+      evaluator.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("quality-evaluator");
+      assertions.expectSpanAttribute(
+        "quality-evaluator",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "evaluator",
+      );
+      assertions.expectSpanAttribute(
+        "quality-evaluator",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"score":0.92,"passed":true}',
+      );
+    });
+  });
+
+  describe("startObservation with guardrail type", () => {
+    it("should create and export a guardrail observation", async () => {
+      const guardrail = startObservation(
+        "content-filter",
+        {
+          input: {
+            text: "This is a test message",
+            rules: ["no-profanity", "no-pii"],
+          },
+          metadata: { filterType: "content", strictMode: true },
+        },
+        { asType: "guardrail" },
+      );
+
+      guardrail.update({
+        output: { allowed: true, violations: [], confidence: 0.99 },
+        level: "DEFAULT",
+      });
+
+      guardrail.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("content-filter");
+      assertions.expectSpanAttribute(
+        "content-filter",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "guardrail",
+      );
+      assertions.expectSpanAttribute(
+        "content-filter",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"allowed":true,"violations":[],"confidence":0.99}',
+      );
+    });
+  });
+
+  describe("startObservation with embedding type", () => {
+    it("should create and export an embedding observation", async () => {
+      const embedding = startObservation(
+        "text-embedder",
+        {
+          input: { texts: ["Hello world", "Machine learning"] },
+          model: "text-embedding-ada-002",
+          metadata: { dimensions: 1536 },
+        },
+        { asType: "embedding" },
+      );
+
+      embedding.update({
+        output: {
+          embeddings: [
+            [0.1, 0.2, 0.3],
+            [0.4, 0.5, 0.6],
+          ],
+        },
+        usageDetails: { totalTokens: 8 },
+      });
+
+      embedding.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("text-embedder");
+      assertions.expectSpanAttribute(
+        "text-embedder",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "embedding",
+      );
+      assertions.expectSpanAttribute(
+        "text-embedder",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"texts":["Hello world","Machine learning"]}',
+      );
+    });
+  });
+
+  describe("startActiveObservation method", () => {
     it("should execute function with active span context", async () => {
       let spanFromFunction: any = null;
 
-      const result = startActiveSpan("active-span", (span) => {
+      const result = startActiveObservation("active-span", (span) => {
         spanFromFunction = span;
 
         // Add trace attributes within active span
@@ -679,9 +981,13 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         });
 
         // Create a nested span to test context propagation
-        const nestedSpan = span.startSpan("nested-active-span", {
-          input: { nested_operation: "test" },
-        });
+        const nestedSpan = startObservation(
+          "nested-active-span",
+          {
+            input: { nested_operation: "test" },
+          },
+          { parentSpanContext: span.otelSpan.spanContext() },
+        );
         nestedSpan.update({ output: { nested_result: "success" } });
         nestedSpan.end();
 
@@ -765,7 +1071,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
     it("should handle errors in active span function", async () => {
       expect(() => {
-        startActiveSpan("error-active-span", (span) => {
+        startActiveObservation("error-active-span", (span) => {
           span.update({
             input: { message: "about to throw" },
           });
@@ -781,7 +1087,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
     describe("Promise handling", () => {
       it("should handle promise resolution", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "promise-resolve-span",
           async (span) => {
             span.update({
@@ -817,7 +1123,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should handle promise rejection", async () => {
         await expect(
-          startActiveSpan("promise-reject-span", async (span) => {
+          startActiveObservation("promise-reject-span", async (span) => {
             span.update({
               input: { operation: "failing async task" },
               output: { status: "starting" },
@@ -851,7 +1157,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle promise chain resolution", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "promise-chain-span",
           async (span) => {
             span.update({
@@ -883,7 +1189,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should handle promise chain rejection", async () => {
         await expect(
-          startActiveSpan("promise-chain-reject-span", async (span) => {
+          startActiveObservation("promise-chain-reject-span", async (span) => {
             span.update({
               input: { step: "start" },
               output: { status: "processing" },
@@ -915,7 +1221,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle sequential promises (not actually nested)", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "sequential-promise-span",
           async (span) => {
             span.update({
@@ -958,7 +1264,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle ACTUALLY nested promises", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "truly-nested-promise-span",
           async (span) => {
             span.update({
@@ -1004,7 +1310,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should properly nest spans created within nested promises", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "outer-span-with-nested-promises",
           async (outerSpan) => {
             outerSpan.update({
@@ -1015,17 +1321,23 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             const nestedResult = await new Promise<string>((outerResolve) => {
               setTimeout(() => {
                 // Create span within outer promise executor
-                const outerPromiseSpan = startSpan("outer-promise-span", {
-                  input: { location: "inside outer promise" },
-                });
+                const outerPromiseSpan = startObservation(
+                  "outer-promise-span",
+                  {
+                    input: { location: "inside outer promise" },
+                  },
+                );
 
                 // Inner promise created INSIDE outer promise
                 const innerPromise = new Promise<string>((innerResolve) => {
                   setTimeout(() => {
                     // Create span within inner promise executor
-                    const innerPromiseSpan = startSpan("inner-promise-span", {
-                      input: { location: "inside inner promise" },
-                    });
+                    const innerPromiseSpan = startObservation(
+                      "inner-promise-span",
+                      {
+                        input: { location: "inside inner promise" },
+                      },
+                    );
 
                     innerPromiseSpan.update({
                       output: { result: "inner work completed" },
@@ -1074,7 +1386,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle parallel promises with Promise.all", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "parallel-promises-span",
           async (span) => {
             span.update({
@@ -1115,47 +1427,54 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should handle Promise.all with one rejection", async () => {
         await expect(
-          startActiveSpan("parallel-promises-reject-span", async (span) => {
-            span.update({ input: { operation: "parallel with failure" } });
+          startActiveObservation(
+            "parallel-promises-reject-span",
+            async (span) => {
+              span.update({ input: { operation: "parallel with failure" } });
 
-            const promise1 = new Promise<string>((resolve) => {
-              setTimeout(() => resolve("result1"), 30);
-            });
-
-            const promise2 = new Promise<string>((_, reject) => {
-              setTimeout(() => reject(new Error("Promise 2 failed")), 50);
-            });
-
-            const promise3 = new Promise<string>((resolve) => {
-              setTimeout(() => resolve("result3"), 20);
-            });
-
-            try {
-              const results = await Promise.all([promise1, promise2, promise3]);
-              span.update({ output: { results } });
-              return results.join("-");
-            } catch (error) {
-              span.update({
-                level: "ERROR",
-                statusMessage: "Promise.all failed",
+              const promise1 = new Promise<string>((resolve) => {
+                setTimeout(() => resolve("result1"), 30);
               });
-              throw error;
-            }
-          }),
+
+              const promise2 = new Promise<string>((_, reject) => {
+                setTimeout(() => reject(new Error("Promise 2 failed")), 50);
+              });
+
+              const promise3 = new Promise<string>((resolve) => {
+                setTimeout(() => resolve("result3"), 20);
+              });
+
+              try {
+                const results = await Promise.all([
+                  promise1,
+                  promise2,
+                  promise3,
+                ]);
+                span.update({ output: { results } });
+                return results.join("-");
+              } catch (error) {
+                span.update({
+                  level: "ERROR",
+                  statusMessage: "Promise.all failed",
+                });
+                throw error;
+              }
+            },
+          ),
         ).rejects.toThrow("Promise 2 failed");
 
         await waitForSpanExport(testEnv.mockExporter, 1);
 
         assertions.expectSpanCount(1);
         assertions.expectSpanWithName("parallel-promises-reject-span");
-        // Note: The startActiveSpan function itself completes successfully
+        // Note: The startActiveObservation function itself completes successfully
         // even when the inner promise rejects. The ERROR level and status
         // would need to be manually set within the span callback.
         assertions.expectSpanWithName("parallel-promises-reject-span");
       });
 
       it("should handle nested spans created inside promise callbacks", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "outer-span-with-nested",
           async (outerSpan) => {
             outerSpan.update({
@@ -1167,9 +1486,13 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             const nestedResult = await new Promise<string>((resolve) => {
               setTimeout(() => {
                 // Create child span inside the promise callback
-                const childSpan = outerSpan.startSpan("nested-child-span", {
-                  input: { step: "nested processing" },
-                });
+                const childSpan = startObservation(
+                  "nested-child-span",
+                  {
+                    input: { step: "nested processing" },
+                  },
+                  { parentSpanContext: outerSpan.otelSpan.spanContext() },
+                );
 
                 childSpan.update({ output: { result: "child completed" } });
                 childSpan.end();
@@ -1199,7 +1522,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle multiple nested spans in parallel promises", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "parallel-with-nested",
           async (outerSpan) => {
             outerSpan.update({
@@ -1209,9 +1532,13 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             const promise1 = new Promise<string>((resolve) => {
               setTimeout(() => {
-                const child1 = outerSpan.startSpan("nested-child-1", {
-                  input: { task: "task-1" },
-                });
+                const child1 = startObservation(
+                  "nested-child-1",
+                  {
+                    input: { task: "task-1" },
+                  },
+                  { parentSpanContext: outerSpan.otelSpan.spanContext() },
+                );
                 child1.update({ output: { result: "task-1-done" } });
                 child1.end();
                 resolve("result1");
@@ -1220,9 +1547,13 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             const promise2 = new Promise<string>((resolve) => {
               setTimeout(() => {
-                const child2 = outerSpan.startSpan("nested-child-2", {
-                  input: { task: "task-2" },
-                });
+                const child2 = startObservation(
+                  "nested-child-2",
+                  {
+                    input: { task: "task-2" },
+                  },
+                  { parentSpanContext: outerSpan.otelSpan.spanContext() },
+                );
                 child2.update({ output: { result: "task-2-done" } });
                 child2.end();
                 resolve("result2");
@@ -1250,7 +1581,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle deeply nested spans across promise chains", async () => {
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "deep-nested-chain",
           async (outerSpan) => {
             outerSpan.update({
@@ -1261,14 +1592,22 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             // First level nesting
             const step1 = await new Promise<string>((resolve) => {
               setTimeout(() => {
-                const level1Span = outerSpan.startSpan("level-1-span", {
-                  input: { level: 1 },
-                });
+                const level1Span = startObservation(
+                  "level-1-span",
+                  {
+                    input: { level: 1 },
+                  },
+                  { parentSpanContext: outerSpan.otelSpan.spanContext() },
+                );
 
                 // Second level nesting inside the first
-                const level2Span = level1Span.startSpan("level-2-span", {
-                  input: { level: 2 },
-                });
+                const level2Span = startObservation(
+                  "level-2-span",
+                  {
+                    input: { level: 2 },
+                  },
+                  { parentSpanContext: level1Span.otelSpan.spanContext() },
+                );
 
                 level2Span.update({
                   output: { level2_result: "deep work done" },
@@ -1308,11 +1647,14 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should end span by default (endOnExit=true)", async () => {
         let spanFromFunction: any = null;
 
-        const result = startActiveSpan("span-end-on-exit-default", (span) => {
-          spanFromFunction = span;
-          span.update({ input: { test: "endOnExit default" } });
-          return "result";
-        });
+        const result = startActiveObservation(
+          "span-end-on-exit-default",
+          (span) => {
+            spanFromFunction = span;
+            span.update({ input: { test: "endOnExit default" } });
+            return "result";
+          },
+        );
 
         expect(result).toBe("result");
         expect(spanFromFunction).toBeDefined();
@@ -1332,7 +1674,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should end span when endOnExit=true explicitly", async () => {
         let spanFromFunction: any = null;
 
-        const result = startActiveSpan(
+        const result = startActiveObservation(
           "span-end-on-exit-true",
           (span) => {
             spanFromFunction = span;
@@ -1360,7 +1702,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should not end span when endOnExit=false", async () => {
         let spanFromFunction: any = null;
 
-        const result = startActiveSpan(
+        const result = startActiveObservation(
           "span-no-end-on-exit",
           (span) => {
             spanFromFunction = span;
@@ -1383,7 +1725,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should handle endOnExit=false with async function", async () => {
         let spanFromFunction: any = null;
 
-        const result = await startActiveSpan(
+        const result = await startActiveObservation(
           "span-async-no-end-on-exit",
           async (span) => {
             spanFromFunction = span;
@@ -1406,11 +1748,11 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
   });
 
-  describe("startActiveGeneration method", () => {
+  describe("startActiveObservation with generation type", () => {
     it("should execute function with active generation context", async () => {
       let generationFromFunction: any = null;
 
-      const result = startActiveGeneration(
+      const result = startActiveObservation(
         "active-generation",
         (generation) => {
           generationFromFunction = generation;
@@ -1421,6 +1763,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           });
           return { success: true };
         },
+        { asType: "generation" },
       );
 
       expect(result).toEqual({ success: true });
@@ -1444,7 +1787,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
     describe("Promise handling for generations", () => {
       it("should handle LLM generation promise resolution", async () => {
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "async-llm-generation",
           async (generation) => {
             // Add trace attributes for the generation
@@ -1464,10 +1807,17 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             });
 
             // Create nested event during generation
-            const startEvent = generation.createEvent("generation-started", {
-              input: { timestamp: new Date().toISOString() },
-              metadata: { model: "gpt-4" },
-            });
+            const startEvent = startObservation(
+              "generation-started",
+              {
+                input: { timestamp: new Date().toISOString() },
+                metadata: { model: "gpt-4" },
+              },
+              {
+                asType: "event",
+                parentSpanContext: generation.otelSpan.spanContext(),
+              },
+            );
 
             const generatedText = await new Promise<string>((resolve) => {
               setTimeout(() => {
@@ -1476,13 +1826,17 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             });
 
             // Create completion event
-            const completeEvent = generation.createEvent(
+            const completeEvent = startObservation(
               "generation-completed",
               {
                 input: {
                   completion_time: new Date().toISOString(),
                   text_length: generatedText.length,
                 },
+              },
+              {
+                asType: "event",
+                parentSpanContext: generation.otelSpan.spanContext(),
               },
             );
 
@@ -1498,6 +1852,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             return generatedText;
           },
+          { asType: "generation" },
         );
 
         expect(result).toBe("Once upon a time, there was a brave knight.");
@@ -1542,10 +1897,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
           JSON.stringify({ prompt: "Tell me a story" }),
         );
-        // Note: Output updates within startActiveGeneration are not automatically
+        // Note: Output updates within startActiveObservation generation are not automatically
         // captured in span attributes - this is expected behavior
         assertions.expectSpanWithName("async-llm-generation");
-        // Note: Usage details from update() calls within startActiveGeneration
+        // Note: Usage details from update() calls within startActiveObservation generation
         // are not captured in span attributes - this is expected behavior
         assertions.expectSpanWithName("async-llm-generation");
 
@@ -1594,7 +1949,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should handle LLM generation promise rejection", async () => {
         await expect(
-          startActiveGeneration(
+          startActiveObservation(
             "failing-llm-generation",
             async (generation) => {
               generation.update({
@@ -1618,6 +1973,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
                 throw error;
               }
             },
+            { asType: "generation" },
           ),
         ).rejects.toThrow("Rate limit exceeded");
 
@@ -1638,7 +1994,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle streaming generation with promise chains", async () => {
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "streaming-generation",
           async (generation) => {
             generation.update({
@@ -1669,6 +2025,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             return finalText;
           },
+          { asType: "generation" },
         );
 
         expect(result).toBe("Hello world!");
@@ -1685,7 +2042,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle multiple concurrent generations", async () => {
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "concurrent-generations",
           async (generation) => {
             generation.update({
@@ -1714,6 +2071,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             return responses;
           },
+          { asType: "generation" },
         );
 
         expect(result).toEqual(["response1", "response2", "response3"]);
@@ -1736,7 +2094,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should handle concurrent generations with partial failure", async () => {
         await expect(
-          startActiveGeneration(
+          startActiveObservation(
             "concurrent-generations-with-failure",
             async (generation) => {
               generation.update({
@@ -1771,6 +2129,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
                 throw error;
               }
             },
+            { asType: "generation" },
           ),
         ).rejects.toThrow("Generation 2 failed");
 
@@ -1781,7 +2140,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle nested generation promises", async () => {
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "nested-generation",
           async (generation) => {
             generation.update({
@@ -1817,6 +2176,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             return finalResult;
           },
+          { asType: "generation" },
         );
 
         expect(result).toBe("processed-first-result");
@@ -1833,7 +2193,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle nested events created inside LLM generation promises", async () => {
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "llm-with-events",
           async (generation) => {
             generation.update({
@@ -1846,14 +2206,28 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             const response = await new Promise<string>((resolve) => {
               setTimeout(() => {
                 // Create event for input processing
-                const inputEvent = generation.createEvent("input-processed", {
-                  input: { stage: "preprocessing" },
-                });
+                const inputEvent = startObservation(
+                  "input-processed",
+                  {
+                    input: { stage: "preprocessing" },
+                  },
+                  {
+                    asType: "event",
+                    parentSpanContext: generation.otelSpan.spanContext(),
+                  },
+                );
 
                 // Create event for model call
-                const modelEvent = generation.createEvent("model-called", {
-                  input: { model: "gpt-4", tokens: 15 },
-                });
+                const modelEvent = startObservation(
+                  "model-called",
+                  {
+                    input: { model: "gpt-4", tokens: 15 },
+                  },
+                  {
+                    asType: "event",
+                    parentSpanContext: generation.otelSpan.spanContext(),
+                  },
+                );
 
                 resolve("Generated text with events");
               }, 40);
@@ -1862,6 +2236,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             generation.update({ output: { content: response } });
             return response;
           },
+          { asType: "generation" },
         );
 
         expect(result).toBe("Generated text with events");
@@ -1879,7 +2254,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle nested generations inside promise chains", async () => {
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "chained-llm",
           async (outerGeneration) => {
             outerGeneration.update({
@@ -1891,13 +2266,16 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             // First generation step
             const step1 = await new Promise<string>((resolve) => {
               setTimeout(() => {
-                const innerGen = startGeneration(
+                const innerGen = startObservation(
                   "inner-generation-1",
                   {
                     model: "gpt-3.5-turbo",
                     input: { prompt: "Step 1 processing" },
                   },
-                  { parentSpanContext: outerGeneration.otelSpan.spanContext() },
+                  {
+                    asType: "generation",
+                    parentSpanContext: outerGeneration.otelSpan.spanContext(),
+                  },
                 );
 
                 innerGen.update({
@@ -1913,13 +2291,16 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             // Second generation step
             const step2 = await new Promise<string>((resolve) => {
               setTimeout(() => {
-                const innerGen2 = startGeneration(
+                const innerGen2 = startObservation(
                   "inner-generation-2",
                   {
                     model: "gpt-3.5-turbo",
                     input: { prompt: "Step 2 processing", context: step1 },
                   },
-                  { parentSpanContext: outerGeneration.otelSpan.spanContext() },
+                  {
+                    asType: "generation",
+                    parentSpanContext: outerGeneration.otelSpan.spanContext(),
+                  },
                 );
 
                 innerGen2.update({
@@ -1942,6 +2323,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             return `${step1}+${step2}`;
           },
+          { asType: "generation" },
         );
 
         expect(result).toBe("step1-done+step2-done");
@@ -1976,7 +2358,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should properly nest spans created within generation nested promises", async () => {
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "generation-with-nested-promises",
           async (generation) => {
             generation.update({
@@ -1989,7 +2371,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
               (outerResolve) => {
                 setTimeout(() => {
                   // Create span for preprocessing within outer promise
-                  const preprocessSpan = startSpan("preprocess-span", {
+                  const preprocessSpan = startObservation("preprocess-span", {
                     input: { stage: "preprocessing", model: "gpt-4" },
                   });
 
@@ -1998,7 +2380,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
                     (innerResolve) => {
                       setTimeout(() => {
                         // Create span for model inference within inner promise
-                        const inferenceSpan = startSpan(
+                        const inferenceSpan = startObservation(
                           "model-inference-span",
                           {
                             input: {
@@ -2051,6 +2433,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             return generatedContent;
           },
+          { asType: "generation" },
         );
 
         expect(result).toBe("Generated content from nested promises");
@@ -2104,9 +2487,293 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
   });
 
+  describe("startActiveObservation with new observation types", () => {
+    it("should execute function with active agent context", async () => {
+      const result = await startActiveObservation(
+        "ai-agent-workflow",
+        async (agent) => {
+          agent.update({
+            input: { task: "analyze sentiment" },
+            metadata: { model: "gpt-4", tools: ["sentiment-api"] },
+          });
+
+          // Simulate agent processing
+          await new Promise((resolve) => setTimeout(resolve, 10));
+
+          agent.update({
+            output: { sentiment: "positive", confidence: 0.95 },
+            level: "DEFAULT",
+          });
+
+          return { processed: true, sentiment: "positive" };
+        },
+        { asType: "agent" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toEqual({ processed: true, sentiment: "positive" });
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("ai-agent-workflow");
+      assertions.expectSpanAttribute(
+        "ai-agent-workflow",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"sentiment":"positive","confidence":0.95}',
+      );
+    });
+
+    it("should execute function with active tool context", async () => {
+      const result = startActiveObservation(
+        "api-tool-call",
+        (tool) => {
+          tool.update({
+            input: { endpoint: "/weather", params: { city: "NYC" } },
+            metadata: { timeout: 5000, retries: 3 },
+          });
+
+          tool.update({
+            output: { temperature: 72, conditions: "sunny" },
+          });
+
+          return { success: true, data: { temperature: 72 } };
+        },
+        { asType: "tool" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toEqual({ success: true, data: { temperature: 72 } });
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("api-tool-call");
+    });
+
+    it("should execute function with active chain context", async () => {
+      const result = await startActiveObservation(
+        "rag-chain-execution",
+        async (chain) => {
+          chain.update({
+            input: { query: "What is quantum computing?" },
+            metadata: { steps: ["retrieve", "rerank", "generate"] },
+          });
+
+          // Simulate chain steps
+          const retrieved = await Promise.resolve(["doc1", "doc2"]);
+          const generated = await Promise.resolve("Quantum computing is...");
+
+          chain.update({
+            output: { answer: generated, sources: retrieved },
+          });
+
+          return { answer: generated, sourceCount: retrieved.length };
+        },
+        { asType: "chain" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.sourceCount).toBe(2);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("rag-chain-execution");
+    });
+
+    it("should execute function with active retriever context", async () => {
+      const result = startActiveObservation(
+        "vector-retrieval",
+        (retriever) => {
+          retriever.update({
+            input: { query: "machine learning", topK: 5 },
+            metadata: { vectorStore: "chroma", similarity: "cosine" },
+          });
+
+          const docs = [
+            { id: "doc1", score: 0.95, content: "ML overview" },
+            { id: "doc2", score: 0.87, content: "Deep learning" },
+          ];
+
+          retriever.update({
+            output: { documents: docs, totalFound: 2 },
+          });
+
+          return docs;
+        },
+        { asType: "retriever" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toHaveLength(2);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("vector-retrieval");
+    });
+
+    it("should execute function with active evaluator context", async () => {
+      const result = await startActiveObservation(
+        "response-evaluator",
+        async (evaluator) => {
+          evaluator.update({
+            input: {
+              response: "Paris is the capital of France.",
+              reference: "The capital city of France is Paris.",
+            },
+            metadata: { metric: "bleu-score", version: "v1" },
+          });
+
+          // Simulate evaluation
+          const score = await Promise.resolve(0.94);
+
+          evaluator.update({
+            output: { score, grade: "excellent", passed: score > 0.8 },
+          });
+
+          return { evaluation: "passed", score };
+        },
+        { asType: "evaluator" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.evaluation).toBe("passed");
+      expect(result.score).toBe(0.94);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("response-evaluator");
+    });
+
+    it("should execute function with active guardrail context", async () => {
+      const result = startActiveObservation(
+        "safety-guardrail",
+        (guardrail) => {
+          guardrail.update({
+            input: {
+              text: "Tell me about renewable energy",
+              policies: ["no-harmful-content", "factual-only"],
+            },
+            metadata: { strictMode: true, version: "v2" },
+          });
+
+          const analysis = {
+            allowed: true,
+            violations: [],
+            confidence: 0.99,
+            flagged_terms: [],
+          };
+
+          guardrail.update({
+            output: analysis,
+            level: "DEFAULT",
+          });
+
+          return { safe: analysis.allowed, confidence: analysis.confidence };
+        },
+        { asType: "guardrail" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.safe).toBe(true);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("safety-guardrail");
+    });
+
+    it("should execute function with active embedding context", async () => {
+      const result = await startActiveObservation(
+        "text-embedding",
+        async (embedding) => {
+          embedding.update({
+            input: { texts: ["Hello", "World"] },
+            model: "text-embedding-ada-002",
+            metadata: { dimensions: 1536 },
+          });
+
+          // Simulate embedding generation
+          const embeddings = await Promise.resolve([
+            [0.1, 0.2, 0.3],
+            [0.4, 0.5, 0.6],
+          ]);
+
+          embedding.update({
+            output: { embeddings },
+            usageDetails: { totalTokens: 4 },
+          });
+
+          return { embeddings, count: embeddings.length };
+        },
+        { asType: "embedding" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.count).toBe(2);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("text-embedding");
+      assertions.expectSpanAttribute(
+        "text-embedding",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "embedding",
+      );
+    });
+
+    it("should handle nested observations with different types", async () => {
+      const result = await startActiveObservation(
+        "ai-pipeline",
+        async (agent) => {
+          agent.update({
+            input: { request: "Process document and answer questions" },
+            metadata: { pipeline: "qa-system" },
+          });
+
+          // Create nested retriever
+          const docs = agent.startObservation(
+            "document-search",
+            {
+              input: { query: "machine learning" },
+              metadata: { index: "documents" },
+            },
+            { asType: "retriever" },
+          );
+
+          docs.update({
+            output: { documents: ["doc1", "doc2"], count: 2 },
+          });
+          docs.end();
+
+          // Create nested generation
+          const answer = agent.startObservation(
+            "answer-generation",
+            {
+              input: { context: "doc1, doc2", question: "What is ML?" },
+              model: "gpt-4",
+            },
+            { asType: "generation" },
+          );
+
+          answer.update({
+            output: { answer: "Machine learning is..." },
+            usageDetails: { promptTokens: 50, completionTokens: 25 },
+          });
+          answer.end();
+
+          agent.update({
+            output: { answer: "Machine learning is...", sources: 2 },
+          });
+
+          return { completed: true };
+        },
+        { asType: "agent" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+
+      expect(result.completed).toBe(true);
+      assertions.expectSpanCount(3);
+      assertions.expectSpanWithName("ai-pipeline");
+      assertions.expectSpanWithName("document-search");
+      assertions.expectSpanWithName("answer-generation");
+    });
+  });
+
   describe("Method interoperability", () => {
     it("should create complex trace with all observation types", async () => {
-      const rootSpan = startSpan("ai-workflow", {
+      const rootSpan = startObservation("ai-workflow", {
         input: { task: "Process user request" },
         metadata: { workflow_id: "wf-123", priority: "high" },
       });
@@ -2127,18 +2794,21 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       // Create event for user interaction
-      const userEvent = createEvent(
+      const userEvent = startObservation(
         "user-interaction",
         {
           input: { action: "submit_form", data: { query: "Hello AI" } },
           metadata: { user_agent: "test-browser", ip: "127.0.0.1" },
           level: "DEFAULT",
         },
-        { parentSpanContext: rootSpan.otelSpan.spanContext() },
+        {
+          asType: "event",
+          parentSpanContext: rootSpan.otelSpan.spanContext(),
+        },
       );
 
       // Create generation for AI response
-      const generation = startGeneration(
+      const generation = startObservation(
         "ai-response",
         {
           model: "gpt-4",
@@ -2147,7 +2817,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           level: "DEFAULT",
           modelParameters: { temperature: 0.8, max_tokens: 150 },
         },
-        { parentSpanContext: rootSpan.otelSpan.spanContext() },
+        {
+          asType: "generation",
+          parentSpanContext: rootSpan.otelSpan.spanContext(),
+        },
       );
 
       generation.update({
@@ -2163,13 +2836,17 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       generation.end();
 
       // Create nested span for post-processing
-      const postProcessSpan = rootSpan.startSpan("post-processing", {
-        input: { text: "Hello! How can I help you today?" },
-        metadata: { processor_version: "1.0", algorithm: "basic" },
-      });
+      const postProcessSpan = startObservation(
+        "post-processing",
+        {
+          input: { text: "Hello! How can I help you today?" },
+          metadata: { processor_version: "1.0", algorithm: "basic" },
+        },
+        { parentSpanContext: rootSpan.otelSpan.spanContext() },
+      );
 
       // Create event for analytics
-      const analyticsEvent = createEvent(
+      const analyticsEvent = startObservation(
         "analytics-event",
         {
           input: {
@@ -2180,7 +2857,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           metadata: { analytics_version: "2.0" },
           level: "DEBUG",
         },
-        { parentSpanContext: postProcessSpan.otelSpan.spanContext() },
+        {
+          asType: "event",
+          parentSpanContext: postProcessSpan.otelSpan.spanContext(),
+        },
       );
 
       postProcessSpan.update({
@@ -2332,19 +3012,22 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     it("should handle active span with nested generations", async () => {
-      const result = startActiveSpan("conversation-handler", (span) => {
+      const result = startActiveObservation("conversation-handler", (span) => {
         span.update({
           input: { conversation_id: "conv-123" },
         });
 
         // Create multiple generations within active span
-        const gen1 = startGeneration(
+        const gen1 = startObservation(
           "intent-detection",
           {
             model: "bert-base",
             input: { text: "What's the weather like?" },
           },
-          { parentSpanContext: span.otelSpan.spanContext() },
+          {
+            asType: "generation",
+            parentSpanContext: span.otelSpan.spanContext(),
+          },
         );
 
         gen1.update({
@@ -2352,7 +3035,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         });
         gen1.end();
 
-        const gen2 = startGeneration(
+        const gen2 = startObservation(
           "response-generation",
           {
             model: "gpt-4",
@@ -2361,7 +3044,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
               context: "user asking about weather",
             },
           },
-          { parentSpanContext: span.otelSpan.spanContext() },
+          {
+            asType: "generation",
+            parentSpanContext: span.otelSpan.spanContext(),
+          },
         );
 
         gen2.update({
@@ -2431,7 +3117,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     it("should handle active generation with events", async () => {
-      const result = startActiveGeneration(
+      const result = startActiveObservation(
         "llm-call-with-events",
         (generation) => {
           generation.update({
@@ -2440,23 +3126,29 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           });
 
           // Create events during generation
-          const startEvent = createEvent(
+          const startEvent = startObservation(
             "generation-start",
             {
               input: { timestamp: new Date().toISOString() },
             },
-            { parentSpanContext: generation.otelSpan.spanContext() },
+            {
+              asType: "event",
+              parentSpanContext: generation.otelSpan.spanContext(),
+            },
           );
 
-          const progressEvent = createEvent(
+          const progressEvent = startObservation(
             "generation-progress",
             {
               input: { progress: 0.5, tokens_generated: 25 },
             },
-            { parentSpanContext: generation.otelSpan.spanContext() },
+            {
+              asType: "event",
+              parentSpanContext: generation.otelSpan.spanContext(),
+            },
           );
 
-          const completeEvent = createEvent(
+          const completeEvent = startObservation(
             "generation-complete",
             {
               input: {
@@ -2465,7 +3157,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
                 finish_reason: "stop",
               },
             },
-            { parentSpanContext: generation.otelSpan.spanContext() },
+            {
+              asType: "event",
+              parentSpanContext: generation.otelSpan.spanContext(),
+            },
           );
 
           generation.update({
@@ -2479,6 +3174,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
           return { story_generated: true, word_count: 9 };
         },
+        { asType: "generation" },
       );
 
       expect(result.story_generated).toBe(true);
@@ -2495,48 +3191,60 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     it("should handle concurrent operations with different observation types", async () => {
-      const parentSpan = startSpan("concurrent-operations", {
+      const parentSpan = startObservation("concurrent-operations", {
         input: { operation_type: "batch_processing" },
       });
 
       // Start multiple concurrent operations
       const operations = [
-        startGeneration(
+        startObservation(
           "gen-1",
           {
             model: "gpt-3.5-turbo",
             input: { prompt: "Summarize text 1" },
           },
-          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+          {
+            asType: "generation",
+            parentSpanContext: parentSpan.otelSpan.spanContext(),
+          },
         ),
 
-        startGeneration(
+        startObservation(
           "gen-2",
           {
             model: "gpt-3.5-turbo",
             input: { prompt: "Summarize text 2" },
           },
-          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+          {
+            asType: "generation",
+            parentSpanContext: parentSpan.otelSpan.spanContext(),
+          },
         ),
 
-        startGeneration(
+        startObservation(
           "gen-3",
           {
             model: "gpt-3.5-turbo",
             input: { prompt: "Summarize text 3" },
           },
-          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+          {
+            asType: "generation",
+            parentSpanContext: parentSpan.otelSpan.spanContext(),
+          },
         ),
       ];
 
       // Create events for each operation
       const events = operations.map((_, index) =>
-        createEvent(
+        startObservation(
           `operation-${index + 1}-started`,
           {
             input: { operation_id: `op-${index + 1}` },
           },
-          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+          {
+            asType: "event",
+            parentSpanContext: parentSpan.otelSpan.spanContext(),
+          },
         ),
       );
 
@@ -2555,12 +3263,15 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       // Create completion events
       const completionEvents = operations.map((_, index) =>
-        createEvent(
+        startObservation(
           `operation-${index + 1}-completed`,
           {
             input: { operation_id: `op-${index + 1}`, status: "success" },
           },
-          { parentSpanContext: parentSpan.otelSpan.spanContext() },
+          {
+            asType: "event",
+            parentSpanContext: parentSpan.otelSpan.spanContext(),
+          },
         ),
       );
 
@@ -2584,17 +3295,20 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
   describe("Error handling across methods", () => {
     it("should handle errors in complex trace", async () => {
-      const rootSpan = startSpan("error-workflow", {
+      const rootSpan = startObservation("error-workflow", {
         input: { task: "Process with errors" },
       });
 
-      const successGen = startGeneration(
+      const successGen = startObservation(
         "success-generation",
         {
           model: "gpt-4",
           input: { prompt: "This will succeed" },
         },
-        { parentSpanContext: rootSpan.otelSpan.spanContext() },
+        {
+          asType: "generation",
+          parentSpanContext: rootSpan.otelSpan.spanContext(),
+        },
       );
 
       successGen.update({
@@ -2602,13 +3316,16 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
       successGen.end();
 
-      const errorGen = startGeneration(
+      const errorGen = startObservation(
         "error-generation",
         {
           model: "gpt-4",
           input: { prompt: "This will fail" },
         },
-        { parentSpanContext: rootSpan.otelSpan.spanContext() },
+        {
+          asType: "generation",
+          parentSpanContext: rootSpan.otelSpan.spanContext(),
+        },
       );
 
       errorGen.update({
@@ -2617,13 +3334,16 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
       errorGen.end();
 
-      const errorEvent = createEvent(
+      const errorEvent = startObservation(
         "error-event",
         {
           input: { error: "Generation failed", recovery_action: "retry" },
           level: "ERROR",
         },
-        { parentSpanContext: rootSpan.otelSpan.spanContext() },
+        {
+          asType: "event",
+          parentSpanContext: rootSpan.otelSpan.spanContext(),
+        },
       );
 
       rootSpan.update({
@@ -2659,20 +3379,23 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       const startTime = Date.now();
       const observationCount = 50;
 
-      const rootSpan = startSpan("performance-test", {
+      const rootSpan = startObservation("performance-test", {
         input: { test_type: "mixed_observations" },
       });
 
       // Create mix of different observation types
       for (let i = 0; i < observationCount; i++) {
         if (i % 3 === 0) {
-          const gen = startGeneration(
+          const gen = startObservation(
             `perf-gen-${i}`,
             {
               model: "gpt-3.5-turbo",
               input: { prompt: `Test prompt ${i}` },
             },
-            { parentSpanContext: rootSpan.otelSpan.spanContext() },
+            {
+              asType: "generation",
+              parentSpanContext: rootSpan.otelSpan.spanContext(),
+            },
           );
           gen.update({
             output: { content: `Response ${i}` },
@@ -2684,17 +3407,24 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           });
           gen.end();
         } else if (i % 3 === 1) {
-          createEvent(
+          startObservation(
             `perf-event-${i}`,
             {
               input: { event_type: "test", index: i },
             },
-            { parentSpanContext: rootSpan.otelSpan.spanContext() },
+            {
+              asType: "event",
+              parentSpanContext: rootSpan.otelSpan.spanContext(),
+            },
           );
         } else {
-          const span = rootSpan.startSpan(`perf-span-${i}`, {
-            input: { index: i },
-          });
+          const span = startObservation(
+            `perf-span-${i}`,
+            {
+              input: { index: i },
+            },
+            { parentSpanContext: rootSpan.otelSpan.spanContext() },
+          );
           span.update({
             output: { result: `Result ${i}` },
           });
@@ -2721,7 +3451,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should end generation by default (endOnExit=true)", async () => {
         let generationFromFunction: any = null;
 
-        const result = startActiveGeneration(
+        const result = startActiveObservation(
           "generation-end-on-exit-default",
           (generation) => {
             generationFromFunction = generation;
@@ -2732,6 +3462,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             });
             return { success: true };
           },
+          { asType: "generation" },
         );
 
         expect(result).toEqual({ success: true });
@@ -2752,7 +3483,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should end generation when endOnExit=true explicitly", async () => {
         let generationFromFunction: any = null;
 
-        const result = startActiveGeneration(
+        const result = startActiveObservation(
           "generation-end-on-exit-true",
           (generation) => {
             generationFromFunction = generation;
@@ -2763,7 +3494,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             });
             return { success: true };
           },
-          { endOnExit: true },
+          { asType: "generation", endOnExit: true },
         );
 
         expect(result).toEqual({ success: true });
@@ -2784,7 +3515,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should not end generation when endOnExit=false", async () => {
         let generationFromFunction: any = null;
 
-        const result = startActiveGeneration(
+        const result = startActiveObservation(
           "generation-no-end-on-exit",
           (generation) => {
             generationFromFunction = generation;
@@ -2795,7 +3526,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             });
             return { success: true };
           },
-          { endOnExit: false },
+          { asType: "generation", endOnExit: false },
         );
 
         expect(result).toEqual({ success: true });
@@ -2811,7 +3542,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should handle endOnExit=false with async generation", async () => {
         let generationFromFunction: any = null;
 
-        const result = await startActiveGeneration(
+        const result = await startActiveObservation(
           "generation-async-no-end-on-exit",
           async (generation) => {
             generationFromFunction = generation;
@@ -2829,7 +3560,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
             return { success: true, async: true };
           },
-          { endOnExit: false },
+          { asType: "generation", endOnExit: false },
         );
 
         expect(result).toEqual({ success: true, async: true });
@@ -3561,7 +4292,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             return new Promise<string>((outerResolve) => {
               setTimeout(() => {
                 // Create span within outer promise executor
-                const outerWorkSpan = startSpan("outer-work-span", {
+                const outerWorkSpan = startObservation("outer-work-span", {
                   input: { task: taskName, stage: "outer" },
                 });
 
@@ -3569,7 +4300,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
                 const innerPromise = new Promise<string>((innerResolve) => {
                   setTimeout(() => {
                     // Create span within inner promise executor
-                    const innerWorkSpan = startSpan("inner-work-span", {
+                    const innerWorkSpan = startObservation("inner-work-span", {
                       input: { task: taskName, stage: "inner" },
                     });
 
@@ -3691,7 +4422,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         const observedFunc = observe(
           async (taskName: string): Promise<string> => {
             // Create nested spans inside the observed function
-            const preparationSpan = startSpan("data-preparation", {
+            const preparationSpan = startObservation("data-preparation", {
               input: { task: taskName },
             });
 
@@ -3700,7 +4431,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             preparationSpan.end();
 
             // Create a nested generation
-            const processingGen = startGeneration("data-processing", {
+            const processingGen = startObservation("data-processing", {
               model: "processor-v1",
               input: { data: `prepared-${taskName}` },
             });
@@ -3753,9 +4484,13 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             await new Promise((resolve) => setTimeout(resolve, 25));
 
             // Create an event during processing
-            createEvent("processing-milestone", {
-              input: { step: "intermediate", data: step1 },
-            });
+            startObservation(
+              "processing-milestone",
+              {
+                input: { step: "intermediate", data: step1 },
+              },
+              { asType: "event" },
+            );
 
             return `outer-${step1}`;
           },
@@ -3785,17 +4520,25 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         const observedGeneration = observe(
           async (prompt: string): Promise<{ text: string; metadata: any }> => {
             // Step 1: Input validation (as event)
-            createEvent("input-validation", {
-              input: { prompt, valid: prompt.length > 0 },
-            });
+            startObservation(
+              "input-validation",
+              {
+                input: { prompt, valid: prompt.length > 0 },
+              },
+              { asType: "event" },
+            );
 
             // Step 2: Model inference (nested generation)
             const inference = await new Promise<string>((resolve) => {
               setTimeout(() => {
-                const modelGen = startGeneration("model-inference", {
-                  model: "text-generator-v2",
-                  input: { prompt },
-                });
+                const modelGen = startObservation(
+                  "model-inference",
+                  {
+                    model: "text-generator-v2",
+                    input: { prompt },
+                  },
+                  { asType: "generation" },
+                );
 
                 const inferredText = `Generated: ${prompt}`;
                 modelGen.update({
@@ -3812,7 +4555,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             });
 
             // Step 3: Post-processing (as span)
-            const postProcessSpan = startSpan("post-processing", {
+            const postProcessSpan = startObservation("post-processing", {
               input: { rawText: inference },
             });
 
@@ -3934,10 +4677,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
   describe("Active span/generation/trace update methods", () => {
     describe("updateActiveSpan", () => {
-      it("should update active span attributes when called within startActiveSpan", async () => {
-        await startActiveSpan("test-span", (span) => {
+      it("should update active span attributes when called within startActiveObservation", async () => {
+        await startActiveObservation("test-span", (span) => {
           // Update the active span with new attributes
-          updateActiveSpan({
+          updateActiveObservation("span", {
             input: { prompt: "updated input" },
             output: { result: "updated output" },
             metadata: { key: "updated value" },
@@ -3966,7 +4709,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should do nothing when called without active span", async () => {
         // Call updateActiveSpan without any active span context
-        updateActiveSpan({
+        updateActiveObservation("span", {
           input: { prompt: "should not work" },
         });
 
@@ -3977,7 +4720,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should update span during observe function execution", async () => {
         function testFunc(input: string) {
-          updateActiveSpan({
+          updateActiveObservation("span", {
             metadata: { executionStep: "processing" },
             // Note: observe function will override output with return value
           });
@@ -4005,21 +4748,25 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     describe("updateActiveGeneration", () => {
-      it("should update active generation attributes when called within startActiveGeneration", async () => {
-        await startActiveGeneration("llm-call", (generation) => {
-          // Update the active generation with new attributes
-          updateActiveGeneration({
-            model: "gpt-4",
-            usageDetails: {
-              promptTokens: 10,
-              completionTokens: 20,
-              totalTokens: 30,
-            },
-            metadata: { temperature: 0.7 },
-            input: { prompt: "Hello, world!" },
-            output: { response: "Hi there!" },
-          });
-        });
+      it("should update active generation attributes when called within startActiveObservation", async () => {
+        await startActiveObservation(
+          "llm-call",
+          (generation) => {
+            // Update the active generation with new attributes
+            updateActiveObservation("generation", {
+              model: "gpt-4",
+              usageDetails: {
+                promptTokens: 10,
+                completionTokens: 20,
+                totalTokens: 30,
+              },
+              metadata: { temperature: 0.7 },
+              input: { prompt: "Hello, world!" },
+              output: { response: "Hi there!" },
+            });
+          },
+          { asType: "generation" },
+        );
 
         await waitForSpanExport(testEnv.mockExporter, 1);
 
@@ -4048,7 +4795,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should do nothing when called without active span", async () => {
         // Call updateActiveGeneration without any active span context
-        updateActiveGeneration({
+        updateActiveObservation("generation", {
           model: "gpt-4",
           input: { prompt: "should not work" },
         });
@@ -4060,7 +4807,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should update generation during observe function with asType generation", async () => {
         function llmFunc(prompt: string) {
-          updateActiveGeneration({
+          updateActiveObservation("generation", {
             model: "gpt-3.5-turbo",
             usageDetails: {
               promptTokens: 15,
@@ -4102,8 +4849,8 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     describe("updateActiveTrace", () => {
-      it("should update active trace attributes when called within startActiveSpan", async () => {
-        await startActiveSpan("test-span", (span) => {
+      it("should update active trace attributes when called within startActiveObservation", async () => {
+        await startActiveObservation("test-span", (span) => {
           // Update the active trace with new attributes
           updateActiveTrace({
             name: "updated-trace-name",
@@ -4163,14 +4910,14 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should update trace during nested span operations", async () => {
-        await startActiveSpan("parent-span", (parentSpan) => {
+        await startActiveObservation("parent-span", (parentSpan) => {
           updateActiveTrace({
             name: "complex-trace",
             userId: "user-456",
             metadata: { operation: "nested-processing" },
           });
 
-          return startActiveSpan("child-span", (childSpan) => {
+          return startActiveObservation("child-span", (childSpan) => {
             // Update trace again from child span - should still work
             updateActiveTrace({
               sessionId: "session-789",
@@ -4243,13 +4990,13 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
     describe("Combined update methods", () => {
       it("should handle multiple update methods called together", async () => {
-        await startActiveSpan("combined-span", (span) => {
+        await startActiveObservation("combined-span", (span) => {
           updateActiveTrace({
             name: "combined-trace",
             userId: "user-combined",
           });
 
-          updateActiveSpan({
+          updateActiveObservation("span", {
             input: { operation: "combined-operation" },
             metadata: { step: "1" },
           });
@@ -4285,24 +5032,28 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
 
       it("should handle updates in generation context", async () => {
-        await startActiveGeneration("combined-generation", (generation) => {
-          updateActiveTrace({
-            name: "llm-trace",
-            userId: "user-llm",
-            sessionId: "session-llm",
-          });
+        await startActiveObservation(
+          "combined-generation",
+          (generation) => {
+            updateActiveTrace({
+              name: "llm-trace",
+              userId: "user-llm",
+              sessionId: "session-llm",
+            });
 
-          updateActiveGeneration({
-            model: "gpt-4",
-            usageDetails: {
-              promptTokens: 50,
-              completionTokens: 100,
-              totalTokens: 150,
-            },
-            input: { prompt: "Generate a story" },
-            output: { story: "Once upon a time..." },
-          });
-        });
+            updateActiveObservation("generation", {
+              model: "gpt-4",
+              usageDetails: {
+                promptTokens: 50,
+                completionTokens: 100,
+                totalTokens: 150,
+              },
+              input: { prompt: "Generate a story" },
+              output: { story: "Once upon a time..." },
+            });
+          },
+          { asType: "generation" },
+        );
 
         await waitForSpanExport(testEnv.mockExporter, 1);
 
@@ -4489,7 +5240,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       const traceId = await createTraceId(seed);
       const spanId = "0123456789abcdef";
 
-      const span = startSpan(
+      const span = startObservation(
         "test-span-with-seeded-trace",
         {},
         {
@@ -4520,7 +5271,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       const traceId = await createTraceId(""); // Random trace ID
       const spanId = "fedcba9876543210";
 
-      const span = startSpan(
+      const span = startObservation(
         "test-span-with-random-trace",
         {},
         {
@@ -4555,7 +5306,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       // Both should be identical
       expect(traceId1).toBe(traceId2);
 
-      const span1 = startSpan(
+      const span1 = startObservation(
         "span1-same-trace",
         {},
         {
@@ -4567,7 +5318,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         },
       );
 
-      const span2 = startSpan(
+      const span2 = startObservation(
         "span2-same-trace",
         {},
         {
@@ -4728,7 +5479,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     it("should get the trace ID of the current active span", async () => {
       let capturedTraceId: string | undefined;
 
-      const span = await startActiveSpan("test-span", (span) => {
+      const span = await startActiveObservation("test-span", (span) => {
         capturedTraceId = getActiveTraceId();
 
         return span;

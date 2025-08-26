@@ -9,7 +9,18 @@ import { OpenAiUsage } from "@langfuse/core";
  *
  * @public
  */
-export type LangfuseObservationType = "span" | "generation" | "event";
+export type LangfuseObservationType =
+  | "span"
+  | "generation"
+  | "event"
+  | "embedding"
+  | "agent"
+  | "tool"
+  | "chain"
+  | "retriever"
+  | "evaluator"
+  | "guardrail";
+
 /**
  * Severity levels for observations in Langfuse.
  *
@@ -46,15 +57,7 @@ export type LangfuseSpanAttributes = {
   /** Environment where the operation is running (e.g., 'production', 'staging') */
   environment?: string;
 };
-/**
- * Attributes for Langfuse event observations.
- *
- * Events represent point-in-time occurrences or log entries within a trace.
- * Unlike spans, they don't have duration and are automatically ended when created.
- *
- * @public
- */
-export type LangfuseEventAttributes = LangfuseSpanAttributes;
+
 /**
  * Attributes for Langfuse generation observations.
  *
@@ -67,10 +70,10 @@ export type LangfuseGenerationAttributes = LangfuseSpanAttributes & {
   /** Timestamp when the model started generating completion */
   completionStartTime?: Date;
   /** Name of the language model used (e.g., 'gpt-4', 'claude-3') */
-  model?: string | null;
+  model?: string;
   /** Parameters passed to the model (temperature, max_tokens, etc.) */
   modelParameters?: {
-    [key: string]: string | number | null;
+    [key: string]: string | number;
   };
   /** Token usage and other model-specific usage metrics */
   usageDetails?:
@@ -93,6 +96,18 @@ export type LangfuseGenerationAttributes = LangfuseSpanAttributes & {
   };
 };
 
+// Span-like observation types
+export type LangfuseEventAttributes = LangfuseSpanAttributes;
+export type LangfuseAgentAttributes = LangfuseSpanAttributes;
+export type LangfuseToolAttributes = LangfuseSpanAttributes;
+export type LangfuseChainAttributes = LangfuseSpanAttributes;
+export type LangfuseRetrieverAttributes = LangfuseSpanAttributes;
+export type LangfuseEvaluatorAttributes = LangfuseSpanAttributes;
+export type LangfuseGuardrailAttributes = LangfuseSpanAttributes;
+
+// Generation-like observation types
+export type LangfuseEmbeddingAttributes = LangfuseGenerationAttributes;
+
 /**
  * Union type representing any Langfuse observation attributes.
  *
@@ -100,10 +115,15 @@ export type LangfuseGenerationAttributes = LangfuseSpanAttributes & {
  *
  * @public
  */
-export type LangfuseAttributes =
-  | LangfuseSpanAttributes
-  | LangfuseGenerationAttributes
-  | LangfuseEventAttributes;
+export type LangfuseObservationAttributes = LangfuseSpanAttributes &
+  LangfuseGenerationAttributes &
+  LangfuseEventAttributes &
+  LangfuseAgentAttributes &
+  LangfuseToolAttributes &
+  LangfuseChainAttributes &
+  LangfuseRetrieverAttributes &
+  LangfuseEvaluatorAttributes &
+  LangfuseGuardrailAttributes;
 
 /**
  * Attributes for Langfuse traces.

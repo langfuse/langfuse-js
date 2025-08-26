@@ -1,8 +1,7 @@
 import { describe, it, beforeEach, afterEach } from "vitest";
 import {
-  startSpan,
-  startActiveSpan,
-  startActiveGeneration,
+  startObservation,
+  startActiveObservation,
   observe,
 } from "@langfuse/tracing";
 import {
@@ -34,7 +33,7 @@ describe("Server Export E2E Tests", () => {
     const generationName = `nested-llm-call-${testId}`;
 
     // Create a parent span with trace metadata
-    const parentSpan = startSpan(parentSpanName, {
+    const parentSpan = startObservation(parentSpanName, {
       input: { operation: "E2E test operation" },
       metadata: { testType: "e2e", timestamp: Date.now() },
     });
@@ -50,13 +49,17 @@ describe("Server Export E2E Tests", () => {
     });
 
     // Create a nested generation using the parent span
-    const generation = parentSpan.startGeneration(generationName, {
-      model: "gpt-4",
-      input: {
-        messages: [{ role: "user", content: "What is OpenTelemetry?" }],
+    const generation = parentSpan.startObservation(
+      generationName,
+      {
+        model: "gpt-4",
+        input: {
+          messages: [{ role: "user", content: "What is OpenTelemetry?" }],
+        },
+        metadata: { temperature: 0.7, maxTokens: 100 },
       },
-      metadata: { temperature: 0.7, maxTokens: 100 },
-    });
+      { asType: "generation" },
+    );
 
     // Simulate LLM response
     generation.update({
@@ -148,77 +151,81 @@ describe("Server Export E2E Tests", () => {
     console.log(`📈 Observations: ${trace.observations.length}`);
   });
 
-  it("should export startActiveSpan with nested startActiveGeneration to Langfuse server", async () => {
+  it("should export startActiveObservation with nested startActiveObservation generation to Langfuse server", async () => {
     const testId = nanoid(8);
     const traceName = `e2e-active-span-trace-${testId}`;
     const parentSpanName = `active-parent-operation-${testId}`;
     const generationName = `nested-active-generation-${testId}`;
 
-    // Use startActiveSpan with automatic context management
-    const result = await startActiveSpan(parentSpanName, async (parentSpan) => {
-      // Set trace attributes
-      parentSpan.updateTrace({
-        name: traceName,
-        userId: "active-user-789",
-        sessionId: "active-session-012",
-        tags: ["active", "e2e"],
-        metadata: { testType: "activeSpan", framework: "vitest" },
-      });
+    // Use startActiveObservation with automatic context management
+    const result = await startActiveObservation(
+      parentSpanName,
+      async (parentSpan) => {
+        // Set trace attributes
+        parentSpan.updateTrace({
+          name: traceName,
+          userId: "active-user-789",
+          sessionId: "active-session-012",
+          tags: ["active", "e2e"],
+          metadata: { testType: "activeSpan", framework: "vitest" },
+        });
 
-      // Update parent span
-      parentSpan.update({
-        input: { workflow: "active span testing" },
-        metadata: { step: "parent", priority: "high" },
-      });
+        // Update parent span
+        parentSpan.update({
+          input: { workflow: "active span testing" },
+          metadata: { step: "parent", priority: "high" },
+        });
 
-      // Use startActiveGeneration within the active span context
-      const generationResult = await startActiveGeneration(
-        generationName,
-        async (generation) => {
-          // This generation should automatically be nested under the active span
-          generation.update({
-            model: "gpt-3.5-turbo",
-            input: {
-              messages: [
-                { role: "system", content: "You are a helpful assistant" },
-                { role: "user", content: "Explain active spans" },
-              ],
-            },
-            metadata: { temperature: 0.5, maxTokens: 150 },
-          });
+        // Use startActiveObservation with generation type within the active span context
+        const generationResult = await startActiveObservation(
+          generationName,
+          async (generation) => {
+            // This generation should automatically be nested under the active span
+            generation.update({
+              model: "gpt-3.5-turbo",
+              input: {
+                messages: [
+                  { role: "system", content: "You are a helpful assistant" },
+                  { role: "user", content: "Explain active spans" },
+                ],
+              },
+              metadata: { temperature: 0.5, maxTokens: 150 },
+            });
 
-          // Simulate some processing
-          await new Promise((resolve) => setTimeout(resolve, 10));
+            // Simulate some processing
+            await new Promise((resolve) => setTimeout(resolve, 10));
 
-          // Update with response
-          generation.update({
-            output: {
-              role: "assistant",
-              content: "Active spans provide automatic context management...",
-            },
-            usageDetails: {
-              prompt_tokens: 25,
-              completion_tokens: 35,
-              total_tokens: 60,
-            },
-            level: "DEFAULT",
-          });
+            // Update with response
+            generation.update({
+              output: {
+                role: "assistant",
+                content: "Active spans provide automatic context management...",
+              },
+              usageDetails: {
+                prompt_tokens: 25,
+                completion_tokens: 35,
+                total_tokens: 60,
+              },
+              level: "DEFAULT",
+            });
 
-          return "generation-completed";
-        },
-      );
+            return "generation-completed";
+          },
+          { asType: "generation" },
+        );
 
-      // Update parent span with final results
-      parentSpan.update({
-        output: {
-          workflow: "completed",
-          generationResult,
-          totalOperations: 1,
-        },
-      });
+        // Update parent span with final results
+        parentSpan.update({
+          output: {
+            workflow: "completed",
+            generationResult,
+            totalOperations: 1,
+          },
+        });
 
-      return "parent-operation-completed";
-    });
+        return "parent-operation-completed";
+      },
+    );
 
     // Force flush and wait for ingestion
     await testEnv.spanProcessor.forceFlush();
@@ -293,8 +300,8 @@ describe("Server Export E2E Tests", () => {
         // This function will be automatically wrapped in a span
         console.log(`Processing prompt: ${prompt}`);
 
-        // Use startActiveGeneration within the observed function
-        const response = await startActiveGeneration(
+        // Use startActiveObservation with generation type within the observed function
+        const response = await startActiveObservation(
           internalGenerationName,
           async (generation) => {
             generation.update({
@@ -328,10 +335,11 @@ describe("Server Export E2E Tests", () => {
 
             return result;
           },
+          { asType: "generation" },
         );
 
         // Use manual span creation within observed function
-        const processingSpan = startSpan(postProcessingName, {
+        const processingSpan = startObservation(postProcessingName, {
           input: { response },
           metadata: { stage: "post-processing" },
         });
@@ -359,7 +367,7 @@ describe("Server Export E2E Tests", () => {
     );
 
     // Use the observed function within an active span context
-    const workflowResult = await startActiveSpan(
+    const workflowResult = await startActiveObservation(
       coordinatorSpanName,
       async (coordinatorSpan) => {
         coordinatorSpan.updateTrace({
@@ -387,7 +395,7 @@ describe("Server Export E2E Tests", () => {
         );
 
         // Create a manual generation in the same context
-        const finalGeneration = coordinatorSpan.startGeneration(
+        const finalGeneration = coordinatorSpan.startObservation(
           finalGenerationName,
           {
             model: "gpt-4",
@@ -399,6 +407,7 @@ describe("Server Export E2E Tests", () => {
             ],
             metadata: { type: "summary", final: true },
           },
+          { asType: "generation" },
         );
 
         finalGeneration.update({
@@ -529,7 +538,7 @@ describe("Server Export E2E Tests", () => {
     await testEnv.shutdown();
     testEnv = await setupServerTestEnvironment();
 
-    const workflowResult = await startActiveSpan(
+    const workflowResult = await startActiveObservation(
       coordinatorSpanName,
       async (coordinatorSpan) => {
         coordinatorSpan.updateTrace({
@@ -568,7 +577,7 @@ describe("Server Export E2E Tests", () => {
         });
 
         // Create startup event
-        const startupEvent = coordinatorSpan.createEvent(
+        const startupEvent = coordinatorSpan.startObservation(
           workflowStartedEventName,
           {
             input: {
@@ -581,10 +590,11 @@ describe("Server Export E2E Tests", () => {
             level: "DEFAULT",
             statusMessage: "Workflow startup event triggered",
           },
+          { asType: "event" },
         );
 
         // Create a generation with media content
-        const mediaGeneration = await startActiveGeneration(
+        const mediaGeneration = await startActiveObservation(
           visionGenerationName,
           async (generation) => {
             generation.update({
@@ -623,7 +633,7 @@ describe("Server Export E2E Tests", () => {
             });
 
             // Create completion event
-            const completionEvent = generation.createEvent(
+            const completionEvent = generation.startObservation(
               analysisCompletedEventName,
               {
                 output: {
@@ -638,6 +648,7 @@ describe("Server Export E2E Tests", () => {
                 level: "DEFAULT",
                 statusMessage: "Multimedia analysis completed successfully",
               },
+              { asType: "event" },
             );
 
             generation.update({
@@ -701,10 +712,11 @@ Both media items were successfully processed. The image is a minimal transparent
 
             return "media-analysis-completed";
           },
+          { asType: "generation" },
         );
 
         // Create a span with file processing simulation
-        const fileProcessingSpan = startSpan(fileProcessingName, {
+        const fileProcessingSpan = startObservation(fileProcessingName, {
           input: {
             files: [
               {
@@ -752,7 +764,7 @@ Both media items were successfully processed. The image is a minimal transparent
           version: "3.2.1",
         });
 
-        const fileStartEvent = fileProcessingSpan.createEvent(
+        const fileStartEvent = fileProcessingSpan.startObservation(
           fileStartEventName,
           {
             input: {
@@ -767,13 +779,14 @@ Both media items were successfully processed. The image is a minimal transparent
             level: "DEFAULT",
             statusMessage: "Started processing document.pdf",
           },
+          { asType: "event" },
         );
 
         // Simulate file processing
         await new Promise((resolve) => setTimeout(resolve, 15));
 
         // Create file processing completion event
-        const fileCompleteEvent = fileProcessingSpan.createEvent(
+        const fileCompleteEvent = fileProcessingSpan.startObservation(
           fileCompleteEventName,
           {
             output: {
@@ -794,6 +807,7 @@ Both media items were successfully processed. The image is a minimal transparent
             level: "DEFAULT",
             statusMessage: "File processing completed successfully",
           },
+          { asType: "event" },
         );
 
         fileProcessingSpan.update({
@@ -843,7 +857,7 @@ Both media items were successfully processed. The image is a minimal transparent
         const startTime = Date.now() - 100; // Simulating start time
 
         // Create workflow completion event
-        const workflowCompleteEvent = coordinatorSpan.createEvent(
+        const workflowCompleteEvent = coordinatorSpan.startObservation(
           workflowCompleteEventName,
           {
             output: {
@@ -860,6 +874,7 @@ Both media items were successfully processed. The image is a minimal transparent
             level: "DEFAULT",
             statusMessage: "Comprehensive workflow completed successfully",
           },
+          { asType: "event" },
         );
 
         // Update trace output

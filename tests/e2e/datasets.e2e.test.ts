@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { LangfuseClient } from "@langfuse/client";
-import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
-import { startSpan, startGeneration } from "@langfuse/tracing";
+import { LangfuseClient } from "@langfuse/client";
+import { startObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
+import { describe, it, expect, beforeEach } from "vitest";
+
+import { waitForServerIngestion } from "./helpers/serverSetup.js";
 
 describe("Langfuse Datasets E2E", () => {
   let langfuse: LangfuseClient;
@@ -60,10 +62,14 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       // Create a generation using the tracing SDK for linking
-      const generation = startGeneration("test-observation", {
-        input: "generation input",
-        model: "gpt-3.5-turbo",
-      });
+      const generation = startObservation(
+        "test-observation",
+        {
+          input: "generation input",
+          model: "gpt-3.5-turbo",
+        },
+        { asType: "generation" },
+      );
       generation.update({ output: "generation output" });
       generation.end();
 
@@ -252,17 +258,18 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       // Create trace and generation using the tracing SDK
-      const span = startSpan("test-trace-" + datasetName, {
+      const span = startObservation("test-trace-" + datasetName, {
         input: "input",
         output: "Hello world traced",
       });
 
-      const generation = span.startGeneration(
+      const generation = span.startObservation(
         "test-generation-" + datasetName,
         {
           input: "input",
           model: "test-model",
         },
+        { asType: "generation" },
       );
       generation.update({ output: "Hello world generated" });
       generation.end();
@@ -294,6 +301,8 @@ describe("Langfuse Datasets E2E", () => {
           });
         }
       }
+
+      await waitForServerIngestion(2_000);
 
       // Verify the dataset run was created
       const targetRun = await langfuse.api.datasets.getRun(
@@ -338,17 +347,18 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       // Create base trace and generation using tracing SDK
-      const span = startSpan("test-trace-" + datasetName, {
+      const span = startObservation("test-trace-" + datasetName, {
         input: "input",
         output: "Hello world traced",
       });
 
-      const generation = span.startGeneration(
+      const generation = span.startObservation(
         "test-generation-" + datasetName,
         {
           input: "input",
           model: "test-model",
         },
+        { asType: "generation" },
       );
       generation.update({ output: "Hello world generated" });
       generation.end();
@@ -447,7 +457,7 @@ describe("Langfuse Datasets E2E", () => {
 
       for (const item of dataset.items) {
         // Create trace for this run using tracing SDK
-        const span = startSpan("langchain-execution", {
+        const span = startObservation("langchain-execution", {
           input: { country: item.input },
           metadata: { chainType: "capital-lookup" },
         });
@@ -488,6 +498,8 @@ describe("Langfuse Datasets E2E", () => {
 
         span.end();
       }
+
+      await waitForServerIngestion(2_000);
 
       // Verify that the dataset run was created correctly
       const targetRun = await langfuse.api.datasets.getRun(

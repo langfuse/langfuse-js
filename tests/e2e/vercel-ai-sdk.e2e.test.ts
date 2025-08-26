@@ -3,7 +3,7 @@ import fs from "fs/promises";
 
 import { openai } from "@ai-sdk/openai";
 import { LangfuseClient } from "@langfuse/client";
-import { startActiveSpan } from "@langfuse/tracing";
+import { startActiveObservation } from "@langfuse/tracing";
 import {
   embed,
   generateObject,
@@ -72,25 +72,28 @@ describe("Vercel AI SDK integration E2E tests", () => {
       tags,
     } = testParams;
 
-    const [result, span] = await startActiveSpan(functionId, async (span) => {
-      const result = await generateText({
-        model: openai(modelName),
-        maxOutputTokens: maxTokens,
-        prompt,
-        experimental_telemetry: {
-          isEnabled: true,
-          functionId,
-          metadata: {
-            userId,
-            sessionId,
-            tags,
-            ...metadata,
+    const [result, span] = await startActiveObservation(
+      functionId,
+      async (span) => {
+        const result = await generateText({
+          model: openai(modelName),
+          maxOutputTokens: maxTokens,
+          prompt,
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId,
+            metadata: {
+              userId,
+              sessionId,
+              tags,
+              ...metadata,
+            },
           },
-        },
-      });
+        });
 
-      return [result, span] as const;
-    });
+        return [result, span] as const;
+      },
+    );
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -153,28 +156,31 @@ describe("Vercel AI SDK integration E2E tests", () => {
       tags,
     } = testParams;
 
-    const [result, span] = await startActiveSpan(functionId, async (span) => {
-      const result = await generateText({
-        model: openai(modelName),
-        maxOutputTokens: maxTokens,
-        prompt,
-        tools: {
-          weather: weatherTool,
-        },
-        experimental_telemetry: {
-          isEnabled: true,
-          functionId,
-          metadata: {
-            userId,
-            sessionId,
-            tags,
-            ...metadata,
+    const [result, span] = await startActiveObservation(
+      functionId,
+      async (span) => {
+        const result = await generateText({
+          model: openai(modelName),
+          maxOutputTokens: maxTokens,
+          prompt,
+          tools: {
+            weather: weatherTool,
           },
-        },
-      });
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId,
+            metadata: {
+              userId,
+              sessionId,
+              tags,
+              ...metadata,
+            },
+          },
+        });
 
-      return [result, span] as const;
-    });
+        return [result, span] as const;
+      },
+    );
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -237,31 +243,34 @@ describe("Vercel AI SDK integration E2E tests", () => {
       tags,
     } = testParams;
 
-    const [result, span] = await startActiveSpan(functionId, async (span) => {
-      const stream = streamText({
-        model: openai(modelName),
-        maxOutputTokens: maxTokens,
-        prompt,
-        experimental_telemetry: {
-          isEnabled: true,
-          functionId,
-          metadata: {
-            userId,
-            sessionId,
-            tags,
-            ...metadata,
+    const [result, span] = await startActiveObservation(
+      functionId,
+      async (span) => {
+        const stream = streamText({
+          model: openai(modelName),
+          maxOutputTokens: maxTokens,
+          prompt,
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId,
+            metadata: {
+              userId,
+              sessionId,
+              tags,
+              ...metadata,
+            },
           },
-        },
-      });
+        });
 
-      let result = "";
+        let result = "";
 
-      for await (const chunk of stream.textStream) {
-        result += chunk;
-      }
+        for await (const chunk of stream.textStream) {
+          result += chunk;
+        }
 
-      return [result, span] as const;
-    });
+        return [result, span] as const;
+      },
+    );
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -326,36 +335,39 @@ describe("Vercel AI SDK integration E2E tests", () => {
       tags,
     } = testParams;
 
-    const [result, span] = await startActiveSpan(functionId, async (span) => {
-      const result = await generateObject({
-        model: openai(modelName),
-        schema: z.object({
-          recipe: z.object({
-            name: z.string(),
-            ingredients: z.array(
-              z.object({
-                name: z.string(),
-                amount: z.string(),
-              }),
-            ),
-            steps: z.array(z.string()),
+    const [result, span] = await startActiveObservation(
+      functionId,
+      async (span) => {
+        const result = await generateObject({
+          model: openai(modelName),
+          schema: z.object({
+            recipe: z.object({
+              name: z.string(),
+              ingredients: z.array(
+                z.object({
+                  name: z.string(),
+                  amount: z.string(),
+                }),
+              ),
+              steps: z.array(z.string()),
+            }),
           }),
-        }),
-        prompt,
-        experimental_telemetry: {
-          isEnabled: true,
-          functionId,
-          metadata: {
-            userId,
-            sessionId,
-            tags,
-            ...metadata,
+          prompt,
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId,
+            metadata: {
+              userId,
+              sessionId,
+              tags,
+              ...metadata,
+            },
           },
-        },
-      });
+        });
 
-      return [result, span] as const;
-    });
+        return [result, span] as const;
+      },
+    );
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -411,7 +423,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const { modelName, prompt, functionId, userId, sessionId, metadata, tags } =
       testParams;
 
-    const [currentObject, span] = await startActiveSpan(
+    const [currentObject, span] = await startActiveObservation(
       functionId,
       async (span) => {
         const { partialObjectStream } = streamObject({
@@ -500,24 +512,27 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const { modelName, functionId, userId, sessionId, metadata, tags } =
       testParams;
 
-    const [result, span] = await startActiveSpan(functionId, async (span) => {
-      const result = await embed({
-        model: openai.embedding(modelName),
-        value: "sunny day at the beach",
-        experimental_telemetry: {
-          isEnabled: true,
-          functionId,
-          metadata: {
-            userId,
-            sessionId,
-            tags,
-            ...metadata,
+    const [result, span] = await startActiveObservation(
+      functionId,
+      async (span) => {
+        const result = await embed({
+          model: openai.embedding(modelName),
+          value: "sunny day at the beach",
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId,
+            metadata: {
+              userId,
+              sessionId,
+              tags,
+              ...metadata,
+            },
           },
-        },
-      });
+        });
 
-      return [result, span] as const;
-    });
+        return [result, span] as const;
+      },
+    );
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -582,32 +597,35 @@ describe("Vercel AI SDK integration E2E tests", () => {
       tags,
     } = testParams;
 
-    const [result, span] = await startActiveSpan(functionId, async (span) => {
-      const stream = streamText({
-        model: openai(modelName),
-        maxOutputTokens: maxTokens,
-        prompt,
-        experimental_telemetry: {
-          isEnabled: true,
-          functionId,
-          metadata: {
-            langfusePrompt: fetchedPrompt.toJSON(),
-            userId,
-            sessionId,
-            tags,
-            ...metadata,
-          } as any,
-        },
-      });
+    const [result, span] = await startActiveObservation(
+      functionId,
+      async (span) => {
+        const stream = streamText({
+          model: openai(modelName),
+          maxOutputTokens: maxTokens,
+          prompt,
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId,
+            metadata: {
+              langfusePrompt: fetchedPrompt.toJSON(),
+              userId,
+              sessionId,
+              tags,
+              ...metadata,
+            } as any,
+          },
+        });
 
-      let result = "";
+        let result = "";
 
-      for await (const chunk of stream.textStream) {
-        result += chunk;
-      }
+        for await (const chunk of stream.textStream) {
+          result += chunk;
+        }
 
-      return [result, span] as const;
-    });
+        return [result, span] as const;
+      },
+    );
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -651,7 +669,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const attachmentPath = "tests/static/bitcoin.pdf";
     const attachment = await fs.readFile(attachmentPath);
 
-    const [result, span] = await startActiveSpan(
+    const [result, span] = await startActiveObservation(
       "generateText",
       async (span) => {
         const result = await generateText({
@@ -719,7 +737,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
     const imagePath = "tests/static/puton.jpg";
     const image = await fs.readFile(imagePath);
 
-    const [result, span] = await startActiveSpan(
+    const [result, span] = await startActiveObservation(
       "generateText",
       async (span) => {
         const result = await generateText({

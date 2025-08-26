@@ -14,7 +14,7 @@ import {
   IngestionEvent,
   resetGlobalLogger,
 } from "@langfuse/core";
-import { startSpan } from "@langfuse/tracing";
+import { startObservation } from "@langfuse/tracing";
 import {
   setupTestEnvironment,
   teardownTestEnvironment,
@@ -150,7 +150,7 @@ describe("ScoreManager Integration Tests", () => {
   describe("Span-based Scoring", () => {
     it("should score an observation with span context", async () => {
       const scoreManager = createScoreManager(mockAPIClient);
-      const span = startSpan("test-operation");
+      const span = startObservation("test-operation");
       const { spanId, traceId } = span.otelSpan.spanContext();
 
       scoreManager.observation(span, {
@@ -171,7 +171,7 @@ describe("ScoreManager Integration Tests", () => {
 
     it("should score a trace with span context", async () => {
       const scoreManager = createScoreManager(mockAPIClient);
-      const span = startSpan("test-operation");
+      const span = startObservation("test-operation");
       const { traceId } = span.otelSpan.spanContext();
 
       scoreManager.trace(span, {
@@ -192,7 +192,7 @@ describe("ScoreManager Integration Tests", () => {
 
     it("should score active observation in context", async () => {
       const scoreManager = createScoreManager(mockAPIClient);
-      const span = startSpan("test-operation");
+      const span = startObservation("test-operation");
 
       await trace
         .getTracer("test")
@@ -220,7 +220,7 @@ describe("ScoreManager Integration Tests", () => {
 
     it("should score active trace in context", async () => {
       const scoreManager = createScoreManager(mockAPIClient);
-      const span = startSpan("test-operation");
+      const span = startObservation("test-operation");
 
       await trace
         .getTracer("test")

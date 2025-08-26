@@ -10,21 +10,37 @@ import {
 } from "@opentelemetry/api";
 
 import {
-  createGenerationAttributes,
-  createSpanAttributes,
+  createObservationAttributes,
   createTraceAttributes,
 } from "./attributes.js";
 import {
+  LangfuseAgent,
   LangfuseEvent,
   LangfuseGeneration,
   LangfuseSpan,
+  LangfuseTool,
+  LangfuseChain,
+  LangfuseEmbedding,
+  LangfuseEvaluator,
+  LangfuseGuardrail,
+  LangfuseRetriever,
+  LangfuseObservation,
 } from "./spanWrapper.js";
 import { getLangfuseTracer } from "./tracerProvider.js";
 import {
+  LangfuseChainAttributes,
+  LangfuseEmbeddingAttributes,
+  LangfuseEvaluatorAttributes,
+  LangfuseGuardrailAttributes,
+  LangfuseRetrieverAttributes,
+  LangfuseToolAttributes,
+  LangfuseAgentAttributes,
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
+  LangfuseObservationType,
   LangfuseSpanAttributes,
   LangfuseTraceAttributes,
+  LangfuseObservationAttributes,
 } from "./types.js";
 
 export type {
@@ -33,15 +49,14 @@ export type {
   LangfuseSpanAttributes,
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
-  LangfuseAttributes,
+  LangfuseObservationAttributes,
   LangfuseTraceAttributes,
 } from "./types.js";
 
 export * from "./spanWrapper.js";
 export {
   createTraceAttributes,
-  createSpanAttributes,
-  createGenerationAttributes,
+  createObservationAttributes,
 } from "./attributes.js";
 export {
   setLangfuseTracerProvider,
@@ -73,6 +88,26 @@ export type StartObservationOptions = {
 export type StartActiveObservationContext = StartObservationOptions & {
   /** Whether to automatically end the observation when exiting the context. Default is true */
   endOnExit?: boolean;
+};
+
+/**
+ * Options for startObservation function.
+ *
+ * @public
+ */
+export type StartObservationOpts = StartObservationOptions & {
+  /** Type of observation to create. Defaults to 'span' */
+  asType?: LangfuseObservationType;
+};
+
+/**
+ * Options for startActiveObservation function.
+ *
+ * @public
+ */
+export type StartActiveObservationOpts = StartActiveObservationContext & {
+  /** Type of observation to create. Defaults to 'span' */
+  asType?: LangfuseObservationType;
 };
 
 /**
@@ -145,292 +180,677 @@ function wrapPromise<T>(
   );
 }
 
-/**
- * Creates and starts a new Langfuse span for general-purpose tracing.
- *
- * Spans are used to track operations, functions, or logical units of work.
- * They can contain other spans or generations as children.
- *
- * @param name - Name of the span
- * @param attributes - Optional attributes to set on the span
- * @param options - Optional configuration for the span
- * @returns A LangfuseSpan instance
- *
- * @example
- * ```typescript
- * import { startSpan } from '@langfuse/tracing';
- *
- * const span = startSpan('data-processing', {
- *   input: { userId: '123', data: {...} },
- *   metadata: { version: '1.0' },
- *   level: 'DEFAULT'
- * });
- *
- * try {
- *   // Do some work
- *   const result = await processData();
- *
- *   span.update({ output: result });
- * } catch (error) {
- *   span.update({
- *     level: 'ERROR',
- *     statusMessage: error.message
- *   });
- * } finally {
- *   span.end();
- * }
- * ```
- *
- * @public
- */
-export function startSpan(
+// Function overloads for proper type inference
+export function startObservation(
+  name: string,
+  attributes: LangfuseGenerationAttributes,
+  options: StartObservationOpts & { asType: "generation" },
+): LangfuseGeneration;
+export function startObservation(
+  name: string,
+  attributes: LangfuseEventAttributes,
+  options: StartObservationOpts & { asType: "event" },
+): LangfuseEvent;
+export function startObservation(
+  name: string,
+  attributes: LangfuseAgentAttributes,
+  options: StartObservationOpts & { asType: "agent" },
+): LangfuseAgent;
+export function startObservation(
+  name: string,
+  attributes: LangfuseToolAttributes,
+  options: StartObservationOpts & { asType: "tool" },
+): LangfuseTool;
+export function startObservation(
+  name: string,
+  attributes: LangfuseChainAttributes,
+  options: StartObservationOpts & { asType: "chain" },
+): LangfuseChain;
+export function startObservation(
+  name: string,
+  attributes: LangfuseRetrieverAttributes,
+  options: StartObservationOpts & { asType: "retriever" },
+): LangfuseRetriever;
+export function startObservation(
+  name: string,
+  attributes: LangfuseEvaluatorAttributes,
+  options: StartObservationOpts & { asType: "evaluator" },
+): LangfuseEvaluator;
+export function startObservation(
+  name: string,
+  attributes: LangfuseGuardrailAttributes,
+  options: StartObservationOpts & { asType: "guardrail" },
+): LangfuseGuardrail;
+export function startObservation(
+  name: string,
+  attributes: LangfuseEmbeddingAttributes,
+  options: StartObservationOpts & { asType: "embedding" },
+): LangfuseEmbedding;
+export function startObservation(
   name: string,
   attributes?: LangfuseSpanAttributes,
-  options?: {
-    startTime?: TimeInput;
-    parentSpanContext?: SpanContext;
-  },
-): LangfuseSpan {
-  const otelSpan = createOtelSpan({
-    name,
-    ...options,
-  });
-
-  return new LangfuseSpan({ otelSpan, attributes });
-}
-
+  options?: StartObservationOpts & { asType?: "span" },
+): LangfuseSpan;
 /**
- * Creates and starts a new Langfuse generation for tracking LLM calls.
+ * Creates and starts a new Langfuse observation with automatic TypeScript type inference.
  *
- * Generations are specialized observations for tracking language model
- * interactions, including model parameters, usage metrics, and costs.
+ * This is the primary method for creating observations in Langfuse. It supports multiple
+ * observation types with full TypeScript type safety - the return type is automatically
+ * inferred based on the `asType` parameter.
  *
- * @param name - Name of the generation (typically the model or operation)
- * @param attributes - Optional generation-specific attributes
- * @param options - Optional configuration for the generation
- * @returns A LangfuseGeneration instance
+ * ## Supported Observation Types
+ * - **span** (default): General-purpose operations, functions, or workflows
+ * - **generation**: LLM calls, text generation, or AI model interactions
+ * - **embedding**: Text embedding generation or vector operations
+ * - **agent**: AI agent workflows with tool usage and decision making
+ * - **tool**: Individual tool calls, API requests, or function invocations
+ * - **chain**: Multi-step processes like RAG pipelines or sequential operations
+ * - **retriever**: Document retrieval, vector search, or knowledge base queries
+ * - **evaluator**: Quality assessment, scoring, or evaluation operations
+ * - **guardrail**: Safety checks, content filtering, or validation operations
+ * - **event**: Point-in-time occurrences or log entries (automatically ended)
+ *
+ * @param name - Descriptive name for the observation (e.g., 'openai-gpt-4', 'vector-search')
+ * @param attributes - Type-specific attributes (input, output, metadata, etc.)
+ * @param options - Configuration options including observation type and timing
+ * @returns Strongly-typed observation object based on `asType` parameter
  *
  * @example
  * ```typescript
- * import { startGeneration } from '@langfuse/tracing';
+ * import { startObservation } from '@langfuse/tracing';
  *
- * const generation = startGeneration('openai-gpt-4', {
- *   input: [{ role: 'user', content: 'Hello, world!' }],
- *   model: 'gpt-4',
- *   modelParameters: {
- *     temperature: 0.7,
- *     max_tokens: 150
+ * // Span for general operations (default)
+ * const span = startObservation('user-workflow', {
+ *   input: { userId: '123', action: 'checkout' },
+ *   metadata: { version: '2.1.0', feature: 'new-checkout' }
+ * });
+ * span.update({ output: { success: true, orderId: '456' } });
+ * span.end();
+ *
+ * // Generation for LLM interactions
+ * const generation = startObservation('openai-gpt-4', {
+ *   input: [{ role: 'user', content: 'Explain quantum computing' }],
+ *   model: 'gpt-4-turbo',
+ *   modelParameters: { temperature: 0.7, maxTokens: 500 }
+ * }, { asType: 'generation' });
+ *
+ * generation.update({
+ *   output: { role: 'assistant', content: 'Quantum computing...' },
+ *   usageDetails: { promptTokens: 12, completionTokens: 150, totalTokens: 162 },
+ *   costDetails: { totalCost: 0.002, currency: 'USD' }
+ * });
+ * generation.end();
+ *
+ * // Agent for AI workflows with tools
+ * const agent = startObservation('research-agent', {
+ *   input: { query: 'Latest developments in renewable energy' },
+ *   metadata: { tools: ['web-search', 'pdf-reader'], model: 'gpt-4' }
+ * }, { asType: 'agent' });
+ *
+ * // Tool for individual API calls
+ * const weatherTool = startObservation('weather-api', {
+ *   input: { location: 'San Francisco', units: 'metric' },
+ *   metadata: { provider: 'openweather', timeout: 5000 }
+ * }, { asType: 'tool' });
+ *
+ * // Chain for multi-step RAG pipeline
+ * const ragChain = startObservation('rag-qa-pipeline', {
+ *   input: { question: 'How does photosynthesis work?' },
+ *   metadata: { steps: ['retrieve', 'rerank', 'generate'], vectorDb: 'pinecone' }
+ * }, { asType: 'chain' });
+ *
+ * // Retriever for vector search
+ * const retriever = startObservation('vector-search', {
+ *   input: { query: 'machine learning algorithms', topK: 5 },
+ *   metadata: { vectorStore: 'chroma', similarity: 'cosine' }
+ * }, { asType: 'retriever' });
+ *
+ * // Evaluator for quality assessment
+ * const evaluator = startObservation('quality-check', {
+ *   input: {
+ *     response: 'Paris is the capital of France',
+ *     reference: 'The capital city of France is Paris'
  *   },
- *   metadata: { feature: 'chat' }
- * });
+ *   metadata: { metric: 'semantic-similarity', threshold: 0.8 }
+ * }, { asType: 'evaluator' });
  *
- * try {
- *   const response = await callOpenAI(messages);
+ * // Guardrail for content filtering
+ * const guardrail = startObservation('content-filter', {
+ *   input: { text: 'User message content', policies: ['no-profanity', 'no-pii'] },
+ *   metadata: { strictMode: true, version: 'v2' }
+ * }, { asType: 'guardrail' });
  *
- *   generation.update({
- *     output: response.choices[0].message,
- *     usageDetails: {
- *       promptTokens: response.usage.prompt_tokens,
- *       completionTokens: response.usage.completion_tokens,
- *       totalTokens: response.usage.total_tokens
- *     }
- *   });
- * } finally {
- *   generation.end();
- * }
- * ```
+ * // Embedding for text vectorization
+ * const embedding = startObservation('text-embedder', {
+ *   input: { texts: ['Hello world', 'Machine learning'] },
+ *   model: 'text-embedding-ada-002',
+ *   metadata: { dimensions: 1536 }
+ * }, { asType: 'embedding' });
  *
- * @public
- */
-export function startGeneration(
-  name: string,
-  attributes?: LangfuseGenerationAttributes,
-  options?: StartObservationOptions,
-): LangfuseGeneration {
-  const otelSpan = createOtelSpan({
-    name,
-    ...options,
-  });
-
-  return new LangfuseGeneration({ otelSpan, attributes });
-}
-
-/**
- * Creates a Langfuse event for point-in-time occurrences.
+ * // Event for point-in-time occurrences (auto-ended)
+ * const event = startObservation('user-login', {
+ *   input: { userId: '123', method: 'oauth' },
+ *   level: 'DEFAULT',
+ *   metadata: { ip: '192.168.1.1', userAgent: 'Chrome/120.0' }
+ * }, { asType: 'event' });
  *
- * Events are used to capture instantaneous occurrences or log entries
- * within a trace. Unlike spans, they represent a single point in time.
- *
- * @param name - Name of the event
- * @param attributes - Optional attributes for the event
- * @param options - Optional configuration for the event
- * @returns A LangfuseEvent instance (automatically ended)
- *
- * @example
- * ```typescript
- * import { createEvent } from '@langfuse/tracing';
- *
- * // Log a user action
- * createEvent('user-click', {
- *   input: { buttonId: 'submit', userId: '123' },
- *   metadata: { page: '/checkout' },
- *   level: 'DEFAULT'
- * });
- *
- * // Log an error
- * createEvent('api-error', {
- *   level: 'ERROR',
- *   statusMessage: 'Failed to fetch user data',
- *   metadata: { endpoint: '/api/users/123', statusCode: 500 }
+ * // Nested observations with parent context
+ * const parentSpan = startObservation('ai-pipeline');
+ * const childRetriever = startObservation('doc-search', {
+ *   input: { query: 'AI safety' }
+ * }, {
+ *   asType: 'retriever',
+ *   parentSpanContext: parentSpan.otelSpan.spanContext()
  * });
  * ```
  *
+ * @see {@link startActiveObservation} for function-scoped observations with automatic context management
+ * @see {@link observe} for decorator-style observation wrapping
+ *
  * @public
  */
-export function createEvent(
+export function startObservation(
   name: string,
-  attributes?: LangfuseEventAttributes,
-  options?: StartObservationOptions,
-) {
-  const timestamp = options?.startTime ?? new Date();
+  attributes?:
+    | LangfuseSpanAttributes
+    | LangfuseGenerationAttributes
+    | LangfuseEventAttributes
+    | LangfuseAgentAttributes
+    | LangfuseToolAttributes
+    | LangfuseChainAttributes
+    | LangfuseRetrieverAttributes
+    | LangfuseEvaluatorAttributes
+    | LangfuseGuardrailAttributes
+    | LangfuseEmbeddingAttributes,
+  options?: StartObservationOpts,
+): LangfuseObservation {
+  const { asType = "span", ...observationOptions } = options || {};
 
   const otelSpan = createOtelSpan({
     name,
-    ...options,
-    startTime: timestamp,
+    ...observationOptions,
   });
 
-  return new LangfuseEvent({ otelSpan, attributes, timestamp });
+  switch (asType) {
+    case "generation":
+      return new LangfuseGeneration({
+        otelSpan,
+        attributes,
+      });
+
+    case "embedding":
+      return new LangfuseEmbedding({
+        otelSpan,
+        attributes,
+      });
+
+    case "agent":
+      return new LangfuseAgent({
+        otelSpan,
+        attributes,
+      });
+
+    case "tool":
+      return new LangfuseTool({
+        otelSpan,
+        attributes,
+      });
+
+    case "chain":
+      return new LangfuseChain({
+        otelSpan,
+        attributes,
+      });
+
+    case "retriever":
+      return new LangfuseRetriever({
+        otelSpan,
+        attributes,
+      });
+
+    case "evaluator":
+      return new LangfuseEvaluator({
+        otelSpan,
+        attributes,
+      });
+
+    case "guardrail":
+      return new LangfuseGuardrail({
+        otelSpan,
+        attributes,
+      });
+
+    case "event": {
+      const timestamp = observationOptions?.startTime ?? new Date();
+
+      return new LangfuseEvent({
+        otelSpan,
+        attributes: attributes as LangfuseEventAttributes,
+        timestamp,
+      });
+    }
+    case "span":
+    default:
+      return new LangfuseSpan({
+        otelSpan,
+        attributes: attributes as LangfuseSpanAttributes,
+      });
+  }
 }
 
-/**
- * Starts an active span and executes a function within its context.
- *
- * This function creates a span, sets it as the active span in the OpenTelemetry
- * context, executes the provided function, and automatically ends the span.
- * Perfect for wrapping operations where you want child spans to be automatically
- * linked.
- *
- * @param name - Name of the span
- * @param fn - Function to execute within the span context
- * @param options - Optional configuration for the span
- * @returns The return value of the executed function
- *
- * @example
- * ```typescript
- * import { startActiveSpan } from '@langfuse/tracing';
- *
- * // Synchronous function
- * const result = startActiveSpan('calculate-metrics', (span) => {
- *   span.update({ input: { data: rawData } });
- *
- *   const metrics = calculateMetrics(rawData);
- *   span.update({ output: metrics });
- *
- *   return metrics;
- * });
- *
- * // Asynchronous function
- * const data = await startActiveSpan('fetch-user-data', async (span) => {
- *   span.update({ input: { userId: '123' } });
- *
- *   const userData = await api.getUser('123');
- *   span.update({ output: userData });
- *
- *   return userData;
- * });
- * ```
- *
- * @public
- */
-export function startActiveSpan<F extends (span: LangfuseSpan) => unknown>(
+// Function overloads for proper type inference
+export function startActiveObservation<
+  F extends (generation: LangfuseGeneration) => unknown,
+>(
   name: string,
   fn: F,
-  options?: StartActiveObservationContext,
-): ReturnType<F> {
-  return getLangfuseTracer().startActiveSpan(
-    name,
-    { startTime: options?.startTime },
-    createParentContext(options?.parentSpanContext) ?? context.active(),
-    (span) => {
-      try {
-        const result = fn(new LangfuseSpan({ otelSpan: span }));
+  options: StartActiveObservationOpts & { asType: "generation" },
+): ReturnType<F>;
 
-        if (result instanceof Promise) {
-          return wrapPromise(result, span, options?.endOnExit) as ReturnType<F>;
-        } else {
-          if (options?.endOnExit !== false) {
-            span.end();
-          }
+export function startActiveObservation<
+  F extends (embedding: LangfuseEmbedding) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "embedding" },
+): ReturnType<F>;
 
-          return result as ReturnType<F>;
-        }
-      } catch (err) {
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
+export function startActiveObservation<
+  F extends (agent: LangfuseAgent) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "agent" },
+): ReturnType<F>;
 
-        if (options?.endOnExit !== false) {
-          span.end();
-        }
+export function startActiveObservation<
+  F extends (tool: LangfuseTool) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "tool" },
+): ReturnType<F>;
 
-        throw err;
-      }
-    },
-  );
-}
+export function startActiveObservation<
+  F extends (chain: LangfuseChain) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "chain" },
+): ReturnType<F>;
 
+export function startActiveObservation<
+  F extends (retriever: LangfuseRetriever) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "retriever" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (evaluator: LangfuseEvaluator) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "evaluator" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (guardrail: LangfuseGuardrail) => unknown,
+>(
+  name: string,
+  fn: F,
+  options: StartActiveObservationOpts & { asType: "guardrail" },
+): ReturnType<F>;
+
+export function startActiveObservation<
+  F extends (span: LangfuseSpan) => unknown,
+>(
+  name: string,
+  fn: F,
+  options?: StartActiveObservationOpts & { asType?: "span" },
+): ReturnType<F>;
 /**
- * Starts an active generation and executes a function within its context.
+ * Starts an active observation and executes a function within its context with automatic lifecycle management.
  *
- * Similar to startActiveSpan but creates a generation for tracking LLM calls.
- * The generation is automatically ended when the function completes.
+ * This function creates an observation, sets it as the active span in the OpenTelemetry context,
+ * executes your function with the observation instance, and automatically handles cleanup.
+ * It supports all observation types with full TypeScript type inference based on `asType`.
  *
- * @param name - Name of the generation
- * @param fn - Function to execute within the generation context
- * @param options - Optional configuration for the generation
- * @returns The return value of the executed function
+ * ## Key Features
+ * - **Automatic Context Management**: Sets the observation as active in the current execution context
+ * - **Lifecycle Automation**: Creates, activates, and ends observations automatically
+ * - **Type Safety**: Function parameter is strongly typed based on `asType`
+ * - **Promise Support**: Handles both synchronous and asynchronous functions seamlessly
+ * - **Error Handling**: Automatically sets error status and ends observations on exceptions
+ * - **Nested Observations**: Child observations created within the function inherit the context
+ *
+ * ## When to Use
+ * - When you want automatic observation lifecycle management
+ * - For function-scoped operations where the observation maps to the function's execution
+ * - When you need the observation to be active for child operations
+ * - For async operations where manual `.end()` calls are error-prone
+ *
+ * @param name - Descriptive name for the observation
+ * @param fn - Function to execute within the observation context (receives typed observation instance)
+ * @param options - Configuration options including observation type and lifecycle settings
+ * @returns The exact return value of the executed function (preserves type and async behavior)
  *
  * @example
  * ```typescript
- * import { startActiveGeneration } from '@langfuse/tracing';
+ * import { startActiveObservation } from '@langfuse/tracing';
  *
- * const response = await startActiveGeneration('openai-completion', async (generation) => {
- *   generation.update({
- *     input: { messages: [...] },
- *     model: 'gpt-4',
- *     modelParameters: { temperature: 0.7 }
- *   });
+ * // Span for general operations (default)
+ * const result = startActiveObservation('user-checkout', (span) => {
+ *   span.update({ input: { userId: '123', cart: items } });
  *
- *   const result = await openai.chat.completions.create({...});
+ *   // Any child observations created here inherit this span's context
+ *   const validation = processPayment(paymentData);
  *
- *   generation.update({
- *     output: result.choices[0].message,
- *     usageDetails: result.usage
- *   });
- *
- *   return result;
+ *   span.update({ output: { orderId: 'ord_456', success: true } });
+ *   return validation;
  * });
+ *
+ * // Generation for LLM interactions with automatic error handling
+ * const response = await startActiveObservation(
+ *   'openai-completion',
+ *   async (generation) => {
+ *     generation.update({
+ *       input: { messages: [{ role: 'user', content: 'Explain AI ethics' }] },
+ *       model: 'gpt-4-turbo',
+ *       modelParameters: { temperature: 0.7, maxTokens: 500 }
+ *     });
+ *
+ *     try {
+ *       const result = await openai.chat.completions.create({
+ *         model: 'gpt-4-turbo',
+ *         messages: [{ role: 'user', content: 'Explain AI ethics' }],
+ *         temperature: 0.7,
+ *         max_tokens: 500
+ *       });
+ *
+ *       generation.update({
+ *         output: result.choices[0].message,
+ *         usageDetails: {
+ *           promptTokens: result.usage?.prompt_tokens,
+ *           completionTokens: result.usage?.completion_tokens,
+ *           totalTokens: result.usage?.total_tokens
+ *         },
+ *         costDetails: { totalCost: 0.002, currency: 'USD' }
+ *       });
+ *
+ *       return result.choices[0].message.content;
+ *     } catch (error) {
+ *       generation.update({
+ *         level: 'ERROR',
+ *         statusMessage: error.message,
+ *         output: { error: error.message }
+ *       });
+ *       throw error;
+ *     }
+ *   },
+ *   { asType: 'generation' }
+ * );
+ *
+ * // Agent workflow with nested tool calls
+ * const agentResult = await startActiveObservation(
+ *   'research-agent',
+ *   async (agent) => {
+ *     agent.update({
+ *       input: { query: 'Latest climate change research' },
+ *       metadata: { tools: ['web-search', 'arxiv-search'], model: 'gpt-4' }
+ *     });
+ *
+ *     // Tool calls inherit the agent context automatically
+ *     const webResults = await startActiveObservation(
+ *       'web-search-tool',
+ *       async (tool) => {
+ *         tool.update({ input: { query: 'climate change 2024' } });
+ *         const results = await searchWeb('climate change 2024');
+ *         tool.update({ output: results });
+ *         return results;
+ *       },
+ *       { asType: 'tool' }
+ *     );
+ *
+ *     const analysis = await analyzeResults(webResults);
+ *
+ *     agent.update({
+ *       output: { analysis, sources: webResults.length },
+ *       metadata: { processingTime: Date.now() }
+ *     });
+ *
+ *     return analysis;
+ *   },
+ *   { asType: 'agent' }
+ * );
+ *
+ * // RAG Chain with retriever and generation steps
+ * const answer = await startActiveObservation(
+ *   'rag-qa-chain',
+ *   async (chain) => {
+ *     chain.update({
+ *       input: { question: 'How does photosynthesis work?' },
+ *       metadata: { vectorDb: 'pinecone', model: 'gpt-4' }
+ *     });
+ *
+ *     // Retrieval step
+ *     const docs = await startActiveObservation(
+ *       'vector-retrieval',
+ *       async (retriever) => {
+ *         retriever.update({
+ *           input: { query: 'photosynthesis mechanism', topK: 5 },
+ *           metadata: { similarity: 'cosine' }
+ *         });
+ *         const results = await vectorSearch('photosynthesis mechanism');
+ *         retriever.update({ output: { documents: results } });
+ *         return results;
+ *       },
+ *       { asType: 'retriever' }
+ *     );
+ *
+ *     // Generation step
+ *     const response = await startActiveObservation(
+ *       'answer-generation',
+ *       async (generation) => {
+ *         const context = docs.map(d => d.content).join('\n');
+ *         generation.update({
+ *           input: { question: 'How does photosynthesis work?', context },
+ *           model: 'gpt-4'
+ *         });
+ *
+ *         const answer = await generateAnswer(context);
+ *         generation.update({ output: { answer } });
+ *         return answer;
+ *       },
+ *       { asType: 'generation' }
+ *     );
+ *
+ *     chain.update({
+ *       output: { answer: response, sources: docs.length }
+ *     });
+ *
+ *     return response;
+ *   },
+ *   { asType: 'chain' }
+ * );
+ *
+ * // Quality evaluation with automatic metrics
+ * const evaluation = startActiveObservation(
+ *   'response-evaluator',
+ *   (evaluator) => {
+ *     evaluator.update({
+ *       input: {
+ *         response: 'Paris is the capital of France.',
+ *         reference: 'The capital city of France is Paris.'
+ *       },
+ *       metadata: { metric: 'semantic-similarity' }
+ *     });
+ *
+ *     const score = calculateSimilarity(response, reference);
+ *     const passed = score > 0.8;
+ *
+ *     evaluator.update({
+ *       output: { score, passed, grade: passed ? 'excellent' : 'needs_improvement' }
+ *     });
+ *
+ *     return { score, passed };
+ *   },
+ *   { asType: 'evaluator' }
+ * );
+ *
+ * // Content filtering with guardrails
+ * const safetyCheck = startActiveObservation(
+ *   'content-guardrail',
+ *   (guardrail) => {
+ *     guardrail.update({
+ *       input: { text: userMessage, policies: ['no-profanity', 'no-pii'] },
+ *       metadata: { strictMode: true }
+ *     });
+ *
+ *     const violations = checkContent(userMessage);
+ *     const allowed = violations.length === 0;
+ *
+ *     guardrail.update({
+ *       output: { allowed, violations, confidence: 0.95 }
+ *     });
+ *
+ *     return { allowed, violations };
+ *   },
+ *   { asType: 'guardrail' }
+ * );
+ *
+ * // Text embedding generation
+ * const embeddings = await startActiveObservation(
+ *   'text-embeddings',
+ *   async (embedding) => {
+ *     const texts = ['Hello world', 'Machine learning'];
+ *     embedding.update({
+ *       input: { texts },
+ *       model: 'text-embedding-ada-002',
+ *       metadata: { dimensions: 1536 }
+ *     });
+ *
+ *     const vectors = await generateEmbeddings(texts);
+ *
+ *     embedding.update({
+ *       output: { embeddings: vectors },
+ *       usageDetails: { totalTokens: texts.join(' ').split(' ').length }
+ *     });
+ *
+ *     return vectors;
+ *   },
+ *   { asType: 'embedding' }
+ * );
+ *
+ * // Disable automatic ending (advanced use case)
+ * const longRunningSpan = await startActiveObservation(
+ *   'background-process',
+ *   async (span) => {
+ *     span.update({ input: { taskId: '123' } });
+ *
+ *     // Process continues after function returns
+ *     startBackgroundTask(span);
+ *
+ *     return 'process-started';
+ *   },
+ *   { asType: 'span', endOnExit: false } // Manual ending required
+ * );
  * ```
+ *
+ * @see {@link startObservation} for manual observation lifecycle management
+ * @see {@link observe} for decorator-style function wrapping
  *
  * @public
  */
-export function startActiveGeneration<
-  F extends (span: LangfuseGeneration) => unknown,
->(name: string, fn: F, options?: StartActiveObservationContext): ReturnType<F> {
+export function startActiveObservation<
+  F extends (observation: LangfuseSpan | LangfuseGeneration) => unknown,
+>(name: string, fn: F, options?: StartActiveObservationOpts): ReturnType<F> {
+  const { asType = "span", ...observationOptions } = options || {};
+
   return getLangfuseTracer().startActiveSpan(
     name,
-    { startTime: options?.startTime },
-    createParentContext(options?.parentSpanContext) ?? context.active(),
+    { startTime: observationOptions?.startTime },
+    createParentContext(observationOptions?.parentSpanContext) ??
+      context.active(),
     (span) => {
       try {
-        const result = fn(new LangfuseGeneration({ otelSpan: span }));
+        let observation: LangfuseObservation;
+
+        switch (asType) {
+          case "generation":
+            observation = new LangfuseGeneration({
+              otelSpan: span,
+            });
+            break;
+
+          case "embedding":
+            observation = new LangfuseEmbedding({
+              otelSpan: span,
+            });
+            break;
+
+          case "agent":
+            observation = new LangfuseAgent({
+              otelSpan: span,
+            });
+            break;
+
+          case "tool":
+            observation = new LangfuseTool({
+              otelSpan: span,
+            });
+            break;
+
+          case "chain":
+            observation = new LangfuseChain({
+              otelSpan: span,
+            });
+            break;
+
+          case "retriever":
+            observation = new LangfuseRetriever({
+              otelSpan: span,
+            });
+            break;
+
+          case "evaluator":
+            observation = new LangfuseEvaluator({
+              otelSpan: span,
+            });
+            break;
+
+          case "guardrail":
+            observation = new LangfuseGuardrail({
+              otelSpan: span,
+            });
+            break;
+
+          case "event": {
+            const timestamp = observationOptions?.startTime ?? new Date();
+            observation = new LangfuseEvent({
+              otelSpan: span,
+              timestamp,
+            });
+            break;
+          }
+          case "span":
+          default:
+            observation = new LangfuseSpan({
+              otelSpan: span,
+            });
+        }
+
+        const result = fn(observation as Parameters<F>[0]);
 
         if (result instanceof Promise) {
-          return wrapPromise(result, span, options?.endOnExit) as ReturnType<F>;
+          return wrapPromise(
+            result,
+            span,
+            observationOptions?.endOnExit,
+          ) as ReturnType<F>;
         } else {
-          if (options?.endOnExit !== false) {
+          if (observationOptions?.endOnExit !== false) {
             span.end();
           }
 
@@ -442,7 +862,7 @@ export function startActiveGeneration<
           message: err instanceof Error ? err.message : "Unknown error",
         });
 
-        if (options?.endOnExit !== false) {
+        if (observationOptions?.endOnExit !== false) {
           span.end();
         }
 
@@ -490,29 +910,46 @@ export function updateActiveTrace(attributes: LangfuseTraceAttributes) {
   span.setAttributes(createTraceAttributes(attributes));
 }
 
-/**
- * Updates the currently active span with new attributes.
- *
- * This function finds the currently active OpenTelemetry span and updates
- * it with span-level attributes. If no active span is found, a warning is logged.
- *
- * @param attributes - Span attributes to set
- *
- * @example
- * ```typescript
- * import { updateActiveSpan } from '@langfuse/tracing';
- *
- * // Inside an active span context
- * updateActiveSpan({
- *   level: 'WARNING',
- *   statusMessage: 'Operation completed with warnings',
- *   metadata: { warningCount: 3 }
- * });
- * ```
- *
- * @public
- */
-export function updateActiveSpan(attributes: LangfuseSpanAttributes) {
+export function updateActiveObservation(
+  currentType: "span",
+  attributes: LangfuseSpanAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "generation",
+  attributes: LangfuseGenerationAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "agent",
+  attributes: LangfuseAgentAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "tool",
+  attributes: LangfuseToolAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "chain",
+  attributes: LangfuseChainAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "embedding",
+  attributes: LangfuseEmbeddingAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "evaluator",
+  attributes: LangfuseEvaluatorAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "guardrail",
+  attributes: LangfuseGuardrailAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: "retriever",
+  attributes: LangfuseRetrieverAttributes,
+): void;
+export function updateActiveObservation(
+  currentType: LangfuseObservationType,
+  attributes: LangfuseObservationAttributes,
+): void {
   const span = trace.getActiveSpan();
 
   if (!span) {
@@ -523,48 +960,7 @@ export function updateActiveSpan(attributes: LangfuseSpanAttributes) {
     return;
   }
 
-  span.setAttributes(createSpanAttributes(attributes));
-}
-
-/**
- * Updates the currently active generation with new attributes.
- *
- * This function finds the currently active OpenTelemetry span and updates
- * it with generation-level attributes. If no active span is found, a warning is logged.
- *
- * @param attributes - Generation attributes to set
- *
- * @example
- * ```typescript
- * import { updateActiveGeneration } from '@langfuse/tracing';
- *
- * // Inside an active generation context
- * updateActiveGeneration({
- *   usageDetails: {
- *     promptTokens: 50,
- *     completionTokens: 100,
- *     totalTokens: 150
- *   },
- *   costDetails: { totalCost: 0.003 }
- * });
- * ```
- *
- * @public
- */
-export function updateActiveGeneration(
-  attributes: LangfuseGenerationAttributes,
-) {
-  const span = trace.getActiveSpan();
-
-  if (!span) {
-    getGlobalLogger().warn(
-      "No active OTEL span in context. Skipping generation update.",
-    );
-
-    return;
-  }
-
-  span.setAttributes(createGenerationAttributes(attributes));
+  span.setAttributes(createObservationAttributes(currentType, attributes));
 }
 
 /**
@@ -576,7 +972,7 @@ export interface ObserveOptions {
   /** Name for the observation (defaults to function name) */
   name?: string;
   /** Type of observation to create */
-  asType?: "span" | "generation";
+  asType?: LangfuseObservationType;
   /** Whether to capture function input as observation input */
   captureInput?: boolean;
   /** Whether to capture function output as observation output */
@@ -588,57 +984,251 @@ export interface ObserveOptions {
 }
 
 /**
- * Decorator function that automatically wraps a function with Langfuse tracing.
+ * Decorator function that automatically wraps any function with Langfuse observability.
  *
- * This function creates a wrapper around the provided function that automatically:
- * - Creates a span or generation when the function is called
- * - Captures input arguments (if enabled)
- * - Captures return value/output (if enabled)
- * - Handles errors and sets appropriate status
- * - Ends the observation when the function completes
+ * This higher-order function creates a traced version of your function that automatically
+ * handles observation lifecycle, input/output capture, and error tracking. It's perfect
+ * for instrumenting existing functions without modifying their internal logic.
  *
- * @param fn - The function to wrap with tracing
- * @param options - Configuration options for the observation
- * @returns A wrapped version of the function that includes tracing
+ * ## Key Features
+ * - **Zero Code Changes**: Wrap existing functions without modifying their implementation
+ * - **Automatic I/O Capture**: Optionally captures function arguments and return values
+ * - **Error Tracking**: Automatically captures exceptions and sets error status
+ * - **Type Preservation**: Maintains original function signature and return types
+ * - **Async Support**: Works seamlessly with both sync and async functions
+ * - **Flexible Configuration**: Control observation type, naming, and capture behavior
+ *
+ * ## Use Cases
+ * - Instrumenting business logic functions
+ * - Wrapping API calls and external service interactions
+ * - Adding observability to utility functions
+ * - Creating traced versions of third-party functions
+ * - Decorating class methods for observability
+ *
+ * @param fn - The function to wrap with observability (preserves original signature)
+ * @param options - Configuration for observation behavior and capture settings
+ * @returns An instrumented version of the function with identical behavior plus tracing
  *
  * @example
  * ```typescript
  * import { observe } from '@langfuse/tracing';
  *
- * // Wrap a regular function
- * const processData = observe(
- *   async (userId: string, data: any) => {
- *     // Function implementation
- *     return await processUserData(userId, data);
+ * // Basic function wrapping with automatic I/O capture
+ * const processOrder = observe(
+ *   async (orderId: string, items: CartItem[]) => {
+ *     const validation = await validateOrder(orderId, items);
+ *     const payment = await processPayment(validation);
+ *     const shipping = await scheduleShipping(payment);
+ *     return { orderId, status: 'confirmed', trackingId: shipping.id };
  *   },
  *   {
- *     name: 'process-user-data',
+ *     name: 'process-order',
  *     asType: 'span',
  *     captureInput: true,
  *     captureOutput: true
  *   }
  * );
  *
- * // Wrap an LLM call
- * const generateText = observe(
- *   async (prompt: string) => {
- *     return await openai.chat.completions.create({
- *       model: 'gpt-4',
- *       messages: [{ role: 'user', content: prompt }]
+ * // LLM function with generation tracking
+ * const generateSummary = observe(
+ *   async (document: string, maxWords: number = 100) => {
+ *     const response = await openai.chat.completions.create({
+ *       model: 'gpt-4-turbo',
+ *       messages: [
+ *         { role: 'system', content: `Summarize in ${maxWords} words or less` },
+ *         { role: 'user', content: document }
+ *       ],
+ *       max_tokens: maxWords * 2
  *     });
+ *     return response.choices[0].message.content;
  *   },
  *   {
- *     name: 'openai-generation',
+ *     name: 'document-summarizer',
  *     asType: 'generation',
  *     captureInput: true,
  *     captureOutput: true
  *   }
  * );
  *
- * // Usage
- * const result = await processData('123', { key: 'value' });
- * const text = await generateText('Hello, world!');
+ * // Database query with automatic error tracking
+ * const fetchUserProfile = observe(
+ *   async (userId: string) => {
+ *     const user = await db.users.findUnique({ where: { id: userId } });
+ *     if (!user) throw new Error(`User ${userId} not found`);
+ *
+ *     const preferences = await db.preferences.findMany({
+ *       where: { userId }
+ *     });
+ *
+ *     return { ...user, preferences };
+ *   },
+ *   {
+ *     name: 'fetch-user-profile',
+ *     asType: 'span',
+ *     captureInput: false, // Don't capture sensitive user IDs
+ *     captureOutput: true
+ *   }
+ * );
+ *
+ * // Vector search with retriever semantics
+ * const searchDocuments = observe(
+ *   async (query: string, topK: number = 5) => {
+ *     const embedding = await embedText(query);
+ *     const results = await vectorDb.search(embedding, topK);
+ *     return results.map(r => ({
+ *       content: r.metadata.content,
+ *       score: r.score,
+ *       source: r.metadata.source
+ *     }));
+ *   },
+ *   {
+ *     name: 'document-search',
+ *     asType: 'retriever',
+ *     captureInput: true,
+ *     captureOutput: true
+ *   }
+ * );
+ *
+ * // Quality evaluation function
+ * const evaluateResponse = observe(
+ *   (response: string, reference: string, metric: string = 'similarity') => {
+ *     let score: number;
+ *
+ *     switch (metric) {
+ *       case 'similarity':
+ *         score = calculateCosineSimilarity(response, reference);
+ *         break;
+ *       case 'bleu':
+ *         score = calculateBleuScore(response, reference);
+ *         break;
+ *       default:
+ *         throw new Error(`Unknown metric: ${metric}`);
+ *     }
+ *
+ *     return {
+ *       score,
+ *       passed: score > 0.8,
+ *       metric,
+ *       grade: score > 0.9 ? 'excellent' : score > 0.7 ? 'good' : 'needs_improvement'
+ *     };
+ *   },
+ *   {
+ *     name: 'response-evaluator',
+ *     asType: 'evaluator',
+ *     captureInput: true,
+ *     captureOutput: true
+ *   }
+ * );
+ *
+ * // Content moderation with guardrails
+ * const moderateContent = observe(
+ *   async (text: string, policies: string[] = ['profanity', 'spam']) => {
+ *     const violations = [];
+ *
+ *     for (const policy of policies) {
+ *       const result = await checkPolicy(text, policy);
+ *       if (result.violation) {
+ *         violations.push({ policy, severity: result.severity });
+ *       }
+ *     }
+ *
+ *     return {
+ *       allowed: violations.length === 0,
+ *       violations,
+ *       confidence: 0.95
+ *     };
+ *   },
+ *   {
+ *     name: 'content-moderator',
+ *     asType: 'guardrail',
+ *     captureInput: true,
+ *     captureOutput: true
+ *   }
+ * );
+ *
+ * // AI agent function with tool usage
+ * const researchAgent = observe(
+ *   async (query: string, maxSources: number = 3) => {
+ *     // Search for relevant documents
+ *     const documents = await searchDocuments(query, maxSources * 2);
+ *
+ *     // Filter and rank results
+ *     const topDocs = documents
+ *       .filter(d => d.score > 0.7)
+ *       .slice(0, maxSources);
+ *
+ *     // Generate comprehensive answer
+ *     const context = topDocs.map(d => d.content).join('\n\n');
+ *     const answer = await generateSummary(
+ *       `Based on: ${context}\n\nQuestion: ${query}`,
+ *       200
+ *     );
+ *
+ *     return {
+ *       answer,
+ *       sources: topDocs.map(d => d.source),
+ *       confidence: Math.min(...topDocs.map(d => d.score))
+ *     };
+ *   },
+ *   {
+ *     name: 'research-agent',
+ *     asType: 'agent',
+ *     captureInput: true,
+ *     captureOutput: true
+ *   }
+ * );
+ *
+ * // Class method decoration
+ * class UserService {
+ *   private db: Database;
+ *
+ *   // Wrap methods during class construction
+ *   constructor(database: Database) {
+ *     this.db = database;
+ *     this.createUser = observe(this.createUser.bind(this), {
+ *       name: 'create-user',
+ *       asType: 'span',
+ *       captureInput: false, // Sensitive data
+ *       captureOutput: true
+ *     });
+ *   }
+ *
+ *   async createUser(userData: UserData) {
+ *     // Implementation automatically traced
+ *     return await this.db.users.create(userData);
+ *   }
+ * }
+ *
+ * // Chain composition - functions remain composable
+ * const processDocument = observe(
+ *   async (document: string) => {
+ *     const summary = await generateSummary(document, 150);
+ *     const moderation = await moderateContent(summary);
+ *     const evaluation = evaluateResponse(summary, document, 'similarity');
+ *
+ *     return {
+ *       summary: moderation.allowed ? summary : '[Content Filtered]',
+ *       safe: moderation.allowed,
+ *       quality: evaluation.score
+ *     };
+ *   },
+ *   {
+ *     name: 'document-processor',
+ *     asType: 'chain',
+ *     captureInput: true,
+ *     captureOutput: true
+ *   }
+ * );
+ *
+ * // Usage - functions work exactly as before, just with observability
+ * const order = await processOrder('ord_123', cartItems);
+ * const profile = await fetchUserProfile('user_456');
+ * const research = await researchAgent('What is quantum computing?');
+ * const processed = await processDocument(documentText);
  * ```
+ *
+ * @see {@link startObservation} for manual observation creation
+ * @see {@link startActiveObservation} for function-scoped observations
  *
  * @public
  */
@@ -662,14 +1252,14 @@ export function observe<T extends (...args: unknown[]) => unknown>(
     const inputData = captureInput ? _captureArguments(args) : undefined;
 
     // Create the appropriate observation type
-    const observation =
-      asType === "generation"
-        ? startGeneration(name, inputData ? { input: inputData } : {}, {
-            parentSpanContext,
-          })
-        : startSpan(name, inputData ? { input: inputData } : {}, {
-            parentSpanContext,
-          });
+    const observation = startObservation(
+      name,
+      inputData ? { input: inputData } : {},
+      {
+        asType: asType as "span", // typecast necessary as ts cannot narrow down type
+        parentSpanContext,
+      },
+    );
 
     // Set the observation span as active in the context
     const activeContext = trace.setSpan(context.active(), observation.otelSpan);
@@ -678,7 +1268,6 @@ export function observe<T extends (...args: unknown[]) => unknown>(
       const result = context.with(activeContext, () => fn.apply(this, args));
 
       // Handle async functions - check if result is a Promise
-      // TODO: handle returned generators for streamed responses
       if (result instanceof Promise) {
         return result.then(
           (value) => {
@@ -805,7 +1394,7 @@ function _captureOutput(value: unknown): unknown {
  * console.log(randomId1 === randomId2); // false
  *
  * // Use with spans
- * const span = startSpan("my-span", {}, {
+ * const span = startObservation("my-span", {}, {
  *   parentSpanContext: {
  *     traceId: await createTraceId("session-456"),
  *     spanId: "0123456789abcdef",

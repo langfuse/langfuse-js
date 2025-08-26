@@ -1,4 +1,4 @@
-import { startSpan } from "@langfuse/tracing";
+import { startObservation } from "@langfuse/tracing";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
@@ -38,7 +38,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const span = startSpan("masked-span", {
+      const span = startObservation("masked-span", {
         input: { message: "This contains secret information" },
         output: { response: "No secret here" },
       });
@@ -70,7 +70,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const span = startSpan("error-mask-span", {
+      const span = startObservation("error-mask-span", {
         input: { message: "test message" },
       });
       span.end();
@@ -90,7 +90,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       const base64Image =
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
-      const span = startSpan("media-span", {
+      const span = startObservation("media-span", {
         input: {
           message: "Here is an image:",
           image: base64Image,
@@ -120,7 +120,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       const image2 =
         "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA9/9k=";
 
-      const span = startSpan("multi-media-span", {
+      const span = startObservation("multi-media-span", {
         input: {
           images: [image1, image2],
         },
@@ -158,7 +158,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Create first span
-      const span1 = startSpan("batch-span-1");
+      const span1 = startObservation("batch-span-1");
       span1.end();
 
       // Should not export yet
@@ -166,7 +166,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       expect(testEnv.mockExporter.getSpanCount()).toBe(0);
 
       // Create second span - should trigger batch export
-      const span2 = startSpan("batch-span-2");
+      const span2 = startObservation("batch-span-2");
       span2.end();
 
       await waitForSpanExport(testEnv.mockExporter, 2);
@@ -187,7 +187,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Create single span
-      const span = startSpan("force-flush-span");
+      const span = startObservation("force-flush-span");
       span.end();
 
       // Should not export yet due to high batch size
@@ -213,7 +213,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const span = startSpan("failed-export-span");
+      const span = startObservation("failed-export-span");
       span.end();
 
       // Wait for export attempt
@@ -234,7 +234,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const span = startSpan("slow-export-span");
+      const span = startObservation("slow-export-span");
       span.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1, 1000);
@@ -257,7 +257,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const allowedSpan = startSpan("allowed-span", {
+      const allowedSpan = startObservation("allowed-span", {
         input: { message: "This should be exported" },
       });
       allowedSpan.end();
@@ -280,7 +280,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const blockedSpan = startSpan("blocked-span", {
+      const blockedSpan = startObservation("blocked-span", {
         input: { message: "This should not be exported" },
       });
       blockedSpan.end();
@@ -305,12 +305,12 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Create premium user span
-      const premiumSpan = startSpan("premium-user-span");
+      const premiumSpan = startObservation("premium-user-span");
       premiumSpan.otelSpan.setAttributes({ "user.type": "premium" });
       premiumSpan.end();
 
       // Create free user span
-      const freeSpan = startSpan("free-user-span");
+      const freeSpan = startObservation("free-user-span");
       freeSpan.otelSpan.setAttributes({ "user.type": "free" });
       freeSpan.end();
 
@@ -335,11 +335,11 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Create short duration span
-      const shortSpan = startSpan("short-span");
+      const shortSpan = startObservation("short-span");
       shortSpan.end(); // Immediate end = very short duration
 
       // Create long duration span
-      const longSpan = startSpan("long-span");
+      const longSpan = startObservation("long-span");
       await new Promise((resolve) => setTimeout(resolve, 150)); // Wait 150ms
       longSpan.end();
 
@@ -367,17 +367,17 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Should be exported (not internal + has export flag)
-      const exportedSpan = startSpan("user-action");
+      const exportedSpan = startObservation("user-action");
       exportedSpan.otelSpan.setAttributes({ export: "true" });
       exportedSpan.end();
 
       // Should not be exported (internal)
-      const internalSpan = startSpan("internal-process");
+      const internalSpan = startObservation("internal-process");
       internalSpan.otelSpan.setAttributes({ export: "true" });
       internalSpan.end();
 
       // Should not be exported (no export flag)
-      const noFlagSpan = startSpan("user-action-2");
+      const noFlagSpan = startObservation("user-action-2");
       noFlagSpan.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1);
@@ -404,11 +404,11 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // This span should cause an error in the filter function
-      const errorSpan = startSpan("error-span");
+      const errorSpan = startObservation("error-span");
       errorSpan.end();
 
       // This span should work normally
-      const normalSpan = startSpan("normal-span");
+      const normalSpan = startObservation("normal-span");
       normalSpan.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1);
@@ -423,7 +423,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
     it("should not call shouldExportSpan when not configured", async () => {
       // Using default testEnv without shouldExportSpan
-      const span = startSpan("default-span");
+      const span = startObservation("default-span");
       span.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1);
@@ -445,9 +445,9 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Create spans but don't trigger flush
-      const span1 = startSpan("shutdown-span-1");
+      const span1 = startObservation("shutdown-span-1");
       span1.end();
-      const span2 = startSpan("shutdown-span-2");
+      const span2 = startObservation("shutdown-span-2");
       span2.end();
 
       // Should not export yet
@@ -466,11 +466,11 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
   describe("Export Mode Selection", () => {
     it("should use BatchSpanProcessor by default", async () => {
       // Default testEnv uses batched mode
-      const span1 = startSpan("default-batch-1");
+      const span1 = startObservation("default-batch-1");
       span1.end();
 
       // Should not export immediately due to batching (default flushAt is 1 in tests)
-      const span2 = startSpan("default-batch-2");
+      const span2 = startObservation("default-batch-2");
       span2.end();
 
       await waitForSpanExport(testEnv.mockExporter, 2);
@@ -492,14 +492,14 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // First span should not export yet
-      const span1 = startSpan("batched-span-1");
+      const span1 = startObservation("batched-span-1");
       span1.end();
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(testEnv.mockExporter.getSpanCount()).toBe(0);
 
       // Second span should trigger batch export
-      const span2 = startSpan("batched-span-2");
+      const span2 = startObservation("batched-span-2");
       span2.end();
 
       await waitForSpanExport(testEnv.mockExporter, 2);
@@ -521,14 +521,14 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Each span should export immediately regardless of flushAt
-      const span1 = startSpan("immediate-span-1");
+      const span1 = startObservation("immediate-span-1");
       span1.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1);
       assertions.expectSpanCount(1);
       assertions.expectSpanWithName("immediate-span-1");
 
-      const span2 = startSpan("immediate-span-2");
+      const span2 = startObservation("immediate-span-2");
       span2.end();
 
       await waitForSpanExport(testEnv.mockExporter, 2);
@@ -548,7 +548,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const span = startSpan("immediate-test");
+      const span = startObservation("immediate-test");
       span.end();
 
       // Should export almost immediately
@@ -564,13 +564,12 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         spanProcessorConfig: {
           exportMode: "immediate",
           flushAt: 100, // Should be ignored
-          flushIntervalSeconds: 60, // Should be ignored
         },
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Should still export immediately despite batch config
-      const span = startSpan("ignore-batch-config");
+      const span = startObservation("ignore-batch-config");
       span.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1, 200);
@@ -590,16 +589,16 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       // Create two spans - should not export yet
-      const span1 = startSpan("batch-1");
+      const span1 = startObservation("batch-1");
       span1.end();
-      const span2 = startSpan("batch-2");
+      const span2 = startObservation("batch-2");
       span2.end();
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(testEnv.mockExporter.getSpanCount()).toBe(0);
 
       // Third span should trigger batch export
-      const span3 = startSpan("batch-3");
+      const span3 = startObservation("batch-3");
       span3.end();
 
       await waitForSpanExport(testEnv.mockExporter, 3);
@@ -618,7 +617,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         },
       });
 
-      const span1 = startSpan("batch-force-flush");
+      const span1 = startObservation("batch-force-flush");
       span1.end();
 
       // Should not export yet
@@ -637,7 +636,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         },
       });
 
-      const span2 = startSpan("immediate-force-flush");
+      const span2 = startObservation("immediate-force-flush");
       span2.end();
 
       await waitForSpanExport(testEnv.mockExporter, 1);

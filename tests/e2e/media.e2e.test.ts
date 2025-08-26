@@ -1,6 +1,6 @@
 import { LangfuseClient } from "@langfuse/client";
 import { resetGlobalLogger, LangfuseMedia } from "@langfuse/core";
-import { startSpan } from "@langfuse/tracing";
+import { startObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from "vitest";
 
@@ -90,7 +90,7 @@ describe("Media E2E Tests", () => {
       }).base64DataUri;
 
       // Create span with LangfuseMedia in metadata (should use toJSON to convert to media reference)
-      const span = startSpan(spanName, {
+      const span = startObservation(spanName, {
         input: {
           operation: "media processing test",
           audioData: base64DataUri,
@@ -196,7 +196,7 @@ describe("Media E2E Tests", () => {
 
       // Additional test: Create a second span with the same media to verify consistency
       const span2Name = `media-reuse-span-${testId}`;
-      const span2 = startSpan(span2Name, {
+      const span2 = startObservation(span2Name, {
         input: {
           operation: "media reuse test",
           audioData: base64DataUri, // Same data URI should produce same reference
@@ -268,7 +268,7 @@ describe("Media E2E Tests", () => {
           const resolvedAudioData = resolvedSpanObs.input.audioData;
 
           const span3Name = `media-resolved-reuse-span-${testId}`;
-          const span3 = startSpan(span3Name, {
+          const span3 = startObservation(span3Name, {
             input: {
               operation: "media resolved reuse test",
               audioData: new LangfuseMedia({
@@ -333,7 +333,7 @@ describe("Media E2E Tests", () => {
       });
 
       // Create span with LangfuseMedia in metadata (should use toJSON to convert to media reference)
-      const span = startSpan(spanName, {
+      const span = startObservation(spanName, {
         input: {
           operation: "media processing test",
           audioData: media,
@@ -439,7 +439,7 @@ describe("Media E2E Tests", () => {
 
       // Additional test: Create a second span with the same media to verify consistency
       const span2Name = `media-reuse-span-${testId}`;
-      const span2 = startSpan(span2Name, {
+      const span2 = startObservation(span2Name, {
         input: {
           operation: "media reuse test",
           audioData: media, // Same data URI should produce same reference
@@ -511,7 +511,7 @@ describe("Media E2E Tests", () => {
           const resolvedAudioData = resolvedSpanObs.input.audioData;
 
           const span3Name = `media-resolved-reuse-span-${testId}`;
-          const span3 = startSpan(span3Name, {
+          const span3 = startObservation(span3Name, {
             input: {
               operation: "media resolved reuse test",
               audioData: new LangfuseMedia({

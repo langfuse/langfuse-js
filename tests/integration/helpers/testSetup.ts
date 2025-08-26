@@ -1,10 +1,11 @@
-import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   LangfuseSpanProcessor,
   type LangfuseSpanProcessorParams,
 } from "@langfuse/otel";
-import { MockSpanExporter } from "./MockSpanExporter.js";
 import { trace } from "@opentelemetry/api";
+import { NodeSDK } from "@opentelemetry/sdk-node";
+
+import { MockSpanExporter } from "./MockSpanExporter.js";
 
 export interface TestEnvironment {
   sdk: NodeSDK;

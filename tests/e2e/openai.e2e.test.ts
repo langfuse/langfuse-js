@@ -10,7 +10,7 @@ import {
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 import { nanoid } from "nanoid";
-import { startActiveSpan } from "@langfuse/tracing";
+import { startActiveObservation } from "@langfuse/tracing";
 
 describe("OpenAI integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
@@ -88,20 +88,23 @@ describe("OpenAI integration E2E tests", () => {
   it("should trace nested OpenAI Chat Completion Create ", async () => {
     const wrappedOpenAI = observeOpenAI(new OpenAI());
 
-    const [result, traceId] = await startActiveSpan("parent", async (span) => {
-      return [
-        await wrappedOpenAI.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "user",
-              content: "whassup",
-            },
-          ],
-        }),
-        span.traceId,
-      ] as const;
-    });
+    const [result, traceId] = await startActiveObservation(
+      "parent",
+      async (span) => {
+        return [
+          await wrappedOpenAI.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "user",
+                content: "whassup",
+              },
+            ],
+          }),
+          span.traceId,
+        ] as const;
+      },
+    );
 
     console.log(result);
 
