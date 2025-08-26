@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.0-beta.8](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.7...v4.0.0-beta.8) (2025-08-26)
+
+### ✨ Features
+
+* **tracing:** add observation types ([#594](https://github.com/langfuse/langfuse-js/issues/594)) ([31586ff](https://github.com/langfuse/langfuse-js/commit/31586ff3c951aa42f100d1dc4ce51082cc3dc863))
+
 ## [4.0.0-beta.7](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.6...v4.0.0-beta.7) (2025-08-25)
 
 ### ✨ Features
