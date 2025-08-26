@@ -67,10 +67,10 @@ export type LangfuseGenerationAttributes = LangfuseSpanAttributes & {
   /** Timestamp when the model started generating completion */
   completionStartTime?: Date;
   /** Name of the language model used (e.g., 'gpt-4', 'claude-3') */
-  model?: string | null;
+  model?: string;
   /** Parameters passed to the model (temperature, max_tokens, etc.) */
   modelParameters?: {
-    [key: string]: string | number | null;
+    [key: string]: string | number;
   };
   /** Token usage and other model-specific usage metrics */
   usageDetails?:
@@ -100,10 +100,9 @@ export type LangfuseGenerationAttributes = LangfuseSpanAttributes & {
  *
  * @public
  */
-export type LangfuseAttributes =
-  | LangfuseSpanAttributes
-  | LangfuseGenerationAttributes
-  | LangfuseEventAttributes;
+export type LangfuseObservationAttributes = LangfuseSpanAttributes &
+  LangfuseGenerationAttributes &
+  LangfuseEventAttributes;
 
 /**
  * Attributes for Langfuse traces.

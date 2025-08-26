@@ -10,8 +10,7 @@ import {
 } from "@opentelemetry/api";
 
 import {
-  createGenerationAttributes,
-  createSpanAttributes,
+  createObservationAttributes,
   createTraceAttributes,
 } from "./attributes.js";
 import {
@@ -34,15 +33,14 @@ export type {
   LangfuseSpanAttributes,
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
-  LangfuseAttributes,
+  LangfuseObservationAttributes,
   LangfuseTraceAttributes,
 } from "./types.js";
 
 export * from "./spanWrapper.js";
 export {
   createTraceAttributes,
-  createSpanAttributes,
-  createGenerationAttributes,
+  createObservationAttributes,
 } from "./attributes.js";
 export {
   setLangfuseTracerProvider,
@@ -435,7 +433,7 @@ export function updateActiveSpan(attributes: LangfuseSpanAttributes) {
     return;
   }
 
-  span.setAttributes(createSpanAttributes(attributes));
+  span.setAttributes(createObservationAttributes("span", attributes));
 }
 
 /**
@@ -476,7 +474,7 @@ export function updateActiveGeneration(
     return;
   }
 
-  span.setAttributes(createGenerationAttributes(attributes));
+  span.setAttributes(createObservationAttributes("generation", attributes));
 }
 
 /**

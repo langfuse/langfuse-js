@@ -1,9 +1,7 @@
 import { Span, TimeInput } from "@opentelemetry/api";
 
 import {
-  createEventAttributes,
-  createGenerationAttributes,
-  createSpanAttributes,
+  createObservationAttributes,
   createTraceAttributes,
 } from "./attributes.js";
 import { getLangfuseTracer } from "./tracerProvider.js";
@@ -13,7 +11,10 @@ import {
   LangfuseEventAttributes,
   LangfuseTraceAttributes,
 } from "./types.js";
-import type { LangfuseObservationType } from "./types.js";
+import type {
+  LangfuseObservationAttributes,
+  LangfuseObservationType,
+} from "./types.js";
 
 import { startObservation } from "./index.js";
 
@@ -37,6 +38,7 @@ export type LangfuseObservationUnion =
  */
 type LangfuseObservationParams = {
   otelSpan: Span;
+  type: LangfuseObservationType;
   attributes?:
     | LangfuseSpanAttributes
     | LangfuseGenerationAttributes
@@ -52,9 +54,11 @@ type LangfuseObservationParams = {
  *
  * @internal
  */
-abstract class LangfuseObservation {
+abstract class LangfuseBaseObservation {
   /** The underlying OpenTelemetry span */
   public readonly otelSpan: Span;
+  /** The underlying OpenTelemetry span */
+  public readonly type: LangfuseObservationType;
   /** The span ID from the OpenTelemetry span context */
   public id: string;
   /** The trace ID from the OpenTelemetry span context */
@@ -64,6 +68,13 @@ abstract class LangfuseObservation {
     this.otelSpan = params.otelSpan;
     this.id = params.otelSpan.spanContext().spanId;
     this.traceId = params.otelSpan.spanContext().traceId;
+    this.type = params.type;
+
+    if (params.attributes) {
+      this.otelSpan.setAttributes(
+        createObservationAttributes(params.type, params.attributes),
+      );
+    }
   }
 
   /** Gets the Langfuse OpenTelemetry tracer instance */
@@ -78,6 +89,12 @@ abstract class LangfuseObservation {
    */
   public end(endTime?: TimeInput) {
     this.otelSpan.end(endTime);
+  }
+
+  updateOtelSpanAttributes(attributes: LangfuseObservationAttributes) {
+    this.otelSpan.setAttributes(
+      createObservationAttributes(this.type, attributes),
+    );
   }
 
   /**
@@ -198,12 +215,9 @@ type LangfuseSpanParams = {
  *
  * @public
  */
-export class LangfuseSpan extends LangfuseObservation {
+export class LangfuseSpan extends LangfuseBaseObservation {
   constructor(params: LangfuseSpanParams) {
-    super(params);
-    if (params.attributes) {
-      this.otelSpan.setAttributes(createSpanAttributes(params.attributes));
-    }
+    super({ ...params, type: "span" });
   }
 
   /**
@@ -222,7 +236,7 @@ export class LangfuseSpan extends LangfuseObservation {
    * ```
    */
   public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
-    this.otelSpan.setAttributes(createSpanAttributes(attributes));
+    super.updateOtelSpanAttributes(attributes);
 
     return this;
   }
@@ -246,14 +260,9 @@ type LangfuseGenerationParams = {
  *
  * @public
  */
-export class LangfuseGeneration extends LangfuseObservation {
+export class LangfuseGeneration extends LangfuseBaseObservation {
   constructor(params: LangfuseGenerationParams) {
-    super(params);
-    if (params.attributes) {
-      this.otelSpan.setAttributes(
-        createGenerationAttributes(params.attributes),
-      );
-    }
+    super({ ...params, type: "generation" });
   }
 
   /**
@@ -276,7 +285,7 @@ export class LangfuseGeneration extends LangfuseObservation {
    * ```
    */
   update(attributes: LangfuseGenerationAttributes): LangfuseGeneration {
-    this.otelSpan.setAttributes(createGenerationAttributes(attributes));
+    this.updateOtelSpanAttributes(attributes);
 
     return this;
   }
@@ -302,13 +311,9 @@ type LangfuseEventParams = {
  *
  * @public
  */
-export class LangfuseEvent extends LangfuseObservation {
+export class LangfuseEvent extends LangfuseBaseObservation {
   constructor(params: LangfuseEventParams) {
-    super(params);
-
-    if (params.attributes) {
-      this.otelSpan.setAttributes(createEventAttributes(params.attributes));
-    }
+    super({ ...params, type: "event" });
 
     // Events are automatically ended at their timestamp
     this.otelSpan.end(params.timestamp);

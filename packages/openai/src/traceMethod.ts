@@ -60,7 +60,7 @@ const wrapMethod = <T extends GenericMethod>(
 ): ReturnType<T> | any => {
   const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
 
-  const finalModelParams = { ...modelParameters, response_format: null };
+  const finalModelParams = { ...modelParameters, response_format: "" };
   const finalMetadata = {
     ...config?.generationMetadata,
     response_format:
