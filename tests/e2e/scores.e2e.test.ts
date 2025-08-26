@@ -1,3 +1,8 @@
+import { LangfuseClient } from "@langfuse/client";
+import { resetGlobalLogger } from "@langfuse/core";
+import { startObservation } from "@langfuse/tracing";
+import { trace } from "@opentelemetry/api";
+import { nanoid } from "nanoid";
 import {
   describe,
   it,
@@ -7,18 +12,14 @@ import {
   beforeAll,
   vi,
 } from "vitest";
-import { trace } from "@opentelemetry/api";
-import { LangfuseClient } from "@langfuse/client";
-import { resetGlobalLogger } from "@langfuse/core";
-import { startObservation } from "@langfuse/tracing";
+
+import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
   waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
-import { ServerAssertions } from "./helpers/serverAssertions.js";
-import { nanoid } from "nanoid";
 
 function createLangfuseClient(): LangfuseClient {
   return new LangfuseClient();
@@ -594,8 +595,10 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       // Create nested span structure using proper parent-child relationships
       const rootSpan = startObservation(`root-span-${baseTime}`);
-      const childSpan = rootSpan.startSpan(`child-span-${baseTime}`);
-      const grandchildSpan = childSpan.startSpan(`grandchild-span-${baseTime}`);
+      const childSpan = rootSpan.startObservation(`child-span-${baseTime}`);
+      const grandchildSpan = childSpan.startObservation(
+        `grandchild-span-${baseTime}`,
+      );
 
       // Validate proper parent-child relationships
       const rootContext = rootSpan.otelSpan.spanContext();

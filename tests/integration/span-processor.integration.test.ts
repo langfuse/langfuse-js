@@ -564,7 +564,6 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         spanProcessorConfig: {
           exportMode: "immediate",
           flushAt: 100, // Should be ignored
-          flushIntervalSeconds: 60, // Should be ignored
         },
       });
       assertions = new SpanAssertions(testEnv.mockExporter);

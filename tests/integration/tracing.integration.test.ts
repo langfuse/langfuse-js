@@ -2,8 +2,7 @@ import {
   startObservation,
   startActiveObservation,
   observe,
-  updateActiveSpan,
-  updateActiveGeneration,
+  updateActiveObservation,
   updateActiveTrace,
   LangfuseOtelSpanAttributes,
   createTraceId,
@@ -4119,7 +4118,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should update active span attributes when called within startActiveObservation", async () => {
         await startActiveObservation("test-span", (span) => {
           // Update the active span with new attributes
-          updateActiveSpan({
+          updateActiveObservation("span", {
             input: { prompt: "updated input" },
             output: { result: "updated output" },
             metadata: { key: "updated value" },
@@ -4148,7 +4147,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should do nothing when called without active span", async () => {
         // Call updateActiveSpan without any active span context
-        updateActiveSpan({
+        updateActiveObservation("span", {
           input: { prompt: "should not work" },
         });
 
@@ -4159,7 +4158,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should update span during observe function execution", async () => {
         function testFunc(input: string) {
-          updateActiveSpan({
+          updateActiveObservation("span", {
             metadata: { executionStep: "processing" },
             // Note: observe function will override output with return value
           });
@@ -4192,7 +4191,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           "llm-call",
           (generation) => {
             // Update the active generation with new attributes
-            updateActiveGeneration({
+            updateActiveObservation("generation", {
               model: "gpt-4",
               usageDetails: {
                 promptTokens: 10,
@@ -4234,7 +4233,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should do nothing when called without active span", async () => {
         // Call updateActiveGeneration without any active span context
-        updateActiveGeneration({
+        updateActiveObservation("generation", {
           model: "gpt-4",
           input: { prompt: "should not work" },
         });
@@ -4246,7 +4245,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should update generation during observe function with asType generation", async () => {
         function llmFunc(prompt: string) {
-          updateActiveGeneration({
+          updateActiveObservation("generation", {
             model: "gpt-3.5-turbo",
             usageDetails: {
               promptTokens: 15,
@@ -4435,7 +4434,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             userId: "user-combined",
           });
 
-          updateActiveSpan({
+          updateActiveObservation("span", {
             input: { operation: "combined-operation" },
             metadata: { step: "1" },
           });
@@ -4480,7 +4479,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
               sessionId: "session-llm",
             });
 
-            updateActiveGeneration({
+            updateActiveObservation("generation", {
               model: "gpt-4",
               usageDetails: {
                 promptTokens: 50,
