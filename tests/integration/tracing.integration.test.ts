@@ -681,6 +681,264 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
   });
 
+  describe("startObservation with agent type", () => {
+    it("should create and export an agent observation", async () => {
+      const agent = startObservation(
+        "test-agent",
+        {
+          input: { query: "What's the weather?" },
+          metadata: { model: "gpt-4", tools: ["weather-api"] },
+        },
+        { asType: "agent" },
+      );
+      agent.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("test-agent");
+      assertions.expectSpanAttribute(
+        "test-agent",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "span",
+      );
+      assertions.expectSpanAttribute(
+        "test-agent",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"query":"What\'s the weather?"}',
+      );
+    });
+
+    it("should allow updating agent attributes", async () => {
+      const agent = startObservation(
+        "agent-with-updates",
+        {
+          input: { task: "analyze document" },
+        },
+        { asType: "agent" },
+      );
+
+      agent.update({
+        output: { analysis: "Document contains 5 sections" },
+        metadata: { processingTime: 150 },
+      });
+
+      agent.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "agent-with-updates",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"analysis":"Document contains 5 sections"}',
+      );
+      assertions.expectSpanAttribute(
+        "agent-with-updates",
+        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".processingTime",
+        "150",
+      );
+    });
+  });
+
+  describe("startObservation with tool type", () => {
+    it("should create and export a tool observation", async () => {
+      const tool = startObservation(
+        "weather-tool",
+        {
+          input: { location: "San Francisco" },
+          metadata: { toolType: "api", timeout: 5000 },
+        },
+        { asType: "tool" },
+      );
+      tool.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("weather-tool");
+      assertions.expectSpanAttribute(
+        "weather-tool",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "span",
+      );
+      assertions.expectSpanAttribute(
+        "weather-tool",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"location":"San Francisco"}',
+      );
+    });
+  });
+
+  describe("startObservation with chain type", () => {
+    it("should create and export a chain observation", async () => {
+      const chain = startObservation(
+        "rag-chain",
+        {
+          input: { query: "What is machine learning?" },
+          metadata: { steps: ["retrieval", "generation"], model: "gpt-4" },
+        },
+        { asType: "chain" },
+      );
+
+      chain.update({
+        output: { answer: "Machine learning is...", sources: ["doc1", "doc2"] },
+      });
+
+      chain.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("rag-chain");
+      assertions.expectSpanAttribute(
+        "rag-chain",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"answer":"Machine learning is...","sources":["doc1","doc2"]}',
+      );
+    });
+  });
+
+  describe("startObservation with retriever type", () => {
+    it("should create and export a retriever observation", async () => {
+      const retriever = startObservation(
+        "vector-search",
+        {
+          input: { query: "machine learning algorithms", topK: 5 },
+          metadata: { vectorStore: "pinecone", similarity: "cosine" },
+        },
+        { asType: "retriever" },
+      );
+
+      retriever.update({
+        output: {
+          documents: [
+            { id: "doc1", score: 0.95 },
+            { id: "doc2", score: 0.87 },
+          ],
+        },
+      });
+
+      retriever.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("vector-search");
+      assertions.expectSpanAttribute(
+        "vector-search",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"query":"machine learning algorithms","topK":5}',
+      );
+    });
+  });
+
+  describe("startObservation with evaluator type", () => {
+    it("should create and export an evaluator observation", async () => {
+      const evaluator = startObservation(
+        "quality-evaluator",
+        {
+          input: {
+            response: "The sky is blue because of Rayleigh scattering.",
+            expectedAnswer:
+              "Blue light is scattered more by particles in atmosphere.",
+          },
+          metadata: { metric: "semantic-similarity", threshold: 0.8 },
+        },
+        { asType: "evaluator" },
+      );
+
+      evaluator.update({
+        output: { score: 0.92, passed: true },
+      });
+
+      evaluator.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("quality-evaluator");
+      assertions.expectSpanAttribute(
+        "quality-evaluator",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"score":0.92,"passed":true}',
+      );
+    });
+  });
+
+  describe("startObservation with guardrail type", () => {
+    it("should create and export a guardrail observation", async () => {
+      const guardrail = startObservation(
+        "content-filter",
+        {
+          input: {
+            text: "This is a test message",
+            rules: ["no-profanity", "no-pii"],
+          },
+          metadata: { filterType: "content", strictMode: true },
+        },
+        { asType: "guardrail" },
+      );
+
+      guardrail.update({
+        output: { allowed: true, violations: [], confidence: 0.99 },
+        level: "DEFAULT",
+      });
+
+      guardrail.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("content-filter");
+      assertions.expectSpanAttribute(
+        "content-filter",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"allowed":true,"violations":[],"confidence":0.99}',
+      );
+    });
+  });
+
+  describe("startObservation with embedding type", () => {
+    it("should create and export an embedding observation", async () => {
+      const embedding = startObservation(
+        "text-embedder",
+        {
+          input: { texts: ["Hello world", "Machine learning"] },
+          model: "text-embedding-ada-002",
+          metadata: { dimensions: 1536 },
+        },
+        { asType: "embedding" },
+      );
+
+      embedding.update({
+        output: {
+          embeddings: [
+            [0.1, 0.2, 0.3],
+            [0.4, 0.5, 0.6],
+          ],
+        },
+        usageDetails: { totalTokens: 8 },
+      });
+
+      embedding.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("text-embedder");
+      assertions.expectSpanAttribute(
+        "text-embedder",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "generation",
+      );
+      assertions.expectSpanAttribute(
+        "text-embedder",
+        LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+        '{"texts":["Hello world","Machine learning"]}',
+      );
+    });
+  });
+
   describe("startActiveObservation method", () => {
     it("should execute function with active span context", async () => {
       let spanFromFunction: any = null;
@@ -2206,6 +2464,290 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           "inference",
         );
       });
+    });
+  });
+
+  describe("startActiveObservation with new observation types", () => {
+    it("should execute function with active agent context", async () => {
+      const result = await startActiveObservation(
+        "ai-agent-workflow",
+        async (agent) => {
+          agent.update({
+            input: { task: "analyze sentiment" },
+            metadata: { model: "gpt-4", tools: ["sentiment-api"] },
+          });
+
+          // Simulate agent processing
+          await new Promise((resolve) => setTimeout(resolve, 10));
+
+          agent.update({
+            output: { sentiment: "positive", confidence: 0.95 },
+            level: "DEFAULT",
+          });
+
+          return { processed: true, sentiment: "positive" };
+        },
+        { asType: "agent" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toEqual({ processed: true, sentiment: "positive" });
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("ai-agent-workflow");
+      assertions.expectSpanAttribute(
+        "ai-agent-workflow",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        '{"sentiment":"positive","confidence":0.95}',
+      );
+    });
+
+    it("should execute function with active tool context", async () => {
+      const result = startActiveObservation(
+        "api-tool-call",
+        (tool) => {
+          tool.update({
+            input: { endpoint: "/weather", params: { city: "NYC" } },
+            metadata: { timeout: 5000, retries: 3 },
+          });
+
+          tool.update({
+            output: { temperature: 72, conditions: "sunny" },
+          });
+
+          return { success: true, data: { temperature: 72 } };
+        },
+        { asType: "tool" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toEqual({ success: true, data: { temperature: 72 } });
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("api-tool-call");
+    });
+
+    it("should execute function with active chain context", async () => {
+      const result = await startActiveObservation(
+        "rag-chain-execution",
+        async (chain) => {
+          chain.update({
+            input: { query: "What is quantum computing?" },
+            metadata: { steps: ["retrieve", "rerank", "generate"] },
+          });
+
+          // Simulate chain steps
+          const retrieved = await Promise.resolve(["doc1", "doc2"]);
+          const generated = await Promise.resolve("Quantum computing is...");
+
+          chain.update({
+            output: { answer: generated, sources: retrieved },
+          });
+
+          return { answer: generated, sourceCount: retrieved.length };
+        },
+        { asType: "chain" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.sourceCount).toBe(2);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("rag-chain-execution");
+    });
+
+    it("should execute function with active retriever context", async () => {
+      const result = startActiveObservation(
+        "vector-retrieval",
+        (retriever) => {
+          retriever.update({
+            input: { query: "machine learning", topK: 5 },
+            metadata: { vectorStore: "chroma", similarity: "cosine" },
+          });
+
+          const docs = [
+            { id: "doc1", score: 0.95, content: "ML overview" },
+            { id: "doc2", score: 0.87, content: "Deep learning" },
+          ];
+
+          retriever.update({
+            output: { documents: docs, totalFound: 2 },
+          });
+
+          return docs;
+        },
+        { asType: "retriever" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toHaveLength(2);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("vector-retrieval");
+    });
+
+    it("should execute function with active evaluator context", async () => {
+      const result = await startActiveObservation(
+        "response-evaluator",
+        async (evaluator) => {
+          evaluator.update({
+            input: {
+              response: "Paris is the capital of France.",
+              reference: "The capital city of France is Paris.",
+            },
+            metadata: { metric: "bleu-score", version: "v1" },
+          });
+
+          // Simulate evaluation
+          const score = await Promise.resolve(0.94);
+
+          evaluator.update({
+            output: { score, grade: "excellent", passed: score > 0.8 },
+          });
+
+          return { evaluation: "passed", score };
+        },
+        { asType: "evaluator" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.evaluation).toBe("passed");
+      expect(result.score).toBe(0.94);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("response-evaluator");
+    });
+
+    it("should execute function with active guardrail context", async () => {
+      const result = startActiveObservation(
+        "safety-guardrail",
+        (guardrail) => {
+          guardrail.update({
+            input: {
+              text: "Tell me about renewable energy",
+              policies: ["no-harmful-content", "factual-only"],
+            },
+            metadata: { strictMode: true, version: "v2" },
+          });
+
+          const analysis = {
+            allowed: true,
+            violations: [],
+            confidence: 0.99,
+            flagged_terms: [],
+          };
+
+          guardrail.update({
+            output: analysis,
+            level: "DEFAULT",
+          });
+
+          return { safe: analysis.allowed, confidence: analysis.confidence };
+        },
+        { asType: "guardrail" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.safe).toBe(true);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("safety-guardrail");
+    });
+
+    it("should execute function with active embedding context", async () => {
+      const result = await startActiveObservation(
+        "text-embedding",
+        async (embedding) => {
+          embedding.update({
+            input: { texts: ["Hello", "World"] },
+            model: "text-embedding-ada-002",
+            metadata: { dimensions: 1536 },
+          });
+
+          // Simulate embedding generation
+          const embeddings = await Promise.resolve([
+            [0.1, 0.2, 0.3],
+            [0.4, 0.5, 0.6],
+          ]);
+
+          embedding.update({
+            output: { embeddings },
+            usageDetails: { totalTokens: 4 },
+          });
+
+          return { embeddings, count: embeddings.length };
+        },
+        { asType: "embedding" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result.count).toBe(2);
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("text-embedding");
+      assertions.expectSpanAttribute(
+        "text-embedding",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "generation",
+      );
+    });
+
+    it("should handle nested observations with different types", async () => {
+      const result = await startActiveObservation(
+        "ai-pipeline",
+        async (agent) => {
+          agent.update({
+            input: { request: "Process document and answer questions" },
+            metadata: { pipeline: "qa-system" },
+          });
+
+          // Create nested retriever
+          const docs = agent.startObservation(
+            "document-search",
+            {
+              input: { query: "machine learning" },
+              metadata: { index: "documents" },
+            },
+            { asType: "retriever" },
+          );
+
+          docs.update({
+            output: { documents: ["doc1", "doc2"], count: 2 },
+          });
+          docs.end();
+
+          // Create nested generation
+          const answer = agent.startObservation(
+            "answer-generation",
+            {
+              input: { context: "doc1, doc2", question: "What is ML?" },
+              model: "gpt-4",
+            },
+            { asType: "generation" },
+          );
+
+          answer.update({
+            output: { answer: "Machine learning is..." },
+            usageDetails: { promptTokens: 50, completionTokens: 25 },
+          });
+          answer.end();
+
+          agent.update({
+            output: { answer: "Machine learning is...", sources: 2 },
+          });
+
+          return { completed: true };
+        },
+        { asType: "agent" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+
+      expect(result.completed).toBe(true);
+      assertions.expectSpanCount(3);
+      assertions.expectSpanWithName("ai-pipeline");
+      assertions.expectSpanWithName("document-search");
+      assertions.expectSpanWithName("answer-generation");
     });
   });
 
