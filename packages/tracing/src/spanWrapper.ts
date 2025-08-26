@@ -641,12 +641,114 @@ type LangfuseAgentParams = {
   attributes?: LangfuseAgentAttributes;
 };
 
+/**
+ * Specialized observation wrapper for tracking AI agent workflows and autonomous operations.
+ *
+ * LangfuseAgent is designed for observing intelligent agent systems that combine reasoning,
+ * tool usage, memory management, and decision-making in autonomous workflows. It captures
+ * the complex multi-step nature of agent operations, including planning, execution, and
+ * self-correction cycles typical in advanced AI agent architectures.
+ *
+ * ## Primary Use Cases
+ * - **Autonomous AI Agents**: ReAct, AutoGPT, LangGraph agent implementations
+ * - **Tool-Using Agents**: Function calling agents with external API access
+ * - **Multi-Step Reasoning**: Chain-of-thought, tree-of-thought agent workflows
+ * - **Planning Agents**: Goal decomposition and task planning systems
+ * - **Conversational Agents**: Multi-turn dialogue agents with memory
+ * - **Code Generation Agents**: AI assistants that write, test, and debug code
+ *
+ * ## Key Features
+ * - **Multi-Step Tracking**: Captures entire agent workflow from planning to execution
+ * - **Tool Integration**: Records all tool calls and their results within agent context
+ * - **Decision Logic**: Tracks reasoning steps, decisions, and strategy adaptations
+ * - **Memory Management**: Observes how agents maintain and use context across steps
+ * - **Error Recovery**: Monitors how agents handle failures and adapt their approach
+ * - **Performance Metrics**: Measures agent efficiency, success rates, and resource usage
+ *
+ * ## Agent-Specific Patterns
+ * - **Planning Phase**: Initial goal analysis and strategy formulation
+ * - **Execution Loop**: Iterative action-observation-reasoning cycles
+ * - **Tool Selection**: Dynamic tool choice based on context and goals
+ * - **Self-Correction**: Error detection and strategy adjustment
+ * - **Memory Updates**: Context retention and knowledge accumulation
+ * - **Final Synthesis**: Result compilation and quality assessment
+ *
+ * @example
+ * ```typescript
+ * // Basic agent workflow
+ * const agent = startObservation('research-agent', {
+ *   input: {
+ *     task: 'Research renewable energy trends',
+ *     tools: ['web-search', 'summarizer'],
+ *     maxIterations: 3
+ *   }
+ * }, { asType: 'agent' });
+ *
+ * // Agent uses tools and makes decisions
+ * const searchTool = agent.startObservation('web-search', {
+ *   input: { query: 'renewable energy 2024' }
+ * }, { asType: 'tool' });
+ *
+ * const results = await webSearch('renewable energy 2024');
+ * searchTool.update({ output: results });
+ * searchTool.end();
+ *
+ * // Agent generates final response
+ * const generation = agent.startObservation('synthesize-findings', {
+ *   input: results,
+ *   model: 'gpt-4'
+ * }, { asType: 'generation' });
+ *
+ * const response = await llm.generate(results);
+ * generation.update({ output: response });
+ * generation.end();
+ *
+ * agent.update({
+ *   output: {
+ *     completed: true,
+ *     toolsUsed: 1,
+ *     finalResponse: response
+ *   }
+ * });
+ * agent.end();
+ * ```
+ *
+ * @see {@link startObservation} with `{ asType: 'agent' }` - Factory function
+ * @see {@link startActiveObservation} with `{ asType: 'agent' }` - Function-scoped agent
+ * @see {@link LangfuseTool} - For individual tool executions within agents
+ * @see {@link LangfuseChain} - For structured multi-step workflows
+ *
+ * @public
+ */
 export class LangfuseAgent extends LangfuseBaseObservation {
   constructor(params: LangfuseAgentParams) {
     super({ ...params, type: "agent" });
   }
 
-  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+  /**
+   * Updates this agent observation with new attributes.
+   *
+   * @param attributes - Agent attributes to set
+   * @returns This agent for method chaining
+   *
+   * @example
+   * ```typescript
+   * agent.update({
+   *   output: {
+   *     taskCompleted: true,
+   *     iterationsUsed: 5,
+   *     toolsInvoked: ['web-search', 'calculator', 'summarizer'],
+   *     finalResult: 'Research completed with high confidence'
+   *   },
+   *   metadata: {
+   *     efficiency: 0.85,
+   *     qualityScore: 0.92,
+   *     resourcesConsumed: { tokens: 15000, apiCalls: 12 }
+   *   }
+   * });
+   * ```
+   */
+  public update(attributes: LangfuseAgentAttributes): LangfuseAgent {
     super.updateOtelSpanAttributes(attributes);
 
     return this;
@@ -658,12 +760,124 @@ type LangfuseToolParams = {
   attributes?: LangfuseToolAttributes;
 };
 
+/**
+ * Specialized observation wrapper for tracking individual tool calls and external API interactions.
+ *
+ * LangfuseTool is designed for observing discrete tool invocations within agent workflows,
+ * function calling scenarios, or standalone API integrations. It captures the input parameters,
+ * execution results, performance metrics, and error conditions of tool operations, making it
+ * essential for debugging tool reliability and optimizing tool selection strategies.
+ *
+ * ## Primary Use Cases
+ * - **Function Calling**: OpenAI function calls, Anthropic tool use, Claude function calling
+ * - **External APIs**: REST API calls, GraphQL queries, database operations
+ * - **System Tools**: File operations, shell commands, system integrations
+ * - **Data Processing Tools**: Calculators, converters, validators, parsers
+ * - **Search Tools**: Web search, vector search, document retrieval
+ * - **Content Tools**: Image generation, text processing, format conversion
+ *
+ * ## Key Features
+ * - **Parameter Tracking**: Complete input parameter logging and validation
+ * - **Result Capture**: Full output data and metadata from tool execution
+ * - **Performance Monitoring**: Execution time, success rates, retry attempts
+ * - **Error Analysis**: Detailed error tracking with context and recovery info
+ * - **Usage Analytics**: Frequency, patterns, and efficiency metrics
+ * - **Integration Health**: API status, rate limits, and service availability
+ *
+ * ## Tool-Specific Patterns
+ * - **Input Validation**: Parameter checking and sanitization before execution
+ * - **Execution Monitoring**: Real-time performance and status tracking
+ * - **Result Processing**: Output validation, transformation, and formatting
+ * - **Error Handling**: Retry logic, fallbacks, and graceful degradation
+ * - **Caching Integration**: Result caching and cache hit/miss tracking
+ * - **Rate Limiting**: Request throttling and quota management
+ *
+ * @example
+ * ```typescript
+ * // Web search tool
+ * const searchTool = startObservation('web-search', {
+ *   input: {
+ *     query: 'latest AI developments',
+ *     maxResults: 10
+ *   },
+ *   metadata: { provider: 'google-api' }
+ * }, { asType: 'tool' });
+ *
+ * try {
+ *   const results = await webSearch('latest AI developments');
+ *
+ *   searchTool.update({
+ *     output: {
+ *       results: results,
+ *       count: results.length
+ *     },
+ *     metadata: {
+ *       latency: 1200,
+ *       cacheHit: false
+ *     }
+ *   });
+ * } catch (error) {
+ *   searchTool.update({
+ *     level: 'ERROR',
+ *     statusMessage: 'Search failed',
+ *     output: { error: error.message }
+ *   });
+ * } finally {
+ *   searchTool.end();
+ * }
+ *
+ * // Database query tool
+ * const dbTool = startObservation('db-query', {
+ *   input: {
+ *     query: 'SELECT * FROM users WHERE active = true',
+ *     timeout: 30000
+ *   }
+ * }, { asType: 'tool' });
+ *
+ * const result = await db.query('SELECT * FROM users WHERE active = true');
+ * dbTool.update({
+ *   output: { rowCount: result.length },
+ *   metadata: { executionTime: 150 }
+ * });
+ * dbTool.end();
+ * ```
+ *
+ * @see {@link startObservation} with `{ asType: 'tool' }` - Factory function
+ * @see {@link startActiveObservation} with `{ asType: 'tool' }` - Function-scoped tool
+ * @see {@link LangfuseAgent} - For agent workflows that use multiple tools
+ * @see {@link LangfuseChain} - For orchestrated tool sequences
+ *
+ * @public
+ */
 export class LangfuseTool extends LangfuseBaseObservation {
   constructor(params: LangfuseToolParams) {
     super({ ...params, type: "tool" });
   }
 
-  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+  /**
+   * Updates this tool observation with new attributes.
+   *
+   * @param attributes - Tool attributes to set
+   * @returns This tool for method chaining
+   *
+   * @example
+   * ```typescript
+   * tool.update({
+   *   output: {
+   *     result: searchResults,
+   *     count: searchResults.length,
+   *     relevanceScore: 0.89,
+   *     executionTime: 1250
+   *   },
+   *   metadata: {
+   *     cacheHit: false,
+   *     apiCost: 0.025,
+   *     rateLimitRemaining: 950
+   *   }
+   * });
+   * ```
+   */
+  public update(attributes: LangfuseToolAttributes): LangfuseTool {
     super.updateOtelSpanAttributes(attributes);
 
     return this;
@@ -675,12 +889,119 @@ type LangfuseChainParams = {
   attributes?: LangfuseChainAttributes;
 };
 
+/**
+ * Specialized observation wrapper for tracking structured multi-step workflows and process chains.
+ *
+ * LangfuseChain is designed for observing sequential, parallel, or conditional workflow orchestration
+ * where multiple operations are coordinated to achieve a larger goal. It captures the flow of data
+ * between steps, manages dependencies, tracks progress through complex pipelines, and provides
+ * insights into workflow performance and reliability patterns.
+ *
+ * ## Primary Use Cases
+ * - **Data Processing Pipelines**: ETL processes, data transformation workflows
+ * - **Business Process Automation**: Order processing, approval workflows, document processing
+ * - **LangChain Integration**: LangChain chain execution and orchestration
+ * - **RAG Pipelines**: Document retrieval → context preparation → generation → post-processing
+ * - **Multi-Model Workflows**: Preprocessing → model inference → post-processing → validation
+ * - **Content Production**: Research → drafting → review → editing → publishing
+ *
+ * ## Key Features
+ * - **Step Orchestration**: Sequential, parallel, and conditional step execution tracking
+ * - **Data Flow Management**: Input/output tracking between pipeline steps
+ * - **Dependency Resolution**: Manages complex step dependencies and prerequisites
+ * - **Progress Monitoring**: Real-time workflow progress and completion status
+ * - **Error Propagation**: Handles failures, retries, and recovery across workflow steps
+ * - **Performance Analytics**: Bottleneck identification and optimization insights
+ *
+ * ## Chain-Specific Patterns
+ * - **Pipeline Setup**: Workflow definition, step configuration, and dependency mapping
+ * - **Sequential Execution**: Step-by-step processing with state management
+ * - **Parallel Processing**: Concurrent step execution with synchronization
+ * - **Conditional Logic**: Dynamic branching based on intermediate results
+ * - **Error Recovery**: Failure handling, rollback, and alternative path execution
+ * - **Result Aggregation**: Combining outputs from multiple workflow branches
+ *
+ * @example
+ * ```typescript
+ * // RAG processing chain
+ * const ragChain = startObservation('rag-chain', {
+ *   input: {
+ *     query: 'What is renewable energy?',
+ *     steps: ['retrieval', 'generation']
+ *   }
+ * }, { asType: 'chain' });
+ *
+ * // Step 1: Document retrieval
+ * const retrieval = ragChain.startObservation('document-retrieval', {
+ *   input: { query: 'renewable energy' }
+ * }, { asType: 'retriever' });
+ *
+ * const docs = await vectorSearch('renewable energy');
+ * retrieval.update({ output: { documents: docs, count: docs.length } });
+ * retrieval.end();
+ *
+ * // Step 2: Generate response
+ * const generation = ragChain.startObservation('response-generation', {
+ *   input: {
+ *     query: 'What is renewable energy?',
+ *     context: docs
+ *   },
+ *   model: 'gpt-4'
+ * }, { asType: 'generation' });
+ *
+ * const response = await llm.generate({
+ *   prompt: buildPrompt('What is renewable energy?', docs)
+ * });
+ *
+ * generation.update({ output: response });
+ * generation.end();
+ *
+ * ragChain.update({
+ *   output: {
+ *     finalResponse: response,
+ *     stepsCompleted: 2,
+ *     documentsUsed: docs.length
+ *   }
+ * });
+ * ragChain.end();
+ * ```
+ *
+ * @see {@link startObservation} with `{ asType: 'chain' }` - Factory function
+ * @see {@link startActiveObservation} with `{ asType: 'chain' }` - Function-scoped chain
+ * @see {@link LangfuseSpan} - For individual workflow steps
+ * @see {@link LangfuseAgent} - For intelligent workflow orchestration
+ *
+ * @public
+ */
 export class LangfuseChain extends LangfuseBaseObservation {
   constructor(params: LangfuseChainParams) {
     super({ ...params, type: "chain" });
   }
 
-  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+  /**
+   * Updates this chain observation with new attributes.
+   *
+   * @param attributes - Chain attributes to set
+   * @returns This chain for method chaining
+   *
+   * @example
+   * ```typescript
+   * chain.update({
+   *   output: {
+   *     stepsCompleted: 5,
+   *     stepsSuccessful: 4,
+   *     finalResult: processedData,
+   *     pipelineEfficiency: 0.87
+   *   },
+   *   metadata: {
+   *     bottleneckStep: 'data-validation',
+   *     parallelizationOpportunities: ['step-2', 'step-3'],
+   *     optimizationSuggestions: ['cache-intermediate-results']
+   *   }
+   * });
+   * ```
+   */
+  public update(attributes: LangfuseChainAttributes): LangfuseChain {
     super.updateOtelSpanAttributes(attributes);
 
     return this;
@@ -692,12 +1013,83 @@ type LangfuseRetrieverParams = {
   attributes?: LangfuseRetrieverAttributes;
 };
 
+/**
+ * Specialized observation wrapper for tracking document retrieval and search operations.
+ *
+ * LangfuseRetriever is designed for observing information retrieval systems that search,
+ * filter, and rank content from various data sources. It captures search queries, retrieval
+ * strategies, result quality metrics, and performance characteristics of search operations,
+ * making it essential for RAG systems, knowledge bases, and content discovery workflows.
+ *
+ * ## Primary Use Cases
+ * - **Vector Search**: Semantic similarity search using embeddings and vector databases
+ * - **Document Retrieval**: Full-text search, keyword matching, and document filtering
+ * - **Knowledge Base Query**: FAQ systems, help documentation, and knowledge management
+ * - **RAG Systems**: Retrieval step in retrieval-augmented generation pipelines
+ * - **Recommendation Systems**: Content recommendations and similarity-based suggestions
+ * - **Data Mining**: Information extraction and content discovery from large datasets
+ *
+ * ## Key Features
+ * - **Query Analysis**: Input query processing, expansion, and optimization tracking
+ * - **Search Strategy**: Retrieval algorithms, ranking functions, and filtering criteria
+ * - **Result Quality**: Relevance scores, diversity metrics, and retrieval effectiveness
+ * - **Performance Metrics**: Search latency, index size, and throughput measurements
+ * - **Source Tracking**: Data source attribution and content provenance information
+ * - **Ranking Intelligence**: Personalization, context awareness, and result optimization
+ *
+ * @example
+ * ```typescript
+ * // Vector search retrieval
+ * const retriever = startObservation('vector-search', {
+ *   input: {
+ *     query: 'machine learning applications',
+ *     topK: 10,
+ *     similarityThreshold: 0.7
+ *   },
+ *   metadata: {
+ *     vectorDB: 'pinecone',
+ *     embeddingModel: 'text-embedding-ada-002'
+ *   }
+ * }, { asType: 'retriever' });
+ *
+ * const results = await vectorDB.search({
+ *   query: 'machine learning applications',
+ *   topK: 10,
+ *   threshold: 0.7
+ * });
+ *
+ * retriever.update({
+ *   output: {
+ *     documents: results,
+ *     count: results.length,
+ *     avgSimilarity: 0.89
+ *   },
+ *   metadata: {
+ *     searchLatency: 150,
+ *     cacheHit: false
+ *   }
+ * });
+ * retriever.end();
+ * ```
+ *
+ * @see {@link startObservation} with `{ asType: 'retriever' }` - Factory function
+ * @see {@link LangfuseChain} - For multi-step RAG pipelines
+ * @see {@link LangfuseEmbedding} - For embedding generation used in vector search
+ *
+ * @public
+ */
 export class LangfuseRetriever extends LangfuseBaseObservation {
   constructor(params: LangfuseRetrieverParams) {
     super({ ...params, type: "retriever" });
   }
 
-  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+  /**
+   * Updates this retriever observation with new attributes.
+   *
+   * @param attributes - Retriever attributes to set
+   * @returns This retriever for method chaining
+   */
+  public update(attributes: LangfuseRetrieverAttributes): LangfuseRetriever {
     super.updateOtelSpanAttributes(attributes);
 
     return this;
@@ -709,12 +1101,77 @@ type LangfuseEvaluatorParams = {
   attributes?: LangfuseEvaluatorAttributes;
 };
 
+/**
+ * Specialized observation wrapper for tracking quality assessment and evaluation operations.
+ *
+ * LangfuseEvaluator is designed for observing evaluation systems that assess, score, and
+ * validate the quality of AI outputs, content, or system performance. It captures evaluation
+ * criteria, scoring methodologies, benchmark comparisons, and quality metrics, making it
+ * essential for AI system validation, content moderation, and performance monitoring.
+ *
+ * ## Primary Use Cases
+ * - **LLM Output Evaluation**: Response quality, factual accuracy, and relevance assessment
+ * - **Content Quality Assessment**: Writing quality, tone analysis, and style validation
+ * - **Automated Testing**: System performance validation and regression testing
+ * - **Bias Detection**: Fairness evaluation and bias identification in AI systems
+ * - **Safety Evaluation**: Content safety, harm detection, and compliance checking
+ * - **Benchmark Comparison**: Performance comparison against reference standards
+ *
+ * ## Key Features
+ * - **Multi-Criteria Scoring**: Comprehensive evaluation across multiple quality dimensions
+ * - **Automated Assessment**: AI-powered evaluation using specialized models and algorithms
+ * - **Human Evaluation**: Integration with human reviewers and expert assessment
+ * - **Benchmark Tracking**: Performance comparison against established baselines
+ * - **Quality Metrics**: Detailed scoring with confidence intervals and reliability measures
+ * - **Trend Analysis**: Quality tracking over time with improvement recommendations
+ *
+ * @example
+ * ```typescript
+ * // Response quality evaluation
+ * const evaluator = startObservation('response-quality-eval', {
+ *   input: {
+ *     response: 'Machine learning is a subset of artificial intelligence...',
+ *     criteria: ['accuracy', 'completeness', 'clarity']
+ *   }
+ * }, { asType: 'evaluator' });
+ *
+ * const evaluation = await evaluateResponse({
+ *   response: 'Machine learning is a subset of artificial intelligence...',
+ *   criteria: ['accuracy', 'completeness', 'clarity']
+ * });
+ *
+ * evaluator.update({
+ *   output: {
+ *     overallScore: 0.87,
+ *     criteriaScores: {
+ *       accuracy: 0.92,
+ *       completeness: 0.85,
+ *       clarity: 0.90
+ *     },
+ *     passed: true
+ *   }
+ * });
+ * evaluator.end();
+ * ```
+ *
+ * @see {@link startObservation} with `{ asType: 'evaluator' }` - Factory function
+ * @see {@link LangfuseGeneration} - For LLM outputs being evaluated
+ * @see {@link LangfuseGuardrail} - For safety and compliance enforcement
+ *
+ * @public
+ */
 export class LangfuseEvaluator extends LangfuseBaseObservation {
   constructor(params: LangfuseEvaluatorParams) {
     super({ ...params, type: "evaluator" });
   }
 
-  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+  /**
+   * Updates this evaluator observation with new attributes.
+   *
+   * @param attributes - Evaluator attributes to set
+   * @returns This evaluator for method chaining
+   */
+  public update(attributes: LangfuseEvaluatorAttributes): LangfuseEvaluator {
     super.updateOtelSpanAttributes(attributes);
 
     return this;
@@ -726,12 +1183,75 @@ type LangfuseGuardrailParams = {
   attributes?: LangfuseGuardrailAttributes;
 };
 
+/**
+ * Specialized observation wrapper for tracking safety checks and compliance enforcement.
+ *
+ * LangfuseGuardrail is designed for observing safety and compliance systems that prevent,
+ * detect, and mitigate harmful, inappropriate, or policy-violating content and behaviors
+ * in AI applications. It captures safety policies, violation detection, risk assessment,
+ * and mitigation actions, ensuring responsible AI deployment and regulatory compliance.
+ *
+ * ## Primary Use Cases
+ * - **Content Moderation**: Harmful content detection and filtering in user inputs/outputs
+ * - **Safety Enforcement**: PII detection, toxicity filtering, and inappropriate content blocking
+ * - **Compliance Monitoring**: Regulatory compliance, industry standards, and policy enforcement
+ * - **Bias Mitigation**: Fairness checks and bias prevention in AI decision-making
+ * - **Privacy Protection**: Data privacy safeguards and sensitive information redaction
+ * - **Behavioral Monitoring**: User behavior analysis and anomaly detection
+ *
+ * ## Key Features
+ * - **Multi-Policy Enforcement**: Simultaneous checking against multiple safety policies
+ * - **Risk Assessment**: Quantitative risk scoring with confidence intervals
+ * - **Real-Time Detection**: Low-latency safety checks for interactive applications
+ * - **Context Awareness**: Contextual safety evaluation considering user and application context
+ * - **Mitigation Actions**: Automatic content blocking, filtering, and redaction capabilities
+ * - **Audit Trail**: Comprehensive logging for compliance and safety incident investigation
+ *
+ * @example
+ * ```typescript
+ * // Content safety guardrail
+ * const guardrail = startObservation('content-safety-check', {
+ *   input: {
+ *     content: userMessage,
+ *     policies: ['no-toxicity', 'no-hate-speech'],
+ *     strictMode: false
+ *   }
+ * }, { asType: 'guardrail' });
+ *
+ * const safetyCheck = await checkContentSafety({
+ *   text: userMessage,
+ *   policies: ['no-toxicity', 'no-hate-speech']
+ * });
+ *
+ * guardrail.update({
+ *   output: {
+ *     safe: safetyCheck.safe,
+ *     riskScore: 0.15,
+ *     violations: [],
+ *     action: 'allow'
+ *   }
+ * });
+ * guardrail.end();
+ * ```
+ *
+ * @see {@link startObservation} with `{ asType: 'guardrail' }` - Factory function
+ * @see {@link LangfuseEvaluator} - For detailed quality and safety assessment
+ * @see {@link LangfuseGeneration} - For protecting LLM outputs with guardrails
+ *
+ * @public
+ */
 export class LangfuseGuardrail extends LangfuseBaseObservation {
   constructor(params: LangfuseGuardrailParams) {
     super({ ...params, type: "guardrail" });
   }
 
-  public update(attributes: LangfuseSpanAttributes): LangfuseSpan {
+  /**
+   * Updates this guardrail observation with new attributes.
+   *
+   * @param attributes - Guardrail attributes to set
+   * @returns This guardrail for method chaining
+   */
+  public update(attributes: LangfuseGuardrailAttributes): LangfuseGuardrail {
     super.updateOtelSpanAttributes(attributes);
 
     return this;
@@ -1026,12 +1546,86 @@ type LangfuseEmbeddingParams = {
   attributes?: LangfuseEmbeddingAttributes;
 };
 
+/**
+ * Specialized observation wrapper for tracking text embedding and vector generation operations.
+ *
+ * LangfuseEmbedding is designed for observing embedding model interactions that convert
+ * text, images, or other content into high-dimensional vector representations. It captures
+ * embedding model parameters, input preprocessing, vector characteristics, and performance
+ * metrics, making it essential for semantic search, RAG systems, and similarity-based applications.
+ *
+ * ## Primary Use Cases
+ * - **Text Embeddings**: Converting text to vectors for semantic search and similarity
+ * - **Document Indexing**: Creating vector representations for large document collections
+ * - **Semantic Search**: Enabling similarity-based search and content discovery
+ * - **RAG Preparation**: Embedding documents and queries for retrieval-augmented generation
+ * - **Clustering Analysis**: Grouping similar content using vector representations
+ * - **Recommendation Systems**: Content similarity for personalized recommendations
+ *
+ * ## Key Features
+ * - **Model Tracking**: Embedding model selection, version, and parameter monitoring
+ * - **Input Processing**: Text preprocessing, tokenization, and normalization tracking
+ * - **Vector Analysis**: Dimensionality, magnitude, and quality metrics for generated embeddings
+ * - **Batch Processing**: Efficient handling of multiple texts in single embedding operations
+ * - **Performance Monitoring**: Embedding generation speed, cost tracking, and efficiency metrics
+ * - **Quality Assessment**: Vector quality evaluation and embedding effectiveness measurement
+ *
+ * @example
+ * ```typescript
+ * // Text embedding generation
+ * const embedding = startObservation('text-embedder', {
+ *   input: {
+ *     texts: [
+ *       'Machine learning is a subset of AI',
+ *       'Deep learning uses neural networks'
+ *     ],
+ *     batchSize: 2
+ *   },
+ *   model: 'text-embedding-ada-002'
+ * }, { asType: 'embedding' });
+ *
+ * const embedResult = await generateEmbeddings({
+ *   texts: [
+ *     'Machine learning is a subset of AI',
+ *     'Deep learning uses neural networks'
+ *   ],
+ *   model: 'text-embedding-ada-002'
+ * });
+ *
+ * embedding.update({
+ *   output: {
+ *     embeddings: embedResult.vectors,
+ *     count: embedResult.vectors.length,
+ *     dimensions: 1536
+ *   },
+ *   usageDetails: {
+ *     totalTokens: embedResult.tokenCount
+ *   },
+ *   metadata: {
+ *     processingTime: 340
+ *   }
+ * });
+ * embedding.end();
+ * ```
+ *
+ * @see {@link startObservation} with `{ asType: 'embedding' }` - Factory function
+ * @see {@link LangfuseRetriever} - For using embeddings in vector search
+ * @see {@link LangfuseGeneration} - For LLM operations that may use embeddings
+ *
+ * @public
+ */
 export class LangfuseEmbedding extends LangfuseBaseObservation {
   constructor(params: LangfuseEmbeddingParams) {
     super({ ...params, type: "embedding" });
   }
 
-  update(attributes: LangfuseGenerationAttributes): LangfuseGeneration {
+  /**
+   * Updates this embedding observation with new attributes.
+   *
+   * @param attributes - Embedding attributes to set
+   * @returns This embedding for method chaining
+   */
+  update(attributes: LangfuseEmbeddingAttributes): LangfuseEmbedding {
     this.updateOtelSpanAttributes(attributes);
 
     return this;
