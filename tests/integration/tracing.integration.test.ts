@@ -4800,6 +4800,58 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         );
       });
 
+      it("should not update observation type if no asType option is set", async () => {
+        await startActiveObservation(
+          "llm-call",
+          (generation) => {
+            // Update the active generation with new attributes
+            updateActiveObservation(
+              {
+                model: "gpt-4",
+                usageDetails: {
+                  promptTokens: 10,
+                  completionTokens: 20,
+                  totalTokens: 30,
+                },
+                metadata: { temperature: 0.7 },
+              },
+              { asType: "generation" },
+            );
+
+            // Call again to update IO, do not pass asType
+            updateActiveObservation({
+              input: { prompt: "Hello, world!" },
+              output: { response: "Hi there!" },
+            });
+          },
+          { asType: "generation" },
+        );
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanAttribute(
+          "llm-call",
+          LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+          "generation",
+        );
+        assertions.expectSpanAttribute(
+          "llm-call",
+          LangfuseOtelSpanAttributes.OBSERVATION_MODEL,
+          "gpt-4",
+        );
+        assertions.expectSpanAttribute(
+          "llm-call",
+          LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
+          '{"promptTokens":10,"completionTokens":20,"totalTokens":30}',
+        );
+        assertions.expectSpanAttribute(
+          "llm-call",
+          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".temperature",
+          "0.7",
+        );
+      });
+
       it("should do nothing when called without active span", async () => {
         // Call updateActiveGeneration without any active span context
         updateActiveObservation(

@@ -910,6 +910,137 @@ export function updateActiveTrace(attributes: LangfuseTraceAttributes) {
   span.setAttributes(createTraceAttributes(attributes));
 }
 
+/**
+ * Updates the currently active observation with new attributes.
+ *
+ * This function finds the currently active OpenTelemetry span in the execution context
+ * and updates it with Langfuse-specific attributes. It supports all observation types
+ * through TypeScript overloads, providing type safety for attributes based on the
+ * specified `asType` parameter. If no active span exists, the update is skipped with a warning.
+ *
+ * ## Type Safety
+ * - Automatic type inference based on `asType` parameter
+ * - Compile-time validation of attribute compatibility
+ * - IntelliSense support for observation-specific attributes
+ *
+ * ## Context Requirements
+ * - Must be called within an active OpenTelemetry span context
+ * - Typically used inside `startActiveObservation` callbacks or manual span contexts
+ * - Relies on OpenTelemetry's context propagation mechanism
+ *
+ * ## Supported Observation Types
+ * - **span** (default): General-purpose operations and workflows
+ * - **generation**: LLM calls and AI model interactions
+ * - **agent**: AI agent workflows with tool usage
+ * - **tool**: Individual tool calls and API requests
+ * - **chain**: Multi-step processes and pipelines
+ * - **retriever**: Document retrieval and search operations
+ * - **evaluator**: Quality assessment and scoring
+ * - **guardrail**: Safety checks and content filtering
+ * - **embedding**: Text embedding and vector operations
+ *
+ * @param attributes - Observation-specific attributes to update (type varies by observation type)
+ * @param options - Configuration specifying observation type (defaults to 'span')
+ *
+ * @example
+ * ```typescript
+ * import { updateActiveObservation, startActiveObservation } from '@langfuse/tracing';
+ *
+ * // Update active span (default)
+ * await startActiveObservation('data-processing', async (observation) => {
+ *   // Process data...
+ *   const result = await processData(inputData);
+ *
+ *   // Update with results
+ *   updateActiveObservation({
+ *     output: { processedRecords: result.count },
+ *     metadata: { processingTime: result.duration }
+ *   });
+ * });
+ *
+ * // Update active generation
+ * await startActiveObservation('llm-call', async () => {
+ *   const response = await openai.chat.completions.create({
+ *     model: 'gpt-4',
+ *     messages: [{ role: 'user', content: 'Hello' }]
+ *   });
+ *
+ *   // Update with LLM-specific attributes
+ *   updateActiveObservation({
+ *     output: response.choices[0].message,
+ *     usageDetails: {
+ *       promptTokens: response.usage.prompt_tokens,
+ *       completionTokens: response.usage.completion_tokens,
+ *       totalTokens: response.usage.total_tokens
+ *     },
+ *     costDetails: {
+ *       totalCost: 0.025,
+ *       currency: 'USD'
+ *     }
+ *   }, { asType: 'generation' });
+ * }, {}, { asType: 'generation' });
+ *
+ * // Update active tool execution
+ * await startActiveObservation('web-search', async () => {
+ *   const results = await searchAPI('latest news');
+ *
+ *   updateActiveObservation({
+ *     output: {
+ *       results: results,
+ *       count: results.length,
+ *       relevanceScore: 0.89
+ *     },
+ *     metadata: {
+ *       searchLatency: 150,
+ *       cacheHit: false
+ *     }
+ *   }, { asType: 'tool' });
+ * }, {}, { asType: 'tool' });
+ *
+ * // Update active agent workflow
+ * await startActiveObservation('research-agent', async () => {
+ *   // Agent performs multiple operations...
+ *   const findings = await conductResearch();
+ *
+ *   updateActiveObservation({
+ *     output: {
+ *       completed: true,
+ *       toolsUsed: ['web-search', 'summarizer'],
+ *       iterationsRequired: 3,
+ *       confidence: 0.92
+ *     },
+ *     metadata: {
+ *       efficiency: 0.85,
+ *       qualityScore: 0.88
+ *     }
+ *   }, { asType: 'agent' });
+ * }, {}, { asType: 'agent' });
+ *
+ * // Update active chain workflow
+ * await startActiveObservation('rag-pipeline', async () => {
+ *   // Execute multi-step RAG process...
+ *   const finalResponse = await executeRAGPipeline();
+ *
+ *   updateActiveObservation({
+ *     output: {
+ *       finalResponse: finalResponse,
+ *       stepsCompleted: 4,
+ *       documentsRetrieved: 8,
+ *       qualityScore: 0.91
+ *     },
+ *     metadata: {
+ *       pipelineEfficiency: 0.87,
+ *       totalLatency: 3200
+ *     }
+ *   }, { asType: 'chain' });
+ * }, {}, { asType: 'chain' });
+ * ```
+ *
+ * @see {@link startActiveObservation} - For creating active observation contexts
+ * @see {@link updateActiveTrace} - For updating trace-level attributes
+ *
+ * @public
+ */
 export function updateActiveObservation(
   attributes: LangfuseSpanAttributes,
   options?: { asType: "span" },
