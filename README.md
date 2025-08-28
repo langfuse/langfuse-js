@@ -8,12 +8,12 @@
 [![Discord](https://img.shields.io/discord/1111061815649124414?style=flat-square&logo=Discord&logoColor=white&label=Discord&color=%23434EE4)](https://discord.gg/7NXusRtqYU)
 [![YC W23](https://img.shields.io/badge/Y%20Combinator-W23-orange?style=flat-square)](https://www.ycombinator.com/companies/langfuse)
 
+> [!IMPORTANT]
+> **This SDK is deprecated.** The Langfuse TypeScript SDK was completely rewritten and released as v4 in August 2025. Please refer to the [TypeScript SDK documentation](https://langfuse.com/docs/observability/sdk/typescript/overview) for migration instructions.
+
 Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Packages
-
-> [!IMPORTANT]
-> The SDK was rewritten in v2 and released on December 18, 2023. Refer to the [v2 migration guide](https://langfuse.com/docs/sdk/typescript#upgrade1to2) for instructions on updating your code.
 
 | Package                                                                                     | NPM                                                                                                                                   | Environments          |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |

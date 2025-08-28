@@ -4,6 +4,9 @@
 
 [![npm package](https://img.shields.io/npm/v/langfuse-core?style=flat-square)](https://www.npmjs.com/package/langfuse-core)
 
+> [!IMPORTANT]
+> **This SDK is deprecated.** The Langfuse TypeScript SDK was completely rewritten and released as v4 in August 2025. Please refer to the [TypeScript SDK documentation](https://langfuse.com/docs/observability/sdk/typescript/overview) for migration instructions.
+
 This is the core package for the Langfuse JS/TS client libraries. It is not meant to be used directly.
 
 Reference: https://js.reference.langfuse.com/modules/langfuse_core.html
