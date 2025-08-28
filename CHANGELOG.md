@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.0.0-beta.9](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2025-08-28)
+
+### 🐛 Bug Fixes
+
+* **tracing:** change signature of updateActiveObservation ([#598](https://github.com/langfuse/langfuse-js/issues/598)) ([c8200b6](https://github.com/langfuse/langfuse-js/commit/c8200b642440d6c1cc12c5c7eb6796c2c761e5fd))
+
+### 🔧 Maintenance
+
+* **deps-dev:** bump happy-dom from 14.12.3 to 18.0.1 ([#585](https://github.com/langfuse/langfuse-js/issues/585)) ([4ee7269](https://github.com/langfuse/langfuse-js/commit/4ee72691901da3f5104ad92d05cdb1fea27145ba))
+
+### 📚 Documentation
+
+* fix readme v4 release ([34d641e](https://github.com/langfuse/langfuse-js/commit/34d641ee87c990f653f727eff02d6b5b409cb705))
+* fix typo readme ([6a94834](https://github.com/langfuse/langfuse-js/commit/6a94834585a171d135d37913bcde840dedf5002e))
+
 ## [4.0.0-beta.8](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.7...v4.0.0-beta.8) (2025-08-26)
 
 ### ✨ Features
