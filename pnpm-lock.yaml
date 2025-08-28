@@ -13,7 +13,7 @@ importers:
         version: 2.0.6(zod@3.25.76)
       '@ai-sdk/openai':
         specifier: ^2
-        version: 2.0.20(zod@3.25.76)
+        version: 2.0.22(zod@3.25.76)
       '@langchain/core':
         specifier: ^0.3.66
         version: 0.3.66(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.203.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.0.1(@opentelemetry/api@1.9.0))(openai@5.10.2(zod@3.25.76))
@@ -208,14 +208,20 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4
 
-  '@ai-sdk/openai@2.0.20':
-    resolution: {integrity: sha512-6cBQpb6Sh5pCthSb/rGhIAsVq3EfHYKtFmeYapsBpILMkWI2DiIOajpEVe9DWCQaqTjXglZdbQsxSFJoaWlNQQ==}
+  '@ai-sdk/openai@2.0.22':
+    resolution: {integrity: sha512-qjSIPL5+LNM9flcBPeR64ZWeAZdYg4XWkAK34H3FaY61dSbuIaeqFPSzmQUrxotVcphAzgfL5tuYRqRYP2ZYyg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
 
   '@ai-sdk/provider-utils@3.0.5':
     resolution: {integrity: sha512-HliwB/yzufw3iwczbFVE2Fiwf1XqROB/I6ng8EKUsPM5+2wnIa8f4VbljZcDx+grhFrPV+PnRZH7zBqi8WZM7Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
+  '@ai-sdk/provider-utils@3.0.7':
+    resolution: {integrity: sha512-o3BS5/t8KnBL3ubP8k3w77AByOypLm+pkIL/DCw0qKkhDbvhCy+L3hRTGPikpdb8WHcylAeKsjgwOxhj4cqTUA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -3553,10 +3559,10 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.5(zod@3.25.76)
       zod: 3.25.76
 
-  '@ai-sdk/openai@2.0.20(zod@3.25.76)':
+  '@ai-sdk/openai@2.0.22(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.5(zod@3.25.76)
+      '@ai-sdk/provider-utils': 3.0.7(zod@3.25.76)
       zod: 3.25.76
 
   '@ai-sdk/provider-utils@3.0.5(zod@3.25.76)':
@@ -3566,6 +3572,13 @@ snapshots:
       eventsource-parser: 3.0.5
       zod: 3.25.76
       zod-to-json-schema: 3.24.6(zod@3.25.76)
+
+  '@ai-sdk/provider-utils@3.0.7(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.5
+      zod: 3.25.76
 
   '@ai-sdk/provider@2.0.0':
     dependencies:
