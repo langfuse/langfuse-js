@@ -1,4 +1,4 @@
-import { getGlobalLogger } from "@langfuse/core";
+import { getGlobalLogger, LangfuseOtelSpanAttributes } from "@langfuse/core";
 import {
   trace,
   context,
@@ -911,44 +911,44 @@ export function updateActiveTrace(attributes: LangfuseTraceAttributes) {
 }
 
 export function updateActiveObservation(
-  currentType: "span",
   attributes: LangfuseSpanAttributes,
+  options?: { asType: "span" },
 ): void;
 export function updateActiveObservation(
-  currentType: "generation",
   attributes: LangfuseGenerationAttributes,
+  options: { asType: "generation" },
 ): void;
 export function updateActiveObservation(
-  currentType: "agent",
   attributes: LangfuseAgentAttributes,
+  options: { asType: "agent" },
 ): void;
 export function updateActiveObservation(
-  currentType: "tool",
   attributes: LangfuseToolAttributes,
+  options: { asType: "tool" },
 ): void;
 export function updateActiveObservation(
-  currentType: "chain",
   attributes: LangfuseChainAttributes,
+  options: { asType: "chain" },
 ): void;
 export function updateActiveObservation(
-  currentType: "embedding",
   attributes: LangfuseEmbeddingAttributes,
+  options: { asType: "embedding" },
 ): void;
 export function updateActiveObservation(
-  currentType: "evaluator",
   attributes: LangfuseEvaluatorAttributes,
+  options: { asType: "evaluator" },
 ): void;
 export function updateActiveObservation(
-  currentType: "guardrail",
   attributes: LangfuseGuardrailAttributes,
+  options: { asType: "guardrail" },
 ): void;
 export function updateActiveObservation(
-  currentType: "retriever",
   attributes: LangfuseRetrieverAttributes,
+  options: { asType: "retriever" },
 ): void;
 export function updateActiveObservation(
-  currentType: LangfuseObservationType,
   attributes: LangfuseObservationAttributes,
+  options?: { asType?: LangfuseObservationType },
 ): void {
   const span = trace.getActiveSpan();
 
@@ -960,7 +960,18 @@ export function updateActiveObservation(
     return;
   }
 
-  span.setAttributes(createObservationAttributes(currentType, attributes));
+  const otelAttributes = createObservationAttributes(
+    options?.asType ?? "span",
+    attributes,
+  );
+
+  // If no 'asType' was provided, drop the observation type OTEL attribute
+  // to avoid inadvertendly overwriting the type to "span"
+  if (!options?.asType) {
+    otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE] = undefined;
+  }
+
+  span.setAttributes(otelAttributes);
 }
 
 /**
@@ -1232,7 +1243,7 @@ export interface ObserveOptions {
  *
  * @public
  */
-export function observe<T extends (...args: unknown[]) => unknown>(
+export function observe<T extends (...args: any[]) => any>(
   fn: T,
   options: ObserveOptions = {},
 ): T {

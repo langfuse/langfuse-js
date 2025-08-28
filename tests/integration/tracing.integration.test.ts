@@ -606,7 +606,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           level: "DEBUG",
         },
         {
-          timestamp: customTimestamp,
+          startTime: customTimestamp,
           parentSpanContext: parentGen.otelSpan.spanContext(),
           asType: "event",
         },
@@ -4431,10 +4431,14 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             preparationSpan.end();
 
             // Create a nested generation
-            const processingGen = startObservation("data-processing", {
-              model: "processor-v1",
-              input: { data: `prepared-${taskName}` },
-            });
+            const processingGen = startObservation(
+              "data-processing",
+              {
+                model: "processor-v1",
+                input: { data: `prepared-${taskName}` },
+              },
+              { asType: "generation" },
+            );
 
             const result = await new Promise<string>((resolve) => {
               setTimeout(() => {
@@ -4680,7 +4684,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       it("should update active span attributes when called within startActiveObservation", async () => {
         await startActiveObservation("test-span", (span) => {
           // Update the active span with new attributes
-          updateActiveObservation("span", {
+          updateActiveObservation({
             input: { prompt: "updated input" },
             output: { result: "updated output" },
             metadata: { key: "updated value" },
@@ -4709,7 +4713,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should do nothing when called without active span", async () => {
         // Call updateActiveSpan without any active span context
-        updateActiveObservation("span", {
+        updateActiveObservation({
           input: { prompt: "should not work" },
         });
 
@@ -4720,7 +4724,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should update span during observe function execution", async () => {
         function testFunc(input: string) {
-          updateActiveObservation("span", {
+          updateActiveObservation({
             metadata: { executionStep: "processing" },
             // Note: observe function will override output with return value
           });
@@ -4753,17 +4757,20 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           "llm-call",
           (generation) => {
             // Update the active generation with new attributes
-            updateActiveObservation("generation", {
-              model: "gpt-4",
-              usageDetails: {
-                promptTokens: 10,
-                completionTokens: 20,
-                totalTokens: 30,
+            updateActiveObservation(
+              {
+                model: "gpt-4",
+                usageDetails: {
+                  promptTokens: 10,
+                  completionTokens: 20,
+                  totalTokens: 30,
+                },
+                metadata: { temperature: 0.7 },
+                input: { prompt: "Hello, world!" },
+                output: { response: "Hi there!" },
               },
-              metadata: { temperature: 0.7 },
-              input: { prompt: "Hello, world!" },
-              output: { response: "Hi there!" },
-            });
+              { asType: "generation" },
+            );
           },
           { asType: "generation" },
         );
@@ -4795,10 +4802,13 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should do nothing when called without active span", async () => {
         // Call updateActiveGeneration without any active span context
-        updateActiveObservation("generation", {
-          model: "gpt-4",
-          input: { prompt: "should not work" },
-        });
+        updateActiveObservation(
+          {
+            model: "gpt-4",
+            input: { prompt: "should not work" },
+          },
+          { asType: "generation" },
+        );
 
         await waitForSpanExport(testEnv.mockExporter, 0, 500); // Short timeout since no spans expected
 
@@ -4807,15 +4817,18 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       it("should update generation during observe function with asType generation", async () => {
         function llmFunc(prompt: string) {
-          updateActiveObservation("generation", {
-            model: "gpt-3.5-turbo",
-            usageDetails: {
-              promptTokens: 15,
-              completionTokens: 25,
-              totalTokens: 40,
+          updateActiveObservation(
+            {
+              model: "gpt-3.5-turbo",
+              usageDetails: {
+                promptTokens: 15,
+                completionTokens: 25,
+                totalTokens: 40,
+              },
+              metadata: { provider: "openai" },
             },
-            metadata: { provider: "openai" },
-          });
+            { asType: "generation" },
+          );
           return `LLM response to: ${prompt}`;
         }
         const wrappedFunc = observe(llmFunc, { asType: "generation" });
@@ -4996,7 +5009,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             userId: "user-combined",
           });
 
-          updateActiveObservation("span", {
+          updateActiveObservation({
             input: { operation: "combined-operation" },
             metadata: { step: "1" },
           });
@@ -5041,16 +5054,19 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
               sessionId: "session-llm",
             });
 
-            updateActiveObservation("generation", {
-              model: "gpt-4",
-              usageDetails: {
-                promptTokens: 50,
-                completionTokens: 100,
-                totalTokens: 150,
+            updateActiveObservation(
+              {
+                model: "gpt-4",
+                usageDetails: {
+                  promptTokens: 50,
+                  completionTokens: 100,
+                  totalTokens: 150,
+                },
+                input: { prompt: "Generate a story" },
+                output: { story: "Once upon a time..." },
               },
-              input: { prompt: "Generate a story" },
-              output: { story: "Once upon a time..." },
-            });
+              { asType: "generation" },
+            );
           },
           { asType: "generation" },
         );
