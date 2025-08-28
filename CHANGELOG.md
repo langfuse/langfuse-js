@@ -1,5 +1,7 @@
 # Changelog
 
+## [4.0.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.9...v4.0.0) (2025-08-28)
+
 ## [4.0.0-beta.9](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2025-08-28)
 
 ### 🐛 Bug Fixes
