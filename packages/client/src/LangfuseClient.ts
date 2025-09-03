@@ -6,6 +6,7 @@ import {
 } from "@langfuse/core";
 
 import { DatasetManager } from "./dataset/index.js";
+import { ExperimentManager } from "./experiment/ExperimentManager.js";
 import { MediaManager } from "./media/index.js";
 import { PromptManager } from "./prompt/index.js";
 import { ScoreManager } from "./score/index.js";
@@ -105,6 +106,11 @@ export class LangfuseClient {
    * Manager for media upload and reference resolution.
    */
   public media: MediaManager;
+
+  /**
+   * Manager for media upload and reference resolution.
+   */
+  public experiment: ExperimentManager;
 
   private baseUrl: string;
   private projectId: string | null = null;
@@ -239,6 +245,7 @@ export class LangfuseClient {
     this.dataset = new DatasetManager({ apiClient: this.api });
     this.score = new ScoreManager({ apiClient: this.api });
     this.media = new MediaManager({ apiClient: this.api });
+    this.experiment = new ExperimentManager({ langfuseClient: this });
 
     // Keep v3 compat by exposing old interface
     this.getPrompt = this.prompt.get.bind(this.prompt); // keep correct this context for cache access

@@ -98,7 +98,7 @@ export class Experiment {
     const { output, traceId } = await startActiveObservation(
       "experiment-item-run",
       async (span) => {
-        const output = this.task(item);
+        const output = await this.task(item);
 
         span.update({
           input: item.input,

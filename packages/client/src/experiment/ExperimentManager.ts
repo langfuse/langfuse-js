@@ -5,8 +5,8 @@ import { Experiment, ExperimentParams } from "./Experiment.js";
 export class ExperimentManager {
   private langfuseClient: LangfuseClient;
 
-  constructor(params: { apiClient: LangfuseClient }) {
-    this.langfuseClient = params.apiClient;
+  constructor(params: { langfuseClient: LangfuseClient }) {
+    this.langfuseClient = params.langfuseClient;
   }
 
   create(config: Omit<ExperimentParams, "langfuseClient">): Experiment {
