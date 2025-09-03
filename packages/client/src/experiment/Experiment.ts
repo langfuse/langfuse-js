@@ -33,7 +33,7 @@ export type ExperimentParams = {
   task: ExperimentTask;
   evaluators?: Evaluator[];
 
-  apiClient: LangfuseClient;
+  langfuseClient: LangfuseClient;
 };
 
 export type ExperimentRunConfig = {
@@ -69,7 +69,7 @@ export class Experiment {
     this.task = params.task;
     this.evaluators = params.evaluators ?? [];
 
-    this.langfuseClient = params.apiClient;
+    this.langfuseClient = params.langfuseClient;
   }
 
   public async run(config?: ExperimentRunConfig): Promise<void> {

@@ -1,13 +1,18 @@
-import { LangfuseAPIClient } from "@langfuse/core";
+import { LangfuseClient } from "../LangfuseClient.js";
 
-// import { Experiment } from "./Experiment.js";
+import { Experiment, ExperimentParams } from "./Experiment.js";
 
 export class ExperimentManager {
-  private apiClient: LangfuseAPIClient;
+  private langfuseClient: LangfuseClient;
 
-  constructor(params: { apiClient: LangfuseAPIClient }) {
-    this.apiClient = params.apiClient;
+  constructor(params: { apiClient: LangfuseClient }) {
+    this.langfuseClient = params.apiClient;
   }
 
-  // create(config: { name: string; description: string }): Experiment {}
+  create(config: Omit<ExperimentParams, "langfuseClient">): Experiment {
+    return new Experiment({
+      langfuseClient: this.langfuseClient,
+      ...config,
+    });
+  }
 }
