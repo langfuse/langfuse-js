@@ -6,6 +6,10 @@ import {
 } from "@langfuse/core";
 import { Span } from "@opentelemetry/api";
 
+export type FetchedDataset = Dataset & {
+  items: (DatasetItem & { link: LinkDatasetItemFunction })[];
+};
+
 /**
  * Function type for linking dataset items to OpenTelemetry spans.
  * This allows dataset items to be associated with specific traces for experiment tracking.
@@ -83,11 +87,7 @@ export class DatasetManager {
     options?: {
       fetchItemsPageSize: number;
     },
-  ): Promise<
-    Dataset & {
-      items: (DatasetItem & { link: LinkDatasetItemFunction })[];
-    }
-  > {
+  ): Promise<FetchedDataset> {
     const dataset = await this.apiClient.datasets.get(name);
     const items: DatasetItem[] = [];
 
