@@ -29,6 +29,7 @@
   ],
   "dependencies": {
     "@langfuse/core": "workspace:^",
+    "@langfuse/tracing": "workspace:^",
     "mustache": "^4.2.0"
   },
   "peerDependencies": {

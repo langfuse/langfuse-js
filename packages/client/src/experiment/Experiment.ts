@@ -1,4 +1,5 @@
 import { ScoreBody } from "@langfuse/core";
+import { startActiveObservation } from "@langfuse/tracing";
 
 import { FetchedDataset } from "../dataset/index.js";
 import { LangfuseClient } from "../LangfuseClient.js";
@@ -15,7 +16,7 @@ export type ExperimentTask = (params: ExperimentTaskParams) => Promise<any>;
 
 export type Evaluation = Pick<
   ScoreBody,
-  "name" | "value" | "comment" | "metadata"
+  "name" | "value" | "comment" | "metadata" | "dataType"
 >;
 
 export type EvaluatorParams = {
@@ -88,14 +89,25 @@ export class Experiment {
       this.itemResults.push(...results);
     }
 
-    // flush scores
     await this.langfuseClient.score.flush();
 
     this.hasRun = true;
   }
 
   private async runItem(item: ExperimentItem): Promise<ExperimentItemResult> {
-    const output = await this.task(item);
+    const { output, traceId } = await startActiveObservation(
+      "experiment-item-run",
+      async (span) => {
+        const output = this.task(item);
+
+        span.update({
+          input: item.input,
+          output,
+        });
+
+        return { output, traceId: span.traceId };
+      },
+    );
 
     const evals: Evaluation[] = [];
 
@@ -109,9 +121,21 @@ export class Experiment {
       evals.push(...evaluation.flat());
     }
 
+    for (const ev of evals) {
+      this.langfuseClient.score.create({
+        traceId,
+        name: ev.name,
+        comment: ev.comment,
+        value: ev.value,
+        metadata: ev.metadata,
+        dataType: ev.dataType,
+      });
+    }
+
     return {
       output,
       evaluations: evals,
+      traceId,
     };
   }
 

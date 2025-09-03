@@ -122,6 +122,9 @@ importers:
       '@langfuse/core':
         specifier: workspace:^
         version: link:../core
+      '@langfuse/tracing':
+        specifier: workspace:^
+        version: link:../tracing
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
