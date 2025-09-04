@@ -2,6 +2,8 @@
   "name": "langfuse-js",
   "version": "4.0.0",
   "description": "Langfuse JavaScript / TypeScript SDK",
+  "author": "Langfuse",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,8 +27,6 @@
     "nuke": "pnpm clean && rm -rf node_modules && rm -rf packages/*/node_modules && pnpm install",
     "prepare": "husky"
   },
-  "author": "Langfuse",
-  "license": "MIT",
   "devDependencies": {
     "@ai-sdk/anthropic": "^2",
     "@ai-sdk/openai": "^2",
