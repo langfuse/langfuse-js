@@ -98,7 +98,7 @@ describe("Langfuse Datasets E2E", () => {
       ];
     };
 
-    const experiment = langfuse.experiment.create({
+    const result = await langfuse.experiment.run({
       name: "Euro capitals",
       description: "Country capital experiment",
       data: dataset,
@@ -106,9 +106,7 @@ describe("Langfuse Datasets E2E", () => {
       evaluators: [factualityEvaluator],
     });
 
-    await experiment.run();
-
-    console.log(JSON.stringify(await experiment.getResult(), null, 2));
+    console.log(await result.prettyPrint());
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
