@@ -6,7 +6,6 @@ import { LangfuseClient } from "../LangfuseClient.js";
 import {
   ExperimentParams,
   ExperimentResult,
-  ExperimentRunConfig,
   ExperimentTask,
   ExperimentItem,
   ExperimentItemResult,
@@ -25,9 +24,7 @@ export class ExperimentManager {
     return getGlobalLogger();
   }
 
-  async run(
-    config: Omit<ExperimentParams, "langfuseClient"> & ExperimentRunConfig,
-  ): Promise<ExperimentResult> {
+  async run(config: ExperimentParams): Promise<ExperimentResult> {
     const {
       data,
       evaluators,
@@ -63,10 +60,26 @@ export class ExperimentManager {
 
     await this.langfuseClient.score.flush();
 
+    const datasetRunId =
+      itemResults.length > 0 ? itemResults[0].datasetRunId : undefined;
+
+    let datasetRunUrl = undefined;
+
+    if (datasetRunId && data.length > 0 && "datasetId" in data[0]) {
+      const datasetId = data[0].datasetId;
+      const projectUrl = (await this.langfuseClient.getTraceUrl("mock")).split(
+        "/traces",
+      )[0];
+
+      datasetRunUrl = `${projectUrl}/datasets/${datasetId}/runs/${datasetRunId}`;
+    }
+
     return {
       itemResults,
+      datasetRunId,
       prettyPrint: async () =>
         await this.prettyPrintResults({
+          datasetRunUrl,
           itemResults,
           originalData: data,
           name: config.name,
@@ -99,6 +112,8 @@ export class ExperimentManager {
       },
     );
 
+    let datasetRunId: string | undefined = undefined;
+
     if ("id" in item) {
       await this.langfuseClient.api.datasetRunItems
         .create({
@@ -107,6 +122,9 @@ export class ExperimentManager {
           metadata: params.experimentMetadata,
           datasetItemId: item.id,
           traceId,
+        })
+        .then((result) => {
+          datasetRunId = result.datasetRunId;
         })
         .catch((err) =>
           this.logger.error("Linking dataset run item failed", err),
@@ -157,10 +175,12 @@ export class ExperimentManager {
       output,
       evaluations: evals,
       traceId,
+      datasetRunId,
     };
   }
 
   private async prettyPrintResults(params: {
+    datasetRunUrl?: string;
     itemResults: ExperimentItemResult[];
     originalData: ExperimentItem[] | DatasetItem[];
     name: string;
@@ -180,6 +200,11 @@ export class ExperimentManager {
     if (description) {
       output += `💬 Description: ${description}\n`;
     }
+
+    if (params.datasetRunUrl) {
+      output += `🪢 Dataset Run URL: ${params.datasetRunUrl}\n`;
+    }
+
     output += "\n";
 
     // Summary stats
@@ -248,7 +273,7 @@ export class ExperimentManager {
 
       if (result.traceId) {
         const traceUrl = await this.langfuseClient.getTraceUrl(result.traceId);
-        output += `  Trace: ${traceUrl}\n`;
+        output += `\n  🪢Trace: ${traceUrl}\n`;
       }
     }
 

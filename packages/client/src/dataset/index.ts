@@ -1,13 +1,16 @@
-import {
-  LangfuseAPIClient,
-  Dataset,
-  DatasetRunItem,
-  DatasetItem,
-} from "@langfuse/core";
+import { Dataset, DatasetRunItem, DatasetItem } from "@langfuse/core";
 import { Span } from "@opentelemetry/api";
+
+import { ExperimentResult, ExperimentParams } from "../experiment/types.js";
+import { LangfuseClient } from "../LangfuseClient.js";
+
+export type RunExperimentOnDataset = (
+  params: Omit<ExperimentParams, "data" | "dataSource">,
+) => Promise<ExperimentResult>;
 
 export type FetchedDataset = Dataset & {
   items: (DatasetItem & { link: LinkDatasetItemFunction })[];
+  runExperiment: RunExperimentOnDataset;
 };
 
 /**
@@ -41,7 +44,7 @@ export type LinkDatasetItemFunction = (
  * @public
  */
 export class DatasetManager {
-  private apiClient: LangfuseAPIClient;
+  private langfuseClient: LangfuseClient;
 
   /**
    * Creates a new DatasetManager instance.
@@ -49,8 +52,8 @@ export class DatasetManager {
    * @param params - Configuration object containing the API client
    * @internal
    */
-  constructor(params: { apiClient: LangfuseAPIClient }) {
-    this.apiClient = params.apiClient;
+  constructor(params: { langfuseClient: LangfuseClient }) {
+    this.langfuseClient = params.langfuseClient;
   }
 
   /**
@@ -88,13 +91,13 @@ export class DatasetManager {
       fetchItemsPageSize: number;
     },
   ): Promise<FetchedDataset> {
-    const dataset = await this.apiClient.datasets.get(name);
+    const dataset = await this.langfuseClient.api.datasets.get(name);
     const items: DatasetItem[] = [];
 
     let page = 1;
 
     while (true) {
-      const itemsResponse = await this.apiClient.datasetItems.list({
+      const itemsResponse = await this.langfuseClient.api.datasetItems.list({
         datasetName: name,
         limit: options?.fetchItemsPageSize ?? 50,
         page,
@@ -109,12 +112,22 @@ export class DatasetManager {
       page++;
     }
 
+    const itemsWithLinkMethod = items.map((item) => ({
+      ...item,
+      link: this.createDatasetItemLinkFunction(item),
+    }));
+
+    const runExperiment: RunExperimentOnDataset = (params) => {
+      return this.langfuseClient.experiment.run({
+        data: items,
+        ...params,
+      });
+    };
+
     const returnDataset = {
       ...dataset,
-      items: items.map((item) => ({
-        ...item,
-        link: this.createDatasetItemLinkFunction(item),
-      })),
+      items: itemsWithLinkMethod,
+      runExperiment,
     };
 
     return returnDataset;
@@ -138,7 +151,7 @@ export class DatasetManager {
         metadata?: any;
       },
     ): Promise<DatasetRunItem> => {
-      return await this.apiClient.datasetRunItems.create({
+      return await this.langfuseClient.api.datasetRunItems.create({
         runName,
         datasetItemId: item.id,
         traceId: obj.otelSpan.spanContext().traceId,

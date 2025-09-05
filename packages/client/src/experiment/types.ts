@@ -1,7 +1,5 @@
 import { DatasetItem, ScoreBody } from "@langfuse/core";
 
-import { LangfuseClient } from "../LangfuseClient.js";
-
 export type ExperimentItem = {
   input?: any;
   expectedOutput?: any;
@@ -26,14 +24,11 @@ export type ExperimentParams = {
   name: string;
   description?: string;
   metadata?: Record<string, any>;
-  langfuseClient: LangfuseClient;
 
   data: ExperimentItem[] | DatasetItem[];
   task: ExperimentTask;
   evaluators?: Evaluator[];
-};
 
-export type ExperimentRunConfig = {
   maxConcurrency?: number;
 };
 
@@ -44,6 +39,7 @@ export type ExperimentItemResult = Pick<
   output: any;
   evaluations: Evaluation[];
   traceId?: string;
+  datasetRunId?: string;
 };
 
 export type ExperimentResult = {

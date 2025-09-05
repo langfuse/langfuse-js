@@ -1,5 +1,6 @@
 import { Evaluator, ExperimentTask, LangfuseClient } from "@langfuse/client";
 import { observeOpenAI } from "@langfuse/openai";
+import { nanoid } from "nanoid";
 import OpenAI from "openai";
 import { describe, it, afterEach, beforeEach } from "vitest";
 
@@ -13,6 +14,21 @@ import {
 describe("Langfuse Datasets E2E", () => {
   let langfuse: LangfuseClient;
   let testEnv: ServerTestEnvironment;
+
+  const dataset = [
+    {
+      input: "Germany",
+      expectedOutput: "Berlin",
+    },
+    {
+      input: "France",
+      expectedOutput: "Paris",
+    },
+    {
+      input: "Spain",
+      expectedOutput: "Madrid",
+    },
+  ];
 
   const task: ExperimentTask = async (params) => {
     const client = observeOpenAI(new OpenAI());
@@ -83,21 +99,6 @@ describe("Langfuse Datasets E2E", () => {
   });
 
   it("should run an experiment on local dataset", async () => {
-    const dataset = [
-      {
-        input: "Germany",
-        expectedOutput: "Berlin",
-      },
-      {
-        input: "France",
-        expectedOutput: "Paris",
-      },
-      {
-        input: "Spain",
-        expectedOutput: "Madrid",
-      },
-    ];
-
     const result = await langfuse.experiment.run({
       name: "Euro capitals",
       description: "Country capital experiment",
@@ -110,5 +111,32 @@ describe("Langfuse Datasets E2E", () => {
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
+  });
+
+  it("should run an experiment on a langfuse dataset", async () => {
+    // create remote dataset
+    const datasetName = "euro-capitals-" + nanoid();
+    await langfuse.api.datasets.create({
+      name: datasetName,
+      description: "Collection of euro countries and capitals",
+    });
+
+    // create remote dataset items
+    await Promise.all(
+      dataset.map((item) =>
+        langfuse.api.datasetItems.create({ datasetName, ...item }),
+      ),
+    );
+
+    const fetchedDataset = await langfuse.dataset.get(datasetName);
+
+    const result = await fetchedDataset.runExperiment({
+      name: "Euro capitals on LF dataset",
+      description: "Country capital experiment",
+      task,
+      evaluators: [factualityEvaluator],
+    });
+
+    console.log(await result.prettyPrint());
   });
 });
