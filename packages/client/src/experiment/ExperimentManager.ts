@@ -202,7 +202,7 @@ export class ExperimentManager {
     }
 
     if (params.datasetRunUrl) {
-      output += `🪢 Dataset Run URL: ${params.datasetRunUrl}\n`;
+      output += `🪢 Dataset Run URL:\n${params.datasetRunUrl}\n`;
     }
 
     output += "\n";
@@ -273,7 +273,7 @@ export class ExperimentManager {
 
       if (result.traceId) {
         const traceUrl = await this.langfuseClient.getTraceUrl(result.traceId);
-        output += `\n  🪢Trace: ${traceUrl}\n`;
+        output += `\n  🪢Trace:\n${traceUrl}\n`;
       }
     }
 

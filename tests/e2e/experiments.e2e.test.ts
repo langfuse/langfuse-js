@@ -1,8 +1,9 @@
 import { Evaluator, ExperimentTask, LangfuseClient } from "@langfuse/client";
 import { observeOpenAI } from "@langfuse/openai";
+import { Factuality, Levenshtein } from "autoevals";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
-import { describe, it, afterEach, beforeEach } from "vitest";
+import { vi, describe, it, afterEach, beforeEach } from "vitest";
 
 import {
   setupServerTestEnvironment,
@@ -82,9 +83,40 @@ describe("Langfuse Datasets E2E", () => {
 
     return [
       {
-        name: "Factuality",
+        name: "manual-factuality",
         value: parsed.score,
         metadata: { reasoning: parsed.reasoning },
+      },
+    ];
+  };
+
+  const autoevalFactualityEvaluator: Evaluator = async (params) => {
+    const score = await Factuality({
+      input: params.input,
+      output: params.output,
+      expected: params.expectedOutput,
+    });
+
+    return [
+      {
+        name: score.name,
+        value: score.score ?? 0,
+        metadata: score.metadata,
+      },
+    ];
+  };
+
+  const levenshteinEvaluator: Evaluator = async (params) => {
+    const score = await Levenshtein({
+      output: params.output,
+      expected: params.expectedOutput,
+    });
+
+    return [
+      {
+        name: score.name,
+        value: score.score ?? 0,
+        metadata: score.metadata,
       },
     ];
   };
@@ -104,7 +136,11 @@ describe("Langfuse Datasets E2E", () => {
       description: "Country capital experiment",
       data: dataset,
       task,
-      evaluators: [factualityEvaluator],
+      evaluators: [
+        factualityEvaluator,
+        autoevalFactualityEvaluator,
+        levenshteinEvaluator,
+      ],
     });
 
     console.log(await result.prettyPrint());
@@ -134,7 +170,11 @@ describe("Langfuse Datasets E2E", () => {
       name: "Euro capitals on LF dataset",
       description: "Country capital experiment",
       task,
-      evaluators: [factualityEvaluator],
+      evaluators: [
+        factualityEvaluator,
+        autoevalFactualityEvaluator,
+        levenshteinEvaluator,
+      ],
     });
 
     console.log(await result.prettyPrint());
