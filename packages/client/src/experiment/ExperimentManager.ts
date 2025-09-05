@@ -1,6 +1,6 @@
+import { DatasetItem, getGlobalLogger } from "@langfuse/core";
 import { startActiveObservation } from "@langfuse/tracing";
 
-import { FetchedDataset } from "../dataset/index.js";
 import { LangfuseClient } from "../LangfuseClient.js";
 
 import {
@@ -21,6 +21,10 @@ export class ExperimentManager {
     this.langfuseClient = params.langfuseClient;
   }
 
+  get logger() {
+    return getGlobalLogger();
+  }
+
   async run(
     config: Omit<ExperimentParams, "langfuseClient"> & ExperimentRunConfig,
   ): Promise<ExperimentResult> {
@@ -28,8 +32,12 @@ export class ExperimentManager {
       data,
       evaluators,
       task,
+      name,
+      description,
+      metadata,
       maxConcurrency: batchSize = Infinity,
     } = config;
+
     const itemResults: ExperimentItemResult[] = [];
 
     for (let i = 0; i <= data.length; i += batchSize) {
@@ -37,7 +45,14 @@ export class ExperimentManager {
 
       const promises: Promise<ExperimentItemResult>[] = batch.map(
         async (item) => {
-          return this.runItem({ item, evaluators, task });
+          return this.runItem({
+            item,
+            evaluators,
+            task,
+            experimentName: name,
+            experimentDescription: description,
+            experimentMetadata: metadata,
+          });
         },
       );
 
@@ -51,12 +66,20 @@ export class ExperimentManager {
     return {
       itemResults,
       prettyPrint: async () =>
-        await this.prettyPrintResults({ itemResults, originalData: data }),
+        await this.prettyPrintResults({
+          itemResults,
+          originalData: data,
+          name: config.name,
+          description: config.description,
+        }),
     };
   }
 
   private async runItem(params: {
-    item: ExperimentItem;
+    experimentName: ExperimentParams["name"];
+    experimentDescription: ExperimentParams["description"];
+    experimentMetadata: ExperimentParams["metadata"];
+    item: ExperimentParams["data"][0];
     task: ExperimentTask;
     evaluators?: Evaluator[];
   }): Promise<ExperimentItemResult> {
@@ -76,17 +99,48 @@ export class ExperimentManager {
       },
     );
 
-    const evals: Evaluation[] = [];
-
-    for (const evaluator of evaluators) {
-      const evaluation = await evaluator({
-        input: item.input,
-        expectedOutput: item.expectedOutput,
-        output,
-      });
-
-      evals.push(...evaluation.flat());
+    if ("id" in item) {
+      await this.langfuseClient.api.datasetRunItems
+        .create({
+          runName: params.experimentName,
+          runDescription: params.experimentDescription,
+          metadata: params.experimentMetadata,
+          datasetItemId: item.id,
+          traceId,
+        })
+        .catch((err) =>
+          this.logger.error("Linking dataset run item failed", err),
+        );
     }
+
+    const evalPromises: Promise<Evaluation[]>[] = evaluators.map(
+      async (evaluator) => {
+        const params = {
+          input: item.input,
+          expectedOutput: item.expectedOutput,
+          output,
+        };
+
+        return evaluator(params).catch((err) => {
+          this.logger.error(
+            `Evaluator '${evaluator.name}' failed for params \n\n${JSON.stringify(params)}\n\n with error: ${err}`,
+          );
+
+          throw err;
+        });
+      },
+    );
+
+    const evals = (await Promise.allSettled(evalPromises)).reduce(
+      (acc, promiseResult) => {
+        if (promiseResult.status === "fulfilled") {
+          acc.push(...promiseResult.value.flat());
+        }
+
+        return acc;
+      },
+      [] as Evaluation[],
+    );
 
     for (const ev of evals) {
       this.langfuseClient.score.create({
@@ -108,9 +162,11 @@ export class ExperimentManager {
 
   private async prettyPrintResults(params: {
     itemResults: ExperimentItemResult[];
-    originalData: ExperimentItem[] | FetchedDataset["items"];
+    originalData: ExperimentItem[] | DatasetItem[];
+    name: string;
+    description?: string;
   }): Promise<string> {
-    const { itemResults, originalData } = params;
+    const { itemResults, originalData, name, description } = params;
 
     if (itemResults.length === 0) {
       return "No experiment results to display.";
@@ -118,6 +174,13 @@ export class ExperimentManager {
 
     let output = "\n📊 Experiment Results\n";
     output += "═".repeat(50) + "\n\n";
+
+    // Experiment info
+    output += `📝 Experiment: ${name}\n`;
+    if (description) {
+      output += `💬 Description: ${description}\n`;
+    }
+    output += "\n";
 
     // Summary stats
     const totalItems = itemResults.length;
