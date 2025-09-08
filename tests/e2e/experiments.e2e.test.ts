@@ -1,9 +1,15 @@
-import { Evaluator, ExperimentTask, LangfuseClient } from "@langfuse/client";
+import {
+  Evaluator,
+  ExperimentTask,
+  LangfuseClient,
+  autoevalToLangfuseEvaluator,
+} from "@langfuse/client";
+import { configureGlobalLogger, LogLevel } from "@langfuse/core";
 import { observeOpenAI } from "@langfuse/openai";
 import { Factuality, Levenshtein } from "autoevals";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
-import { vi, describe, it, afterEach, beforeEach } from "vitest";
+import { beforeAll, describe, it, afterEach, beforeEach } from "vitest";
 
 import {
   setupServerTestEnvironment,
@@ -85,41 +91,15 @@ describe("Langfuse Datasets E2E", () => {
       {
         name: "manual-factuality",
         value: parsed.score,
+        comment: parsed.reasoning,
         metadata: { reasoning: parsed.reasoning },
       },
     ];
   };
 
-  const autoevalFactualityEvaluator: Evaluator = async (params) => {
-    const score = await Factuality({
-      input: params.input,
-      output: params.output,
-      expected: params.expectedOutput,
-    });
-
-    return [
-      {
-        name: score.name,
-        value: score.score ?? 0,
-        metadata: score.metadata,
-      },
-    ];
-  };
-
-  const levenshteinEvaluator: Evaluator = async (params) => {
-    const score = await Levenshtein({
-      output: params.output,
-      expected: params.expectedOutput,
-    });
-
-    return [
-      {
-        name: score.name,
-        value: score.score ?? 0,
-        metadata: score.metadata,
-      },
-    ];
-  };
+  beforeAll(() => {
+    configureGlobalLogger({ level: LogLevel.INFO });
+  });
 
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
@@ -128,6 +108,7 @@ describe("Langfuse Datasets E2E", () => {
 
   afterEach(async () => {
     await teardownServerTestEnvironment(testEnv);
+    await langfuse.flush();
   });
 
   it("should run an experiment on local dataset", async () => {
@@ -137,9 +118,9 @@ describe("Langfuse Datasets E2E", () => {
       data: dataset,
       task,
       evaluators: [
+        autoevalToLangfuseEvaluator(Factuality),
+        autoevalToLangfuseEvaluator(Levenshtein),
         factualityEvaluator,
-        autoevalFactualityEvaluator,
-        levenshteinEvaluator,
       ],
     });
 
@@ -171,12 +152,15 @@ describe("Langfuse Datasets E2E", () => {
       description: "Country capital experiment",
       task,
       evaluators: [
+        autoevalToLangfuseEvaluator(Factuality),
+        autoevalToLangfuseEvaluator(Levenshtein),
         factualityEvaluator,
-        autoevalFactualityEvaluator,
-        levenshteinEvaluator,
       ],
     });
 
     console.log(await result.prettyPrint());
+
+    await testEnv.spanProcessor.forceFlush();
+    await waitForServerIngestion(2000);
   });
 });
