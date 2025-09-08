@@ -20,6 +20,13 @@ export type EvaluatorParams = {
 };
 export type Evaluator = (params: EvaluatorParams) => Promise<Evaluation[]>;
 
+export type RunEvaluatorParams = {
+  itemResults: ExperimentItemResult[];
+};
+export type RunEvaluator = (
+  params: RunEvaluatorParams,
+) => Promise<Evaluation[]>;
+
 export type ExperimentParams = {
   name: string;
   description?: string;
@@ -28,6 +35,7 @@ export type ExperimentParams = {
   data: ExperimentItem[] | DatasetItem[];
   task: ExperimentTask;
   evaluators?: Evaluator[];
+  runEvaluators?: RunEvaluator[];
 
   maxConcurrency?: number;
 };
@@ -45,5 +53,6 @@ export type ExperimentItemResult = Pick<
 export type ExperimentResult = {
   datasetRunId?: string;
   itemResults: ExperimentItemResult[];
+  runEvaluations: Evaluation[];
   prettyPrint: (options?: { includeItemResults?: boolean }) => Promise<string>;
 };

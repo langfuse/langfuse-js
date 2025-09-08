@@ -2,6 +2,7 @@ import {
   Evaluator,
   ExperimentTask,
   LangfuseClient,
+  RunEvaluator,
   autoevalToLangfuseEvaluator,
 } from "@langfuse/client";
 import { configureGlobalLogger, LogLevel } from "@langfuse/core";
@@ -97,6 +98,26 @@ describe("Langfuse Datasets E2E", () => {
     ];
   };
 
+  const levenshteinAverageRunEvaluator: RunEvaluator = async ({
+    itemResults,
+  }) => {
+    const average = itemResults
+      .map((result) =>
+        result.evaluations.filter((e) => e.name === "Levenshtein"),
+      )
+      .flat()
+      .reduce((acc, curr, _, array) => {
+        return acc + (curr.value as number) / array.length;
+      }, 0);
+
+    return [
+      {
+        name: "levenshtein-average",
+        value: average,
+      },
+    ];
+  };
+
   beforeAll(() => {
     configureGlobalLogger({ level: LogLevel.INFO });
   });
@@ -122,6 +143,7 @@ describe("Langfuse Datasets E2E", () => {
         autoevalToLangfuseEvaluator(Levenshtein),
         factualityEvaluator,
       ],
+      runEvaluators: [levenshteinAverageRunEvaluator],
     });
 
     console.log(await result.prettyPrint());
@@ -156,6 +178,7 @@ describe("Langfuse Datasets E2E", () => {
         autoevalToLangfuseEvaluator(Levenshtein),
         factualityEvaluator,
       ],
+      runEvaluators: [levenshteinAverageRunEvaluator],
     });
 
     console.log(await result.prettyPrint());

@@ -33,6 +33,7 @@ export class ExperimentManager {
       description,
       metadata,
       maxConcurrency: batchSize = Infinity,
+      runEvaluators,
     } = config;
 
     const itemResults: ExperimentItemResult[] = [];
@@ -58,13 +59,11 @@ export class ExperimentManager {
       itemResults.push(...results);
     }
 
-    await this.langfuseClient.score.flush();
-
+    // Get dataset run URL
     const datasetRunId =
       itemResults.length > 0 ? itemResults[0].datasetRunId : undefined;
 
     let datasetRunUrl = undefined;
-
     if (datasetRunId && data.length > 0 && "datasetId" in data[0]) {
       const datasetId = data[0].datasetId;
       const projectUrl = (await this.langfuseClient.getTraceUrl("mock")).split(
@@ -74,14 +73,45 @@ export class ExperimentManager {
       datasetRunUrl = `${projectUrl}/datasets/${datasetId}/runs/${datasetRunId}`;
     }
 
+    // Execute run evaluators
+    let runEvaluations: Evaluation[] = [];
+    if (runEvaluators && runEvaluators?.length > 0) {
+      const promises = runEvaluators.map(async (runEvaluator) => {
+        return runEvaluator({ itemResults }).catch((err) => {
+          this.logger.error("Run evaluator failed with error ", err);
+
+          throw err;
+        });
+      });
+
+      runEvaluations = (await Promise.allSettled(promises)).reduce(
+        (acc, settledPromise) => {
+          if (settledPromise.status === "fulfilled") {
+            acc.push(...settledPromise.value);
+          }
+
+          return acc;
+        },
+        [] as Evaluation[],
+      );
+
+      runEvaluations.forEach((runEval) =>
+        this.langfuseClient.score.create({ datasetRunId, ...runEval }),
+      );
+    }
+
+    await this.langfuseClient.score.flush();
+
     return {
       itemResults,
       datasetRunId,
+      runEvaluations,
       prettyPrint: async (options?: { includeItemResults?: boolean }) =>
         await this.prettyPrintResults({
           datasetRunUrl,
           itemResults,
           originalData: data,
+          runEvaluations,
           name: config.name,
           description: config.description,
           includeItemResults: options?.includeItemResults ?? true,
@@ -184,6 +214,7 @@ export class ExperimentManager {
     datasetRunUrl?: string;
     itemResults: ExperimentItemResult[];
     originalData: ExperimentItem[] | DatasetItem[];
+    runEvaluations: Evaluation[];
     name: string;
     description?: string;
     includeItemResults?: boolean;
@@ -191,6 +222,7 @@ export class ExperimentManager {
     const {
       itemResults,
       originalData,
+      runEvaluations,
       name,
       description,
       includeItemResults = true,
@@ -299,6 +331,22 @@ export class ExperimentManager {
           output += `\n  • ${evalName}: ${avg.toFixed(3)}`;
         }
       }
+      output += "\n";
+    }
+
+    // Run evaluations
+    if (runEvaluations.length > 0) {
+      output += `\nRun Evaluations:`;
+      runEvaluations.forEach((runEval) => {
+        const score =
+          typeof runEval.value === "number"
+            ? runEval.value.toFixed(3)
+            : runEval.value;
+        output += `\n  • ${runEval.name}: ${score}`;
+        if (runEval.comment) {
+          output += `\n    💭 ${runEval.comment}`;
+        }
+      });
       output += "\n";
     }
 
