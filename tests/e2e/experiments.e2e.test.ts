@@ -5,12 +5,11 @@ import {
   RunEvaluator,
   autoevalToLangfuseEvaluator,
 } from "@langfuse/client";
-import { configureGlobalLogger, LogLevel } from "@langfuse/core";
 import { observeOpenAI } from "@langfuse/openai";
 import { Factuality, Levenshtein } from "autoevals";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
-import { beforeAll, describe, it, afterEach, beforeEach, expect } from "vitest";
+import { describe, it, afterEach, beforeEach, expect } from "vitest";
 
 import {
   setupServerTestEnvironment,
@@ -115,10 +114,6 @@ describe("Langfuse Datasets E2E", () => {
       value: average,
     };
   };
-
-  beforeAll(() => {
-    configureGlobalLogger({ level: LogLevel.INFO });
-  });
 
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
@@ -293,6 +288,681 @@ describe("Langfuse Datasets E2E", () => {
     expect(expectedTraceIds).toHaveLength(3);
     expectedTraceIds.forEach((traceId) => {
       expect(traceId).toMatch(/^[a-f0-9]{32}$/);
+    });
+  });
+
+  // Error Handling Tests
+  describe("Error Handling", () => {
+    it("should handle evaluator failures gracefully", async () => {
+      const failingEvaluator: Evaluator = async () => {
+        throw new Error("Evaluator failed");
+      };
+
+      const result = await langfuse.experiment.run({
+        name: "Error test",
+        description: "Test evaluator error handling",
+        data: dataset.slice(0, 1), // Just one item
+        task,
+        evaluators: [
+          autoevalToLangfuseEvaluator(Factuality), // This should work
+          failingEvaluator, // This should fail
+        ],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      // Should still complete the experiment
+      expect(result.itemResults).toHaveLength(1);
+      expect(result.itemResults[0].evaluations).toHaveLength(1); // Only the working evaluator
+      expect(result.itemResults[0].evaluations[0].name).toBe("Factuality");
+    });
+
+    it("should handle task failures gracefully", async () => {
+      const failingTask: ExperimentTask = async () => {
+        throw new Error("Task failed");
+      };
+
+      // The experiment should handle the task failure gracefully
+      await expect(
+        langfuse.experiment.run({
+          name: "Task error test",
+          description: "Test task error handling",
+          data: dataset.slice(0, 1),
+          task: failingTask,
+          evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        }),
+      ).rejects.toThrow("Task failed");
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+    });
+
+    it("should handle run evaluator failures", async () => {
+      const failingRunEvaluator: RunEvaluator = async () => {
+        throw new Error("Run evaluator failed");
+      };
+
+      const result = await langfuse.experiment.run({
+        name: "Run evaluator error test",
+        description: "Test run evaluator error handling",
+        data: dataset.slice(0, 1),
+        task,
+        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        runEvaluators: [failingRunEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      // Should complete experiment but run evaluations should be empty
+      expect(result.itemResults).toHaveLength(1);
+      expect(result.runEvaluations).toHaveLength(0);
+    });
+  });
+
+  // Edge Cases Tests
+  describe("Edge Cases", () => {
+    it("should handle empty dataset", async () => {
+      const result = await langfuse.experiment.run({
+        name: "Empty dataset test",
+        description: "Test empty dataset handling",
+        data: [],
+        task,
+        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        runEvaluators: [levenshteinAverageRunEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(500);
+
+      expect(result.itemResults).toHaveLength(0);
+      expect(result.runEvaluations).toHaveLength(1); // Run evaluators will still execute with empty data
+      expect(await result.prettyPrint()).toContain("No experiment results");
+    });
+
+    it("should handle dataset with missing fields", async () => {
+      const incompleteDataset = [
+        { input: "Germany" }, // Missing expectedOutput
+        { expectedOutput: "Paris" }, // Missing input
+        { input: "Spain", expectedOutput: "Madrid" }, // Complete
+      ];
+
+      const result = await langfuse.experiment.run({
+        name: "Incomplete data test",
+        description: "Test incomplete dataset handling",
+        data: incompleteDataset,
+        task,
+        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(3);
+      // Should handle missing fields gracefully
+      result.itemResults.forEach((item) => {
+        expect(item.traceId).toBeDefined();
+        expect(item.output).toBeDefined();
+      });
+    });
+
+    it("should handle very large dataset", async () => {
+      // Create a larger dataset for performance testing
+      const largeDataset = Array.from({ length: 20 }, (_, i) => ({
+        input: `Country ${i}`,
+        expectedOutput: `Capital ${i}`,
+      }));
+
+      const result = await langfuse.experiment.run({
+        name: "Large dataset test",
+        description: "Test performance with larger dataset",
+        data: largeDataset,
+        task: async ({ input }) => `Output for ${input}`,
+        evaluators: [
+          async () => ({
+            name: "simple-eval",
+            value: Math.random(),
+          }),
+        ],
+        maxConcurrency: 5, // Test concurrency limit
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(3000);
+
+      expect(result.itemResults).toHaveLength(20);
+      result.itemResults.forEach((item) => {
+        expect(item.evaluations).toHaveLength(1);
+        expect(item.traceId).toBeDefined();
+      });
+    }, 30000);
+  });
+
+  // New Features Tests
+  describe("New Features", () => {
+    it("should support evaluators returning single evaluation", async () => {
+      const singleEvaluationEvaluator: Evaluator = async ({
+        input,
+        output,
+      }) => {
+        // Return single evaluation instead of array
+        return {
+          name: "single-eval",
+          value: input === "Germany" ? 1 : 0,
+          comment: `Single evaluation for ${input}`,
+        };
+      };
+
+      const result = await langfuse.experiment.run({
+        name: "Single evaluation test",
+        description: "Test single evaluation return",
+        data: dataset.slice(0, 2),
+        task,
+        evaluators: [singleEvaluationEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(2);
+      result.itemResults.forEach((item) => {
+        expect(item.evaluations).toHaveLength(1);
+        expect(item.evaluations[0]).toMatchObject({
+          name: "single-eval",
+          value: expect.any(Number),
+          comment: expect.stringContaining("Single evaluation for"),
+        });
+      });
+    });
+
+    it("should support run evaluators returning single evaluation", async () => {
+      const singleRunEvaluator: RunEvaluator = async ({ itemResults }) => {
+        // Return single evaluation instead of array
+        return {
+          name: "single-run-eval",
+          value: itemResults.length,
+          comment: `Processed ${itemResults.length} items`,
+        };
+      };
+
+      const result = await langfuse.experiment.run({
+        name: "Single run evaluation test",
+        description: "Test single run evaluation return",
+        data: dataset.slice(0, 2),
+        task,
+        runEvaluators: [singleRunEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.runEvaluations).toHaveLength(1);
+      expect(result.runEvaluations[0]).toMatchObject({
+        name: "single-run-eval",
+        value: 2,
+        comment: "Processed 2 items",
+      });
+    });
+
+    it("should support prettyPrint with includeItemResults option", async () => {
+      const result = await langfuse.experiment.run({
+        name: "PrettyPrint options test",
+        description: "Test prettyPrint options",
+        data: dataset,
+        task,
+        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        runEvaluators: [levenshteinAverageRunEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      // Test with includeItemResults: false
+      const compactOutput = await result.prettyPrint({
+        includeItemResults: false,
+      });
+      expect(compactOutput).toContain("Individual Results: Hidden");
+      expect(compactOutput).toContain(
+        "Call prettyPrint({ includeItemResults: true })",
+      );
+      expect(compactOutput).toContain("PrettyPrint options test"); // Should still show summary
+
+      // Test with includeItemResults: true (default)
+      const fullOutput = await result.prettyPrint({ includeItemResults: true });
+      expect(fullOutput).toContain("1. Item 1:");
+      expect(fullOutput).toContain("2. Item 2:");
+      expect(fullOutput).toContain("3. Item 3:");
+
+      // Test default behavior (should be same as true)
+      const defaultOutput = await result.prettyPrint();
+      expect(defaultOutput).toEqual(fullOutput);
+    });
+  });
+
+  // Concurrency and Performance Tests
+  describe("Concurrency and Performance", () => {
+    it("should respect maxConcurrency parameter", async () => {
+      let concurrentCount = 0;
+      let maxConcurrentReached = 0;
+
+      const slowTask: ExperimentTask = async ({ input }) => {
+        concurrentCount++;
+        maxConcurrentReached = Math.max(maxConcurrentReached, concurrentCount);
+
+        // Simulate slow operation
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        concurrentCount--;
+        return `Processed ${input}`;
+      };
+
+      const testData = Array.from({ length: 10 }, (_, i) => ({
+        input: `Item ${i}`,
+        expectedOutput: `Expected ${i}`,
+      }));
+
+      const result = await langfuse.experiment.run({
+        name: "Concurrency test",
+        description: "Test maxConcurrency parameter",
+        data: testData,
+        task: slowTask,
+        maxConcurrency: 3,
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(2000);
+
+      expect(result.itemResults).toHaveLength(10);
+      expect(maxConcurrentReached).toBeLessThanOrEqual(3);
+    }, 15000);
+
+    it("should handle evaluators with different execution times", async () => {
+      const fastEvaluator: Evaluator = async () => ({
+        name: "fast-eval",
+        value: 1,
+      });
+
+      const slowEvaluator: Evaluator = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return {
+          name: "slow-eval",
+          value: 0.5,
+        };
+      };
+
+      const start = Date.now();
+      const result = await langfuse.experiment.run({
+        name: "Mixed speed evaluators test",
+        description: "Test evaluators with different execution times",
+        data: dataset.slice(0, 2),
+        task,
+        evaluators: [fastEvaluator, slowEvaluator],
+      });
+      const duration = Date.now() - start;
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(2);
+      result.itemResults.forEach((item) => {
+        expect(item.evaluations).toHaveLength(2);
+        expect(item.evaluations.map((e) => e.name)).toContain("fast-eval");
+        expect(item.evaluations.map((e) => e.name)).toContain("slow-eval");
+      });
+
+      // Should complete in reasonable time (parallel execution)
+      expect(duration).toBeLessThan(2000); // Should be much faster than 400ms * 2 items sequentially
+    }, 10000);
+  });
+
+  // Data Persistence and API Integration Tests
+  describe("Data Persistence and API Integration", () => {
+    it("should persist scores correctly", async () => {
+      const datasetName = "score-persistence-test-" + nanoid();
+      await langfuse.api.datasets.create({ name: datasetName });
+
+      const testItem = {
+        input: "Test input",
+        expectedOutput: "Test output",
+      };
+
+      const createdItem = await langfuse.api.datasetItems.create({
+        datasetName,
+        ...testItem,
+      });
+
+      const fetchedDataset = await langfuse.dataset.get(datasetName);
+
+      const testEvaluator: Evaluator = async () => ({
+        name: "persistence-test-eval",
+        value: 0.85,
+        comment: "Test evaluation for persistence",
+      });
+
+      const testRunEvaluator: RunEvaluator = async () => ({
+        name: "persistence-test-run-eval",
+        value: 0.9,
+        comment: "Test run evaluation for persistence",
+      });
+
+      const result = await fetchedDataset.runExperiment({
+        name: "Score persistence test",
+        description: "Test score persistence",
+        task,
+        evaluators: [testEvaluator],
+        runEvaluators: [testRunEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(3000);
+
+      // Validate scores are persisted
+      const datasetRun = await langfuse.api.datasets.getRun(
+        datasetName,
+        "Score persistence test",
+      );
+
+      expect(datasetRun).toBeDefined();
+      expect(datasetRun.datasetRunItems).toHaveLength(1);
+
+      // Validate item-level scores are linked to traces
+      const runItem = datasetRun.datasetRunItems[0];
+      expect(runItem.traceId).toBe(result.itemResults[0].traceId);
+    });
+
+    it("should handle multiple experiments on same dataset", async () => {
+      const datasetName = "multi-experiment-test-" + nanoid();
+      await langfuse.api.datasets.create({ name: datasetName });
+
+      await Promise.all(
+        dataset
+          .slice(0, 2)
+          .map((item) =>
+            langfuse.api.datasetItems.create({ datasetName, ...item }),
+          ),
+      );
+
+      const fetchedDataset = await langfuse.dataset.get(datasetName);
+
+      // Run first experiment
+      const result1 = await fetchedDataset.runExperiment({
+        name: "Experiment 1",
+        description: "First experiment",
+        task,
+        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(2000);
+
+      // Run second experiment
+      const result2 = await fetchedDataset.runExperiment({
+        name: "Experiment 2",
+        description: "Second experiment",
+        task,
+        evaluators: [autoevalToLangfuseEvaluator(Levenshtein)],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(2000);
+
+      // Both experiments should have different run IDs
+      expect(result1.datasetRunId).toBeDefined();
+      expect(result2.datasetRunId).toBeDefined();
+      expect(result1.datasetRunId).not.toBe(result2.datasetRunId);
+
+      // Validate both runs exist in database
+      const run1 = await langfuse.api.datasets.getRun(
+        datasetName,
+        "Experiment 1",
+      );
+      const run2 = await langfuse.api.datasets.getRun(
+        datasetName,
+        "Experiment 2",
+      );
+
+      expect(run1).toBeDefined();
+      expect(run2).toBeDefined();
+      expect(run1.id).not.toBe(run2.id);
+    });
+
+    it("should preserve dataset run metadata", async () => {
+      const datasetName = "metadata-test-" + nanoid();
+      await langfuse.api.datasets.create({ name: datasetName });
+
+      await langfuse.api.datasetItems.create({
+        datasetName,
+        input: "Test",
+        expectedOutput: "Test output",
+      });
+
+      const fetchedDataset = await langfuse.dataset.get(datasetName);
+
+      const result = await fetchedDataset.runExperiment({
+        name: "Metadata test experiment",
+        description: "Testing metadata preservation",
+        metadata: { testKey: "testValue", experimentVersion: "1.0" },
+        task,
+        evaluators: [
+          async () => ({
+            name: "test-eval",
+            value: 1,
+            metadata: { evaluatorVersion: "2.0" },
+          }),
+        ],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(2000);
+
+      const datasetRun = await langfuse.api.datasets.getRun(
+        datasetName,
+        "Metadata test experiment",
+      );
+
+      expect(datasetRun).toMatchObject({
+        name: "Metadata test experiment",
+        description: "Testing metadata preservation",
+        metadata: { testKey: "testValue", experimentVersion: "1.0" },
+      });
+    });
+  });
+
+  // Different Evaluator Configurations Tests
+  describe("Different Evaluator Configurations", () => {
+    it("should work with no evaluators", async () => {
+      const result = await langfuse.experiment.run({
+        name: "No evaluators test",
+        description: "Test experiment with no evaluators",
+        data: dataset.slice(0, 2),
+        task,
+        evaluators: [], // No evaluators
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(2);
+      result.itemResults.forEach((item) => {
+        expect(item.evaluations).toHaveLength(0);
+        expect(item.traceId).toBeDefined();
+        expect(item.output).toBeDefined();
+      });
+      expect(result.runEvaluations).toHaveLength(0);
+    });
+
+    it("should work with only run evaluators", async () => {
+      const onlyRunEvaluator: RunEvaluator = async ({ itemResults }) => ({
+        name: "run-only-eval",
+        value: itemResults.length * 10,
+        comment: `Run-level evaluation of ${itemResults.length} items`,
+      });
+
+      const result = await langfuse.experiment.run({
+        name: "Only run evaluators test",
+        description: "Test with only run evaluators",
+        data: dataset.slice(0, 3),
+        task,
+        evaluators: [], // No item evaluators
+        runEvaluators: [onlyRunEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(3);
+      result.itemResults.forEach((item) => {
+        expect(item.evaluations).toHaveLength(0); // No item evaluations
+        expect(item.traceId).toBeDefined();
+      });
+
+      expect(result.runEvaluations).toHaveLength(1);
+      expect(result.runEvaluations[0]).toMatchObject({
+        name: "run-only-eval",
+        value: 30, // 3 items * 10
+      });
+    });
+
+    it("should handle mix of sync and async evaluators", async () => {
+      const asyncEvaluator: Evaluator = async ({ input }) => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return {
+          name: "async-eval",
+          value: input.length / 10,
+        };
+      };
+
+      // Simulated sync evaluator (still returns Promise per type signature)
+      const syncEvaluator: Evaluator = async ({ input }) => {
+        return {
+          name: "sync-eval",
+          value: input === "Germany" ? 1 : 0,
+        };
+      };
+
+      const result = await langfuse.experiment.run({
+        name: "Mixed sync/async evaluators test",
+        description: "Test mix of sync and async evaluators",
+        data: dataset.slice(0, 2),
+        task,
+        evaluators: [asyncEvaluator, syncEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(2);
+      result.itemResults.forEach((item) => {
+        expect(item.evaluations).toHaveLength(2);
+        const evalNames = item.evaluations.map((e) => e.name);
+        expect(evalNames).toContain("async-eval");
+        expect(evalNames).toContain("sync-eval");
+      });
+    });
+
+    it("should handle evaluators returning different data types", async () => {
+      const numberEvaluator: Evaluator = async () => ({
+        name: "number-eval",
+        value: 42,
+      });
+
+      const stringEvaluator: Evaluator = async () => ({
+        name: "string-eval",
+        value: "excellent",
+      });
+
+      const booleanEvaluator: Evaluator = async () => ({
+        name: "boolean-eval",
+        value: true,
+        dataType: "BOOLEAN",
+      });
+
+      const result = await langfuse.experiment.run({
+        name: "Different data types test",
+        description: "Test evaluators with different return value types",
+        data: dataset.slice(0, 1),
+        task,
+        evaluators: [numberEvaluator, stringEvaluator, booleanEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(1);
+      const evaluations = result.itemResults[0].evaluations;
+      expect(evaluations).toHaveLength(3);
+
+      const numberEval = evaluations.find((e) => e.name === "number-eval");
+      const stringEval = evaluations.find((e) => e.name === "string-eval");
+      const booleanEval = evaluations.find((e) => e.name === "boolean-eval");
+
+      expect(numberEval?.value).toBe(42);
+      expect(stringEval?.value).toBe("excellent");
+      expect(booleanEval?.value).toBe(true);
+    });
+
+    it("should handle complex evaluator metadata and comments", async () => {
+      const complexEvaluator: Evaluator = async ({
+        input,
+        output,
+        expectedOutput,
+      }) => [
+        {
+          name: "detailed-eval",
+          value: 0.85,
+          comment: `Detailed analysis: input="${input}", output="${output}", expected="${expectedOutput}"`,
+          metadata: {
+            inputLength: input?.length || 0,
+            outputLength: output?.length || 0,
+            timestamp: new Date().toISOString(),
+            evaluatorVersion: "1.2.3",
+          },
+          dataType: "NUMERIC" as const,
+        },
+        {
+          name: "secondary-eval",
+          value: input === expectedOutput ? "perfect" : "imperfect",
+          comment: "Secondary evaluation result",
+          metadata: { secondary: true },
+        },
+      ];
+
+      const result = await langfuse.experiment.run({
+        name: "Complex evaluator test",
+        description: "Test evaluators with complex metadata",
+        data: dataset.slice(0, 1),
+        task,
+        evaluators: [complexEvaluator],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(1);
+      const evaluations = result.itemResults[0].evaluations;
+      expect(evaluations).toHaveLength(2);
+
+      const detailedEval = evaluations.find((e) => e.name === "detailed-eval");
+      expect(detailedEval).toMatchObject({
+        name: "detailed-eval",
+        value: 0.85,
+        comment: expect.stringContaining("Detailed analysis"),
+        metadata: expect.objectContaining({
+          inputLength: expect.any(Number),
+          evaluatorVersion: "1.2.3",
+        }),
+        dataType: "NUMERIC",
+      });
+
+      const secondaryEval = evaluations.find(
+        (e) => e.name === "secondary-eval",
+      );
+      expect(secondaryEval).toMatchObject({
+        name: "secondary-eval",
+        value: expect.any(String),
+        metadata: { secondary: true },
+      });
     });
   });
 });

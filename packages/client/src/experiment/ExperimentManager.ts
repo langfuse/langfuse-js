@@ -100,9 +100,11 @@ export class ExperimentManager {
         [] as Evaluation[],
       );
 
-      runEvaluations.forEach((runEval) =>
-        this.langfuseClient.score.create({ datasetRunId, ...runEval }),
-      );
+      if (datasetRunId) {
+        runEvaluations.forEach((runEval) =>
+          this.langfuseClient.score.create({ datasetRunId, ...runEval }),
+        );
+      }
     }
 
     await this.langfuseClient.score.flush();
