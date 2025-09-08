@@ -18,14 +18,16 @@ export type EvaluatorParams = {
   output: any;
   expectedOutput?: any;
 };
-export type Evaluator = (params: EvaluatorParams) => Promise<Evaluation[]>;
+export type Evaluator = (
+  params: EvaluatorParams,
+) => Promise<Evaluation[] | Evaluation>;
 
 export type RunEvaluatorParams = {
   itemResults: ExperimentItemResult[];
 };
 export type RunEvaluator = (
   params: RunEvaluatorParams,
-) => Promise<Evaluation[]>;
+) => Promise<Evaluation[] | Evaluation>;
 
 export type ExperimentParams = {
   name: string;

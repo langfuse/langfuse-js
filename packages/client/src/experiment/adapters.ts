@@ -12,13 +12,11 @@ export function autoevalToLangfuseEvaluator<E extends CallableFunction>(
       expected: langfuseEvaluatorParams.expectedOutput,
     });
 
-    return [
-      {
-        name: score.name,
-        value: score.score ?? 0,
-        metadata: score.metadata,
-      },
-    ];
+    return {
+      name: score.name,
+      value: score.score ?? 0,
+      metadata: score.metadata,
+    };
   };
 
   return langfuseEvaluator;

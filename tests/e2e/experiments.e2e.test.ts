@@ -110,12 +110,10 @@ describe("Langfuse Datasets E2E", () => {
         return acc + (curr.value as number) / array.length;
       }, 0);
 
-    return [
-      {
-        name: "levenshtein-average",
-        value: average,
-      },
-    ];
+    return {
+      name: "levenshtein-average",
+      value: average,
+    };
   };
 
   beforeAll(() => {

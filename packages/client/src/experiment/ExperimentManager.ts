@@ -77,11 +77,16 @@ export class ExperimentManager {
     let runEvaluations: Evaluation[] = [];
     if (runEvaluators && runEvaluators?.length > 0) {
       const promises = runEvaluators.map(async (runEvaluator) => {
-        return runEvaluator({ itemResults }).catch((err) => {
-          this.logger.error("Run evaluator failed with error ", err);
+        return runEvaluator({ itemResults })
+          .then((result) => {
+            // Handle both single evaluation and array of evaluations
+            return Array.isArray(result) ? result : [result];
+          })
+          .catch((err) => {
+            this.logger.error("Run evaluator failed with error ", err);
 
-          throw err;
-        });
+            throw err;
+          });
       });
 
       runEvaluations = (await Promise.allSettled(promises)).reduce(
@@ -170,13 +175,18 @@ export class ExperimentManager {
           output,
         };
 
-        return evaluator(params).catch((err) => {
-          this.logger.error(
-            `Evaluator '${evaluator.name}' failed for params \n\n${JSON.stringify(params)}\n\n with error: ${err}`,
-          );
+        return evaluator(params)
+          .then((result) => {
+            // Handle both single evaluation and array of evaluations
+            return Array.isArray(result) ? result : [result];
+          })
+          .catch((err) => {
+            this.logger.error(
+              `Evaluator '${evaluator.name}' failed for params \n\n${JSON.stringify(params)}\n\n with error: ${err}`,
+            );
 
-          throw err;
-        });
+            throw err;
+          });
       },
     );
 
