@@ -45,5 +45,5 @@ export type ExperimentItemResult = Pick<
 export type ExperimentResult = {
   datasetRunId?: string;
   itemResults: ExperimentItemResult[];
-  prettyPrint: () => Promise<string>;
+  prettyPrint: (options?: { includeItemResults?: boolean }) => Promise<string>;
 };

@@ -77,13 +77,14 @@ export class ExperimentManager {
     return {
       itemResults,
       datasetRunId,
-      prettyPrint: async () =>
+      prettyPrint: async (options?: { includeItemResults?: boolean }) =>
         await this.prettyPrintResults({
           datasetRunUrl,
           itemResults,
           originalData: data,
           name: config.name,
           description: config.description,
+          includeItemResults: options?.includeItemResults ?? true,
         }),
     };
   }
@@ -185,41 +186,108 @@ export class ExperimentManager {
     originalData: ExperimentItem[] | DatasetItem[];
     name: string;
     description?: string;
+    includeItemResults?: boolean;
   }): Promise<string> {
-    const { itemResults, originalData, name, description } = params;
+    const {
+      itemResults,
+      originalData,
+      name,
+      description,
+      includeItemResults = true,
+    } = params;
 
     if (itemResults.length === 0) {
       return "No experiment results to display.";
     }
 
-    let output = "\n📊 Experiment Results\n";
-    output += "═".repeat(50) + "\n\n";
+    let output = "";
 
-    // Experiment info
-    output += `📝 Experiment: ${name}\n`;
-    if (description) {
-      output += `💬 Description: ${description}\n`;
+    // Individual results
+    if (includeItemResults) {
+      for (let index = 0; index < itemResults.length; index++) {
+        const result = itemResults[index];
+        const originalItem = originalData[index];
+
+        output += `\n${index + 1}. Item ${index + 1}:\n`;
+
+        // Input, expected, and actual on separate lines
+        if (originalItem?.input !== undefined) {
+          output += `   Input:    ${this.formatValue(originalItem.input)}\n`;
+        }
+
+        const expectedOutput =
+          originalItem?.expectedOutput ?? result.expectedOutput ?? null;
+        output += `   Expected: ${expectedOutput !== null ? this.formatValue(expectedOutput) : "null"}\n`;
+        output += `   Actual:   ${this.formatValue(result.output)}\n`;
+
+        // Scores on separate lines
+        if (result.evaluations.length > 0) {
+          output += `   Scores:\n`;
+          result.evaluations.forEach((evaluation) => {
+            const score =
+              typeof evaluation.value === "number"
+                ? evaluation.value.toFixed(3)
+                : evaluation.value;
+            output += `     • ${evaluation.name}: ${score}`;
+            if (evaluation.comment) {
+              output += `\n       💭 ${evaluation.comment}`;
+            }
+            output += "\n";
+          });
+        }
+
+        // Dataset item link on separate line
+        if (
+          originalItem &&
+          "id" in originalItem &&
+          "datasetId" in originalItem
+        ) {
+          const projectUrl = (
+            await this.langfuseClient.getTraceUrl("mock")
+          ).split("/traces")[0];
+          const datasetItemUrl = `${projectUrl}/datasets/${originalItem.datasetId}/items/${originalItem.id}`;
+          output += `\n   Dataset Item:\n   ${datasetItemUrl}\n`;
+        }
+
+        // Trace link on separate line
+        if (result.traceId) {
+          const traceUrl = await this.langfuseClient.getTraceUrl(
+            result.traceId,
+          );
+          output += `\n   Trace:\n   ${traceUrl}\n`;
+        }
+      }
+    } else {
+      output += `Individual Results: Hidden (${itemResults.length} items)\n`;
+      output +=
+        "💡 Call prettyPrint({ includeItemResults: true }) to view them\n";
     }
 
-    if (params.datasetRunUrl) {
-      output += `🪢 Dataset Run URL:\n${params.datasetRunUrl}\n`;
-    }
-
-    output += "\n";
-
-    // Summary stats
+    // Experiment Overview
     const totalItems = itemResults.length;
     const evaluationNames = new Set(
       itemResults.flatMap((r) => r.evaluations.map((e) => e.name)),
     );
 
-    output += `📈 Summary:\n`;
-    output += `  • Total Items: ${totalItems}\n`;
-    output += `  • Evaluations: ${Array.from(evaluationNames).join(", ")}\n\n`;
+    output += `\n${"─".repeat(50)}\n`;
+    output += `📊 ${name}`;
+    if (description) {
+      output += ` - ${description}`;
+    }
 
-    // Evaluation averages
+    output += `\n${totalItems} items`;
+
     if (evaluationNames.size > 0) {
-      output += `📊 Average Scores:\n`;
+      output += `\nEvaluations:`;
+      Array.from(evaluationNames).forEach((evalName) => {
+        output += `\n  • ${evalName}`;
+      });
+      output += "\n";
+    }
+
+    // Average scores in bulleted list
+    if (evaluationNames.size > 0) {
+      output += `\nAverage Scores:`;
       for (const evalName of evaluationNames) {
         const scores = itemResults
           .flatMap((r) => r.evaluations)
@@ -228,53 +296,14 @@ export class ExperimentManager {
 
         if (scores.length > 0) {
           const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-          output += `  • ${evalName}: ${avg.toFixed(3)}\n`;
+          output += `\n  • ${evalName}: ${avg.toFixed(3)}`;
         }
       }
       output += "\n";
     }
 
-    // Individual results
-    output += `📋 Individual Results:\n`;
-    output += "─".repeat(50) + "\n";
-
-    for (let index = 0; index < itemResults.length; index++) {
-      const result = itemResults[index];
-      output += `\n🔍 Item ${index + 1}:\n`;
-
-      // Get input from the original data if available
-      const originalItem = originalData[index];
-      if (originalItem?.input !== undefined) {
-        output += `  Input:    ${this.formatValue(originalItem.input)}\n`;
-      }
-
-      // Always show expected output, use originalItem first, then result, or null
-      const expectedOutput =
-        originalItem?.expectedOutput ?? result.expectedOutput ?? null;
-      output += `  Expected: ${expectedOutput !== null ? this.formatValue(expectedOutput) : "null"}\n`;
-
-      output += `  Actual:   ${this.formatValue(result.output)}\n`;
-
-      if (result.evaluations.length > 0) {
-        output += `  Scores:\n`;
-        result.evaluations.forEach((evaluation) => {
-          const score =
-            typeof evaluation.value === "number"
-              ? evaluation.value.toFixed(3)
-              : evaluation.value;
-
-          output += `    • ${evaluation.name}: ${score}`;
-          if (evaluation.comment) {
-            output += `\n      💭 ${evaluation.comment}`;
-          }
-          output += "\n";
-        });
-      }
-
-      if (result.traceId) {
-        const traceUrl = await this.langfuseClient.getTraceUrl(result.traceId);
-        output += `\n  🪢Trace:\n${traceUrl}\n`;
-      }
+    if (params.datasetRunUrl) {
+      output += `\n🔗 Dataset Run:\n   ${params.datasetRunUrl}`;
     }
 
     return output;
