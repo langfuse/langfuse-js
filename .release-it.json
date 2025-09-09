@@ -1,6 +1,5 @@
 {
   "git": {
-    "requireBranch": "!${version.includes('alpha') || version.includes('beta')}",
     "requireCleanWorkingDir": true,
     "requireUpstream": true,
     "addUntrackedFiles": false,
