@@ -6,7 +6,7 @@ import {
   autoevalsToLangfuseEvaluator,
 } from "@langfuse/client";
 import { observeOpenAI } from "@langfuse/openai";
-import { AnswerSimilarity, Factuality, Levenshtein } from "autoevals";
+import { Factuality, Levenshtein } from "autoevals";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
 import { describe, it, afterEach, beforeEach, expect } from "vitest";
