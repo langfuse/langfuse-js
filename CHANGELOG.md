@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.1.0-alpha.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0...v4.1.0-alpha.0) (2025-09-09)
+
+### ✨ Features
+
+* **experiments:** add experiment runner ([24c4f03](https://github.com/langfuse/langfuse-js/commit/24c4f039e2899292a978f7870f23983a7500010a))
+
 ## [4.0.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.9...v4.0.0) (2025-08-28)
 
 ## [4.0.0-beta.9](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2025-08-28)
