@@ -108,7 +108,58 @@ export class LangfuseClient {
   public media: MediaManager;
 
   /**
-   * Manager for media upload and reference resolution.
+   * Manager for running experiments on datasets and data items.
+   *
+   * The experiment manager provides comprehensive functionality for:
+   * - Running tasks on datasets or custom data arrays
+   * - Evaluating outputs with custom or pre-built evaluators
+   * - Tracking experiment runs with automatic tracing
+   * - Generating formatted result summaries
+   * - Integrating with AutoEvals library evaluators
+   *
+   * @example Basic experiment execution
+   * ```typescript
+   * const langfuse = new LangfuseClient();
+   *
+   * const result = await langfuse.experiment.run({
+   *   name: "Model Evaluation",
+   *   description: "Testing model performance on Q&A tasks",
+   *   data: [
+   *     { input: "What is 2+2?", expectedOutput: "4" },
+   *     { input: "What is the capital of France?", expectedOutput: "Paris" }
+   *   ],
+   *   task: async ({ input }) => {
+   *     // Your model/task implementation
+   *     const response = await myModel.generate(input);
+   *     return response;
+   *   },
+   *   evaluators: [
+   *     async ({ output, expectedOutput }) => ({
+   *       name: "exact_match",
+   *       value: output.trim().toLowerCase() === expectedOutput.toLowerCase() ? 1 : 0
+   *     })
+   *   ]
+   * });
+   *
+   * console.log(await result.prettyPrint());
+   * ```
+   *
+   * @example Using with datasets
+   * ```typescript
+   * const dataset = await langfuse.dataset.get("my-test-dataset");
+   * const result = await dataset.runExperiment({
+   *   name: "Production Readiness Test",
+   *   task: myTask,
+   *   evaluators: [accuracyEvaluator, latencyEvaluator],
+   *   runEvaluators: [overallQualityEvaluator]
+   * });
+   * ```
+   *
+   * @see {@link ExperimentManager} for detailed API documentation
+   * @see {@link ExperimentParams} for configuration options
+   * @see {@link ExperimentResult} for result structure
+   * @public
+   * @since 4.0.0
    */
   public experiment: ExperimentManager;
 

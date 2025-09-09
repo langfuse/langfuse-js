@@ -13,17 +13,151 @@ import {
   Evaluation,
 } from "./types.js";
 
+/**
+ * Manages the execution and evaluation of experiments on datasets.
+ *
+ * The ExperimentManager provides a comprehensive framework for running experiments
+ * that test models or tasks against datasets, with support for automatic evaluation,
+ * scoring.
+ *
+ * @example Basic experiment usage
+ * ```typescript
+ * const langfuse = new LangfuseClient();
+ *
+ * const result = await langfuse.experiment.run({
+ *   name: "Capital Cities Test",
+ *   description: "Testing model knowledge of world capitals",
+ *   data: [
+ *     { input: "France", expectedOutput: "Paris" },
+ *     { input: "Germany", expectedOutput: "Berlin" }
+ *   ],
+ *   task: async ({ input }) => {
+ *     const response = await openai.chat.completions.create({
+ *       model: "gpt-4",
+ *       messages: [{ role: "user", content: `What is the capital of ${input}?` }]
+ *     });
+ *     return response.choices[0].message.content;
+ *   },
+ *   evaluators: [
+ *     async ({ input, output, expectedOutput }) => ({
+ *       name: "exact_match",
+ *       value: output === expectedOutput ? 1 : 0
+ *     })
+ *   ]
+ * });
+ *
+ * console.log(await result.prettyPrint());
+ * ```
+ *
+ * @example Using with Langfuse datasets
+ * ```typescript
+ * const dataset = await langfuse.dataset.get("my-dataset");
+ *
+ * const result = await dataset.runExperiment({
+ *   name: "Model Comparison",
+ *   task: myTask,
+ *   evaluators: [myEvaluator],
+ *   runEvaluators: [averageScoreEvaluator]
+ * });
+ * ```
+ *
+ * @public
+ */
 export class ExperimentManager {
   private langfuseClient: LangfuseClient;
 
+  /**
+   * Creates a new ExperimentManager instance.
+   *
+   * @param params - Configuration object
+   * @param params.langfuseClient - The Langfuse client instance for API communication
+   * @internal
+   */
   constructor(params: { langfuseClient: LangfuseClient }) {
     this.langfuseClient = params.langfuseClient;
   }
 
+  /**
+   * Gets the global logger instance for experiment-related logging.
+   *
+   * @returns The global logger instance
+   * @internal
+   */
   get logger() {
     return getGlobalLogger();
   }
 
+  /**
+   * Executes an experiment by running a task on each data item and evaluating the results.
+   *
+   * This method orchestrates the complete experiment lifecycle:
+   * 1. Executes the task function on each data item with proper tracing
+   * 2. Runs item-level evaluators on each task output
+   * 3. Executes run-level evaluators on the complete result set
+   * 4. Links results to dataset runs (for Langfuse datasets)
+   * 5. Stores all scores and traces in Langfuse
+   *
+   * @param config - The experiment configuration
+   * @param config.name - Human-readable name for the experiment
+   * @param config.description - Optional description of the experiment's purpose
+   * @param config.metadata - Optional metadata to attach to the experiment run
+   * @param config.data - Array of data items to process (ExperimentItem[] or DatasetItem[])
+   * @param config.task - Function that processes each data item and returns output
+   * @param config.evaluators - Optional array of functions to evaluate each item's output
+   * @param config.runEvaluators - Optional array of functions to evaluate the entire run
+   * @param config.maxConcurrency - Maximum number of concurrent task executions (default: Infinity)
+   *
+   * @returns Promise that resolves to experiment results including:
+   *   - itemResults: Results for each processed data item
+   *   - runEvaluations: Results from run-level evaluators
+   *   - datasetRunId: ID of the dataset run (if using Langfuse datasets)
+   *   - prettyPrint: Function to format and display results
+   *
+   * @throws {Error} When task execution fails and cannot be handled gracefully
+   * @throws {Error} When required evaluators fail critically
+   *
+   * @example Simple experiment
+   * ```typescript
+   * const result = await langfuse.experiment.run({
+   *   name: "Translation Quality Test",
+   *   data: [
+   *     { input: "Hello world", expectedOutput: "Hola mundo" },
+   *     { input: "Good morning", expectedOutput: "Buenos días" }
+   *   ],
+   *   task: async ({ input }) => translateText(input, 'es'),
+   *   evaluators: [
+   *     async ({ output, expectedOutput }) => ({
+   *       name: "bleu_score",
+   *       value: calculateBleuScore(output, expectedOutput)
+   *     })
+   *   ]
+   * });
+   * ```
+   *
+   * @example Experiment with concurrency control
+   * ```typescript
+   * const result = await langfuse.experiment.run({
+   *   name: "Large Scale Evaluation",
+   *   data: largeBatchOfItems,
+   *   task: expensiveModelCall,
+   *   maxConcurrency: 5, // Process max 5 items simultaneously
+   *   evaluators: [myEvaluator],
+   *   runEvaluators: [
+   *     async ({ itemResults }) => ({
+   *       name: "average_score",
+   *       value: itemResults.reduce((acc, r) => acc + r.evaluations[0].value, 0) / itemResults.length
+   *     })
+   *   ]
+   * });
+   * ```
+   *
+   * @see {@link ExperimentParams} for detailed parameter documentation
+   * @see {@link ExperimentResult} for detailed return value documentation
+   * @see {@link Evaluator} for evaluator function specifications
+   * @see {@link RunEvaluator} for run evaluator function specifications
+   *
+   * @public
+   */
   async run(config: ExperimentParams): Promise<ExperimentResult> {
     const {
       data,
@@ -126,6 +260,30 @@ export class ExperimentManager {
     };
   }
 
+  /**
+   * Executes the task and evaluators for a single data item.
+   *
+   * This method handles the complete processing pipeline for one data item:
+   * 1. Executes the task within a traced observation span
+   * 2. Links the result to a dataset run (if applicable)
+   * 3. Runs all item-level evaluators on the output
+   * 4. Stores evaluation scores in Langfuse
+   * 5. Handles errors gracefully by continuing with remaining evaluators
+   *
+   * @param params - Parameters for item execution
+   * @param params.experimentName - Name of the parent experiment
+   * @param params.experimentDescription - Description of the parent experiment
+   * @param params.experimentMetadata - Metadata for the parent experiment
+   * @param params.item - The data item to process
+   * @param params.task - The task function to execute
+   * @param params.evaluators - Optional evaluators to run on the output
+   *
+   * @returns Promise resolving to the item result with output, evaluations, and trace info
+   *
+   * @throws {Error} When task execution fails (propagated from task function)
+   *
+   * @internal
+   */
   private async runItem(params: {
     experimentName: ExperimentParams["name"];
     experimentDescription: ExperimentParams["description"];
@@ -222,6 +380,66 @@ export class ExperimentManager {
     };
   }
 
+  /**
+   * Formats experiment results into a human-readable string representation.
+   *
+   * Creates a comprehensive, nicely formatted summary of the experiment including:
+   * - Individual item results with inputs, outputs, expected values, and scores
+   * - Dataset item and trace links (when available)
+   * - Experiment overview with aggregate statistics
+   * - Average scores across all evaluations
+   * - Run-level evaluation results
+   * - Links to dataset runs in the Langfuse UI
+   *
+   * @param params - Formatting parameters
+   * @param params.datasetRunUrl - Optional URL to the dataset run in Langfuse UI
+   * @param params.itemResults - Results from processing each data item
+   * @param params.originalData - The original input data items
+   * @param params.runEvaluations - Results from run-level evaluators
+   * @param params.name - Name of the experiment
+   * @param params.description - Optional description of the experiment
+   * @param params.includeItemResults - Whether to include individual item details (default: true)
+   *
+   * @returns Promise resolving to formatted string representation
+   *
+   * @example Output format
+   * ```
+   * 1. Item 1:
+   *    Input:    What is the capital of France?
+   *    Expected: Paris
+   *    Actual:   Paris
+   *    Scores:
+   *      • exact_match: 1.000
+   *      • similarity: 0.95
+   *        💭 Very close match with expected output
+   *
+   *    Dataset Item:
+   *    https://cloud.langfuse.com/project/123/datasets/456/items/789
+   *
+   *    Trace:
+   *    https://cloud.langfuse.com/project/123/traces/abc123
+   *
+   * ──────────────────────────────────────────────────
+   * 📊 Translation Quality Test - Testing model accuracy
+   * 2 items
+   * Evaluations:
+   *   • exact_match
+   *   • similarity
+   *
+   * Average Scores:
+   *   • exact_match: 0.850
+   *   • similarity: 0.923
+   *
+   * Run Evaluations:
+   *   • overall_quality: 0.887
+   *     💭 Good performance with room for improvement
+   *
+   * 🔗 Dataset Run:
+   *    https://cloud.langfuse.com/project/123/datasets/456/runs/def456
+   * ```
+   *
+   * @internal
+   */
   private async prettyPrintResults(params: {
     datasetRunUrl?: string;
     itemResults: ExperimentItemResult[];
@@ -369,6 +587,19 @@ export class ExperimentManager {
     return output;
   }
 
+  /**
+   * Formats a value for display in pretty-printed output.
+   *
+   * Handles different value types appropriately:
+   * - Strings: Truncates long strings to 50 characters with "..."
+   * - Objects/Arrays: Converts to JSON string representation
+   * - Primitives: Uses toString() representation
+   *
+   * @param value - The value to format
+   * @returns Formatted string representation suitable for display
+   *
+   * @internal
+   */
   private formatValue(value: any): string {
     if (typeof value === "string") {
       return value.length > 50 ? `${value.substring(0, 47)}...` : value;
