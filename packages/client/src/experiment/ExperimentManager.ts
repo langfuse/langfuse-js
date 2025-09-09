@@ -172,7 +172,7 @@ export class ExperimentManager {
 
     const itemResults: ExperimentItemResult[] = [];
 
-    for (let i = 0; i <= data.length; i += batchSize) {
+    for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
 
       const promises: Promise<ExperimentItemResult>[] = batch.map(
