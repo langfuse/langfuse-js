@@ -1,5 +1,6 @@
 import { DatasetItem, getGlobalLogger } from "@langfuse/core";
 import { startActiveObservation } from "@langfuse/tracing";
+import { ProxyTracerProvider, trace } from "@opentelemetry/api";
 
 import { LangfuseClient } from "../LangfuseClient.js";
 
@@ -169,6 +170,12 @@ export class ExperimentManager {
       maxConcurrency: batchSize = Infinity,
       runEvaluators,
     } = config;
+
+    if (!this.isOtelRegistered()) {
+      this.logger.warn(
+        "OpenTelemetry has not been set up. Traces will not be sent to Langfuse.See our docs on how to set up OpenTelemetry: https://langfuse.com/docs/observability/sdk/typescript/setup#tracing-setup",
+      );
+    }
 
     const itemResults: ExperimentItemResult[] = [];
 
@@ -605,5 +612,15 @@ export class ExperimentManager {
       return value.length > 50 ? `${value.substring(0, 47)}...` : value;
     }
     return JSON.stringify(value);
+  }
+
+  private isOtelRegistered(): boolean {
+    let tracerProvider = trace.getTracerProvider();
+
+    if (tracerProvider instanceof ProxyTracerProvider) {
+      tracerProvider = tracerProvider.getDelegate();
+    }
+
+    return tracerProvider.constructor.name !== "NoopTracerProvider";
   }
 }
