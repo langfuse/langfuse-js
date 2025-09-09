@@ -19,10 +19,10 @@ import { Evaluator } from "./types.js";
  * @example Basic usage with AutoEvals
  * ```typescript
  * import { Factuality, Levenshtein } from 'autoevals';
- * import { autoevalToLangfuseEvaluator } from '@langfuse/client';
+ * import { autoevalsToLangfuseEvaluator } from '@langfuse/client';
  *
- * const factualityEvaluator = autoevalToLangfuseEvaluator(Factuality);
- * const levenshteinEvaluator = autoevalToLangfuseEvaluator(Levenshtein);
+ * const factualityEvaluator = autoevalsToLangfuseEvaluator(Factuality);
+ * const levenshteinEvaluator = autoevalsToLangfuseEvaluator(Levenshtein);
  *
  * await langfuse.experiment.run({
  *   name: "AutoEvals Integration Test",
@@ -34,35 +34,19 @@ import { Evaluator } from "./types.js";
  *
  * @example Using with additional parameters
  * ```typescript
- * import { Similarity } from 'autoevals';
+ * import { Factuality } from 'autoevals';
  *
- * const similarityEvaluator = autoevalToLangfuseEvaluator(
- *   Similarity,
- *   { model: 'text-embedding-ada-002' } // Additional params for AutoEvals
+ * const factualityEvaluator = autoevalsToLangfuseEvaluator(
+ *   Factuality,
+ *   { model: 'gpt-4o' } // Additional params for AutoEvals
  * );
  *
  * await langfuse.experiment.run({
- *   name: "Semantic Similarity Test",
+ *   name: "Factuality Test",
  *   data: myDataset,
  *   task: myTask,
- *   evaluators: [similarityEvaluator]
+ *   evaluators: [factualityEvaluator]
  * });
- * ```
- *
- * @example Custom AutoEvals evaluator
- * ```typescript
- * // Define a custom AutoEvals-compatible function
- * const customEvaluator = async ({ input, output, expected }) => {
- *   const score = calculateCustomScore(input, output, expected);
- *   return {
- *     name: "custom_metric",
- *     score: score,
- *     metadata: { method: "custom_algorithm" }
- *   };
- * };
- *
- * // Convert to Langfuse format
- * const langfuseEvaluator = autoevalToLangfuseEvaluator(customEvaluator);
  * ```
  *
  * @see {@link https://github.com/braintrustdata/autoevals} AutoEvals library documentation
@@ -71,7 +55,7 @@ import { Evaluator } from "./types.js";
  * @public
  * @since 4.0.0
  */
-export function autoevalToLangfuseEvaluator<E extends CallableFunction>(
+export function autoevalsToLangfuseEvaluator<E extends CallableFunction>(
   autoevalEvaluator: E,
   params?: Params<E>,
 ): Evaluator {

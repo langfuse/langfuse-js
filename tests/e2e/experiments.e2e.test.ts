@@ -3,10 +3,10 @@ import {
   ExperimentTask,
   LangfuseClient,
   RunEvaluator,
-  autoevalToLangfuseEvaluator,
+  autoevalsToLangfuseEvaluator,
 } from "@langfuse/client";
 import { observeOpenAI } from "@langfuse/openai";
-import { Factuality, Levenshtein } from "autoevals";
+import { AnswerSimilarity, Factuality, Levenshtein } from "autoevals";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
 import { describe, it, afterEach, beforeEach, expect } from "vitest";
@@ -132,8 +132,8 @@ describe("Langfuse Datasets E2E", () => {
       data: dataset,
       task,
       evaluators: [
-        autoevalToLangfuseEvaluator(Factuality),
-        autoevalToLangfuseEvaluator(Levenshtein),
+        autoevalsToLangfuseEvaluator(Factuality),
+        autoevalsToLangfuseEvaluator(Levenshtein),
         factualityEvaluator,
       ],
       runEvaluators: [levenshteinAverageRunEvaluator],
@@ -205,8 +205,8 @@ describe("Langfuse Datasets E2E", () => {
       description: "Country capital experiment",
       task,
       evaluators: [
-        autoevalToLangfuseEvaluator(Factuality),
-        autoevalToLangfuseEvaluator(Levenshtein),
+        autoevalsToLangfuseEvaluator(Factuality),
+        autoevalsToLangfuseEvaluator(Levenshtein),
         factualityEvaluator,
       ],
       runEvaluators: [levenshteinAverageRunEvaluator],
@@ -304,7 +304,7 @@ describe("Langfuse Datasets E2E", () => {
         data: dataset.slice(0, 1), // Just one item
         task,
         evaluators: [
-          autoevalToLangfuseEvaluator(Factuality), // This should work
+          autoevalsToLangfuseEvaluator(Factuality), // This should work
           failingEvaluator, // This should fail
         ],
       });
@@ -330,7 +330,7 @@ describe("Langfuse Datasets E2E", () => {
           description: "Test task error handling",
           data: dataset.slice(0, 1),
           task: failingTask,
-          evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+          evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
         }),
       ).rejects.toThrow("Task failed");
 
@@ -348,7 +348,7 @@ describe("Langfuse Datasets E2E", () => {
         description: "Test run evaluator error handling",
         data: dataset.slice(0, 1),
         task,
-        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
         runEvaluators: [failingRunEvaluator],
       });
 
@@ -369,7 +369,7 @@ describe("Langfuse Datasets E2E", () => {
         description: "Test empty dataset handling",
         data: [],
         task,
-        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
         runEvaluators: [levenshteinAverageRunEvaluator],
       });
 
@@ -393,7 +393,7 @@ describe("Langfuse Datasets E2E", () => {
         description: "Test incomplete dataset handling",
         data: incompleteDataset,
         task,
-        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
       });
 
       await testEnv.spanProcessor.forceFlush();
@@ -511,7 +511,7 @@ describe("Langfuse Datasets E2E", () => {
         description: "Test prettyPrint options",
         data: dataset,
         task,
-        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
         runEvaluators: [levenshteinAverageRunEvaluator],
       });
 
@@ -690,7 +690,7 @@ describe("Langfuse Datasets E2E", () => {
         name: "Experiment 1",
         description: "First experiment",
         task,
-        evaluators: [autoevalToLangfuseEvaluator(Factuality)],
+        evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
       });
 
       await testEnv.spanProcessor.forceFlush();
@@ -701,7 +701,7 @@ describe("Langfuse Datasets E2E", () => {
         name: "Experiment 2",
         description: "Second experiment",
         task,
-        evaluators: [autoevalToLangfuseEvaluator(Levenshtein)],
+        evaluators: [autoevalsToLangfuseEvaluator(Levenshtein)],
       });
 
       await testEnv.spanProcessor.forceFlush();
