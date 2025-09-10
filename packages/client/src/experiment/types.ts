@@ -202,8 +202,8 @@ export type ExperimentItemResult = Pick<
  * console.log(await result.prettyPrint({ includeItemResults: true }));
  *
  * // Link to dataset run (if available)
- * if (result.datasetRunId) {
- *   console.log(`View in Langfuse: dataset run ${result.datasetRunId}`);
+ * if (result.datasetRunUrl) {
+ *   console.log(`View in Langfuse: dataset run ${result.datasetRunUrl}`);
  * }
  * ```
  *
@@ -218,6 +218,8 @@ export type ExperimentResult = {
    * for detailed analysis and comparison with other runs.
    */
   datasetRunId?: string;
+
+  datasetRunUrl?: string;
 
   /**
    * Results from processing each individual data item.

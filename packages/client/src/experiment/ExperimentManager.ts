@@ -253,6 +253,7 @@ export class ExperimentManager {
     return {
       itemResults,
       datasetRunId,
+      datasetRunUrl,
       runEvaluations,
       prettyPrint: async (options?: { includeItemResults?: boolean }) =>
         await this.prettyPrintResults({
