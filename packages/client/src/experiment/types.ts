@@ -18,9 +18,10 @@ export type ExperimentItem = {
    * only evaluators that don't require expected output can be used.
    */
   expectedOutput?: any;
+  metadata?: Record<string, any>;
 };
 
-export type ExperimentTaskParams = Pick<ExperimentItem, "input">;
+export type ExperimentTaskParams = ExperimentItem | DatasetItem;
 export type ExperimentTask = (params: ExperimentTaskParams) => Promise<any>;
 
 export type Evaluation = Pick<
