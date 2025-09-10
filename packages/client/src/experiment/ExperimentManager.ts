@@ -159,7 +159,13 @@ export class ExperimentManager {
    *
    * @public
    */
-  async run(config: ExperimentParams): Promise<ExperimentResult> {
+  async run<
+    Input = any,
+    ExpectedOutput = any,
+    Metadata extends Record<string, any> = Record<string, any>,
+  >(
+    config: ExperimentParams<Input, ExpectedOutput, Metadata>,
+  ): Promise<ExperimentResult<Input, ExpectedOutput, Metadata>> {
     const {
       data,
       evaluators,
@@ -177,23 +183,24 @@ export class ExperimentManager {
       );
     }
 
-    const itemResults: ExperimentItemResult[] = [];
+    const itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[] =
+      [];
 
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
 
-      const promises: Promise<ExperimentItemResult>[] = batch.map(
-        async (item) => {
-          return this.runItem({
-            item,
-            evaluators,
-            task,
-            experimentName: name,
-            experimentDescription: description,
-            experimentMetadata: metadata,
-          });
-        },
-      );
+      const promises: Promise<
+        ExperimentItemResult<Input, ExpectedOutput, Metadata>
+      >[] = batch.map(async (item) => {
+        return this.runItem({
+          item,
+          evaluators,
+          task,
+          experimentName: name,
+          experimentDescription: description,
+          experimentMetadata: metadata,
+        });
+      });
 
       const results = await Promise.all(promises);
 
@@ -292,14 +299,26 @@ export class ExperimentManager {
    *
    * @internal
    */
-  private async runItem(params: {
-    experimentName: ExperimentParams["name"];
-    experimentDescription: ExperimentParams["description"];
-    experimentMetadata: ExperimentParams["metadata"];
-    item: ExperimentParams["data"][0];
-    task: ExperimentTask;
-    evaluators?: Evaluator[];
-  }): Promise<ExperimentItemResult> {
+  private async runItem<
+    Input = any,
+    ExpectedOutput = any,
+    Metadata extends Record<string, any> = Record<string, any>,
+  >(params: {
+    experimentName: ExperimentParams<Input, ExpectedOutput, Metadata>["name"];
+    experimentDescription: ExperimentParams<
+      Input,
+      ExpectedOutput,
+      Metadata
+    >["description"];
+    experimentMetadata: ExperimentParams<
+      Input,
+      ExpectedOutput,
+      Metadata
+    >["metadata"];
+    item: ExperimentParams<Input, ExpectedOutput, Metadata>["data"][0];
+    task: ExperimentTask<Input, ExpectedOutput, Metadata>;
+    evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
+  }): Promise<ExperimentItemResult<Input, ExpectedOutput, Metadata>> {
     const { item, evaluators = [], task, experimentMetadata = {} } = params;
 
     const { output, traceId } = await startActiveObservation(
@@ -349,8 +368,8 @@ export class ExperimentManager {
     const evalPromises: Promise<Evaluation[]>[] = evaluators.map(
       async (evaluator) => {
         const params = {
-          input: item.input,
-          expectedOutput: item.expectedOutput,
+          input: item.input as any,
+          expectedOutput: item.expectedOutput as any,
           output,
         };
 
@@ -460,10 +479,16 @@ export class ExperimentManager {
    *
    * @internal
    */
-  private async prettyPrintResults(params: {
+  private async prettyPrintResults<
+    Input = any,
+    ExpectedOutput = any,
+    Metadata extends Record<string, any> = Record<string, any>,
+  >(params: {
     datasetRunUrl?: string;
-    itemResults: ExperimentItemResult[];
-    originalData: ExperimentItem[] | DatasetItem[];
+    itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[];
+    originalData:
+      | ExperimentItem<Input, ExpectedOutput, Metadata>[]
+      | DatasetItem[];
     runEvaluations: Evaluation[];
     name: string;
     description?: string;

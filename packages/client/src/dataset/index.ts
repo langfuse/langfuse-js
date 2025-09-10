@@ -27,8 +27,8 @@ import { LangfuseClient } from "../LangfuseClient.js";
  * @since 4.0.0
  */
 export type RunExperimentOnDataset = (
-  params: Omit<ExperimentParams, "data">,
-) => Promise<ExperimentResult>;
+  params: Omit<ExperimentParams<any, any, Record<string, any>>, "data">,
+) => Promise<ExperimentResult<any, any, Record<string, any>>>;
 
 /**
  * Enhanced dataset object with additional methods for linking and experiments.

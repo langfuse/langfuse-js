@@ -1,6 +1,10 @@
 import { DatasetItem, ScoreBody } from "@langfuse/core";
 
-export type ExperimentItem =
+export type ExperimentItem<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> =
   | {
       /**
        * The input data to pass to the task function.
@@ -9,7 +13,7 @@ export type ExperimentItem =
        * to your task function as the `input` parameter. Structure it according
        * to your task's requirements.
        */
-      input?: any;
+      input?: Input;
 
       /**
        * The expected output for evaluation purposes.
@@ -18,7 +22,7 @@ export type ExperimentItem =
        * Used by evaluators to assess task performance. If not provided,
        * only evaluators that don't require expected output can be used.
        */
-      expectedOutput?: any;
+      expectedOutput?: ExpectedOutput;
 
       /**
        * Optional metadata to attach to the experiment item.
@@ -27,7 +31,7 @@ export type ExperimentItem =
        * This metadata will be available in traces and can be used for filtering,
        * analysis, or custom evaluator logic.
        */
-      metadata?: Record<string, any>;
+      metadata?: Metadata;
     }
   | DatasetItem;
 
@@ -40,7 +44,11 @@ export type ExperimentItem =
  * @public
  * @since 4.1.0
  */
-export type ExperimentTaskParams = ExperimentItem;
+export type ExperimentTaskParams<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = ExperimentItem<Input, ExpectedOutput, Metadata>;
 
 /**
  * Function type for experiment tasks that process input data and return output.
@@ -71,21 +79,31 @@ export type ExperimentTaskParams = ExperimentItem;
  * @public
  * @since 4.1.0
  */
-export type ExperimentTask = (params: ExperimentTaskParams) => Promise<any>;
+export type ExperimentTask<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = (
+  params: ExperimentTaskParams<Input, ExpectedOutput, Metadata>,
+) => Promise<any>;
 
 export type Evaluation = Pick<
   ScoreBody,
   "name" | "value" | "comment" | "metadata" | "dataType"
 >;
 
-export type EvaluatorParams = {
+export type EvaluatorParams<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = {
   /**
    * The original input data passed to the task.
    *
    * This is the same input that was provided to the task function.
    * Use this for context-aware evaluations or input-output relationship analysis.
    */
-  input: any;
+  input: Input;
 
   /**
    * The output produced by the task.
@@ -101,7 +119,7 @@ export type EvaluatorParams = {
    * This is the ground truth or expected result for the given input.
    * May not be available for all evaluation scenarios.
    */
-  expectedOutput?: any;
+  expectedOutput?: ExpectedOutput;
 
   /**
    * Optional metadata about the evaluation context.
@@ -110,13 +128,21 @@ export type EvaluatorParams = {
    * that may be useful for evaluation logic, such as tags, categories,
    * or other contextual data.
    */
-  metadata?: Record<string, any>;
+  metadata?: Metadata;
 };
-export type Evaluator = (
-  params: EvaluatorParams,
+export type Evaluator<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = (
+  params: EvaluatorParams<Input, ExpectedOutput, Metadata>,
 ) => Promise<Evaluation[] | Evaluation>;
 
-export type RunEvaluatorParams = {
+export type RunEvaluatorParams<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = {
   /**
    * Results from all processed experiment items.
    *
@@ -124,13 +150,21 @@ export type RunEvaluatorParams = {
    * processing a single data item. Use this for aggregate analysis,
    * statistical calculations, and cross-item comparisons.
    */
-  itemResults: ExperimentItemResult[];
+  itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[];
 };
-export type RunEvaluator = (
-  params: RunEvaluatorParams,
+export type RunEvaluator<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = (
+  params: RunEvaluatorParams<Input, ExpectedOutput, Metadata>,
 ) => Promise<Evaluation[] | Evaluation>;
 
-export type ExperimentParams = {
+export type ExperimentParams<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = {
   /**
    * Human-readable name for the experiment.
    *
@@ -161,7 +195,7 @@ export type ExperimentParams = {
    * Can be either custom ExperimentItem[] or DatasetItem[] from Langfuse.
    * Each item should contain input data and optionally expected output.
    */
-  data: ExperimentItem[];
+  data: ExperimentItem<Input, ExpectedOutput, Metadata>[];
 
   /**
    * The task function to execute on each data item.
@@ -169,7 +203,7 @@ export type ExperimentParams = {
    * This function receives input data and produces output that will be evaluated.
    * It should encapsulate the model or system being tested.
    */
-  task: ExperimentTask;
+  task: ExperimentTask<Input, ExpectedOutput, Metadata>;
 
   /**
    * Optional array of evaluator functions to assess each item's output.
@@ -177,7 +211,7 @@ export type ExperimentParams = {
    * Each evaluator receives input, output, and expected output (if available)
    * and returns evaluation results. Multiple evaluators enable comprehensive assessment.
    */
-  evaluators?: Evaluator[];
+  evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
 
   /**
    * Optional array of run-level evaluators to assess the entire experiment.
@@ -185,7 +219,7 @@ export type ExperimentParams = {
    * These evaluators receive all item results and can perform aggregate analysis
    * like calculating averages, detecting patterns, or statistical analysis.
    */
-  runEvaluators?: RunEvaluator[];
+  runEvaluators?: RunEvaluator<Input, ExpectedOutput, Metadata>[];
 
   /**
    * Maximum number of concurrent task executions (default: Infinity).
@@ -196,8 +230,12 @@ export type ExperimentParams = {
   maxConcurrency?: number;
 };
 
-export type ExperimentItemResult = Pick<
-  ExperimentItem,
+export type ExperimentItemResult<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = Pick<
+  ExperimentItem<Input, ExpectedOutput, Metadata>,
   "input" | "expectedOutput"
 > & {
   /**
@@ -207,7 +245,7 @@ export type ExperimentItemResult = Pick<
    * metadata, and any additional fields. Useful for accessing item-specific
    * context or metadata in result analysis.
    */
-  item: ExperimentItem;
+  item: ExperimentItem<Input, ExpectedOutput, Metadata>;
   /**
    * The actual output produced by the task.
    *
@@ -273,7 +311,11 @@ export type ExperimentItemResult = Pick<
  *
  * @public
  */
-export type ExperimentResult = {
+export type ExperimentResult<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = {
   /**
    * ID of the dataset run in Langfuse (only for experiments on Langfuse datasets).
    *
@@ -299,7 +341,7 @@ export type ExperimentResult = {
    * including inputs, outputs, evaluations, and trace information.
    * Use this for detailed analysis of individual item performance.
    */
-  itemResults: ExperimentItemResult[];
+  itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[];
 
   /**
    * Results from run-level evaluators that assessed the entire experiment.
