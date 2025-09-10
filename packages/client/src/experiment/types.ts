@@ -1,27 +1,76 @@
 import { DatasetItem, ScoreBody } from "@langfuse/core";
 
-export type ExperimentItem = {
-  /**
-   * The input data to pass to the task function.
-   *
-   * Can be any type - string, object, array, etc. This data will be passed
-   * to your task function as the `input` parameter. Structure it according
-   * to your task's requirements.
-   */
-  input?: any;
+export type ExperimentItem =
+  | {
+      /**
+       * The input data to pass to the task function.
+       *
+       * Can be any type - string, object, array, etc. This data will be passed
+       * to your task function as the `input` parameter. Structure it according
+       * to your task's requirements.
+       */
+      input?: any;
 
-  /**
-   * The expected output for evaluation purposes.
-   *
-   * Optional ground truth or reference output for this input.
-   * Used by evaluators to assess task performance. If not provided,
-   * only evaluators that don't require expected output can be used.
-   */
-  expectedOutput?: any;
-  metadata?: Record<string, any>;
-};
+      /**
+       * The expected output for evaluation purposes.
+       *
+       * Optional ground truth or reference output for this input.
+       * Used by evaluators to assess task performance. If not provided,
+       * only evaluators that don't require expected output can be used.
+       */
+      expectedOutput?: any;
 
-export type ExperimentTaskParams = ExperimentItem | DatasetItem;
+      /**
+       * Optional metadata to attach to the experiment item.
+       *
+       * Store additional context, tags, or custom data related to this specific item.
+       * This metadata will be available in traces and can be used for filtering,
+       * analysis, or custom evaluator logic.
+       */
+      metadata?: Record<string, any>;
+    }
+  | DatasetItem;
+
+/**
+ * Parameters passed to an experiment task function.
+ *
+ * Can be either an ExperimentItem (for custom datasets) or a DatasetItem
+ * (for Langfuse datasets). The task function should handle both types.
+ *
+ * @public
+ * @since 4.1.0
+ */
+export type ExperimentTaskParams = ExperimentItem;
+
+/**
+ * Function type for experiment tasks that process input data and return output.
+ *
+ * The task function is the core component being tested in an experiment.
+ * It receives either an ExperimentItem or DatasetItem and produces output
+ * that will be evaluated.
+ *
+ * @param params - Either an ExperimentItem or DatasetItem containing input and metadata
+ * @returns Promise resolving to the task's output (any type)
+ *
+ * @example Task handling both item types
+ * ```typescript
+ * const universalTask: ExperimentTask = async (item) => {
+ *   // Works with both ExperimentItem and DatasetItem
+ *   const input = item.input;
+ *   const metadata = item.metadata;
+ *
+ *   const response = await openai.chat.completions.create({
+ *     model: "gpt-4",
+ *     messages: [{ role: "user", content: input }]
+ *   });
+ *
+ *   return response.choices[0].message.content;
+ * };
+ * ```
+ *
+ * @public
+ * @since 4.1.0
+ */
 export type ExperimentTask = (params: ExperimentTaskParams) => Promise<any>;
 
 export type Evaluation = Pick<
@@ -53,6 +102,14 @@ export type EvaluatorParams = {
    * May not be available for all evaluation scenarios.
    */
   expectedOutput?: any;
+
+  /**
+   * Optional metadata about the evaluation context.
+   *
+   * Contains additional information from the experiment item or dataset item
+   * that may be useful for evaluation logic, such as tags, categories,
+   * or other contextual data.
+   */
   metadata?: Record<string, any>;
 };
 export type Evaluator = (
@@ -104,7 +161,7 @@ export type ExperimentParams = {
    * Can be either custom ExperimentItem[] or DatasetItem[] from Langfuse.
    * Each item should contain input data and optionally expected output.
    */
-  data: ExperimentItem[] | DatasetItem[];
+  data: ExperimentItem[];
 
   /**
    * The task function to execute on each data item.
@@ -143,7 +200,14 @@ export type ExperimentItemResult = Pick<
   ExperimentItem,
   "input" | "expectedOutput"
 > & {
-  item: ExperimentItem | DatasetItem;
+  /**
+   * The original experiment or dataset item that was processed.
+   *
+   * Contains the complete original item data including input, expected output,
+   * metadata, and any additional fields. Useful for accessing item-specific
+   * context or metadata in result analysis.
+   */
+  item: ExperimentItem;
   /**
    * The actual output produced by the task.
    *
@@ -219,6 +283,13 @@ export type ExperimentResult = {
    */
   datasetRunId?: string;
 
+  /**
+   * URL to the dataset run in the Langfuse UI (only for experiments on Langfuse datasets).
+   *
+   * Direct link to view the complete dataset run in the Langfuse web interface,
+   * including all experiment results, traces, and analytics. Provides easy access
+   * to detailed analysis and visualization of the experiment.
+   */
   datasetRunUrl?: string;
 
   /**

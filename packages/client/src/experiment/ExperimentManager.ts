@@ -300,7 +300,7 @@ export class ExperimentManager {
     task: ExperimentTask;
     evaluators?: Evaluator[];
   }): Promise<ExperimentItemResult> {
-    const { item, evaluators = [], task } = params;
+    const { item, evaluators = [], task, experimentMetadata = {} } = params;
 
     const { output, traceId } = await startActiveObservation(
       "experiment-item-run",
@@ -310,6 +310,17 @@ export class ExperimentManager {
         span.update({
           input: item.input,
           output,
+          metadata: {
+            experimentName: params.experimentName,
+            ...experimentMetadata,
+            ...(item.metadata ?? {}),
+            ...("id" in item && "datasetId" in item
+              ? {
+                  datasetId: item["datasetId"],
+                  datasetItemId: item["id"],
+                }
+              : {}),
+          },
         });
 
         return { output, traceId: span.traceId };
