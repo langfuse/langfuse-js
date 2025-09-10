@@ -262,7 +262,7 @@ export class ExperimentManager {
           runEvaluations,
           name: config.name,
           description: config.description,
-          includeItemResults: options?.includeItemResults ?? true,
+          includeItemResults: options?.includeItemResults ?? false,
         }),
     };
   }
@@ -384,6 +384,7 @@ export class ExperimentManager {
       evaluations: evals,
       traceId,
       datasetRunId,
+      item,
     };
   }
 
@@ -405,7 +406,7 @@ export class ExperimentManager {
    * @param params.runEvaluations - Results from run-level evaluators
    * @param params.name - Name of the experiment
    * @param params.description - Optional description of the experiment
-   * @param params.includeItemResults - Whether to include individual item details (default: true)
+   * @param params.includeItemResults - Whether to include individual item details (default: false)
    *
    * @returns Promise resolving to formatted string representation
    *
@@ -462,7 +463,7 @@ export class ExperimentManager {
       runEvaluations,
       name,
       description,
-      includeItemResults = true,
+      includeItemResults = false,
     } = params;
 
     if (itemResults.length === 0) {

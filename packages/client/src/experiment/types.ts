@@ -53,6 +53,7 @@ export type EvaluatorParams = {
    * May not be available for all evaluation scenarios.
    */
   expectedOutput?: any;
+  metadata?: Record<string, any>;
 };
 export type Evaluator = (
   params: EvaluatorParams,
@@ -142,6 +143,7 @@ export type ExperimentItemResult = Pick<
   ExperimentItem,
   "input" | "expectedOutput"
 > & {
+  item: ExperimentItem | DatasetItem;
   /**
    * The actual output produced by the task.
    *
@@ -196,8 +198,8 @@ export type ExperimentItemResult = Pick<
  * // Print formatted results
  * console.log(await result.prettyPrint());
  *
- * // Print summary only (for large datasets)
- * console.log(await result.prettyPrint({ includeItemResults: false }));
+ * // Print summary with individual item results
+ * console.log(await result.prettyPrint({ includeItemResults: true }));
  *
  * // Link to dataset run (if available)
  * if (result.datasetRunId) {
@@ -241,7 +243,7 @@ export type ExperimentResult = {
    * aggregate statistics, evaluation scores, and links to traces and dataset runs.
    *
    * @param options - Formatting options
-   * @param options.includeItemResults - Whether to include individual item details (default: true)
+   * @param options.includeItemResults - Whether to include individual item details (default: false)
    * @returns Promise resolving to formatted string representation
    */
   prettyPrint: (options?: { includeItemResults?: boolean }) => Promise<string>;

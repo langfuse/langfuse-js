@@ -518,25 +518,23 @@ describe("Langfuse Datasets E2E", () => {
       await testEnv.spanProcessor.forceFlush();
       await waitForServerIngestion(1000);
 
-      // Test with includeItemResults: false
-      const compactOutput = await result.prettyPrint({
-        includeItemResults: false,
-      });
+      // Test with includeItemResults: false (default)
+      const compactOutput = await result.prettyPrint();
       expect(compactOutput).toContain("Individual Results: Hidden");
       expect(compactOutput).toContain(
         "Call prettyPrint({ includeItemResults: true })",
       );
       expect(compactOutput).toContain("PrettyPrint options test"); // Should still show summary
 
-      // Test with includeItemResults: true (default)
+      // Test with includeItemResults: true
       const fullOutput = await result.prettyPrint({ includeItemResults: true });
       expect(fullOutput).toContain("1. Item 1:");
       expect(fullOutput).toContain("2. Item 2:");
       expect(fullOutput).toContain("3. Item 3:");
 
-      // Test default behavior (should be same as true)
+      // Test default behavior (should be same as false)
       const defaultOutput = await result.prettyPrint();
-      expect(defaultOutput).toEqual(fullOutput);
+      expect(defaultOutput).toEqual(compactOutput);
     });
   });
 
