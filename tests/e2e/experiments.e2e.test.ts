@@ -323,19 +323,46 @@ describe("Langfuse Datasets E2E", () => {
         throw new Error("Task failed");
       };
 
-      // The experiment should handle the task failure gracefully
-      await expect(
-        langfuse.experiment.run({
-          name: "Task error test",
-          description: "Test task error handling",
-          data: dataset.slice(0, 1),
-          task: failingTask,
-          evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
-        }),
-      ).rejects.toThrow("Task failed");
+      // The experiment should handle the task failure gracefully by skipping the failed item
+      const result = await langfuse.experiment.run({
+        name: "Task error test",
+        description: "Test task error handling",
+        data: dataset.slice(0, 1),
+        task: failingTask,
+        evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
+      });
 
       await testEnv.spanProcessor.forceFlush();
       await waitForServerIngestion(1000);
+
+      // Should complete experiment but skip the failed item
+      expect(result.itemResults).toHaveLength(0);
+      expect(result.runEvaluations).toHaveLength(0);
+    });
+
+    it("should handle mixed task success and failures", async () => {
+      const mixedTask: ExperimentTask = async ({ input }) => {
+        if (input === "Germany") {
+          throw new Error("Task failed for Germany");
+        }
+        return `Capital of ${input}`;
+      };
+
+      const result = await langfuse.experiment.run({
+        name: "Mixed task results test",
+        description: "Test mixed success/failure handling",
+        data: dataset.slice(0, 2), // Germany and France
+        task: mixedTask,
+        evaluators: [autoevalsToLangfuseEvaluator(Factuality)],
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      // Should complete experiment with only successful items
+      expect(result.itemResults).toHaveLength(1); // Only France should succeed
+      expect(result.itemResults[0].output).toContain("France");
+      expect(result.itemResults[0].evaluations).toHaveLength(1);
     });
 
     it("should handle run evaluator failures", async () => {

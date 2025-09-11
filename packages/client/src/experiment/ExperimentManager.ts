@@ -202,7 +202,24 @@ export class ExperimentManager {
         });
       });
 
-      const results = await Promise.all(promises);
+      const settledResults = await Promise.allSettled(promises);
+      const results = settledResults.reduce(
+        (acc, settledResult) => {
+          if (settledResult.status === "fulfilled") {
+            acc.push(settledResult.value);
+          } else {
+            const errorMessage =
+              settledResult.reason instanceof Error
+                ? settledResult.reason.message
+                : String(settledResult.reason);
+            this.logger.error(
+              `Task failed with error: ${errorMessage}. Skipping item.`,
+            );
+          }
+          return acc;
+        },
+        [] as ExperimentItemResult<Input, ExpectedOutput, Metadata>[],
+      );
 
       itemResults.push(...results);
     }
