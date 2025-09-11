@@ -352,8 +352,8 @@ export class ExperimentManager {
             ...(item.metadata ?? {}),
             ...("id" in item && "datasetId" in item
               ? {
-                  datasetId: item["datasetId"],
-                  datasetItemId: item["id"],
+                  dataset_id: item["datasetId"],
+                  dataset_item_id: item["id"],
                 }
               : {}),
           },
