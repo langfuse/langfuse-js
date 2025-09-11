@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.1](https://github.com/langfuse/langfuse-js/compare/v4.0.0...v4.0.1) (2025-09-11)
+
+### 🐛 Bug Fixes
+
+* **otel:** exporter version range ([#611](https://github.com/langfuse/langfuse-js/issues/611)) ([91db2c6](https://github.com/langfuse/langfuse-js/commit/91db2c60bf98ece8867a430e1bf3639cabbc73f5))
+
 ## [4.0.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.9...v4.0.0) (2025-08-28)
 
 ## [4.0.0-beta.9](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.8...v4.0.0-beta.9) (2025-08-28)
