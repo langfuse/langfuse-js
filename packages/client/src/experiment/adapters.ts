@@ -19,10 +19,10 @@ import { Evaluator } from "./types.js";
  * @example Basic usage with AutoEvals
  * ```typescript
  * import { Factuality, Levenshtein } from 'autoevals';
- * import { autoevalsToLangfuseEvaluator } from '@langfuse/client';
+ * import { createEvaluatorFromAutoevals } from '@langfuse/client';
  *
- * const factualityEvaluator = autoevalsToLangfuseEvaluator(Factuality);
- * const levenshteinEvaluator = autoevalsToLangfuseEvaluator(Levenshtein);
+ * const factualityEvaluator = createEvaluatorFromAutoevals(Factuality);
+ * const levenshteinEvaluator = createEvaluatorFromAutoevals(Levenshtein);
  *
  * await langfuse.experiment.run({
  *   name: "AutoEvals Integration Test",
@@ -36,7 +36,7 @@ import { Evaluator } from "./types.js";
  * ```typescript
  * import { Factuality } from 'autoevals';
  *
- * const factualityEvaluator = autoevalsToLangfuseEvaluator(
+ * const factualityEvaluator = createEvaluatorFromAutoevals(
  *   Factuality,
  *   { model: 'gpt-4o' } // Additional params for AutoEvals
  * );
@@ -55,7 +55,7 @@ import { Evaluator } from "./types.js";
  * @public
  * @since 4.0.0
  */
-export function autoevalsToLangfuseEvaluator<E extends CallableFunction>(
+export function createEvaluatorFromAutoevals<E extends CallableFunction>(
   autoevalEvaluator: E,
   params?: Params<E>,
 ): Evaluator {
