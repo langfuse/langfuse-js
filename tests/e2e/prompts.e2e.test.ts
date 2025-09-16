@@ -1099,20 +1099,12 @@ describe("Langfuse Prompts E2E", () => {
             role: "system",
             content: "You are a {role} assistant", // Langchain format
           });
-          expect(langchainPrompt[1]).toEqual({
-            variableName: "examples",
-            optional: false,
-          });
+          expect(langchainPrompt[1]).toEqual(["placeholder", "{examples}"]);
 
-          // Verify compatibility with real Langchain MessagesPlaceholder
-          const realMessagesPlaceholder = new MessagesPlaceholder("examples");
+          // Verify it's in the tuple format that LangChain supports
           const placeholderItem = langchainPrompt[1] as any;
-          expect(placeholderItem.variableName).toBe(
-            realMessagesPlaceholder.variableName,
-          );
-          expect(placeholderItem.optional).toBe(
-            realMessagesPlaceholder.optional,
-          );
+          expect(placeholderItem[0]).toBe("placeholder");
+          expect(placeholderItem[1]).toBe("{examples}");
           expect(langchainPrompt[2]).toEqual({
             role: "user",
             content: "Help me with {task}", // Langchain format
@@ -1184,10 +1176,10 @@ describe("Langfuse Prompts E2E", () => {
             role: "user",
             content: "Help me with {task}",
           });
-          expect(langchainPrompt[3]).toEqual({
-            variableName: "unresolved_history",
-            optional: false,
-          });
+          expect(langchainPrompt[3]).toEqual([
+            "placeholder",
+            "{unresolved_history}",
+          ]);
         });
 
         it("should handle non-standard placeholder values by stringifying them", () => {
@@ -1226,22 +1218,9 @@ describe("Langfuse Prompts E2E", () => {
           const client = new ChatPromptClient(mockPrompt);
           const langchainMessages = client.getLangchainPrompt();
 
-          const messages: any[] = [];
-          for (const msg of langchainMessages) {
-            if ("role" in msg && "content" in msg) {
-              messages.push([msg.role, msg.content]);
-            } else if ("variableName" in msg) {
-              // Create real Langchain MessagesPlaceholder
-              messages.push(
-                new MessagesPlaceholder({
-                  variableName: msg.variableName,
-                  optional: msg.optional,
-                }),
-              );
-            }
-          }
-
-          const langchainPrompt = ChatPromptTemplate.fromMessages(messages);
+          // Now we can pass the messages directly since placeholders are in LangChain format
+          const langchainPrompt =
+            ChatPromptTemplate.fromMessages(langchainMessages);
 
           // Test that the prompt compiles correctly with Langchain
           expect(langchainPrompt).toBeDefined();
@@ -1264,6 +1243,32 @@ describe("Langfuse Prompts E2E", () => {
           expect(formatted[1].content).toBe("Previous question");
           expect(formatted[2].content).toBe("Previous answer");
           expect(formatted[3].content).toBe("Help me with coding");
+        });
+
+        it("should work directly with ChatPromptTemplate.fromMessages() for unresolved placeholders", async () => {
+          const mockPrompt = createMockPrompt([
+            { role: "system", content: "You are a helpful assistant" },
+            { type: ChatMessageType.Placeholder, name: "msg_history" },
+            { role: "user", content: "Help me with this" },
+          ]);
+
+          const client = new ChatPromptClient(mockPrompt);
+
+          // This is what the user is trying to do - should work but currently fails
+          const langchainPrompt = ChatPromptTemplate.fromMessages(
+            client.getLangchainPrompt(),
+          );
+
+          expect(langchainPrompt).toBeDefined();
+          // Should be able to use it with placeholders
+          const formatted = await langchainPrompt.formatMessages({
+            msg_history: [
+              { role: "user", content: "Previous question" },
+              { role: "assistant", content: "Previous answer" },
+            ],
+          });
+
+          expect(formatted).toHaveLength(4); // system + 2 history + user
         });
 
         it("should return prompt with placeholders unchanged when no fill-ins provided", () => {
