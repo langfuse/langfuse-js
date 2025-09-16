@@ -141,7 +141,7 @@ export class LangfuseClient {
    *   ]
    * });
    *
-   * console.log(await result.prettyPrint());
+   * console.log(await result.format());
    * ```
    *
    * @example Using with datasets

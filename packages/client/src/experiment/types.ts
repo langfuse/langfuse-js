@@ -298,10 +298,10 @@ export type ExperimentItemResult<
  * console.log(`Average score: ${avgScore?.value}`);
  *
  * // Print formatted results
- * console.log(await result.prettyPrint());
+ * console.log(await result.format());
  *
  * // Print summary with individual item results
- * console.log(await result.prettyPrint({ includeItemResults: true }));
+ * console.log(await result.format({ includeItemResults: true }));
  *
  * // Link to dataset run (if available)
  * if (result.datasetRunUrl) {
@@ -352,7 +352,7 @@ export type ExperimentResult<
   runEvaluations: Evaluation[];
 
   /**
-   * Function to format and display experiment results in a human-readable format.
+   * Function to format experiment results in a human-readable format.
    *
    * Generates a comprehensive, nicely formatted summary including individual results,
    * aggregate statistics, evaluation scores, and links to traces and dataset runs.
@@ -361,5 +361,5 @@ export type ExperimentResult<
    * @param options.includeItemResults - Whether to include individual item details (default: false)
    * @returns Promise resolving to formatted string representation
    */
-  prettyPrint: (options?: { includeItemResults?: boolean }) => Promise<string>;
+  format: (options?: { includeItemResults?: boolean }) => Promise<string>;
 };

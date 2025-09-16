@@ -209,7 +209,7 @@ export class DatasetManager {
    *   ]
    * });
    *
-   * console.log(await result.prettyPrint());
+   * console.log(await result.format());
    * ```
    *
    * @example Handling large datasets

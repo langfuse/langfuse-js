@@ -47,7 +47,7 @@ import {
  *   ]
  * });
  *
- * console.log(await result.prettyPrint());
+ * console.log(await result.format());
  * ```
  *
  * @example Using with Langfuse datasets
@@ -112,7 +112,7 @@ export class ExperimentManager {
    *   - itemResults: Results for each processed data item
    *   - runEvaluations: Results from run-level evaluators
    *   - datasetRunId: ID of the dataset run (if using Langfuse datasets)
-   *   - prettyPrint: Function to format and display results
+   *   - format: Function to format results for display
    *
    * @throws {Error} When task execution fails and cannot be handled gracefully
    * @throws {Error} When required evaluators fail critically
@@ -279,7 +279,7 @@ export class ExperimentManager {
       datasetRunId,
       datasetRunUrl,
       runEvaluations,
-      prettyPrint: async (options?: { includeItemResults?: boolean }) =>
+      format: async (options?: { includeItemResults?: boolean }) =>
         await this.prettyPrintResults({
           datasetRunUrl,
           itemResults,
@@ -583,8 +583,7 @@ export class ExperimentManager {
       }
     } else {
       output += `Individual Results: Hidden (${itemResults.length} items)\n`;
-      output +=
-        "💡 Call prettyPrint({ includeItemResults: true }) to view them\n";
+      output += "💡 Call format({ includeItemResults: true }) to view them\n";
     }
 
     // Experiment Overview

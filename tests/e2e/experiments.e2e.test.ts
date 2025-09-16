@@ -139,7 +139,7 @@ describe("Langfuse Datasets E2E", () => {
       runEvaluators: [levenshteinAverageRunEvaluator],
     });
 
-    console.log(await result.prettyPrint());
+    console.log(await result.format());
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -212,7 +212,7 @@ describe("Langfuse Datasets E2E", () => {
       runEvaluators: [levenshteinAverageRunEvaluator],
     });
 
-    console.log(await result.prettyPrint());
+    console.log(await result.format());
 
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
@@ -405,7 +405,7 @@ describe("Langfuse Datasets E2E", () => {
 
       expect(result.itemResults).toHaveLength(0);
       expect(result.runEvaluations).toHaveLength(1); // Run evaluators will still execute with empty data
-      expect(await result.prettyPrint()).toContain("No experiment results");
+      expect(await result.format()).toContain("No experiment results");
     });
 
     it("should handle dataset with missing fields", async () => {
@@ -532,10 +532,10 @@ describe("Langfuse Datasets E2E", () => {
       });
     });
 
-    it("should support prettyPrint with includeItemResults option", async () => {
+    it("should support format with includeItemResults option", async () => {
       const result = await langfuse.experiment.run({
-        name: "PrettyPrint options test",
-        description: "Test prettyPrint options",
+        name: "Format options test",
+        description: "Test format options",
         data: dataset,
         task,
         evaluators: [createEvaluatorFromAutoevals(Factuality)],
@@ -546,21 +546,21 @@ describe("Langfuse Datasets E2E", () => {
       await waitForServerIngestion(1000);
 
       // Test with includeItemResults: false (default)
-      const compactOutput = await result.prettyPrint();
+      const compactOutput = await result.format();
       expect(compactOutput).toContain("Individual Results: Hidden");
       expect(compactOutput).toContain(
-        "Call prettyPrint({ includeItemResults: true })",
+        "Call format({ includeItemResults: true })",
       );
-      expect(compactOutput).toContain("PrettyPrint options test"); // Should still show summary
+      expect(compactOutput).toContain("Format options test"); // Should still show summary
 
       // Test with includeItemResults: true
-      const fullOutput = await result.prettyPrint({ includeItemResults: true });
+      const fullOutput = await result.format({ includeItemResults: true });
       expect(fullOutput).toContain("1. Item 1:");
       expect(fullOutput).toContain("2. Item 2:");
       expect(fullOutput).toContain("3. Item 3:");
 
       // Test default behavior (should be same as false)
-      const defaultOutput = await result.prettyPrint();
+      const defaultOutput = await result.format();
       expect(defaultOutput).toEqual(compactOutput);
     });
   });
