@@ -1254,7 +1254,6 @@ describe("Langfuse Prompts E2E", () => {
 
           const client = new ChatPromptClient(mockPrompt);
 
-          // This is what the user is trying to do - should work but currently fails
           const langchainPrompt = ChatPromptTemplate.fromMessages(
             client.getLangchainPrompt(),
           );
