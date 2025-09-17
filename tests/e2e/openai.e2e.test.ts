@@ -148,7 +148,7 @@ describe("OpenAI integration E2E tests", () => {
     expect(content).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
+    await waitForServerIngestion(4000);
 
     const traces = await langfuseClient.api.trace.list({
       name: generationName,
