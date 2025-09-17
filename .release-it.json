@@ -1,6 +1,5 @@
 {
   "git": {
-    "requireBranch": "main",
     "requireCleanWorkingDir": true,
     "requireUpstream": true,
     "addUntrackedFiles": false,
