@@ -1,14 +1,10 @@
 # Changelog
 
-## [4.1.0-alpha.2](https://github.com/langfuse/langfuse-js/compare/v4.1.0-alpha.1...v4.1.0-alpha.2) (2025-09-12)
+## [4.0.1](https://github.com/langfuse/langfuse-js/compare/v4.0.0...v4.0.1) (2025-09-11)
 
-## [4.1.0-alpha.1](https://github.com/langfuse/langfuse-js/compare/v4.1.0-alpha.0...v4.1.0-alpha.1) (2025-09-10)
+### 🐛 Bug Fixes
 
-## [4.1.0-alpha.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0...v4.1.0-alpha.0) (2025-09-09)
-
-### ✨ Features
-
-* **experiments:** add experiment runner ([24c4f03](https://github.com/langfuse/langfuse-js/commit/24c4f039e2899292a978f7870f23983a7500010a))
+* **otel:** exporter version range ([#611](https://github.com/langfuse/langfuse-js/issues/611)) ([91db2c6](https://github.com/langfuse/langfuse-js/commit/91db2c60bf98ece8867a430e1bf3639cabbc73f5))
 
 ## [4.0.0](https://github.com/langfuse/langfuse-js/compare/v4.0.0-beta.9...v4.0.0) (2025-08-28)
 
