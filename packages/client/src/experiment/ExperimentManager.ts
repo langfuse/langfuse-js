@@ -351,7 +351,7 @@ export class ExperimentManager {
   }): Promise<ExperimentItemResult<Input, ExpectedOutput, Metadata>> {
     const { item, evaluators = [], task, experimentMetadata = {} } = params;
 
-    const { output, traceId } = await startActiveObservation(
+    const { output, traceId, observationId } = await startActiveObservation(
       "experiment-item-run",
       async (span) => {
         const output = await task(item);
@@ -373,7 +373,7 @@ export class ExperimentManager {
           },
         });
 
-        return { output, traceId: span.traceId };
+        return { output, traceId: span.traceId, observationId: span.id };
       },
     );
 
@@ -387,6 +387,7 @@ export class ExperimentManager {
           metadata: params.experimentMetadata,
           datasetItemId: item.id,
           traceId,
+          observationId,
         })
         .then((result) => {
           datasetRunId = result.datasetRunId;
