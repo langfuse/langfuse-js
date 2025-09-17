@@ -151,6 +151,10 @@ describe("Langfuse Datasets E2E", () => {
       name: "levenshtein-average",
       value: expect.any(Number),
     });
+    // Should have generated runName (experiment name + timestamp)
+    expect(result.runName).toMatch(
+      /^Euro capitals - \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+    );
     // No datasetRunId for local datasets
     expect(result.datasetRunId).toBeUndefined();
 
@@ -224,6 +228,10 @@ describe("Langfuse Datasets E2E", () => {
       name: "levenshtein-average",
       value: expect.any(Number),
     });
+    // Should have generated runName (experiment name + timestamp)
+    expect(result.runName).toMatch(
+      /^Euro capitals on LF dataset - \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+    );
     expect(result.datasetRunId).toBeDefined();
 
     // Validate item results structure
@@ -255,12 +263,12 @@ describe("Langfuse Datasets E2E", () => {
     // Fetch dataset run from API and validate against database
     const datasetRun = await langfuse.api.datasets.getRun(
       datasetName,
-      experimentName,
+      result.runName,
     );
 
     expect(datasetRun).toBeDefined();
     expect(datasetRun).toMatchObject({
-      name: experimentName,
+      name: result.runName,
       description: "Country capital experiment",
       datasetId: fetchedDataset.id,
       datasetName: datasetName,
@@ -289,6 +297,77 @@ describe("Langfuse Datasets E2E", () => {
     expectedTraceIds.forEach((traceId) => {
       expect(traceId).toMatch(/^[a-f0-9]{32}$/);
     });
+  });
+
+  it("should support custom runName parameter", async () => {
+    // create remote dataset
+    const datasetName = "custom-run-name-test-" + nanoid();
+    await langfuse.api.datasets.create({
+      name: datasetName,
+      description: "Test custom run names",
+    });
+
+    // create remote dataset items
+    await Promise.all(
+      dataset
+        .slice(0, 2)
+        .map((item) =>
+          langfuse.api.datasetItems.create({ datasetName, ...item }),
+        ),
+    );
+
+    const fetchedDataset = await langfuse.dataset.get(datasetName);
+
+    const customRunName = "Custom Run Name " + nanoid();
+    const result = await fetchedDataset.runExperiment({
+      name: "Test Experiment",
+      runName: customRunName,
+      description: "Testing custom run name",
+      task,
+      evaluators: [createEvaluatorFromAutoevals(Factuality)],
+    });
+
+    await testEnv.spanProcessor.forceFlush();
+    await waitForServerIngestion(2000);
+
+    // Should use the custom run name exactly
+    expect(result.runName).toBe(customRunName);
+    expect(result.datasetRunId).toBeDefined();
+
+    // Fetch dataset run and verify it has the custom name
+    const datasetRun = await langfuse.api.datasets.getRun(
+      datasetName,
+      customRunName,
+    );
+
+    expect(datasetRun).toBeDefined();
+    expect(datasetRun).toMatchObject({
+      name: customRunName,
+      description: "Testing custom run name",
+      datasetId: fetchedDataset.id,
+      datasetName: datasetName,
+    });
+  });
+
+  it("should support custom runName with local datasets", async () => {
+    const customRunName = "Local Custom Run " + nanoid();
+    const result = await langfuse.experiment.run({
+      name: "Local Test Experiment",
+      runName: customRunName,
+      description: "Testing custom run name with local data",
+      data: dataset.slice(0, 2),
+      task,
+      evaluators: [createEvaluatorFromAutoevals(Factuality)],
+    });
+
+    await testEnv.spanProcessor.forceFlush();
+    await waitForServerIngestion(1000);
+
+    // Should use the custom run name exactly
+    expect(result.runName).toBe(customRunName);
+    expect(result.itemResults).toHaveLength(2);
+    // No dataset run for local datasets
+    expect(result.datasetRunId).toBeUndefined();
   });
 
   // Error Handling Tests
@@ -685,7 +764,7 @@ describe("Langfuse Datasets E2E", () => {
       // Validate scores are persisted
       const datasetRun = await langfuse.api.datasets.getRun(
         datasetName,
-        "Score persistence test",
+        result.runName,
       );
 
       expect(datasetRun).toBeDefined();
@@ -740,11 +819,11 @@ describe("Langfuse Datasets E2E", () => {
       // Validate both runs exist in database
       const run1 = await langfuse.api.datasets.getRun(
         datasetName,
-        "Experiment 1",
+        result1.runName,
       );
       const run2 = await langfuse.api.datasets.getRun(
         datasetName,
-        "Experiment 2",
+        result2.runName,
       );
 
       expect(run1).toBeDefined();
@@ -783,11 +862,11 @@ describe("Langfuse Datasets E2E", () => {
 
       const datasetRun = await langfuse.api.datasets.getRun(
         datasetName,
-        "Metadata test experiment",
+        result.runName,
       );
 
       expect(datasetRun).toMatchObject({
-        name: "Metadata test experiment",
+        name: result.runName,
         description: "Testing metadata preservation",
         metadata: { testKey: "testValue", experimentVersion: "1.0" },
       });

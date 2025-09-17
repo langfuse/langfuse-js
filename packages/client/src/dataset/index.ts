@@ -18,6 +18,7 @@ import { LangfuseClient } from "../LangfuseClient.js";
  * const dataset = await langfuse.dataset.get("my-dataset");
  * const result = await dataset.runExperiment({
  *   name: "Model Evaluation",
+ *   runName: "Model Evaluation Run 1", // optional
  *   task: myTask,
  *   evaluators: [myEvaluator]
  * });
@@ -193,6 +194,7 @@ export class DatasetManager {
    *
    * const result = await dataset.runExperiment({
    *   name: "GPT-4 Benchmark",
+   *   runName: "GPT-4 Benchmark v1.2", // optional exact run name
    *   description: "Evaluating GPT-4 on our benchmark tasks",
    *   task: async ({ input }) => {
    *     const response = await openai.chat.completions.create({

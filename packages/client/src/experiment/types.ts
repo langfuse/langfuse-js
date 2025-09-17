@@ -174,6 +174,15 @@ export type ExperimentParams<
   name: string;
 
   /**
+   * Optional exact name for the experiment run.
+   *
+   * If provided, this will be used as the exact dataset run name if the data
+   * contains Langfuse dataset items. If not provided, this will default to
+   * the experiment name appended with an ISO timestamp.
+   */
+  runName?: string;
+
+  /**
    * Optional description explaining the experiment's purpose.
    *
    * Provide context about what you're testing, methodology, or goals.
@@ -316,6 +325,14 @@ export type ExperimentResult<
   ExpectedOutput = any,
   Metadata extends Record<string, any> = Record<string, any>,
 > = {
+  /**
+   * The experiment run name.
+   *
+   * This is equal to the dataset run name if experiment was on Langfuse dataset.
+   * Either the provided runName parameter or generated name (experiment name + timestamp).
+   */
+  runName: string;
+
   /**
    * ID of the dataset run in Langfuse (only for experiments on Langfuse datasets).
    *

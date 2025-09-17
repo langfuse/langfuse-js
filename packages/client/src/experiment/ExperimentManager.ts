@@ -100,6 +100,7 @@ export class ExperimentManager {
    *
    * @param config - The experiment configuration
    * @param config.name - Human-readable name for the experiment
+   * @param config.runName - Optional exact name for the experiment run (defaults to name + timestamp)
    * @param config.description - Optional description of the experiment's purpose
    * @param config.metadata - Optional metadata to attach to the experiment run
    * @param config.data - Array of data items to process (ExperimentItem[] or DatasetItem[])
@@ -109,6 +110,7 @@ export class ExperimentManager {
    * @param config.maxConcurrency - Maximum number of concurrent task executions (default: Infinity)
    *
    * @returns Promise that resolves to experiment results including:
+   *   - runName: The experiment run name (either provided or generated)
    *   - itemResults: Results for each processed data item
    *   - runEvaluations: Results from run-level evaluators
    *   - datasetRunId: ID of the dataset run (if using Langfuse datasets)
@@ -171,11 +173,17 @@ export class ExperimentManager {
       evaluators,
       task,
       name,
+      runName: providedRunName,
       description,
       metadata,
       maxConcurrency: batchSize = Infinity,
       runEvaluators,
     } = config;
+
+    const runName = this.createExperimentRunName({
+      name,
+      runName: providedRunName,
+    });
 
     if (!this.isOtelRegistered()) {
       this.logger.warn(
@@ -197,6 +205,7 @@ export class ExperimentManager {
           evaluators,
           task,
           experimentName: name,
+          experimentRunName: runName,
           experimentDescription: description,
           experimentMetadata: metadata,
         });
@@ -275,6 +284,7 @@ export class ExperimentManager {
     await this.langfuseClient.score.flush();
 
     return {
+      runName,
       itemResults,
       datasetRunId,
       datasetRunUrl,
@@ -286,6 +296,7 @@ export class ExperimentManager {
           originalData: data,
           runEvaluations,
           name: config.name,
+          runName,
           description: config.description,
           includeItemResults: options?.includeItemResults ?? false,
         }),
@@ -304,6 +315,7 @@ export class ExperimentManager {
    *
    * @param params - Parameters for item execution
    * @param params.experimentName - Name of the parent experiment
+   * @param params.experimentRunName - Run name for the parent experiment
    * @param params.experimentDescription - Description of the parent experiment
    * @param params.experimentMetadata - Metadata for the parent experiment
    * @param params.item - The data item to process
@@ -322,6 +334,7 @@ export class ExperimentManager {
     Metadata extends Record<string, any> = Record<string, any>,
   >(params: {
     experimentName: ExperimentParams<Input, ExpectedOutput, Metadata>["name"];
+    experimentRunName: string;
     experimentDescription: ExperimentParams<
       Input,
       ExpectedOutput,
@@ -347,7 +360,8 @@ export class ExperimentManager {
           input: item.input,
           output,
           metadata: {
-            experimentName: params.experimentName,
+            experiment_name: params.experimentName,
+            experiment_run_name: params.experimentRunName,
             ...experimentMetadata,
             ...(item.metadata ?? {}),
             ...("id" in item && "datasetId" in item
@@ -368,7 +382,7 @@ export class ExperimentManager {
     if ("id" in item) {
       await this.langfuseClient.api.datasetRunItems
         .create({
-          runName: params.experimentName,
+          runName: params.experimentRunName,
           runDescription: params.experimentDescription,
           metadata: params.experimentMetadata,
           datasetItemId: item.id,
@@ -508,6 +522,7 @@ export class ExperimentManager {
       | DatasetItem[];
     runEvaluations: Evaluation[];
     name: string;
+    runName: string;
     description?: string;
     includeItemResults?: boolean;
   }): Promise<string> {
@@ -516,6 +531,7 @@ export class ExperimentManager {
       originalData,
       runEvaluations,
       name,
+      runName,
       description,
       includeItemResults = false,
     } = params;
@@ -593,7 +609,8 @@ export class ExperimentManager {
     );
 
     output += `\n${"─".repeat(50)}\n`;
-    output += `📊 ${name}`;
+    output += `🧪 Experiment: ${name}`;
+    output += `\n📋 Run name: ${runName}`;
     if (description) {
       output += ` - ${description}`;
     }
@@ -676,5 +693,30 @@ export class ExperimentManager {
     }
 
     return tracerProvider.constructor.name !== "NoopTracerProvider";
+  }
+
+  /**
+   * Creates an experiment run name based on provided parameters.
+   *
+   * If runName is provided, returns it directly. Otherwise, generates
+   * a name by combining the experiment name with an ISO timestamp.
+   *
+   * @param params - Parameters for run name creation
+   * @param params.name - The experiment name
+   * @param params.runName - Optional provided run name
+   * @returns The final run name to use
+   *
+   * @internal
+   */
+  private createExperimentRunName(params: {
+    name: string;
+    runName?: string;
+  }): string {
+    if (params.runName) {
+      return params.runName;
+    }
+
+    const isoTimestamp = new Date().toISOString();
+    return `${params.name} - ${isoTimestamp}`;
   }
 }
