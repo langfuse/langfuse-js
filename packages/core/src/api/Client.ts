@@ -5,12 +5,14 @@
 import * as core from "./core/index.js";
 import { mergeHeaders } from "./core/headers.js";
 import { AnnotationQueues } from "./api/resources/annotationQueues/client/Client.js";
+import { BlobStorageIntegrations } from "./api/resources/blobStorageIntegrations/client/Client.js";
 import { Comments } from "./api/resources/comments/client/Client.js";
 import { DatasetItems } from "./api/resources/datasetItems/client/Client.js";
 import { DatasetRunItems } from "./api/resources/datasetRunItems/client/Client.js";
 import { Datasets } from "./api/resources/datasets/client/Client.js";
 import { Health } from "./api/resources/health/client/Client.js";
 import { Ingestion } from "./api/resources/ingestion/client/Client.js";
+import { LlmConnections } from "./api/resources/llmConnections/client/Client.js";
 import { Media } from "./api/resources/media/client/Client.js";
 import { Metrics } from "./api/resources/metrics/client/Client.js";
 import { Models } from "./api/resources/models/client/Client.js";
@@ -72,12 +74,14 @@ export declare namespace LangfuseAPIClient {
 export class LangfuseAPIClient {
   protected readonly _options: LangfuseAPIClient.Options;
   protected _annotationQueues: AnnotationQueues | undefined;
+  protected _blobStorageIntegrations: BlobStorageIntegrations | undefined;
   protected _comments: Comments | undefined;
   protected _datasetItems: DatasetItems | undefined;
   protected _datasetRunItems: DatasetRunItems | undefined;
   protected _datasets: Datasets | undefined;
   protected _health: Health | undefined;
   protected _ingestion: Ingestion | undefined;
+  protected _llmConnections: LlmConnections | undefined;
   protected _media: Media | undefined;
   protected _metrics: Metrics | undefined;
   protected _models: Models | undefined;
@@ -111,6 +115,12 @@ export class LangfuseAPIClient {
     return (this._annotationQueues ??= new AnnotationQueues(this._options));
   }
 
+  public get blobStorageIntegrations(): BlobStorageIntegrations {
+    return (this._blobStorageIntegrations ??= new BlobStorageIntegrations(
+      this._options,
+    ));
+  }
+
   public get comments(): Comments {
     return (this._comments ??= new Comments(this._options));
   }
@@ -133,6 +143,10 @@ export class LangfuseAPIClient {
 
   public get ingestion(): Ingestion {
     return (this._ingestion ??= new Ingestion(this._options));
+  }
+
+  public get llmConnections(): LlmConnections {
+    return (this._llmConnections ??= new LlmConnections(this._options));
   }
 
   public get media(): Media {
