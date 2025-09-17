@@ -7,6 +7,7 @@ import {
   getEnv,
   base64Encode,
 } from "@langfuse/core";
+import { propagation } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
@@ -315,6 +316,10 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       [LangfuseOtelSpanAttributes.ENVIRONMENT]: this.environment,
       [LangfuseOtelSpanAttributes.RELEASE]: this.release,
     });
+
+    (propagation.getBaggage(parentContext)?.getAllEntries() ?? []).forEach(
+      (entry) => span.setAttribute(entry[0], entry[1].value),
+    );
 
     return this.processor.onStart(span, parentContext);
   }
