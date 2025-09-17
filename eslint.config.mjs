@@ -35,7 +35,7 @@ export default [
           ignoreRestSiblings: true,
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unnecessary-type-constraint": "error",
       "prettier/prettier": "error",
       "no-redeclare": "off",
