@@ -10,20 +10,12 @@ export interface ListPromptsMetaRequest {
   name?: string;
   label?: string;
   tag?: string;
-  /**
-   * page number, starts at 1
-   */
+  /** page number, starts at 1 */
   page?: number;
-  /**
-   * limit of items per page
-   */
+  /** limit of items per page */
   limit?: number;
-  /**
-   * Optional filter to only include prompt versions created/updated on or after a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include prompt versions created/updated on or after a certain datetime (ISO 8601) */
   fromUpdatedAt?: string;
-  /**
-   * Optional filter to only include prompt versions created/updated before a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include prompt versions created/updated before a certain datetime (ISO 8601) */
   toUpdatedAt?: string;
 }

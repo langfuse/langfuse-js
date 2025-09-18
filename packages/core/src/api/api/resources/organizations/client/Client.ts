@@ -26,7 +26,7 @@ export declare namespace Organizations {
     /** Additional headers to include in requests. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 
@@ -48,7 +48,7 @@ export declare namespace Organizations {
     /** Additional headers to include in the request. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 }
@@ -85,6 +85,21 @@ export class Organizations {
   private async __getOrganizationMemberships(
     requestOptions?: Organizations.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.MembershipsResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -92,16 +107,7 @@ export class Organizations {
         "/api/public/organizations/memberships",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -203,6 +209,21 @@ export class Organizations {
     request: LangfuseAPI.MembershipRequest,
     requestOptions?: Organizations.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.MembershipResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -210,16 +231,7 @@ export class Organizations {
         "/api/public/organizations/memberships",
       ),
       method: "PUT",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       contentType: "application/json",
       queryParameters: requestOptions?.queryParams,
       requestType: "json",
@@ -294,6 +306,132 @@ export class Organizations {
   }
 
   /**
+   * Delete a membership from the organization associated with the API key (requires organization-scoped API key)
+   *
+   * @param {LangfuseAPI.DeleteMembershipRequest} request
+   * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.organizations.deleteOrganizationMembership({
+   *         userId: "userId"
+   *     })
+   */
+  public deleteOrganizationMembership(
+    request: LangfuseAPI.DeleteMembershipRequest,
+    requestOptions?: Organizations.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.MembershipDeletionResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__deleteOrganizationMembership(request, requestOptions),
+    );
+  }
+
+  private async __deleteOrganizationMembership(
+    request: LangfuseAPI.DeleteMembershipRequest,
+    requestOptions?: Organizations.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.MembershipDeletionResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/organizations/memberships",
+      ),
+      method: "DELETE",
+      headers: _headers,
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.MembershipDeletionResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/organizations/memberships.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
    * Get all memberships for a specific project (requires organization-scoped API key)
    *
    * @param {string} projectId
@@ -321,6 +459,21 @@ export class Organizations {
     projectId: string,
     requestOptions?: Organizations.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.MembershipsResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -328,16 +481,7 @@ export class Organizations {
         `/api/public/projects/${encodeURIComponent(projectId)}/memberships`,
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -442,6 +586,21 @@ export class Organizations {
     request: LangfuseAPI.MembershipRequest,
     requestOptions?: Organizations.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.MembershipResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -449,16 +608,7 @@ export class Organizations {
         `/api/public/projects/${encodeURIComponent(projectId)}/memberships`,
       ),
       method: "PUT",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       contentType: "application/json",
       queryParameters: requestOptions?.queryParams,
       requestType: "json",
@@ -533,6 +683,135 @@ export class Organizations {
   }
 
   /**
+   * Delete a membership from a specific project (requires organization-scoped API key). The user must be a member of the organization.
+   *
+   * @param {string} projectId
+   * @param {LangfuseAPI.DeleteMembershipRequest} request
+   * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.organizations.deleteProjectMembership("projectId", {
+   *         userId: "userId"
+   *     })
+   */
+  public deleteProjectMembership(
+    projectId: string,
+    request: LangfuseAPI.DeleteMembershipRequest,
+    requestOptions?: Organizations.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.MembershipDeletionResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__deleteProjectMembership(projectId, request, requestOptions),
+    );
+  }
+
+  private async __deleteProjectMembership(
+    projectId: string,
+    request: LangfuseAPI.DeleteMembershipRequest,
+    requestOptions?: Organizations.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.MembershipDeletionResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/projects/${encodeURIComponent(projectId)}/memberships`,
+      ),
+      method: "DELETE",
+      headers: _headers,
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.MembershipDeletionResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/projects/{projectId}/memberships.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
    * Get all projects for the organization associated with the API key (requires organization-scoped API key)
    *
    * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
@@ -557,6 +836,21 @@ export class Organizations {
   private async __getOrganizationProjects(
     requestOptions?: Organizations.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.OrganizationProjectsResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -564,16 +858,7 @@ export class Organizations {
         "/api/public/organizations/projects",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null

@@ -7,12 +7,8 @@
  *     {}
  */
 export interface GetScoreConfigsRequest {
-  /**
-   * Page number, starts at 1.
-   */
+  /** Page number, starts at 1. */
   page?: number;
-  /**
-   * Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit
-   */
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
   limit?: number;
 }

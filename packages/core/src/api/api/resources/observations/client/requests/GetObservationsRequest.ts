@@ -9,37 +9,23 @@ import * as LangfuseAPI from "../../../../index.js";
  *     {}
  */
 export interface GetObservationsRequest {
-  /**
-   * Page number, starts at 1.
-   */
+  /** Page number, starts at 1. */
   page?: number;
-  /**
-   * Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit.
-   */
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
   limit?: number;
   name?: string;
   userId?: string;
   type?: string;
   traceId?: string;
-  /**
-   * Optional filter for observations with a specific level (e.g. "DEBUG", "DEFAULT", "WARNING", "ERROR").
-   */
+  /** Optional filter for observations with a specific level (e.g. "DEBUG", "DEFAULT", "WARNING", "ERROR"). */
   level?: LangfuseAPI.ObservationLevel;
   parentObservationId?: string;
-  /**
-   * Optional filter for observations where the environment is one of the provided values.
-   */
+  /** Optional filter for observations where the environment is one of the provided values. */
   environment?: string | string[];
-  /**
-   * Retrieve only observations with a start_time on or after this datetime (ISO 8601).
-   */
+  /** Retrieve only observations with a start_time on or after this datetime (ISO 8601). */
   fromStartTime?: string;
-  /**
-   * Retrieve only observations with a start_time before this datetime (ISO 8601).
-   */
+  /** Retrieve only observations with a start_time before this datetime (ISO 8601). */
   toStartTime?: string;
-  /**
-   * Optional filter to only include observations with a certain version.
-   */
+  /** Optional filter to only include observations with a certain version. */
   version?: string;
 }

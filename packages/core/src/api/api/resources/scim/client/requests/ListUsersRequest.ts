@@ -7,16 +7,10 @@
  *     {}
  */
 export interface ListUsersRequest {
-  /**
-   * Filter expression (e.g. userName eq "value")
-   */
+  /** Filter expression (e.g. userName eq "value") */
   filter?: string;
-  /**
-   * 1-based index of the first result to return (default 1)
-   */
+  /** 1-based index of the first result to return (default 1) */
   startIndex?: number;
-  /**
-   * Maximum number of results to return (default 100)
-   */
+  /** Maximum number of results to return (default 100) */
   count?: number;
 }

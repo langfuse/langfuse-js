@@ -26,7 +26,7 @@ export declare namespace Ingestion {
     /** Additional headers to include in requests. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 
@@ -48,7 +48,7 @@ export declare namespace Ingestion {
     /** Additional headers to include in the request. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 }
@@ -61,8 +61,9 @@ export class Ingestion {
   }
 
   /**
-   * Batched ingestion for Langfuse Tracing.
-   * If you want to use tracing via the API, such as to build your own Langfuse client implementation, this is the only API route you need to implement.
+   * **Legacy endpoint for batch ingestion for Langfuse Observability.**
+   *
+   * -> Please use the OpenTelemetry endpoint (`/api/public/otel`). Learn more: https://langfuse.com/integrations/native/opentelemetry
    *
    * Within each batch, there can be multiple events.
    * Each event has a type, an id, a timestamp, metadata and a body.
@@ -72,7 +73,7 @@ export class Ingestion {
    * I.e. if you want to update a trace, you'd use the same body id, but separate event IDs.
    *
    * Notes:
-   * - Introduction to data model: https://langfuse.com/docs/tracing-data-model
+   * - Introduction to data model: https://langfuse.com/docs/observability/data-model
    * - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
    * - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors.
    *
@@ -153,6 +154,21 @@ export class Ingestion {
     request: LangfuseAPI.IngestionRequest,
     requestOptions?: Ingestion.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.IngestionResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -160,16 +176,7 @@ export class Ingestion {
         "/api/public/ingestion",
       ),
       method: "POST",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       contentType: "application/json",
       queryParameters: requestOptions?.queryParams,
       requestType: "json",
