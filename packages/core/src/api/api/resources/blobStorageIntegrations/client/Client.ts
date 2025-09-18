@@ -10,7 +10,7 @@ import {
 } from "../../../../core/headers.js";
 import * as errors from "../../../../errors/index.js";
 
-export declare namespace ScoreV2 {
+export declare namespace BlobStorageIntegrations {
   export interface Options {
     environment: core.Supplier<string>;
     /** Specify a custom URL to connect the client to. */
@@ -53,227 +53,17 @@ export declare namespace ScoreV2 {
   }
 }
 
-export class ScoreV2 {
-  protected readonly _options: ScoreV2.Options;
+export class BlobStorageIntegrations {
+  protected readonly _options: BlobStorageIntegrations.Options;
 
-  constructor(_options: ScoreV2.Options) {
+  constructor(_options: BlobStorageIntegrations.Options) {
     this._options = _options;
   }
 
   /**
-   * Get a list of scores (supports both trace and session scores)
+   * Get all blob storage integrations for the organization (requires organization-scoped API key)
    *
-   * @param {LangfuseAPI.GetScoresRequest} request
-   * @param {ScoreV2.RequestOptions} requestOptions - Request-specific configuration.
-   *
-   * @throws {@link LangfuseAPI.Error}
-   * @throws {@link LangfuseAPI.UnauthorizedError}
-   * @throws {@link LangfuseAPI.AccessDeniedError}
-   * @throws {@link LangfuseAPI.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.NotFoundError}
-   *
-   * @example
-   *     await client.scoreV2.get()
-   */
-  public get(
-    request: LangfuseAPI.GetScoresRequest = {},
-    requestOptions?: ScoreV2.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.GetScoresResponse> {
-    return core.HttpResponsePromise.fromPromise(
-      this.__get(request, requestOptions),
-    );
-  }
-
-  private async __get(
-    request: LangfuseAPI.GetScoresRequest = {},
-    requestOptions?: ScoreV2.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.GetScoresResponse>> {
-    const {
-      page,
-      limit,
-      userId,
-      name,
-      fromTimestamp,
-      toTimestamp,
-      environment,
-      source,
-      operator,
-      value,
-      scoreIds,
-      configId,
-      sessionId,
-      queueId,
-      dataType,
-      traceTags,
-    } = request;
-    const _queryParams: Record<
-      string,
-      string | string[] | object | object[] | null
-    > = {};
-    if (page != null) {
-      _queryParams["page"] = page.toString();
-    }
-
-    if (limit != null) {
-      _queryParams["limit"] = limit.toString();
-    }
-
-    if (userId != null) {
-      _queryParams["userId"] = userId;
-    }
-
-    if (name != null) {
-      _queryParams["name"] = name;
-    }
-
-    if (fromTimestamp != null) {
-      _queryParams["fromTimestamp"] = fromTimestamp;
-    }
-
-    if (toTimestamp != null) {
-      _queryParams["toTimestamp"] = toTimestamp;
-    }
-
-    if (environment != null) {
-      if (Array.isArray(environment)) {
-        _queryParams["environment"] = environment.map((item) => item);
-      } else {
-        _queryParams["environment"] = environment;
-      }
-    }
-
-    if (source != null) {
-      _queryParams["source"] = source;
-    }
-
-    if (operator != null) {
-      _queryParams["operator"] = operator;
-    }
-
-    if (value != null) {
-      _queryParams["value"] = value.toString();
-    }
-
-    if (scoreIds != null) {
-      _queryParams["scoreIds"] = scoreIds;
-    }
-
-    if (configId != null) {
-      _queryParams["configId"] = configId;
-    }
-
-    if (sessionId != null) {
-      _queryParams["sessionId"] = sessionId;
-    }
-
-    if (queueId != null) {
-      _queryParams["queueId"] = queueId;
-    }
-
-    if (dataType != null) {
-      _queryParams["dataType"] = dataType;
-    }
-
-    if (traceTags != null) {
-      if (Array.isArray(traceTags)) {
-        _queryParams["traceTags"] = traceTags.map((item) => item);
-      } else {
-        _queryParams["traceTags"] = traceTags;
-      }
-    }
-
-    const _response = await core.fetcher({
-      url: core.url.join(
-        (await core.Supplier.get(this._options.baseUrl)) ??
-          (await core.Supplier.get(this._options.environment)),
-        "/api/public/v2/scores",
-      ),
-      method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
-      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
-      timeoutMs:
-        requestOptions?.timeoutInSeconds != null
-          ? requestOptions.timeoutInSeconds * 1000
-          : 60000,
-      maxRetries: requestOptions?.maxRetries,
-      abortSignal: requestOptions?.abortSignal,
-    });
-    if (_response.ok) {
-      return {
-        data: _response.body as LangfuseAPI.GetScoresResponse,
-        rawResponse: _response.rawResponse,
-      };
-    }
-
-    if (_response.error.reason === "status-code") {
-      switch (_response.error.statusCode) {
-        case 400:
-          throw new LangfuseAPI.Error(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 401:
-          throw new LangfuseAPI.UnauthorizedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 403:
-          throw new LangfuseAPI.AccessDeniedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 405:
-          throw new LangfuseAPI.MethodNotAllowedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 404:
-          throw new LangfuseAPI.NotFoundError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        default:
-          throw new errors.LangfuseAPIError({
-            statusCode: _response.error.statusCode,
-            body: _response.error.body,
-            rawResponse: _response.rawResponse,
-          });
-      }
-    }
-
-    switch (_response.error.reason) {
-      case "non-json":
-        throw new errors.LangfuseAPIError({
-          statusCode: _response.error.statusCode,
-          body: _response.error.rawBody,
-          rawResponse: _response.rawResponse,
-        });
-      case "timeout":
-        throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/v2/scores.",
-        );
-      case "unknown":
-        throw new errors.LangfuseAPIError({
-          message: _response.error.errorMessage,
-          rawResponse: _response.rawResponse,
-        });
-    }
-  }
-
-  /**
-   * Get a score (supports both trace and session scores)
-   *
-   * @param {string} scoreId - The unique langfuse identifier of a score
-   * @param {ScoreV2.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {BlobStorageIntegrations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
    * @throws {@link LangfuseAPI.UnauthorizedError}
@@ -282,26 +72,26 @@ export class ScoreV2 {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.scoreV2.getById("scoreId")
+   *     await client.blobStorageIntegrations.getBlobStorageIntegrations()
    */
-  public getById(
-    scoreId: string,
-    requestOptions?: ScoreV2.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.Score> {
+  public getBlobStorageIntegrations(
+    requestOptions?: BlobStorageIntegrations.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.BlobStorageIntegrationsResponse> {
     return core.HttpResponsePromise.fromPromise(
-      this.__getById(scoreId, requestOptions),
+      this.__getBlobStorageIntegrations(requestOptions),
     );
   }
 
-  private async __getById(
-    scoreId: string,
-    requestOptions?: ScoreV2.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.Score>> {
+  private async __getBlobStorageIntegrations(
+    requestOptions?: BlobStorageIntegrations.RequestOptions,
+  ): Promise<
+    core.WithRawResponse<LangfuseAPI.BlobStorageIntegrationsResponse>
+  > {
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        `/api/public/v2/scores/${encodeURIComponent(scoreId)}`,
+        "/api/public/integrations/blob-storage",
       ),
       method: "GET",
       headers: mergeHeaders(
@@ -324,7 +114,7 @@ export class ScoreV2 {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.Score,
+        data: _response.body as LangfuseAPI.BlobStorageIntegrationsResponse,
         rawResponse: _response.rawResponse,
       };
     }
@@ -374,7 +164,257 @@ export class ScoreV2 {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/v2/scores/{scoreId}.",
+          "Timeout exceeded when calling GET /api/public/integrations/blob-storage.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Create or update a blob storage integration for a specific project (requires organization-scoped API key). The configuration is validated by performing a test upload to the bucket.
+   *
+   * @param {LangfuseAPI.CreateBlobStorageIntegrationRequest} request
+   * @param {BlobStorageIntegrations.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.blobStorageIntegrations.upsertBlobStorageIntegration({
+   *         projectId: "projectId",
+   *         type: "S3",
+   *         bucketName: "bucketName",
+   *         endpoint: undefined,
+   *         region: "region",
+   *         accessKeyId: undefined,
+   *         secretAccessKey: undefined,
+   *         prefix: undefined,
+   *         exportFrequency: "hourly",
+   *         enabled: true,
+   *         forcePathStyle: true,
+   *         fileType: "JSON",
+   *         exportMode: "FULL_HISTORY",
+   *         exportStartDate: undefined
+   *     })
+   */
+  public upsertBlobStorageIntegration(
+    request: LangfuseAPI.CreateBlobStorageIntegrationRequest,
+    requestOptions?: BlobStorageIntegrations.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.BlobStorageIntegrationResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__upsertBlobStorageIntegration(request, requestOptions),
+    );
+  }
+
+  private async __upsertBlobStorageIntegration(
+    request: LangfuseAPI.CreateBlobStorageIntegrationRequest,
+    requestOptions?: BlobStorageIntegrations.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.BlobStorageIntegrationResponse>> {
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/integrations/blob-storage",
+      ),
+      method: "PUT",
+      headers: mergeHeaders(
+        this._options?.headers,
+        mergeOnlyDefinedHeaders({
+          Authorization: await this._getAuthorizationHeader(),
+          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
+          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
+          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
+        }),
+        requestOptions?.headers,
+      ),
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.BlobStorageIntegrationResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling PUT /api/public/integrations/blob-storage.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Delete a blob storage integration by ID (requires organization-scoped API key)
+   *
+   * @param {string} id
+   * @param {BlobStorageIntegrations.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.blobStorageIntegrations.deleteBlobStorageIntegration("id")
+   */
+  public deleteBlobStorageIntegration(
+    id: string,
+    requestOptions?: BlobStorageIntegrations.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.BlobStorageIntegrationDeletionResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__deleteBlobStorageIntegration(id, requestOptions),
+    );
+  }
+
+  private async __deleteBlobStorageIntegration(
+    id: string,
+    requestOptions?: BlobStorageIntegrations.RequestOptions,
+  ): Promise<
+    core.WithRawResponse<LangfuseAPI.BlobStorageIntegrationDeletionResponse>
+  > {
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/integrations/blob-storage/${encodeURIComponent(id)}`,
+      ),
+      method: "DELETE",
+      headers: mergeHeaders(
+        this._options?.headers,
+        mergeOnlyDefinedHeaders({
+          Authorization: await this._getAuthorizationHeader(),
+          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
+          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
+          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
+        }),
+        requestOptions?.headers,
+      ),
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.BlobStorageIntegrationDeletionResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/integrations/blob-storage/{id}.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
