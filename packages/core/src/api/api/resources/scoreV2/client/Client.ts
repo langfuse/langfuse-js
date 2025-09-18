@@ -26,7 +26,7 @@ export declare namespace ScoreV2 {
     /** Additional headers to include in requests. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 
@@ -48,7 +48,7 @@ export declare namespace ScoreV2 {
     /** Additional headers to include in the request. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 }
@@ -101,6 +101,7 @@ export class ScoreV2 {
       value,
       scoreIds,
       configId,
+      sessionId,
       queueId,
       dataType,
       traceTags,
@@ -161,6 +162,10 @@ export class ScoreV2 {
       _queryParams["configId"] = configId;
     }
 
+    if (sessionId != null) {
+      _queryParams["sessionId"] = sessionId;
+    }
+
     if (queueId != null) {
       _queryParams["queueId"] = queueId;
     }
@@ -177,6 +182,21 @@ export class ScoreV2 {
       }
     }
 
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -184,16 +204,7 @@ export class ScoreV2 {
         "/api/public/v2/scores",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -292,6 +303,21 @@ export class ScoreV2 {
     scoreId: string,
     requestOptions?: ScoreV2.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.Score>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -299,16 +325,7 @@ export class ScoreV2 {
         `/api/public/v2/scores/${encodeURIComponent(scoreId)}`,
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null

@@ -9,64 +9,36 @@ import * as LangfuseAPI from "../../../../index.js";
  *     {}
  */
 export interface GetScoresRequest {
-  /**
-   * Page number, starts at 1.
-   */
+  /** Page number, starts at 1. */
   page?: number;
-  /**
-   * Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit.
-   */
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
   limit?: number;
-  /**
-   * Retrieve only scores with this userId associated to the trace.
-   */
+  /** Retrieve only scores with this userId associated to the trace. */
   userId?: string;
-  /**
-   * Retrieve only scores with this name.
-   */
+  /** Retrieve only scores with this name. */
   name?: string;
-  /**
-   * Optional filter to only include scores created on or after a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include scores created on or after a certain datetime (ISO 8601) */
   fromTimestamp?: string;
-  /**
-   * Optional filter to only include scores created before a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include scores created before a certain datetime (ISO 8601) */
   toTimestamp?: string;
-  /**
-   * Optional filter for scores where the environment is one of the provided values.
-   */
+  /** Optional filter for scores where the environment is one of the provided values. */
   environment?: string | string[];
-  /**
-   * Retrieve only scores from a specific source.
-   */
+  /** Retrieve only scores from a specific source. */
   source?: LangfuseAPI.ScoreSource;
-  /**
-   * Retrieve only scores with <operator> value.
-   */
+  /** Retrieve only scores with <operator> value. */
   operator?: string;
-  /**
-   * Retrieve only scores with <operator> value.
-   */
+  /** Retrieve only scores with <operator> value. */
   value?: number;
-  /**
-   * Comma-separated list of score IDs to limit the results to.
-   */
+  /** Comma-separated list of score IDs to limit the results to. */
   scoreIds?: string;
-  /**
-   * Retrieve only scores with a specific configId.
-   */
+  /** Retrieve only scores with a specific configId. */
   configId?: string;
-  /**
-   * Retrieve only scores with a specific annotation queueId.
-   */
+  /** Retrieve only scores with a specific sessionId. */
+  sessionId?: string;
+  /** Retrieve only scores with a specific annotation queueId. */
   queueId?: string;
-  /**
-   * Retrieve only scores with a specific dataType.
-   */
+  /** Retrieve only scores with a specific dataType. */
   dataType?: LangfuseAPI.ScoreDataType;
-  /**
-   * Only scores linked to traces that include all of these tags will be returned.
-   */
+  /** Only scores linked to traces that include all of these tags will be returned. */
   traceTags?: string | string[];
 }
