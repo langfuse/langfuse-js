@@ -10,7 +10,7 @@ import {
 } from "../../../../core/headers.js";
 import * as errors from "../../../../errors/index.js";
 
-export declare namespace Ingestion {
+export declare namespace LlmConnections {
   export interface Options {
     environment: core.Supplier<string>;
     /** Specify a custom URL to connect the client to. */
@@ -53,32 +53,18 @@ export declare namespace Ingestion {
   }
 }
 
-export class Ingestion {
-  protected readonly _options: Ingestion.Options;
+export class LlmConnections {
+  protected readonly _options: LlmConnections.Options;
 
-  constructor(_options: Ingestion.Options) {
+  constructor(_options: LlmConnections.Options) {
     this._options = _options;
   }
 
   /**
-   * **Legacy endpoint for batch ingestion for Langfuse Observability.**
+   * Get all LLM connections in a project
    *
-   * -> Please use the OpenTelemetry endpoint (`/api/public/otel`). Learn more: https://langfuse.com/integrations/native/opentelemetry
-   *
-   * Within each batch, there can be multiple events.
-   * Each event has a type, an id, a timestamp, metadata and a body.
-   * Internally, we refer to this as the "event envelope" as it tells us something about the event but not the trace.
-   * We use the event id within this envelope to deduplicate messages to avoid processing the same event twice, i.e. the event id should be unique per request.
-   * The event.body.id is the ID of the actual trace and will be used for updates and will be visible within the Langfuse App.
-   * I.e. if you want to update a trace, you'd use the same body id, but separate event IDs.
-   *
-   * Notes:
-   * - Introduction to data model: https://langfuse.com/docs/observability/data-model
-   * - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
-   * - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors.
-   *
-   * @param {LangfuseAPI.IngestionRequest} request
-   * @param {Ingestion.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {LangfuseAPI.GetLlmConnectionsRequest} request
+   * @param {LlmConnections.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
    * @throws {@link LangfuseAPI.UnauthorizedError}
@@ -87,80 +73,41 @@ export class Ingestion {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.ingestion.batch({
-   *         batch: [{
-   *                 type: "trace-create",
-   *                 id: "abcdef-1234-5678-90ab",
-   *                 timestamp: "2022-01-01T00:00:00.000Z",
-   *                 body: {
-   *                     id: "abcdef-1234-5678-90ab",
-   *                     timestamp: "2022-01-01T00:00:00.000Z",
-   *                     environment: "production",
-   *                     name: "My Trace",
-   *                     userId: "1234-5678-90ab-cdef",
-   *                     input: "My input",
-   *                     output: "My output",
-   *                     sessionId: "1234-5678-90ab-cdef",
-   *                     release: "1.0.0",
-   *                     version: "1.0.0",
-   *                     metadata: "My metadata",
-   *                     tags: ["tag1", "tag2"],
-   *                     "public": true
-   *                 }
-   *             }]
-   *     })
-   *
-   * @example
-   *     await client.ingestion.batch({
-   *         batch: [{
-   *                 type: "span-create",
-   *                 id: "abcdef-1234-5678-90ab",
-   *                 timestamp: "2022-01-01T00:00:00.000Z",
-   *                 body: {
-   *                     id: "abcdef-1234-5678-90ab",
-   *                     traceId: "1234-5678-90ab-cdef",
-   *                     startTime: "2022-01-01T00:00:00.000Z",
-   *                     environment: "test"
-   *                 }
-   *             }]
-   *     })
-   *
-   * @example
-   *     await client.ingestion.batch({
-   *         batch: [{
-   *                 type: "score-create",
-   *                 id: "abcdef-1234-5678-90ab",
-   *                 timestamp: "2022-01-01T00:00:00.000Z",
-   *                 body: {
-   *                     id: "abcdef-1234-5678-90ab",
-   *                     traceId: "1234-5678-90ab-cdef",
-   *                     name: "My Score",
-   *                     value: 0.9,
-   *                     environment: "default"
-   *                 }
-   *             }]
-   *     })
+   *     await client.llmConnections.list()
    */
-  public batch(
-    request: LangfuseAPI.IngestionRequest,
-    requestOptions?: Ingestion.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.IngestionResponse> {
+  public list(
+    request: LangfuseAPI.GetLlmConnectionsRequest = {},
+    requestOptions?: LlmConnections.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.PaginatedLlmConnections> {
     return core.HttpResponsePromise.fromPromise(
-      this.__batch(request, requestOptions),
+      this.__list(request, requestOptions),
     );
   }
 
-  private async __batch(
-    request: LangfuseAPI.IngestionRequest,
-    requestOptions?: Ingestion.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.IngestionResponse>> {
+  private async __list(
+    request: LangfuseAPI.GetLlmConnectionsRequest = {},
+    requestOptions?: LlmConnections.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.PaginatedLlmConnections>> {
+    const { page, limit } = request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (page != null) {
+      _queryParams["page"] = page.toString();
+    }
+
+    if (limit != null) {
+      _queryParams["limit"] = limit.toString();
+    }
+
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        "/api/public/ingestion",
+        "/api/public/llm-connections",
       ),
-      method: "POST",
+      method: "GET",
       headers: mergeHeaders(
         this._options?.headers,
         mergeOnlyDefinedHeaders({
@@ -171,10 +118,7 @@ export class Ingestion {
         }),
         requestOptions?.headers,
       ),
-      contentType: "application/json",
-      queryParameters: requestOptions?.queryParams,
-      requestType: "json",
-      body: request,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
           ? requestOptions.timeoutInSeconds * 1000
@@ -184,7 +128,7 @@ export class Ingestion {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.IngestionResponse,
+        data: _response.body as LangfuseAPI.PaginatedLlmConnections,
         rawResponse: _response.rawResponse,
       };
     }
@@ -234,7 +178,133 @@ export class Ingestion {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling POST /api/public/ingestion.",
+          "Timeout exceeded when calling GET /api/public/llm-connections.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Create or update an LLM connection. The connection is upserted on provider.
+   *
+   * @param {LangfuseAPI.UpsertLlmConnectionRequest} request
+   * @param {LlmConnections.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.llmConnections.upsert({
+   *         provider: "provider",
+   *         adapter: "anthropic",
+   *         secretKey: "secretKey",
+   *         baseURL: undefined,
+   *         customModels: undefined,
+   *         withDefaultModels: undefined,
+   *         extraHeaders: undefined
+   *     })
+   */
+  public upsert(
+    request: LangfuseAPI.UpsertLlmConnectionRequest,
+    requestOptions?: LlmConnections.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.LlmConnection> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__upsert(request, requestOptions),
+    );
+  }
+
+  private async __upsert(
+    request: LangfuseAPI.UpsertLlmConnectionRequest,
+    requestOptions?: LlmConnections.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.LlmConnection>> {
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/llm-connections",
+      ),
+      method: "PUT",
+      headers: mergeHeaders(
+        this._options?.headers,
+        mergeOnlyDefinedHeaders({
+          Authorization: await this._getAuthorizationHeader(),
+          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
+          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
+          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
+        }),
+        requestOptions?.headers,
+      ),
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.LlmConnection,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling PUT /api/public/llm-connections.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
