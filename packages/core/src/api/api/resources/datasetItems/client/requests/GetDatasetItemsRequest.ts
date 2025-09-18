@@ -10,12 +10,8 @@ export interface GetDatasetItemsRequest {
   datasetName?: string;
   sourceTraceId?: string;
   sourceObservationId?: string;
-  /**
-   * page number, starts at 1
-   */
+  /** page number, starts at 1 */
   page?: number;
-  /**
-   * limit of items per page
-   */
+  /** limit of items per page */
   limit?: number;
 }

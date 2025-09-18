@@ -9,16 +9,10 @@ import * as LangfuseAPI from "../../../../index.js";
  *     {}
  */
 export interface GetAnnotationQueueItemsRequest {
-  /**
-   * Filter by status
-   */
+  /** Filter by status */
   status?: LangfuseAPI.AnnotationQueueStatus;
-  /**
-   * page number, starts at 1
-   */
+  /** page number, starts at 1 */
   page?: number;
-  /**
-   * limit of items per page
-   */
+  /** limit of items per page */
   limit?: number;
 }
