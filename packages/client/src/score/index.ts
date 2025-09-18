@@ -93,6 +93,10 @@ export class ScoreManager {
     }
 
     this.eventQueue.push(scoreIngestionEvent);
+    this.logger.debug(
+      "Added score event to queue:\n",
+      JSON.stringify(scoreIngestionEvent, null, 2),
+    );
 
     if (this.eventQueue.length >= this.flushAtCount) {
       this.flushPromise = this.flush();

@@ -452,11 +452,14 @@ export class ChatPromptClient extends BasePromptClient {
             JSON.stringify(placeholderValue),
           );
         } else {
-          // Convert unresolved placeholder to Langchain MessagesPlaceholder
-          messagesWithPlaceholdersReplaced.push({
-            variableName: item.name,
-            optional: false,
-          });
+          // Convert unresolved placeholder to Langchain MessagesPlaceholder format
+          // see: https://js.langchain.com/docs/concepts/prompt_templates/#messagesplaceholder
+          // we convert it to the format without using the class explicitly. Therefore, we
+          // don't have to import langchain as a dependency.
+          messagesWithPlaceholdersReplaced.push([
+            "placeholder",
+            `{${item.name}}`,
+          ]);
         }
       } else if (
         "role" in item &&
