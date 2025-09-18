@@ -685,4 +685,77 @@ describe("Langchain integration E2E tests", () => {
     );
     expect(graphObservations.length).toBeGreaterThan(0);
   });
+
+  it("should set observation level to ERROR when LangChain operation fails", async () => {
+    const testConfig = {
+      runName: "Test error handling:" + nanoid(),
+      sessionId: "my-session",
+      userId: "my-user",
+      tags: ["error-test", "testEnv"],
+      traceMetadata: { isTrace: true, expectsError: true },
+      version: "1.2.3",
+      query: "Hello world",
+      maxTokens: 50,
+    };
+
+    const handler = new CallbackHandler({
+      sessionId: testConfig.sessionId,
+      userId: testConfig.userId,
+      tags: testConfig.tags,
+      version: testConfig.version,
+      traceMetadata: testConfig.traceMetadata,
+    });
+
+    // Use an invalid model name to trigger an error
+    const llm = new ChatOpenAI({
+      model: "invalid-model-name-that-does-not-exist",
+      maxTokens: testConfig.maxTokens,
+    });
+
+    const prompt = ChatPromptTemplate.fromTemplate("{query}");
+    const chain = prompt.pipe(llm);
+
+    // Execute chain and expect it to throw an error
+    let caughtError: Error | null = null;
+    try {
+      await chain.invoke(
+        { query: testConfig.query },
+        { callbacks: [handler], runName: testConfig.runName },
+      );
+    } catch (error) {
+      caughtError = error as Error;
+    }
+
+    // Verify an error was thrown
+    expect(caughtError).toBeDefined();
+    expect(caughtError?.message).toContain("model");
+
+    await testEnv.spanProcessor.forceFlush();
+    await waitForServerIngestion(1_000);
+
+    const traceId = handler.last_trace_id;
+    expect(traceId).toBeDefined();
+
+    const trace = await langfuseClient.api.trace.get(traceId!);
+
+    expect(trace).toMatchObject({
+      sessionId: testConfig.sessionId,
+      userId: testConfig.userId,
+      name: testConfig.runName,
+      tags: testConfig.tags,
+      version: testConfig.version,
+    });
+
+    // Find the generation observation that should have failed
+    const errorObservation = trace.observations.find(
+      (o) => o.name === "ChatOpenAI" && o.type === "GENERATION",
+    );
+    expect(errorObservation).toBeDefined();
+
+    // Verify the observation level is set to ERROR
+    expect(errorObservation!.level).toBe("ERROR");
+
+    expect(errorObservation!.statusMessage).toBeDefined();
+    expect(errorObservation!.statusMessage).toContain("model");
+  });
 });
