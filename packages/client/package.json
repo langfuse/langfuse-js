@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/client",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Langfuse API client for universal JavaScript environments",
   "type": "module",
   "sideEffects": false,
@@ -29,6 +29,7 @@
   ],
   "dependencies": {
     "@langfuse/core": "workspace:^",
+    "@langfuse/tracing": "workspace:^",
     "mustache": "^4.2.0"
   },
   "peerDependencies": {

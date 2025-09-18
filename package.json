@@ -1,7 +1,9 @@
 {
   "name": "langfuse-js",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Langfuse JavaScript / TypeScript SDK",
+  "author": "Langfuse",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,8 +27,6 @@
     "nuke": "pnpm clean && rm -rf node_modules && rm -rf packages/*/node_modules && pnpm install",
     "prepare": "husky"
   },
-  "author": "Langfuse",
-  "license": "MIT",
   "devDependencies": {
     "@ai-sdk/anthropic": "^2",
     "@ai-sdk/openai": "^2",
@@ -46,6 +46,7 @@
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.39.0",
     "ai": "^5",
+    "autoevals": "^0.0.131",
     "dotenv": "^17.2.0",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
@@ -67,5 +68,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "resolutions": {
+    "ml-spectra-processing": "14.14.0"
   }
 }
