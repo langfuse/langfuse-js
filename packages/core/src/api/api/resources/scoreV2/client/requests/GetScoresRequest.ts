@@ -58,6 +58,10 @@ export interface GetScoresRequest {
    */
   configId?: string;
   /**
+   * Retrieve only scores with a specific sessionId.
+   */
+  sessionId?: string;
+  /**
    * Retrieve only scores with a specific annotation queueId.
    */
   queueId?: string;
