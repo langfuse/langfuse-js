@@ -10,4 +10,4 @@ export {
 } from "./RawResponse.js";
 export type { RawResponse, WithRawResponse } from "./RawResponse.js";
 export { HttpResponsePromise } from "./HttpResponsePromise.js";
-export { type BinaryResponse } from "./BinaryResponse.js";
+export { BinaryResponse } from "./BinaryResponse.js";
