@@ -26,7 +26,7 @@ export declare namespace Scim {
     /** Additional headers to include in requests. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 
@@ -48,7 +48,7 @@ export declare namespace Scim {
     /** Additional headers to include in the request. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 }
@@ -85,6 +85,21 @@ export class Scim {
   private async __getServiceProviderConfig(
     requestOptions?: Scim.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.ServiceProviderConfig>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -92,16 +107,7 @@ export class Scim {
         "/api/public/scim/ServiceProviderConfig",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -197,6 +203,21 @@ export class Scim {
   private async __getResourceTypes(
     requestOptions?: Scim.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.ResourceTypesResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -204,16 +225,7 @@ export class Scim {
         "/api/public/scim/ResourceTypes",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -309,6 +321,21 @@ export class Scim {
   private async __getSchemas(
     requestOptions?: Scim.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.SchemasResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -316,16 +343,7 @@ export class Scim {
         "/api/public/scim/Schemas",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -441,6 +459,21 @@ export class Scim {
       _queryParams["count"] = count.toString();
     }
 
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -448,16 +481,7 @@ export class Scim {
         "/api/public/scim/Users",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -564,6 +588,21 @@ export class Scim {
     request: LangfuseAPI.CreateUserRequest,
     requestOptions?: Scim.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.ScimUser>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -571,16 +610,7 @@ export class Scim {
         "/api/public/scim/Users",
       ),
       method: "POST",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       contentType: "application/json",
       queryParameters: requestOptions?.queryParams,
       requestType: "json",
@@ -682,6 +712,21 @@ export class Scim {
     userId: string,
     requestOptions?: Scim.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.ScimUser>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -689,16 +734,7 @@ export class Scim {
         `/api/public/scim/Users/${encodeURIComponent(userId)}`,
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -797,6 +833,21 @@ export class Scim {
     userId: string,
     requestOptions?: Scim.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.EmptyResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -804,16 +855,7 @@ export class Scim {
         `/api/public/scim/Users/${encodeURIComponent(userId)}`,
       ),
       method: "DELETE",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null

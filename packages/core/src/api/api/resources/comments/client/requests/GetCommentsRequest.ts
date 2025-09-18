@@ -7,24 +7,14 @@
  *     {}
  */
 export interface GetCommentsRequest {
-  /**
-   * Page number, starts at 1.
-   */
+  /** Page number, starts at 1. */
   page?: number;
-  /**
-   * Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit
-   */
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit */
   limit?: number;
-  /**
-   * Filter comments by object type (trace, observation, session, prompt).
-   */
+  /** Filter comments by object type (trace, observation, session, prompt). */
   objectType?: string;
-  /**
-   * Filter comments by object id. If objectType is not provided, an error will be thrown.
-   */
+  /** Filter comments by object id. If objectType is not provided, an error will be thrown. */
   objectId?: string;
-  /**
-   * Filter comments by author user id.
-   */
+  /** Filter comments by author user id. */
   authorUserId?: string;
 }

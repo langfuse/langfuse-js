@@ -1,18 +1,18 @@
 import { toJson } from "../json.js";
 import { APIResponse } from "./APIResponse.js";
-import {
-  abortRawResponse,
-  toRawResponse,
-  unknownRawResponse,
-} from "./RawResponse.js";
-import { Supplier } from "./Supplier.js";
 import { createRequestUrl } from "./createRequestUrl.js";
 import { getErrorResponseBody } from "./getErrorResponseBody.js";
 import { getFetchFn } from "./getFetchFn.js";
 import { getRequestBody } from "./getRequestBody.js";
 import { getResponseBody } from "./getResponseBody.js";
 import { makeRequest } from "./makeRequest.js";
+import {
+  abortRawResponse,
+  toRawResponse,
+  unknownRawResponse,
+} from "./RawResponse.js";
 import { requestWithRetries } from "./requestWithRetries.js";
+import { Supplier } from "./Supplier.js";
 
 export type FetchFunction = <R = unknown>(
   args: Fetcher.Args,
@@ -23,7 +23,10 @@ export declare namespace Fetcher {
     url: string;
     method: string;
     contentType?: string;
-    headers?: Record<string, string | Supplier<string | undefined> | undefined>;
+    headers?: Record<
+      string,
+      string | Supplier<string | null | undefined> | null | undefined
+    >;
     queryParameters?: Record<string, unknown>;
     body?: unknown;
     timeoutMs?: number;
