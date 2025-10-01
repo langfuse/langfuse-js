@@ -7,12 +7,8 @@
  *     {}
  */
 export interface GetPromptRequest {
-  /**
-   * Version of the prompt to be retrieved.
-   */
+  /** Version of the prompt to be retrieved. */
   version?: number;
-  /**
-   * Label of the prompt to be retrieved. Defaults to "production" if no label or version is set.
-   */
+  /** Label of the prompt to be retrieved. Defaults to "production" if no label or version is set. */
   label?: string;
 }

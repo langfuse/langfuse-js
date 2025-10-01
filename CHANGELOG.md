@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.2.0](https://github.com/langfuse/langfuse-js/compare/v4.1.0...v4.2.0) (2025-09-19)
+
+### ✨ Features
+
+* **api:** update API spec from langfuse/langfuse 0b68c41 ([#640](https://github.com/langfuse/langfuse-js/issues/640)) ([2aff295](https://github.com/langfuse/langfuse-js/commit/2aff295209db2906e9c3935f7e72563311bbfe4f))
+
+### 🐛 Bug Fixes
+
+* **message-placeholders:** use plain text langchain format for placeh… ([#616](https://github.com/langfuse/langfuse-js/issues/616)) ([7229b1a](https://github.com/langfuse/langfuse-js/commit/7229b1a2ff71d62eea1551ebd0afb6e5c4e6918f))
+* **openai:** parse response usage ([#641](https://github.com/langfuse/langfuse-js/issues/641)) ([882146b](https://github.com/langfuse/langfuse-js/commit/882146b50c43340e6d1334a15b01203a4c6f45fc))
+
+### 🔧 Maintenance
+
+* add test for observation error level through langchain integration ([#637](https://github.com/langfuse/langfuse-js/issues/637)) ([f23386c](https://github.com/langfuse/langfuse-js/commit/f23386cfdb0df9ce88d5cd412c2c0ae3c3a2b7df))
+
 ## [4.1.0](https://github.com/langfuse/langfuse-js/compare/v4.0.1...v4.1.0) (2025-09-17)
 
 ### ✨ Features

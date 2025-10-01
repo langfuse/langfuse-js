@@ -26,7 +26,7 @@ export declare namespace ScoreConfigs {
     /** Additional headers to include in requests. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 
@@ -48,7 +48,7 @@ export declare namespace ScoreConfigs {
     /** Additional headers to include in the request. */
     headers?: Record<
       string,
-      string | core.Supplier<string | undefined> | undefined
+      string | core.Supplier<string | null | undefined> | null | undefined
     >;
   }
 }
@@ -95,6 +95,21 @@ export class ScoreConfigs {
     request: LangfuseAPI.CreateScoreConfigRequest,
     requestOptions?: ScoreConfigs.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.ScoreConfig>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -102,16 +117,7 @@ export class ScoreConfigs {
         "/api/public/score-configs",
       ),
       method: "POST",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       contentType: "application/json",
       queryParameters: requestOptions?.queryParams,
       requestType: "json",
@@ -226,6 +232,21 @@ export class ScoreConfigs {
       _queryParams["limit"] = limit.toString();
     }
 
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -233,16 +254,7 @@ export class ScoreConfigs {
         "/api/public/score-configs",
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -341,6 +353,21 @@ export class ScoreConfigs {
     configId: string,
     requestOptions?: ScoreConfigs.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.ScoreConfig>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
     const _response = await core.fetcher({
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
@@ -348,16 +375,7 @@ export class ScoreConfigs {
         `/api/public/score-configs/${encodeURIComponent(configId)}`,
       ),
       method: "GET",
-      headers: mergeHeaders(
-        this._options?.headers,
-        mergeOnlyDefinedHeaders({
-          Authorization: await this._getAuthorizationHeader(),
-          "X-Langfuse-Sdk-Name": requestOptions?.xLangfuseSdkName,
-          "X-Langfuse-Sdk-Version": requestOptions?.xLangfuseSdkVersion,
-          "X-Langfuse-Public-Key": requestOptions?.xLangfusePublicKey,
-        }),
-        requestOptions?.headers,
-      ),
+      headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
@@ -419,6 +437,140 @@ export class ScoreConfigs {
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
           "Timeout exceeded when calling GET /api/public/score-configs/{configId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Update a score config
+   *
+   * @param {string} configId - The unique langfuse identifier of a score config
+   * @param {LangfuseAPI.UpdateScoreConfigRequest} request
+   * @param {ScoreConfigs.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.scoreConfigs.update("configId", {
+   *         isArchived: undefined,
+   *         name: undefined,
+   *         categories: undefined,
+   *         minValue: undefined,
+   *         maxValue: undefined,
+   *         description: undefined
+   *     })
+   */
+  public update(
+    configId: string,
+    request: LangfuseAPI.UpdateScoreConfigRequest,
+    requestOptions?: ScoreConfigs.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.ScoreConfig> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__update(configId, request, requestOptions),
+    );
+  }
+
+  private async __update(
+    configId: string,
+    request: LangfuseAPI.UpdateScoreConfigRequest,
+    requestOptions?: ScoreConfigs.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.ScoreConfig>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/score-configs/${encodeURIComponent(configId)}`,
+      ),
+      method: "PATCH",
+      headers: _headers,
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.ScoreConfig,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling PATCH /api/public/score-configs/{configId}.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({

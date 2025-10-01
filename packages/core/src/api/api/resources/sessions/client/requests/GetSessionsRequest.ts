@@ -7,24 +7,14 @@
  *     {}
  */
 export interface GetSessionsRequest {
-  /**
-   * Page number, starts at 1
-   */
+  /** Page number, starts at 1 */
   page?: number;
-  /**
-   * Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit.
-   */
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
   limit?: number;
-  /**
-   * Optional filter to only include sessions created on or after a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include sessions created on or after a certain datetime (ISO 8601) */
   fromTimestamp?: string;
-  /**
-   * Optional filter to only include sessions created before a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include sessions created before a certain datetime (ISO 8601) */
   toTimestamp?: string;
-  /**
-   * Optional filter for sessions where the environment is one of the provided values.
-   */
+  /** Optional filter for sessions where the environment is one of the provided values. */
   environment?: string | string[];
 }

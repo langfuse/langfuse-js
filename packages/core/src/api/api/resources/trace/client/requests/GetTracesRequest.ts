@@ -7,47 +7,27 @@
  *     {}
  */
 export interface GetTracesRequest {
-  /**
-   * Page number, starts at 1
-   */
+  /** Page number, starts at 1 */
   page?: number;
-  /**
-   * Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit.
-   */
+  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
   limit?: number;
   userId?: string;
   name?: string;
   sessionId?: string;
-  /**
-   * Optional filter to only include traces with a trace.timestamp on or after a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include traces with a trace.timestamp on or after a certain datetime (ISO 8601) */
   fromTimestamp?: string;
-  /**
-   * Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601)
-   */
+  /** Optional filter to only include traces with a trace.timestamp before a certain datetime (ISO 8601) */
   toTimestamp?: string;
-  /**
-   * Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc
-   */
+  /** Format of the string [field].[asc/desc]. Fields: id, timestamp, name, userId, release, version, public, bookmarked, sessionId. Example: timestamp.asc */
   orderBy?: string;
-  /**
-   * Only traces that include all of these tags will be returned.
-   */
+  /** Only traces that include all of these tags will be returned. */
   tags?: string | string[];
-  /**
-   * Optional filter to only include traces with a certain version.
-   */
+  /** Optional filter to only include traces with a certain version. */
   version?: string;
-  /**
-   * Optional filter to only include traces with a certain release.
-   */
+  /** Optional filter to only include traces with a certain release. */
   release?: string;
-  /**
-   * Optional filter for traces where the environment is one of the provided values.
-   */
+  /** Optional filter for traces where the environment is one of the provided values. */
   environment?: string | string[];
-  /**
-   * Comma-separated list of fields to include in the response. Available field groups are 'core' (always included), 'io' (input, output, metadata), 'scores', 'observations', 'metrics'. If not provided, all fields are included. Example: 'core,scores,metrics'
-   */
+  /** Comma-separated list of fields to include in the response. Available field groups: 'core' (always included), 'io' (input, output, metadata), 'scores', 'observations', 'metrics'. If not specified, all fields are returned. Example: 'core,scores,metrics'. Note: Excluded 'observations' or 'scores' fields return empty arrays; excluded 'metrics' returns -1 for 'totalCost' and 'latency'. */
   fields?: string;
 }

@@ -137,9 +137,27 @@ export const parseUsageDetails = (
       output_tokens_details,
     } = completionUsage;
 
+    let finalInputTokens = input_tokens as number;
+    Object.keys(input_tokens_details ?? {}).forEach((key) => {
+      finalInputTokens = Math.max(
+        finalInputTokens -
+          input_tokens_details[key as keyof typeof input_tokens_details],
+        0,
+      );
+    });
+
+    let finalOutputTokens = output_tokens as number;
+    Object.keys(output_tokens_details ?? {}).forEach((key) => {
+      finalOutputTokens = Math.max(
+        finalOutputTokens -
+          output_tokens_details[key as keyof typeof output_tokens_details],
+        0,
+      );
+    });
+
     return {
-      input: input_tokens,
-      output: output_tokens,
+      input: finalInputTokens,
+      output: finalOutputTokens,
       total: total_tokens,
       ...Object.fromEntries(
         Object.entries(input_tokens_details ?? {}).map(([key, value]) => [
