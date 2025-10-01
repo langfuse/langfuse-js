@@ -10,7 +10,7 @@ import {
   LANGFUSE_CTX_SESSION_ID,
   LANGFUSE_CTX_METADATA,
 } from "@langfuse/core";
-import { Context } from "@opentelemetry/api";
+import { Context, propagation } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
@@ -328,6 +328,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
   /**
    * Propagates userId, sessionId, and metadata from parent context to span attributes.
+   * Also propagates any baggage entries that were set for cross-service propagation.
    *
    * @param span - The span to set attributes on
    * @param parentContext - The parent context to read values from
@@ -386,6 +387,28 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       }
     } catch (err) {
       this.logger.warn(`Could not read metadata from context: ${err}`);
+    }
+
+    // 4. Propagate baggage entries (for cross-service propagation)
+    try {
+      const baggage = propagation.getBaggage(parentContext);
+      if (baggage) {
+        baggage.getAllEntries().forEach(([key, entry]) => {
+          // Only propagate Langfuse-related baggage keys
+          if (
+            key === LangfuseOtelSpanAttributes.TRACE_USER_ID ||
+            key === LangfuseOtelSpanAttributes.TRACE_SESSION_ID ||
+            key.startsWith("langfuse.metadata.")
+          ) {
+            // Don't override if already set from context
+            if (!(key in propagatedAttributes)) {
+              propagatedAttributes[key] = entry.value;
+            }
+          }
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Could not read baggage from context: ${err}`);
     }
 
     // Set all propagated attributes on the span

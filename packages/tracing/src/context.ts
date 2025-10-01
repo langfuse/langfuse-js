@@ -196,6 +196,7 @@ export function withSession<T>(
  * All observations created within the callback (and any nested callbacks) will
  * automatically inherit the specified metadata. Metadata keys are stored as individual
  * attributes with the `langfuse.metadata.` prefix.
+ * Try to keep metadata keys and values small to avoid a performance drag within your application.
  *
  * ## Context Scoping
  * - Context is scoped to the callback execution
@@ -205,7 +206,7 @@ export function withSession<T>(
  *
  * ## Cross-Service Propagation
  * Set `asBaggage: true` to propagate metadata across service boundaries via HTTP headers.
- * Only use this for non-sensitive metadata. Baggage has size limits (~200 chars per entry).
+ * Only use this for non-sensitive metadata.
  *
  * @param metadata - Key-value pairs of metadata to propagate to child spans
  * @param fn - Callback function to execute within the metadata context
