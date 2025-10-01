@@ -63,6 +63,8 @@ export {
   getLangfuseTracerProvider,
   getLangfuseTracer,
 } from "./tracerProvider.js";
+export { withUser, withSession, withMetadata, withContext } from "./context.js";
+export type { ContextPropagationOptions, ContextConfig } from "./context.js";
 
 export { LangfuseOtelSpanAttributes } from "@langfuse/core";
 
@@ -133,13 +135,17 @@ function createOtelSpan(params: {
  * Creates a parent context from a span context.
  *
  * @param parentSpanContext - The span context to use as parent
- * @returns The created context or undefined if no parent provided
+ * @returns The created context (either with span context or active context)
  * @internal
  */
 function createParentContext(
   parentSpanContext?: SpanContext,
 ): Context | undefined {
-  if (!parentSpanContext) return;
+  if (!parentSpanContext) {
+    // Use current active context to preserve context propagation values
+    // (userId, sessionId, metadata set by withUser/withSession/withMetadata)
+    return context.active();
+  }
 
   return trace.setSpanContext(context.active(), parentSpanContext);
 }
@@ -878,21 +884,50 @@ export function startActiveObservation<
  * This function finds the currently active OpenTelemetry span and updates
  * it with trace-level attributes. If no active span is found, a warning is logged.
  *
+ * @deprecated For setting `userId`, `sessionId`, and `metadata`, use the new context propagation
+ * wrappers instead: {@link withUser}, {@link withSession}, {@link withMetadata}, or {@link withContext}.
+ * These wrappers provide automatic context propagation to child spans and support cross-service
+ * propagation via OpenTelemetry baggage.
+ *
+ *
  * @param attributes - Trace attributes to set
  *
  * @example
  * ```typescript
- * import { updateActiveTrace } from '@langfuse/tracing';
+ * import { updateActiveTrace, withUser, withSession, withMetadata } from '@langfuse/tracing';
  *
- * // Inside an active span context
+ * // ❌ Old way
  * updateActiveTrace({
- *   name: 'user-workflow',
  *   userId: '123',
  *   sessionId: 'session-456',
- *   tags: ['production', 'critical'],
- *   public: true
+ *   metadata: { version: '2.1.0' }
+ * });
+ *
+ * // ✅ New way - automatic propagation to child spans
+ * withUser('123', () => {
+ *   withSession('session-456', () => {
+ *     withMetadata({ version: '2.1.0' }, () => {
+ *       // Your code here - all child spans automatically inherit these attributes
+ *       const child = startObservation('child-operation');
+ *       child.end();
+ *     });
+ *   });
+ * });
+ *
+ * // ✅ Or use withContext for multiple attributes at once
+ * withContext({
+ *   userId: '123',
+ *   sessionId: 'session-456',
+ *   metadata: { version: '2.1.0' }
+ * }, () => {
+ *   // Your code here
  * });
  * ```
+ *
+ * @see {@link withUser} - Propagate userId to child spans
+ * @see {@link withSession} - Propagate sessionId to child spans
+ * @see {@link withMetadata} - Propagate metadata to child spans
+ * @see {@link withContext} - Propagate multiple context attributes at once
  *
  * @public
  */

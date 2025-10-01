@@ -7,6 +7,10 @@ import {
   LangfuseOtelSpanAttributes,
   createTraceId,
   getActiveTraceId,
+  withUser,
+  withSession,
+  withMetadata,
+  withContext,
 } from "@langfuse/tracing";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
@@ -5559,6 +5563,392 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     it("should return undefined if there is no active span", async () => {
       const traceId = getActiveTraceId();
       expect(traceId).toBeUndefined();
+    });
+  });
+
+  describe("Context Propagation Methods", () => {
+    describe("withUser method", () => {
+      it("should propagate userId to child observations", async () => {
+        const userId = "test-user-123";
+
+        withUser(userId, () => {
+          const span = startObservation("user-operation");
+          span.end();
+        });
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanAttribute("user-operation", "user.id", userId);
+      });
+
+      it("should work with async functions", async () => {
+        const userId = "async-user-789";
+
+        const result = await withUser(userId, async () => {
+          const span = startObservation("async-operation");
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          span.end();
+          return "completed";
+        });
+
+        expect(result).toBe("completed");
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanAttribute("async-operation", "user.id", userId);
+      });
+    });
+
+    describe("withSession method", () => {
+      it("should propagate sessionId to child observations", async () => {
+        const sessionId = "test-session-123";
+
+        withSession(sessionId, () => {
+          const span = startObservation("session-operation");
+          span.end();
+        });
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanAttribute(
+          "session-operation",
+          "session.id",
+          sessionId,
+        );
+      });
+    });
+
+    describe("withMetadata method", () => {
+      it("should propagate metadata to child observations", async () => {
+        const metadata = { experiment: "A", version: "1.0" };
+
+        withMetadata(metadata, () => {
+          const span = startObservation("metadata-operation");
+          span.end();
+        });
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanAttribute(
+          "metadata-operation",
+          "langfuse.metadata.experiment",
+          "A",
+        );
+        assertions.expectSpanAttribute(
+          "metadata-operation",
+          "langfuse.metadata.version",
+          "1.0",
+        );
+      });
+    });
+
+    describe("withContext method", () => {
+      it("should propagate all context values (userId, sessionId, metadata)", async () => {
+        const config = {
+          userId: "context-user-123",
+          sessionId: "context-session-456",
+          metadata: { experiment: "B", version: "2.0" },
+        };
+
+        withContext(config, () => {
+          const span = startObservation("context-operation");
+          span.end();
+        });
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanCount(1);
+        assertions.expectSpanAttribute(
+          "context-operation",
+          "user.id",
+          "context-user-123",
+        );
+        assertions.expectSpanAttribute(
+          "context-operation",
+          "session.id",
+          "context-session-456",
+        );
+        assertions.expectSpanAttribute(
+          "context-operation",
+          "langfuse.metadata.experiment",
+          "B",
+        );
+        assertions.expectSpanAttribute(
+          "context-operation",
+          "langfuse.metadata.version",
+          "2.0",
+        );
+      });
+    });
+  });
+
+  describe("Observation Wrapper Context Propagation Methods", () => {
+    describe("observation.withUser() method", () => {
+      it("should set userId on the active span and propagate to child spans", async () => {
+        const userId = "instance-user-123";
+
+        // Use startActiveObservation to make the span active in context
+        await startActiveObservation(
+          "parent-span",
+          async (parent) => {
+            parent.withUser(userId, () => {
+              // Create a child span within the context
+              const child = startObservation("child-span");
+              child.end();
+            });
+          },
+          { endOnExit: true },
+        );
+
+        await waitForSpanExport(testEnv.mockExporter, 2);
+
+        assertions.expectSpanCount(2);
+
+        // Verify userId is set on the active span (parent)
+        assertions.expectSpanAttribute("parent-span", "user.id", userId);
+
+        // Verify userId is propagated to the child span
+        assertions.expectSpanAttribute("child-span", "user.id", userId);
+      });
+
+      it("should work with async functions and nested child spans", async () => {
+        const userId = "async-instance-user-456";
+
+        await startActiveObservation(
+          "async-parent-span",
+          async (parent) => {
+            await parent.withUser(userId, async () => {
+              await new Promise((resolve) => setTimeout(resolve, 10));
+
+              const child1 = startObservation("async-child-1");
+              const child2 = startObservation("async-child-2");
+
+              child1.end();
+              child2.end();
+            });
+          },
+          { endOnExit: true },
+        );
+
+        await waitForSpanExport(testEnv.mockExporter, 3);
+
+        assertions.expectSpanCount(3);
+        assertions.expectSpanAttribute("async-parent-span", "user.id", userId);
+        assertions.expectSpanAttribute("async-child-1", "user.id", userId);
+        assertions.expectSpanAttribute("async-child-2", "user.id", userId);
+      });
+    });
+
+    describe("observation.withSession() method", () => {
+      it("should set sessionId on the active span and propagate to child spans", async () => {
+        const sessionId = "instance-session-789";
+
+        await startActiveObservation(
+          "parent-span",
+          async (parent) => {
+            parent.withSession(sessionId, () => {
+              const child = startObservation("child-span");
+              child.end();
+            });
+          },
+          { endOnExit: true },
+        );
+
+        await waitForSpanExport(testEnv.mockExporter, 2);
+
+        assertions.expectSpanCount(2);
+        assertions.expectSpanAttribute("parent-span", "session.id", sessionId);
+        assertions.expectSpanAttribute("child-span", "session.id", sessionId);
+      });
+    });
+
+    describe("observation.withMetadata() method", () => {
+      it("should set metadata on the active span and propagate to child spans", async () => {
+        const metadata = { environment: "test", version: "3.0" };
+
+        await startActiveObservation(
+          "parent-span",
+          async (parent) => {
+            parent.withMetadata(metadata, () => {
+              const child = startObservation("child-span");
+              child.end();
+            });
+          },
+          { endOnExit: true },
+        );
+
+        await waitForSpanExport(testEnv.mockExporter, 2);
+
+        assertions.expectSpanCount(2);
+
+        // Verify metadata is set on the parent span
+        assertions.expectSpanAttribute(
+          "parent-span",
+          "langfuse.metadata.environment",
+          "test",
+        );
+        assertions.expectSpanAttribute(
+          "parent-span",
+          "langfuse.metadata.version",
+          "3.0",
+        );
+
+        // Verify metadata is propagated to the child span
+        assertions.expectSpanAttribute(
+          "child-span",
+          "langfuse.metadata.environment",
+          "test",
+        );
+        assertions.expectSpanAttribute(
+          "child-span",
+          "langfuse.metadata.version",
+          "3.0",
+        );
+      });
+    });
+
+    describe("observation.withContext() method", () => {
+      it("should set all context values on the active span and propagate to child spans", async () => {
+        const config = {
+          userId: "context-instance-user-999",
+          sessionId: "context-instance-session-888",
+          metadata: { experiment: "C", region: "us-west" },
+        };
+
+        await startActiveObservation(
+          "parent-span",
+          async (parent) => {
+            parent.withContext(config, () => {
+              const child = startObservation("child-span");
+              child.end();
+            });
+          },
+          { endOnExit: true },
+        );
+
+        await waitForSpanExport(testEnv.mockExporter, 2);
+
+        assertions.expectSpanCount(2);
+
+        // Verify all attributes are set on the parent span
+        assertions.expectSpanAttribute(
+          "parent-span",
+          "user.id",
+          "context-instance-user-999",
+        );
+        assertions.expectSpanAttribute(
+          "parent-span",
+          "session.id",
+          "context-instance-session-888",
+        );
+        assertions.expectSpanAttribute(
+          "parent-span",
+          "langfuse.metadata.experiment",
+          "C",
+        );
+        assertions.expectSpanAttribute(
+          "parent-span",
+          "langfuse.metadata.region",
+          "us-west",
+        );
+
+        // Verify all attributes are propagated to the child span
+        assertions.expectSpanAttribute(
+          "child-span",
+          "user.id",
+          "context-instance-user-999",
+        );
+        assertions.expectSpanAttribute(
+          "child-span",
+          "session.id",
+          "context-instance-session-888",
+        );
+        assertions.expectSpanAttribute(
+          "child-span",
+          "langfuse.metadata.experiment",
+          "C",
+        );
+        assertions.expectSpanAttribute(
+          "child-span",
+          "langfuse.metadata.region",
+          "us-west",
+        );
+      });
+    });
+
+    describe("combined context propagation methods", () => {
+      it("should allow nesting different context methods", async () => {
+        await startActiveObservation(
+          "parent",
+          async (parent) => {
+            parent.withUser("user-combo-123", () => {
+              // Use startActiveObservation for child1 so it can also use instance methods
+              startActiveObservation(
+                "child-with-user",
+                () => {
+                  withSession("session-combo-456", () => {
+                    startActiveObservation(
+                      "child-with-user-and-session",
+                      (child2) => {
+                        child2.withMetadata({ stage: "production" }, () => {
+                          const child3 = startObservation("child-with-all");
+                          child3.end();
+                        });
+                      },
+                      { endOnExit: true },
+                    );
+                  });
+                },
+                { endOnExit: true },
+              );
+            });
+          },
+          { endOnExit: true },
+        );
+
+        await waitForSpanExport(testEnv.mockExporter, 4);
+
+        assertions.expectSpanCount(4);
+
+        // child-with-user should only have userId
+        assertions.expectSpanAttribute(
+          "child-with-user",
+          "user.id",
+          "user-combo-123",
+        );
+
+        // child-with-user-and-session should have both
+        assertions.expectSpanAttribute(
+          "child-with-user-and-session",
+          "user.id",
+          "user-combo-123",
+        );
+        assertions.expectSpanAttribute(
+          "child-with-user-and-session",
+          "session.id",
+          "session-combo-456",
+        );
+
+        // child-with-all should have all three
+        assertions.expectSpanAttribute(
+          "child-with-all",
+          "user.id",
+          "user-combo-123",
+        );
+        assertions.expectSpanAttribute(
+          "child-with-all",
+          "session.id",
+          "session-combo-456",
+        );
+        assertions.expectSpanAttribute(
+          "child-with-all",
+          "langfuse.metadata.stage",
+          "production",
+        );
+      });
     });
   });
 });

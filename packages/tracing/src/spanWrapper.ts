@@ -4,6 +4,7 @@ import {
   createObservationAttributes,
   createTraceAttributes,
 } from "./attributes.js";
+import { withUser, withSession, withMetadata, withContext } from "./context.js";
 import { getLangfuseTracer } from "./tracerProvider.js";
 import {
   LangfuseGenerationAttributes,
@@ -197,13 +198,202 @@ abstract class LangfuseBaseObservation {
    * This sets trace-level attributes that apply to the entire trace,
    * not just this specific observation.
    *
+   * @deprecated For setting `userId`, `sessionId`, and `metadata`, use the new context propagation
+   * methods instead: {@link withUser}, {@link withSession}, {@link withMetadata}, or {@link withContext}.
+   * These methods provide automatic context propagation to child spans and support cross-service
+   * propagation via OpenTelemetry baggage.
+   *
    * @param attributes - Trace attributes to set
    * @returns This observation for method chaining
+   *
+   * @example
+   * ```typescript
+   * const observation = startObservation('my-operation');
+   *
+   * // ❌ Old way
+   * observation.updateTrace({
+   *   userId: '123',
+   *   sessionId: 'session-456',
+   *   metadata: { version: '2.1.0' }
+   * });
+   *
+   * // ✅ New way - automatic propagation to child spans
+   * observation.withUser('123', () => {
+   *   observation.withSession('session-456', () => {
+   *     observation.withMetadata({ version: '2.1.0' }, () => {
+   *       // Your code here - all child spans automatically inherit these attributes
+   *       const child = observation.startObservation('child-operation');
+   *       child.end();
+   *     });
+   *   });
+   * });
+   *
+   * // ✅ Or use withContext for multiple attributes at once
+   * observation.withContext({
+   *   userId: '123',
+   *   sessionId: 'session-456',
+   *   metadata: { version: '2.1.0' }
+   * }, () => {
+   *   // Your code here
+   * });
+   * ```
+   *
+   * @see {@link withUser} - Propagate userId to child spans
+   * @see {@link withSession} - Propagate sessionId to child spans
+   * @see {@link withMetadata} - Propagate metadata to child spans
+   * @see {@link withContext} - Propagate multiple context attributes at once
    */
   public updateTrace(attributes: LangfuseTraceAttributes) {
     this.otelSpan.setAttributes(createTraceAttributes(attributes));
 
     return this;
+  }
+
+  /**
+   * Executes a callback within a user context, propagating userId to all child spans.
+   *
+   * This is a convenience method that wraps the standalone `withUser()` function,
+   * making it available directly on observation instances for a more fluent API.
+   *
+   * @param userId - The user identifier to propagate to child spans
+   * @param fn - Callback function to execute within the user context
+   * @param options - Optional configuration for baggage propagation
+   * @returns The return value of the callback function
+   *
+   * @example
+   * ```typescript
+   * const parent = startObservation('parent');
+   *
+   * parent.withUser('user-123', () => {
+   *   const child = parent.startObservation('child');
+   *   // child automatically has userId='user-123'
+   *   child.end();
+   * });
+   *
+   * parent.end();
+   * ```
+   *
+   * @see {@link withUser} - Standalone function version
+   * @public
+   */
+  public withUser<T>(
+    userId: string,
+    fn: () => T,
+    options?: import("./context.js").ContextPropagationOptions,
+  ): T {
+    return withUser(userId, fn, options);
+  }
+
+  /**
+   * Executes a callback within a session context, propagating sessionId to all child spans.
+   *
+   * This is a convenience method that wraps the standalone `withSession()` function,
+   * making it available directly on observation instances for a more fluent API.
+   *
+   * @param sessionId - The session identifier to propagate to child spans
+   * @param fn - Callback function to execute within the session context
+   * @param options - Optional configuration for baggage propagation
+   * @returns The return value of the callback function
+   *
+   * @example
+   * ```typescript
+   * const parent = startObservation('parent');
+   *
+   * parent.withSession('session-456', () => {
+   *   const child = parent.startObservation('child');
+   *   // child automatically has sessionId='session-456'
+   *   child.end();
+   * });
+   *
+   * parent.end();
+   * ```
+   *
+   * @see {@link withSession} - Standalone function version
+   * @public
+   */
+  public withSession<T>(
+    sessionId: string,
+    fn: () => T,
+    options?: import("./context.js").ContextPropagationOptions,
+  ): T {
+    return withSession(sessionId, fn, options);
+  }
+
+  /**
+   * Executes a callback within a metadata context, propagating metadata to all child spans.
+   *
+   * This is a convenience method that wraps the standalone `withMetadata()` function,
+   * making it available directly on observation instances for a more fluent API.
+   *
+   * @param metadata - Key-value pairs of metadata to propagate to child spans
+   * @param fn - Callback function to execute within the metadata context
+   * @param options - Optional configuration for baggage propagation
+   * @returns The return value of the callback function
+   *
+   * @example
+   * ```typescript
+   * const parent = startObservation('parent');
+   *
+   * parent.withMetadata({ experiment: 'A' }, () => {
+   *   const child = parent.startObservation('child');
+   *   // child automatically has metadata.experiment='A'
+   *   child.end();
+   * });
+   *
+   * parent.end();
+   * ```
+   *
+   * @see {@link withMetadata} - Standalone function version
+   * @public
+   */
+  public withMetadata<T>(
+    metadata: Record<string, unknown>,
+    fn: () => T,
+    options?: import("./context.js").ContextPropagationOptions,
+  ): T {
+    return withMetadata(metadata, fn, options);
+  }
+
+  /**
+   * Executes a callback with multiple context values set at once.
+   *
+   * This is a convenience method that wraps the standalone `withContext()` function,
+   * making it available directly on observation instances for a more fluent API.
+   *
+   * @param config - Configuration object with userId, sessionId, and/or metadata
+   * @param fn - Callback function to execute within the context
+   * @param options - Optional configuration for baggage propagation
+   * @returns The return value of the callback function
+   *
+   * @example
+   * ```typescript
+   * const parent = startObservation('parent');
+   *
+   * parent.withContext(
+   *   {
+   *     userId: 'user-123',
+   *     sessionId: 'session-456',
+   *     metadata: { experiment: 'A' }
+   *   },
+   *   () => {
+   *     const child = parent.startObservation('child');
+   *     // child automatically has all context values
+   *     child.end();
+   *   }
+   * );
+   *
+   * parent.end();
+   * ```
+   *
+   * @see {@link withContext} - Standalone function version
+   * @public
+   */
+  public withContext<T>(
+    config: import("./context.js").ContextConfig,
+    fn: () => T,
+    options?: import("./context.js").ContextPropagationOptions,
+  ): T {
+    return withContext(config, fn, options);
   }
 
   /**

@@ -6,6 +6,9 @@ import {
   LangfuseOtelSpanAttributes,
   getEnv,
   base64Encode,
+  LANGFUSE_CTX_USER_ID,
+  LANGFUSE_CTX_SESSION_ID,
+  LANGFUSE_CTX_METADATA,
 } from "@langfuse/core";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
@@ -316,7 +319,78 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       [LangfuseOtelSpanAttributes.RELEASE]: this.release,
     });
 
+    // Propagate context attributes from parent context
+    this.propagateContextAttributes(span, parentContext);
+
     return this.processor.onStart(span, parentContext);
+  }
+
+  /**
+   * Propagates userId, sessionId, and metadata from parent context to span attributes.
+   *
+   * @param span - The span to set attributes on
+   * @param parentContext - The parent context to read values from
+   */
+  private propagateContextAttributes(span: Span, parentContext: any): void {
+    const propagatedAttributes: Record<string, any> = {};
+
+    // 1. Propagate userId from context
+    try {
+      const userId = parentContext?.getValue?.(LANGFUSE_CTX_USER_ID);
+      if (userId !== undefined && userId !== null) {
+        propagatedAttributes[LangfuseOtelSpanAttributes.TRACE_USER_ID] = userId;
+      }
+    } catch (err) {
+      this.logger.debug(`Could not read userId from context: ${err}`);
+    }
+
+    // 2. Propagate sessionId from context
+    try {
+      const sessionId = parentContext?.getValue?.(LANGFUSE_CTX_SESSION_ID);
+      if (sessionId !== undefined && sessionId !== null) {
+        propagatedAttributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID] =
+          sessionId;
+      }
+    } catch (err) {
+      this.logger.debug(`Could not read sessionId from context: ${err}`);
+    }
+
+    // 3. Handle metadata - distribute keys as individual attributes
+    try {
+      const metadata = parentContext?.getValue?.(LANGFUSE_CTX_METADATA);
+      if (metadata && typeof metadata === "object") {
+        // Set each metadata key as a separate span attribute with langfuse.metadata. prefix
+        for (const [key, value] of Object.entries(
+          metadata as Record<string, any>,
+        )) {
+          const attrKey = `langfuse.metadata.${key}`;
+
+          // Convert value to appropriate type for span attribute
+          let attrValue: string | number | boolean;
+          if (
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "boolean"
+          ) {
+            attrValue = value;
+          } else if (value !== null && value !== undefined) {
+            // For complex types, convert to JSON string
+            attrValue = JSON.stringify(value);
+          } else {
+            continue; // Skip null/undefined values
+          }
+
+          propagatedAttributes[attrKey] = attrValue;
+        }
+      }
+    } catch (err) {
+      this.logger.debug(`Could not read metadata from context: ${err}`);
+    }
+
+    // Set all propagated attributes on the span
+    if (Object.keys(propagatedAttributes).length > 0) {
+      span.setAttributes(propagatedAttributes);
+    }
   }
 
   /**
