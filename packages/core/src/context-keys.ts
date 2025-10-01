@@ -12,8 +12,6 @@
  * @packageDocumentation
  */
 
-import { createContextKey } from "@opentelemetry/api";
-
 /**
  * Context key for storing user ID in OpenTelemetry context.
  *
@@ -22,7 +20,7 @@ import { createContextKey } from "@opentelemetry/api";
  *
  * @public
  */
-export const LANGFUSE_CTX_USER_ID = createContextKey("langfuse.ctx.user.id");
+export const LANGFUSE_CTX_USER_ID = Symbol.for("langfuse.ctx.user.id");
 
 /**
  * Context key for storing session ID in OpenTelemetry context.
@@ -32,9 +30,7 @@ export const LANGFUSE_CTX_USER_ID = createContextKey("langfuse.ctx.user.id");
  *
  * @public
  */
-export const LANGFUSE_CTX_SESSION_ID = createContextKey(
-  "langfuse.ctx.session.id",
-);
+export const LANGFUSE_CTX_SESSION_ID = Symbol.for("langfuse.ctx.session.id");
 
 /**
  * Context key for storing metadata in OpenTelemetry context.
@@ -44,4 +40,4 @@ export const LANGFUSE_CTX_SESSION_ID = createContextKey(
  *
  * @public
  */
-export const LANGFUSE_CTX_METADATA = createContextKey("langfuse.ctx.metadata");
+export const LANGFUSE_CTX_METADATA = Symbol.for("langfuse.ctx.metadata");
