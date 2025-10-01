@@ -138,9 +138,7 @@ function createOtelSpan(params: {
  * @returns The created context (either with span context or active context)
  * @internal
  */
-function createParentContext(
-  parentSpanContext?: SpanContext,
-): Context | undefined {
+function createParentContext(parentSpanContext?: SpanContext): Context {
   if (!parentSpanContext) {
     // Use current active context to preserve context propagation values
     // (userId, sessionId, metadata set by withUser/withSession/withMetadata)

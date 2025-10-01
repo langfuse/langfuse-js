@@ -12,6 +12,7 @@ import {
   LANGFUSE_CTX_USER_ID,
   LANGFUSE_CTX_SESSION_ID,
   LANGFUSE_CTX_METADATA,
+  LangfuseOtelSpanAttributes,
 } from "@langfuse/core";
 import { context, propagation, trace } from "@opentelemetry/api";
 
@@ -93,14 +94,16 @@ export function withUser<T>(
   // Set attribute on currently active span if exists
   const currentSpan = trace.getActiveSpan();
   if (currentSpan?.isRecording()) {
-    currentSpan.setAttribute("user.id", userId);
+    currentSpan.setAttribute(LangfuseOtelSpanAttributes.TRACE_USER_ID, userId);
   }
 
   // Optionally set baggage for cross-service propagation
   if (options?.asBaggage) {
     const bag =
       propagation.getBaggage(newContext) || propagation.createBaggage();
-    const updatedBag = bag.setEntry("user.id", { value: userId });
+    const updatedBag = bag.setEntry(LangfuseOtelSpanAttributes.TRACE_USER_ID, {
+      value: userId,
+    });
     newContext = propagation.setBaggage(newContext, updatedBag);
   }
 
@@ -167,14 +170,20 @@ export function withSession<T>(
   // Set attribute on currently active span if exists
   const currentSpan = trace.getActiveSpan();
   if (currentSpan?.isRecording()) {
-    currentSpan.setAttribute("session.id", sessionId);
+    currentSpan.setAttribute(
+      LangfuseOtelSpanAttributes.TRACE_SESSION_ID,
+      sessionId,
+    );
   }
 
   // Optionally set baggage for cross-service propagation
   if (options?.asBaggage) {
     const bag =
       propagation.getBaggage(newContext) || propagation.createBaggage();
-    const updatedBag = bag.setEntry("session.id", { value: sessionId });
+    const updatedBag = bag.setEntry(
+      LangfuseOtelSpanAttributes.TRACE_SESSION_ID,
+      { value: sessionId },
+    );
     newContext = propagation.setBaggage(newContext, updatedBag);
   }
 
@@ -250,7 +259,7 @@ export function withMetadata<T>(
       const attrKey = `langfuse.metadata.${key}`;
       // Convert value to appropriate type for span attribute
       const attrValue =
-        typeof value === "object" && value !== null
+        typeof value === "object" && value !== null && value !== undefined
           ? JSON.stringify(value)
           : value;
       currentSpan.setAttribute(attrKey, attrValue as string | number | boolean);
@@ -261,13 +270,7 @@ export function withMetadata<T>(
   if (options?.asBaggage) {
     let bag = propagation.getBaggage(newContext) || propagation.createBaggage();
     for (const [key, value] of Object.entries(metadata)) {
-      // Convert value to string and truncate if needed for baggage size limits
-      let strValue = String(value);
-      if (strValue.length > 200) {
-        strValue = strValue.slice(0, 200);
-      }
-
-      bag = bag.setEntry(`langfuse.metadata.${key}`, { value: strValue });
+      bag = bag.setEntry(`langfuse.metadata.${key}`, { value: String(value) });
     }
     newContext = propagation.setBaggage(newContext, bag);
   }
@@ -367,14 +370,20 @@ export function withContext<T>(
     // Set attribute on currently active span
     const currentSpan = trace.getActiveSpan();
     if (currentSpan?.isRecording()) {
-      currentSpan.setAttribute("user.id", config.userId);
+      currentSpan.setAttribute(
+        LangfuseOtelSpanAttributes.TRACE_USER_ID,
+        config.userId,
+      );
     }
 
     // Set baggage if requested
     if (options?.asBaggage) {
       const bag =
         propagation.getBaggage(newContext) || propagation.createBaggage();
-      const updatedBag = bag.setEntry("user.id", { value: config.userId });
+      const updatedBag = bag.setEntry(
+        LangfuseOtelSpanAttributes.TRACE_USER_ID,
+        { value: config.userId },
+      );
       newContext = propagation.setBaggage(newContext, updatedBag);
     }
   }
@@ -386,16 +395,22 @@ export function withContext<T>(
     // Set attribute on currently active span
     const currentSpan = trace.getActiveSpan();
     if (currentSpan?.isRecording()) {
-      currentSpan.setAttribute("session.id", config.sessionId);
+      currentSpan.setAttribute(
+        LangfuseOtelSpanAttributes.TRACE_SESSION_ID,
+        config.sessionId,
+      );
     }
 
     // Set baggage if requested
     if (options?.asBaggage) {
       const bag =
         propagation.getBaggage(newContext) || propagation.createBaggage();
-      const updatedBag = bag.setEntry("session.id", {
-        value: config.sessionId,
-      });
+      const updatedBag = bag.setEntry(
+        LangfuseOtelSpanAttributes.TRACE_SESSION_ID,
+        {
+          value: config.sessionId,
+        },
+      );
       newContext = propagation.setBaggage(newContext, updatedBag);
     }
   }
@@ -428,12 +443,9 @@ export function withContext<T>(
       let bag =
         propagation.getBaggage(newContext) || propagation.createBaggage();
       for (const [key, value] of Object.entries(config.metadata)) {
-        let strValue = String(value);
-        if (strValue.length > 200) {
-          strValue = strValue.slice(0, 200);
-        }
-
-        bag = bag.setEntry(`langfuse.metadata.${key}`, { value: strValue });
+        bag = bag.setEntry(`langfuse.metadata.${key}`, {
+          value: String(value),
+        });
       }
       newContext = propagation.setBaggage(newContext, bag);
     }

@@ -10,6 +10,7 @@ import {
   LANGFUSE_CTX_SESSION_ID,
   LANGFUSE_CTX_METADATA,
 } from "@langfuse/core";
+import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
@@ -313,7 +314,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    *
    * @override
    */
-  public onStart(span: Span, parentContext: any): void {
+  public onStart(span: Span, parentContext: Context): void {
     span.setAttributes({
       [LangfuseOtelSpanAttributes.ENVIRONMENT]: this.environment,
       [LangfuseOtelSpanAttributes.RELEASE]: this.release,
@@ -331,33 +332,33 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @param span - The span to set attributes on
    * @param parentContext - The parent context to read values from
    */
-  private propagateContextAttributes(span: Span, parentContext: any): void {
+  private propagateContextAttributes(span: Span, parentContext: Context): void {
     const propagatedAttributes: Record<string, any> = {};
 
     // 1. Propagate userId from context
     try {
-      const userId = parentContext?.getValue?.(LANGFUSE_CTX_USER_ID);
+      const userId = parentContext?.getValue(LANGFUSE_CTX_USER_ID);
       if (userId !== undefined && userId !== null) {
         propagatedAttributes[LangfuseOtelSpanAttributes.TRACE_USER_ID] = userId;
       }
     } catch (err) {
-      this.logger.debug(`Could not read userId from context: ${err}`);
+      this.logger.warn(`Could not read userId from context: ${err}`);
     }
 
     // 2. Propagate sessionId from context
     try {
-      const sessionId = parentContext?.getValue?.(LANGFUSE_CTX_SESSION_ID);
+      const sessionId = parentContext?.getValue(LANGFUSE_CTX_SESSION_ID);
       if (sessionId !== undefined && sessionId !== null) {
         propagatedAttributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID] =
           sessionId;
       }
     } catch (err) {
-      this.logger.debug(`Could not read sessionId from context: ${err}`);
+      this.logger.warn(`Could not read sessionId from context: ${err}`);
     }
 
     // 3. Handle metadata - distribute keys as individual attributes
     try {
-      const metadata = parentContext?.getValue?.(LANGFUSE_CTX_METADATA);
+      const metadata = parentContext?.getValue(LANGFUSE_CTX_METADATA);
       if (metadata && typeof metadata === "object") {
         // Set each metadata key as a separate span attribute with langfuse.metadata. prefix
         for (const [key, value] of Object.entries(
@@ -384,7 +385,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         }
       }
     } catch (err) {
-      this.logger.debug(`Could not read metadata from context: ${err}`);
+      this.logger.warn(`Could not read metadata from context: ${err}`);
     }
 
     // Set all propagated attributes on the span
