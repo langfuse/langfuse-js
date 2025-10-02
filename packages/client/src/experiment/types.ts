@@ -89,7 +89,7 @@ export type ExperimentTask<
 
 export type Evaluation = Pick<
   ScoreBody,
-  "name" | "value" | "comment" | "metadata" | "dataType"
+  "name" | "value" | "comment" | "metadata" | "dataType" | "configId"
 >;
 
 export type EvaluatorParams<

@@ -434,11 +434,7 @@ export class ExperimentManager {
     for (const ev of evals) {
       this.langfuseClient.score.create({
         traceId,
-        name: ev.name,
-        comment: ev.comment,
-        value: ev.value,
-        metadata: ev.metadata,
-        dataType: ev.dataType,
+        ...ev,
       });
     }
 
