@@ -76,6 +76,8 @@ export type StartObservationOptions = {
   startTime?: Date;
   /** Parent span context to attach this observation to */
   parentSpanContext?: SpanContext;
+  /** Custom context */
+  context?: Context;
 };
 
 /**
@@ -772,6 +774,7 @@ export function startActiveObservation<
     name,
     { startTime: observationOptions?.startTime },
     createParentContext(observationOptions?.parentSpanContext) ??
+      observationOptions?.context ??
       context.active(),
     (span) => {
       try {

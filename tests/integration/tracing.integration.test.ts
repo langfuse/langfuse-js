@@ -8,6 +8,7 @@ import {
   createTraceId,
   getActiveTraceId,
 } from "@langfuse/tracing";
+import { propagation, context as otelContext } from "@opentelemetry/api";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
@@ -960,40 +961,53 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
   });
 
   describe("startActiveObservation method", () => {
-    it("should execute function with active span context", async () => {
+    it.only("should execute function with active span context", async () => {
       let spanFromFunction: any = null;
 
-      const result = startActiveObservation("active-span", (span) => {
-        spanFromFunction = span;
-
-        // Add trace attributes within active span
-        span.updateTrace({
-          name: "active-span-trace",
-          userId: "active-user",
-          sessionId: "active-session",
-          metadata: { execution_context: "active" },
-        });
-
-        span.update({
-          input: { message: "executed in active context" },
-          metadata: { execution_time: Date.now() },
-          level: "DEFAULT",
-        });
-
-        // Create a nested span to test context propagation
-        const nestedSpan = startObservation(
-          "nested-active-span",
-          {
-            input: { nested_operation: "test" },
-          },
-          { parentSpanContext: span.otelSpan.spanContext() },
-        );
-        nestedSpan.update({ output: { nested_result: "success" } });
-        nestedSpan.end();
-
-        span.update({ output: { result: "test result", nested_spans: 1 } });
-        return "test result";
+      // Create a context with baggage containing metadata: { foo: 'bar' }
+      const baggage = propagation.createBaggage({
+        metadata: { value: JSON.stringify({ foo: "bar" }) },
       });
+      const baggageContext = propagation.setBaggage(
+        otelContext.active(),
+        baggage,
+      );
+
+      const result = startActiveObservation(
+        "active-span",
+        (span) => {
+          spanFromFunction = span;
+
+          // Add trace attributes within active span
+          span.updateTrace({
+            name: "active-span-trace",
+            userId: "active-user",
+            sessionId: "active-session",
+            metadata: { execution_context: "active" },
+          });
+
+          span.update({
+            input: { message: "executed in active context" },
+            metadata: { execution_time: Date.now() },
+            level: "DEFAULT",
+          });
+
+          // Create a nested span to test context propagation
+          const nestedSpan = startObservation(
+            "nested-active-span",
+            {
+              input: { nested_operation: "test" },
+            },
+            { parentSpanContext: span.otelSpan.spanContext() },
+          );
+          nestedSpan.update({ output: { nested_result: "success" } });
+          nestedSpan.end();
+
+          span.update({ output: { result: "test result", nested_spans: 1 } });
+          return "test result";
+        },
+        { context: baggageContext },
+      );
 
       expect(result).toBe("test result");
       expect(spanFromFunction).toBeDefined();
@@ -1037,6 +1051,18 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       expect(
         typeof spanAttributes["langfuse.observation.metadata.execution_time"],
       ).toBe("string");
+
+      // Verify baggage metadata is propagated
+      assertions.expectSpanAttribute(
+        "active-span",
+        "metadata",
+        '{"foo":"bar"}',
+      );
+      assertions.expectSpanAttribute(
+        "nested-active-span",
+        "metadata",
+        '{"foo":"bar"}',
+      );
 
       // Verify trace attributes
       assertions.expectSpanAttribute(
