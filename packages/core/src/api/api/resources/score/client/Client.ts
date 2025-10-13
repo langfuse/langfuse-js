@@ -84,6 +84,7 @@ export class Score {
    *         comment: undefined,
    *         metadata: undefined,
    *         environment: undefined,
+   *         queueId: undefined,
    *         dataType: undefined,
    *         configId: undefined
    *     })
