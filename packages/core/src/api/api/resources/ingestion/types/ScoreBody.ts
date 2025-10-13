@@ -84,6 +84,8 @@ export interface ScoreBody {
   datasetRunId?: string;
   name: string;
   environment?: string;
+  /** The annotation queue referenced by the score. Indicates if score was initially created while processing annotation queue. */
+  queueId?: string;
   /** The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
   value: LangfuseAPI.CreateScoreValue;
   comment?: string;

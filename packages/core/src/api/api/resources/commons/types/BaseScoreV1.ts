@@ -18,7 +18,7 @@ export interface BaseScoreV1 {
   metadata?: unknown;
   /** Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
   configId?: string;
-  /** Reference an annotation queue on a score. Populated if the score was initially created in an annotation queue. */
+  /** The annotation queue referenced by the score. Indicates if score was initially created while processing annotation queue. */
   queueId?: string;
   /** The environment from which this score originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
   environment?: string;
