@@ -247,7 +247,8 @@ abstract class LangfuseCoreStateless {
       !(
         ENVIRONMENT_PATTERN.test(this.environment) ||
         WHITELISTED_LANGFUSE_INTERNAL_ENVIRONMENTS.includes(this.environment)
-      )
+      ) &&
+      !_isLocalEventExportEnabled
     ) {
       this._events.emit(
         "error",
