@@ -10,7 +10,7 @@ import {
 } from "../../../../core/headers.js";
 import * as errors from "../../../../errors/index.js";
 
-export declare namespace Ingestion {
+export declare namespace Opentelemetry {
   export interface Options {
     environment: core.Supplier<string>;
     /** Specify a custom URL to connect the client to. */
@@ -53,32 +53,33 @@ export declare namespace Ingestion {
   }
 }
 
-export class Ingestion {
-  protected readonly _options: Ingestion.Options;
+export class Opentelemetry {
+  protected readonly _options: Opentelemetry.Options;
 
-  constructor(_options: Ingestion.Options) {
+  constructor(_options: Opentelemetry.Options) {
     this._options = _options;
   }
 
   /**
-   * **Legacy endpoint for batch ingestion for Langfuse Observability.**
+   * **OpenTelemetry Traces Ingestion Endpoint**
    *
-   * -> Please use the OpenTelemetry endpoint (`/api/public/otel/v1/traces`). Learn more: https://langfuse.com/integrations/native/opentelemetry
+   * This endpoint implements the OTLP/HTTP specification for trace ingestion, providing native OpenTelemetry integration for Langfuse Observability.
    *
-   * Within each batch, there can be multiple events.
-   * Each event has a type, an id, a timestamp, metadata and a body.
-   * Internally, we refer to this as the "event envelope" as it tells us something about the event but not the trace.
-   * We use the event id within this envelope to deduplicate messages to avoid processing the same event twice, i.e. the event id should be unique per request.
-   * The event.body.id is the ID of the actual trace and will be used for updates and will be visible within the Langfuse App.
-   * I.e. if you want to update a trace, you'd use the same body id, but separate event IDs.
+   * **Supported Formats:**
+   * - Binary Protobuf: `Content-Type: application/x-protobuf`
+   * - JSON Protobuf: `Content-Type: application/json`
+   * - Supports gzip compression via `Content-Encoding: gzip` header
    *
-   * Notes:
-   * - Introduction to data model: https://langfuse.com/docs/observability/data-model
-   * - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
-   * - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors.
+   * **Specification Compliance:**
+   * - Conforms to [OTLP/HTTP Trace Export](https://opentelemetry.io/docs/specs/otlp/#otlphttp)
+   * - Implements `ExportTraceServiceRequest` message format
    *
-   * @param {LangfuseAPI.IngestionRequest} request
-   * @param {Ingestion.RequestOptions} requestOptions - Request-specific configuration.
+   * **Documentation:**
+   * - Integration guide: https://langfuse.com/integrations/native/opentelemetry
+   * - Data model: https://langfuse.com/docs/observability/data-model
+   *
+   * @param {LangfuseAPI.OtelTraceRequest} request
+   * @param {Opentelemetry.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
    * @throws {@link LangfuseAPI.UnauthorizedError}
@@ -87,73 +88,58 @@ export class Ingestion {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.ingestion.batch({
-   *         batch: [{
-   *                 type: "trace-create",
-   *                 id: "abcdef-1234-5678-90ab",
-   *                 timestamp: "2022-01-01T00:00:00.000Z",
-   *                 body: {
-   *                     id: "abcdef-1234-5678-90ab",
-   *                     timestamp: "2022-01-01T00:00:00.000Z",
-   *                     environment: "production",
-   *                     name: "My Trace",
-   *                     userId: "1234-5678-90ab-cdef",
-   *                     input: "My input",
-   *                     output: "My output",
-   *                     sessionId: "1234-5678-90ab-cdef",
-   *                     release: "1.0.0",
-   *                     version: "1.0.0",
-   *                     metadata: "My metadata",
-   *                     tags: ["tag1", "tag2"],
-   *                     "public": true
-   *                 }
-   *             }]
-   *     })
-   *
-   * @example
-   *     await client.ingestion.batch({
-   *         batch: [{
-   *                 type: "span-create",
-   *                 id: "abcdef-1234-5678-90ab",
-   *                 timestamp: "2022-01-01T00:00:00.000Z",
-   *                 body: {
-   *                     id: "abcdef-1234-5678-90ab",
-   *                     traceId: "1234-5678-90ab-cdef",
-   *                     startTime: "2022-01-01T00:00:00.000Z",
-   *                     environment: "test"
-   *                 }
-   *             }]
-   *     })
-   *
-   * @example
-   *     await client.ingestion.batch({
-   *         batch: [{
-   *                 type: "score-create",
-   *                 id: "abcdef-1234-5678-90ab",
-   *                 timestamp: "2022-01-01T00:00:00.000Z",
-   *                 body: {
-   *                     id: "abcdef-1234-5678-90ab",
-   *                     traceId: "1234-5678-90ab-cdef",
-   *                     name: "My Score",
-   *                     value: 0.9,
-   *                     environment: "default"
-   *                 }
+   *     await client.opentelemetry.exportTraces({
+   *         resourceSpans: [{
+   *                 resource: {
+   *                     attributes: [{
+   *                             key: "service.name",
+   *                             value: {
+   *                                 stringValue: "my-service"
+   *                             }
+   *                         }, {
+   *                             key: "service.version",
+   *                             value: {
+   *                                 stringValue: "1.0.0"
+   *                             }
+   *                         }]
+   *                 },
+   *                 scopeSpans: [{
+   *                         scope: {
+   *                             name: "langfuse-sdk",
+   *                             version: "2.60.3"
+   *                         },
+   *                         spans: [{
+   *                                 traceId: "0123456789abcdef0123456789abcdef",
+   *                                 spanId: "0123456789abcdef",
+   *                                 name: "my-operation",
+   *                                 kind: 1,
+   *                                 startTimeUnixNano: "1747872000000000000",
+   *                                 endTimeUnixNano: "1747872001000000000",
+   *                                 attributes: [{
+   *                                         key: "langfuse.observation.type",
+   *                                         value: {
+   *                                             stringValue: "generation"
+   *                                         }
+   *                                     }],
+   *                                 status: {}
+   *                             }]
+   *                     }]
    *             }]
    *     })
    */
-  public batch(
-    request: LangfuseAPI.IngestionRequest,
-    requestOptions?: Ingestion.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.IngestionResponse> {
+  public exportTraces(
+    request: LangfuseAPI.OtelTraceRequest,
+    requestOptions?: Opentelemetry.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.OtelTraceResponse> {
     return core.HttpResponsePromise.fromPromise(
-      this.__batch(request, requestOptions),
+      this.__exportTraces(request, requestOptions),
     );
   }
 
-  private async __batch(
-    request: LangfuseAPI.IngestionRequest,
-    requestOptions?: Ingestion.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.IngestionResponse>> {
+  private async __exportTraces(
+    request: LangfuseAPI.OtelTraceRequest,
+    requestOptions?: Opentelemetry.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.OtelTraceResponse>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -173,7 +159,7 @@ export class Ingestion {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        "/api/public/ingestion",
+        "/api/public/otel/v1/traces",
       ),
       method: "POST",
       headers: _headers,
@@ -190,7 +176,7 @@ export class Ingestion {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.IngestionResponse,
+        data: _response.body as LangfuseAPI.OtelTraceResponse,
         rawResponse: _response.rawResponse,
       };
     }
@@ -240,7 +226,7 @@ export class Ingestion {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling POST /api/public/ingestion.",
+          "Timeout exceeded when calling POST /api/public/otel/v1/traces.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
