@@ -222,6 +222,7 @@ export class Observations {
       fromStartTime,
       toStartTime,
       version,
+      filter,
     } = request;
     const _queryParams: Record<
       string,
@@ -277,6 +278,10 @@ export class Observations {
 
     if (version != null) {
       _queryParams["version"] = version;
+    }
+
+    if (filter != null) {
+      _queryParams["filter"] = filter;
     }
 
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(

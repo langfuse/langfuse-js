@@ -4,6 +4,7 @@ export * from "./CreatePromptRequest.js";
 export * from "./CreateChatPromptRequest.js";
 export * from "./CreateTextPromptRequest.js";
 export * from "./Prompt.js";
+export * from "./PromptType.js";
 export * from "./BasePrompt.js";
 export * from "./ChatMessageWithPlaceholders.js";
 export * from "./ChatMessage.js";
