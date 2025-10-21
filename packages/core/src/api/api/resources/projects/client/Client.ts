@@ -692,7 +692,9 @@ export class Projects {
    *
    * @example
    *     await client.projects.createApiKey("projectId", {
-   *         note: undefined
+   *         note: undefined,
+   *         publicKey: undefined,
+   *         secretKey: undefined
    *     })
    */
   public createApiKey(
