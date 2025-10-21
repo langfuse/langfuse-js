@@ -5,10 +5,16 @@
 /**
  * @example
  *     {
- *         note: undefined
+ *         note: undefined,
+ *         publicKey: undefined,
+ *         secretKey: undefined
  *     }
  */
 export interface CreateApiKeyRequest {
   /** Optional note for the API key */
   note?: string;
+  /** Optional predefined public key. Must start with 'pk-lf-'. If provided, secretKey must also be provided. */
+  publicKey?: string;
+  /** Optional predefined secret key. Must start with 'sk-lf-'. If provided, publicKey must also be provided. */
+  secretKey?: string;
 }
