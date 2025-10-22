@@ -107,7 +107,7 @@ export class ExperimentManager {
    * @param config.task - Function that processes each data item and returns output
    * @param config.evaluators - Optional array of functions to evaluate each item's output
    * @param config.runEvaluators - Optional array of functions to evaluate the entire run
-   * @param config.maxConcurrency - Maximum number of concurrent task executions (default: Infinity)
+   * @param config.maxConcurrency - Maximum number of concurrent task executions (default: 50)
    *
    * @returns Promise that resolves to experiment results including:
    *   - runName: The experiment run name (either provided or generated)
@@ -176,7 +176,7 @@ export class ExperimentManager {
       runName: providedRunName,
       description,
       metadata,
-      maxConcurrency: batchSize = Infinity,
+      maxConcurrency: batchSize = 50,
       runEvaluators,
     } = config;
 
