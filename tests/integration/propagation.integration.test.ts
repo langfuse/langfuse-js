@@ -6,22 +6,19 @@
  * to all child spans within the context.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  LangfuseOtelContextKeys,
+  LangfuseOtelSpanAttributes,
+  getPropagatedAttributesFromContext,
+} from "@langfuse/core";
+import { propagateAttributes, startObservation } from "@langfuse/tracing";
 import {
   context as otelContext,
   trace as otelTrace,
   propagation,
   ROOT_CONTEXT,
 } from "@opentelemetry/api";
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
-import {
-  propagateAttributes,
-  USER_ID_KEY,
-  SESSION_ID_KEY,
-  METADATA_KEY,
-  getPropagatedAttributesFromContext,
-  startObservation,
-} from "@langfuse/tracing";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import {
   setupTestEnvironment,
@@ -432,14 +429,7 @@ describe("propagateAttributes", () => {
             const currentContext = otelContext.active();
             const baggage = propagation.getBaggage(currentContext);
 
-            // Baggage should be empty or not have langfuse keys
-            if (baggage) {
-              const entries = Array.from(baggage.getAllEntries());
-              const langfuseEntries = entries.filter(([key]) =>
-                key.startsWith("langfuse_"),
-              );
-              expect(langfuseEntries).toHaveLength(0);
-            }
+            expect(baggage).toBeUndefined();
           },
         );
         parentSpan.end();
@@ -556,7 +546,10 @@ describe("propagateAttributes", () => {
 
   describe("getPropagatedAttributesFromContext", () => {
     it("should read userId from context", () => {
-      const context = ROOT_CONTEXT.setValue(USER_ID_KEY, "test_user");
+      const context = ROOT_CONTEXT.setValue(
+        LangfuseOtelContextKeys["userId"],
+        "test_user",
+      );
       const attributes = getPropagatedAttributesFromContext(context);
 
       expect(attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
@@ -565,7 +558,10 @@ describe("propagateAttributes", () => {
     });
 
     it("should read sessionId from context", () => {
-      const context = ROOT_CONTEXT.setValue(SESSION_ID_KEY, "test_session");
+      const context = ROOT_CONTEXT.setValue(
+        LangfuseOtelContextKeys["sessionId"],
+        "test_session",
+      );
       const attributes = getPropagatedAttributesFromContext(context);
 
       expect(attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID]).toBe(
@@ -574,10 +570,13 @@ describe("propagateAttributes", () => {
     });
 
     it("should read metadata from context", () => {
-      const context = ROOT_CONTEXT.setValue(METADATA_KEY, {
-        key1: "value1",
-        key2: "value2",
-      });
+      const context = ROOT_CONTEXT.setValue(
+        LangfuseOtelContextKeys["metadata"],
+        {
+          key1: "value1",
+          key2: "value2",
+        },
+      );
       const attributes = getPropagatedAttributesFromContext(context);
 
       expect(
