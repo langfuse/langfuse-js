@@ -43,7 +43,7 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ userId: "user_123" }, async () => {
+        propagateAttributes({ userId: "user_123" }, () => {
           const child1 = startObservation("child-1");
           child1.end();
 
@@ -70,7 +70,7 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ sessionId: "session_abc" }, async () => {
+        propagateAttributes({ sessionId: "session_abc" }, () => {
           const child1 = startObservation("child-1");
           child1.end();
 
@@ -97,11 +97,11 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes(
+        propagateAttributes(
           {
             metadata: { experiment: "variant_a", version: "1.0" },
           },
-          async () => {
+          () => {
             const child1 = startObservation("child-1");
             child1.end();
 
@@ -143,6 +143,78 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          {
+            userId: "user_123",
+            sessionId: "session_abc",
+            metadata: { experiment: "test", env: "prod" },
+          },
+          () => {
+            const child = startObservation("child");
+            child.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user_123",
+      );
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID],
+      ).toBe("session_abc");
+      expect(
+        child?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.experiment`
+        ],
+      ).toBe("test");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
+      ).toBe("prod");
+    });
+
+    it("should maintain return value", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      const returnValue = await propagateAttributes(
+        { userId: "user_123" },
+        async () => {
+          return await tracer.startActiveSpan("parent", async (parentSpan) => {
+            const child1 = startObservation("child-1");
+            child1.end();
+
+            const child2 = startObservation("child-2");
+            child2.end();
+            parentSpan.end();
+
+            return "hello";
+          });
+        },
+      );
+
+      expect(returnValue).toBe("hello");
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child1 = spans.find((s) => s.name === "child-1");
+      const child2 = spans.find((s) => s.name === "child-2");
+
+      expect(child1?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user_123",
+      );
+      expect(child2?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user_123",
+      );
+    });
+
+    it("should propagate all attributes together (async)", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
         await propagateAttributes(
           {
             userId: "user_123",
@@ -150,6 +222,7 @@ describe("propagateAttributes", () => {
             metadata: { experiment: "test", env: "prod" },
           },
           async () => {
+            await new Promise((resolve) => setTimeout(resolve));
             const child = startObservation("child");
             child.end();
           },
@@ -184,7 +257,7 @@ describe("propagateAttributes", () => {
       const longUserId = "x".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ userId: longUserId }, async () => {
+        propagateAttributes({ userId: longUserId }, () => {
           const child = startObservation("child");
           child.end();
         });
@@ -205,7 +278,7 @@ describe("propagateAttributes", () => {
       const userId200 = "x".repeat(200);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ userId: userId200 }, async () => {
+        propagateAttributes({ userId: userId200 }, () => {
           const child = startObservation("child");
           child.end();
         });
@@ -226,7 +299,7 @@ describe("propagateAttributes", () => {
       const longSessionId = "y".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ sessionId: longSessionId }, async () => {
+        propagateAttributes({ sessionId: longSessionId }, () => {
           const child = startObservation("child");
           child.end();
         });
@@ -247,11 +320,11 @@ describe("propagateAttributes", () => {
       const longValue = "z".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes(
+        propagateAttributes(
           {
             metadata: { key: longValue },
           },
-          async () => {
+          () => {
             const child = startObservation("child");
             child.end();
           },
@@ -272,7 +345,7 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ userId: 12345 as any }, async () => {
+        propagateAttributes({ userId: 12345 as any }, () => {
           const child = startObservation("child");
           child.end();
         });
@@ -292,7 +365,7 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes(
+        propagateAttributes(
           {
             metadata: {
               valid_key: "valid_value",
@@ -300,7 +373,7 @@ describe("propagateAttributes", () => {
               another_valid: "ok",
             },
           },
-          async () => {
+          () => {
             const child = startObservation("child");
             child.end();
           },
@@ -335,14 +408,14 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes(
+        propagateAttributes(
           {
             userId: "user_123",
             sessionId: "session_abc",
             metadata: { env: "test", version: "2.0" },
             asBaggage: true,
           },
-          async () => {
+          () => {
             // Get current context and inspect baggage
             const currentContext = otelContext.active();
             const baggage = propagation.getBaggage(currentContext);
@@ -384,14 +457,14 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes(
+        propagateAttributes(
           {
             userId: "baggage_user",
             sessionId: "baggage_session",
             metadata: { source: "baggage" },
             asBaggage: true,
           },
-          async () => {
+          () => {
             const child = startObservation("child");
             child.end();
           },
@@ -420,12 +493,12 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes(
+        propagateAttributes(
           {
             userId: "user_123",
             sessionId: "session_abc",
           },
-          async () => {
+          () => {
             const currentContext = otelContext.active();
             const baggage = propagation.getBaggage(currentContext);
 
@@ -444,11 +517,11 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ userId: "user1" }, async () => {
+        propagateAttributes({ userId: "user1" }, () => {
           const span1 = startObservation("span-1");
           span1.end();
 
-          await propagateAttributes({ userId: "user2" }, async () => {
+          propagateAttributes({ userId: "user2" }, () => {
             const span2 = startObservation("span-2");
             span2.end();
           });
@@ -473,11 +546,11 @@ describe("propagateAttributes", () => {
       const tracer = otelTrace.getTracer("test");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
-        await propagateAttributes({ userId: "user1" }, async () => {
+        propagateAttributes({ userId: "user1" }, () => {
           const span1 = startObservation("span-1");
           span1.end();
 
-          await propagateAttributes({ userId: "user2" }, async () => {
+          propagateAttributes({ userId: "user2" }, () => {
             const span2 = startObservation("span-2");
             span2.end();
           });
@@ -514,7 +587,7 @@ describe("propagateAttributes", () => {
         const beforeSpan = startObservation("before");
         beforeSpan.end();
 
-        await propagateAttributes({ userId: "user_123" }, async () => {
+        propagateAttributes({ userId: "user_123" }, () => {
           const insideSpan = startObservation("inside");
           insideSpan.end();
         });

@@ -174,10 +174,10 @@ export interface PropagateAttributesParams {
  *
  * @public
  */
-export async function propagateAttributes<T>(
-  params: PropagateAttributesParams,
-  fn: () => T | Promise<T>,
-): Promise<T> {
+export function propagateAttributes<
+  A extends unknown[],
+  F extends (...args: A) => ReturnType<F>,
+>(params: PropagateAttributesParams, fn: F): ReturnType<F> {
   let context = otelContext.active();
 
   const span = otelTrace.getActiveSpan();
@@ -244,16 +244,7 @@ export async function propagateAttributes<T>(
   }
 
   // Execute callback in the new context
-  return otelContext.with(context, async () => {
-    const result = fn();
-
-    // Handle both sync and async callbacks
-    if (result instanceof Promise) {
-      return await result;
-    }
-
-    return result;
-  });
+  return otelContext.with(context, fn);
 }
 
 export function getPropagatedAttributesFromContext(
@@ -370,13 +361,13 @@ function isValidPropagatedString(params: {
   const logger = getGlobalLogger();
   const { value, attributeName } = params;
 
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     logger.warn(
       `Propagated attribute '${attributeName}' must be a string. Dropping value.`,
     );
     return false;
   }
-  
+
   if (value.length > 200) {
     logger.warn(
       `Propagated attribute '${attributeName}' value is over 200 characters (${value.length} chars). Dropping value.`,
