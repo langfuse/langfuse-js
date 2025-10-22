@@ -7,8 +7,8 @@
  */
 
 import {
-  context as otelContext,
-  trace as otelTrace,
+  context as otelContextApi,
+  trace as otelTraceApi,
   propagation,
   Context,
   createContextKey,
@@ -178,9 +178,9 @@ export function propagateAttributes<
   A extends unknown[],
   F extends (...args: A) => ReturnType<F>,
 >(params: PropagateAttributesParams, fn: F): ReturnType<F> {
-  let context = otelContext.active();
+  let context = otelContextApi.active();
 
-  const span = otelTrace.getActiveSpan();
+  const span = otelTraceApi.getActiveSpan();
   const asBaggage = params.asBaggage ?? false;
 
   const { userId, sessionId, metadata } = params;
@@ -244,7 +244,7 @@ export function propagateAttributes<
   }
 
   // Execute callback in the new context
-  return otelContext.with(context, fn);
+  return otelContextApi.with(context, fn);
 }
 
 export function getPropagatedAttributesFromContext(
@@ -296,7 +296,7 @@ export function getPropagatedAttributesFromContext(
 
 type SetPropagatedAttributeParams = {
   context: Context;
-  span: ReturnType<typeof otelTrace.getActiveSpan>;
+  span: ReturnType<typeof otelTraceApi.getActiveSpan>;
   asBaggage: boolean;
 } & (
   | {
