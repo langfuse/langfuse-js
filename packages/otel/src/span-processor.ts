@@ -6,7 +6,9 @@ import {
   LangfuseOtelSpanAttributes,
   getEnv,
   base64Encode,
+  getPropagatedAttributesFromContext,
 } from "@langfuse/core";
+import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
@@ -303,17 +305,19 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   /**
-   * Called when a span is started. Adds environment and release attributes to the span.
+   * Called when a span is started. Adds environment, release, and propagated attributes to the span.
    *
    * @param span - The span that was started
    * @param parentContext - The parent context
    *
    * @override
    */
-  public onStart(span: Span, parentContext: any): void {
+  public onStart(span: Span, parentContext: Context): void {
+    // Set propagated attributes, environment and release attributes
     span.setAttributes({
       [LangfuseOtelSpanAttributes.ENVIRONMENT]: this.environment,
       [LangfuseOtelSpanAttributes.RELEASE]: this.release,
+      ...getPropagatedAttributesFromContext(parentContext),
     });
 
     return this.processor.onStart(span, parentContext);
