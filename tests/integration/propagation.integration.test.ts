@@ -352,19 +352,19 @@ describe("propagateAttributes", () => {
 
             // Check baggage keys exist
             const baggageKeys = entries.map(([key]) => key);
-            expect(baggageKeys).toContain("langfuse_userId");
-            expect(baggageKeys).toContain("langfuse_sessionId");
+            expect(baggageKeys).toContain("langfuse_user_id");
+            expect(baggageKeys).toContain("langfuse_session_id");
             expect(baggageKeys).toContain("langfuse_metadata_env");
             expect(baggageKeys).toContain("langfuse_metadata_version");
 
             // Check baggage values
             const userIdEntry = entries.find(
-              ([key]) => key === "langfuse_userId",
+              ([key]) => key === "langfuse_user_id",
             );
             expect(userIdEntry?.[1].value).toBe("user_123");
 
             const sessionIdEntry = entries.find(
-              ([key]) => key === "langfuse_sessionId",
+              ([key]) => key === "langfuse_session_id",
             );
             expect(sessionIdEntry?.[1].value).toBe("session_abc");
 
@@ -589,8 +589,8 @@ describe("propagateAttributes", () => {
 
     it("should read attributes from baggage", () => {
       let baggage = propagation.createBaggage();
-      baggage = baggage.setEntry("langfuse_userId", { value: "baggage_user" });
-      baggage = baggage.setEntry("langfuse_sessionId", {
+      baggage = baggage.setEntry("langfuse_user_id", { value: "baggage_user" });
+      baggage = baggage.setEntry("langfuse_session_id", {
         value: "baggage_session",
       });
       baggage = baggage.setEntry("langfuse_metadata_env", { value: "prod" });

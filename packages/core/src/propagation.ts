@@ -399,7 +399,21 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
 const LANGFUSE_BAGGAGE_PREFIX = "langfuse_";
 
 function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
-  return `${LANGFUSE_BAGGAGE_PREFIX}${key}`;
+  // baggage keys must be snake case for correct cross service propagation
+  // second service might run Python SDK that is expecting snake case keys
+  switch (key) {
+    case "userId":
+      return `${LANGFUSE_BAGGAGE_PREFIX}user_id`;
+    case "sessionId":
+      return `${LANGFUSE_BAGGAGE_PREFIX}session_id`;
+    case "metadata":
+      return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
+    default: {
+      const fallback: never = key;
+
+      throw Error("Unhandled propagated key", fallback);
+    }
+  }
 }
 
 function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
@@ -407,11 +421,11 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
 
   const suffix = baggageKey.slice(LANGFUSE_BAGGAGE_PREFIX.length);
 
-  if (suffix === "userId") {
+  if (suffix === "user_id") {
     return LangfuseOtelSpanAttributes.TRACE_USER_ID;
   }
 
-  if (suffix === "sessionId") {
+  if (suffix === "session_id") {
     return LangfuseOtelSpanAttributes.TRACE_SESSION_ID;
   }
 
