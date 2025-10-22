@@ -370,6 +370,13 @@ function isValidPropagatedString(params: {
   const logger = getGlobalLogger();
   const { value, attributeName } = params;
 
+  if (typeof value !== 'string') {
+    logger.warn(
+      `Propagated attribute '${attributeName}' must be a string. Dropping value.`,
+    );
+    return false;
+  }
+  
   if (value.length > 200) {
     logger.warn(
       `Propagated attribute '${attributeName}' value is over 200 characters (${value.length} chars). Dropping value.`,
