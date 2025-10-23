@@ -27,6 +27,9 @@
   "files": [
     "dist"
   ],
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.9.0"
+  },
   "devDependencies": {
     "@types/node": "^24.1.0"
   }
