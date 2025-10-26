@@ -6,11 +6,6 @@ import {
   AIMessage,
   AIMessageChunk,
   BaseMessage,
-  ChatMessage,
-  FunctionMessage,
-  HumanMessage,
-  SystemMessage,
-  ToolMessage,
   type UsageMetadata,
   type BaseMessageFields,
   type MessageContent,
@@ -589,9 +584,10 @@ export class CallbackHandler extends BaseCallbackHandler {
       }
 
       const extractedOutput =
-        "message" in lastResponse &&
-        lastResponse["message"] instanceof BaseMessage
-          ? this.extractChatMessageContent(lastResponse["message"])
+        "message" in lastResponse
+          ? this.extractChatMessageContent(
+              lastResponse["message"] as BaseMessage,
+            )
           : lastResponse.text;
 
       this.handleOtelSpanEnd({
@@ -854,25 +850,39 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): LlmMessage | AnonymousLlmMessage | MessageContent {
     let response = undefined;
 
-    if (message instanceof HumanMessage) {
+    if (message.getType() === "human") {
       response = { content: message.content, role: "user" };
-    } else if (message instanceof ChatMessage) {
-      response = { content: message.content, role: message.role };
-    } else if (message instanceof AIMessage) {
+    } else if (message.getType() === "generic") {
+      response = {
+        content: message.content,
+        role: "human",
+      };
+    } else if (message.getType() === "ai") {
       response = { content: message.content, role: "assistant" };
 
-      if ("tool_calls" in message && (message.tool_calls?.length ?? 0) > 0) {
+      if (
+        "tool_calls" in message &&
+        Array.isArray(message.tool_calls) &&
+        (message.tool_calls?.length ?? 0) > 0
+      ) {
         (response as any)["tool_calls"] = message["tool_calls"];
       }
-    } else if (message instanceof SystemMessage) {
+      if (
+        "additional_kwargs" in message &&
+        "tool_calls" in message["additional_kwargs"]
+      ) {
+        (response as any)["tool_calls"] =
+          message["additional_kwargs"]["tool_calls"];
+      }
+    } else if (message.getType() === "system") {
       response = { content: message.content, role: "system" };
-    } else if (message instanceof FunctionMessage) {
+    } else if (message.getType() === "function") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
         role: message.name,
       };
-    } else if (message instanceof ToolMessage) {
+    } else if (message.getType() === "tool") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
@@ -886,12 +896,15 @@ export class CallbackHandler extends BaseCallbackHandler {
         content: message.content,
       };
     }
+
     if (
-      message.additional_kwargs.function_call ||
-      message.additional_kwargs.tool_calls
+      (message.additional_kwargs.function_call ||
+        message.additional_kwargs.tool_calls) &&
+      (response as any)["tool_calls"] === undefined
     ) {
       return { ...response, additional_kwargs: message.additional_kwargs };
     }
+
     return response;
   }
 }
