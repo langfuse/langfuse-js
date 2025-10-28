@@ -17,12 +17,13 @@ import {
 import { LangfuseOtelSpanAttributes } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
 
-export type PropagatedKey = "userId" | "sessionId" | "metadata";
+export type PropagatedKey = "userId" | "sessionId" | "metadata" | "version";
 
 export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   userId: createContextKey("langfuse_user_id"),
   sessionId: createContextKey("langfuse_session_id"),
   metadata: createContextKey("langfuse_metadata"),
+  version: createContextKey("langfuse_version"),
 };
 
 /**
@@ -53,6 +54,11 @@ export interface PropagateAttributesParams {
    * - AVOID: large payloads, sensitive data, non-string values (will be dropped with warning)
    */
   metadata?: Record<string, string>;
+
+  /**
+   * Version identfier for parts of your application that are independently versioned, e.g. agents
+   */
+  version?: string;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -183,7 +189,7 @@ export function propagateAttributes<
   const span = otelTraceApi.getActiveSpan();
   const asBaggage = params.asBaggage ?? false;
 
-  const { userId, sessionId, metadata } = params;
+  const { userId, sessionId, metadata, version } = params;
 
   // Validate and set userId
   if (userId) {
@@ -209,6 +215,24 @@ export function propagateAttributes<
       context = setPropagatedAttribute({
         key: "sessionId",
         value: sessionId,
+        context,
+        span,
+        asBaggage,
+      });
+    }
+  }
+
+  // Validate and set version
+  if (version) {
+    if (
+      isValidPropagatedString({
+        value: version,
+        attributeName: "version",
+      })
+    ) {
+      context = setPropagatedAttribute({
+        key: "version",
+        value: version,
         context,
         span,
         asBaggage,
@@ -282,6 +306,13 @@ export function getPropagatedAttributesFromContext(
     propagatedAttributes[spanKey] = sessionId;
   }
 
+  const version = context.getValue(LangfuseOtelContextKeys["version"]);
+  if (version && typeof version === "string") {
+    const spanKey = getSpanKeyForPropagatedKey("version");
+
+    propagatedAttributes[spanKey] = version;
+  }
+
   const metadata = context.getValue(LangfuseOtelContextKeys["metadata"]);
   if (metadata && typeof metadata === "object" && metadata !== null) {
     for (const [k, v] of Object.entries(metadata)) {
@@ -300,7 +331,7 @@ type SetPropagatedAttributeParams = {
   asBaggage: boolean;
 } & (
   | {
-      key: "userId" | "sessionId";
+      key: "userId" | "sessionId" | "version";
       value: string;
     }
   | {
@@ -389,8 +420,15 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.TRACE_USER_ID;
     case "sessionId":
       return LangfuseOtelSpanAttributes.TRACE_SESSION_ID;
+    case "version":
+      return LangfuseOtelSpanAttributes.VERSION;
     case "metadata":
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
+    default: {
+      const fallback: never = key;
+
+      throw Error("Unhandled propagated key", fallback);
+    }
   }
 }
 
@@ -404,6 +442,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}user_id`;
     case "sessionId":
       return `${LANGFUSE_BAGGAGE_PREFIX}session_id`;
+    case "version":
+      return `${LANGFUSE_BAGGAGE_PREFIX}version`;
     case "metadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
     default: {
@@ -425,6 +465,10 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
 
   if (suffix === "session_id") {
     return LangfuseOtelSpanAttributes.TRACE_SESSION_ID;
+  }
+
+  if (suffix === "version") {
+    return LangfuseOtelSpanAttributes.VERSION;
   }
 
   // Metadata keys have format: langfuse_metadata_{key_name}

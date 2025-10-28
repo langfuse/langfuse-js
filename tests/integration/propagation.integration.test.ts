@@ -2,7 +2,7 @@
  * Comprehensive tests for propagateAttributes functionality.
  *
  * This module tests the propagateAttributes function that allows setting
- * trace-level attributes (userId, sessionId, metadata) that automatically propagate
+ * trace-level attributes (userId, sessionId, version, metadata) that automatically propagate
  * to all child spans within the context.
  */
 
@@ -93,6 +93,33 @@ describe("propagateAttributes", () => {
       ).toBe("session_abc");
     });
 
+    it("should propagate version to child spans", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ version: "v1.2.3" }, () => {
+          const child1 = startObservation("child-1");
+          child1.end();
+
+          const child2 = startObservation("child-2");
+          child2.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child1 = spans.find((s) => s.name === "child-1");
+      const child2 = spans.find((s) => s.name === "child-2");
+
+      expect(child1?.attributes[LangfuseOtelSpanAttributes.VERSION]).toBe(
+        "v1.2.3",
+      );
+      expect(child2?.attributes[LangfuseOtelSpanAttributes.VERSION]).toBe(
+        "v1.2.3",
+      );
+    });
+
     it("should propagate metadata to child spans", async () => {
       const tracer = otelTrace.getTracer("test");
 
@@ -147,6 +174,7 @@ describe("propagateAttributes", () => {
           {
             userId: "user_123",
             sessionId: "session_abc",
+            version: "v2.0.0",
             metadata: { experiment: "test", env: "prod" },
           },
           () => {
@@ -167,6 +195,9 @@ describe("propagateAttributes", () => {
       expect(
         child?.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID],
       ).toBe("session_abc");
+      expect(child?.attributes[LangfuseOtelSpanAttributes.VERSION]).toBe(
+        "v2.0.0",
+      );
       expect(
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.experiment`
@@ -315,6 +346,48 @@ describe("propagateAttributes", () => {
       ).toBeUndefined();
     });
 
+    it("should drop version over 200 characters", async () => {
+      const tracer = otelTrace.getTracer("test");
+      const longVersion = "v".repeat(201);
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ version: longVersion }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.VERSION],
+      ).toBeUndefined();
+    });
+
+    it("should accept version exactly 200 characters", async () => {
+      const tracer = otelTrace.getTracer("test");
+      const version200 = "v".repeat(200);
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ version: version200 }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.VERSION]).toBe(
+        version200,
+      );
+    });
+
     it("should drop metadata values over 200 characters", async () => {
       const tracer = otelTrace.getTracer("test");
       const longValue = "z".repeat(201);
@@ -412,7 +485,8 @@ describe("propagateAttributes", () => {
           {
             userId: "user_123",
             sessionId: "session_abc",
-            metadata: { env: "test", version: "2.0" },
+            version: "v2.0",
+            metadata: { env: "test", region: "us-east" },
             asBaggage: true,
           },
           () => {
@@ -427,8 +501,9 @@ describe("propagateAttributes", () => {
             const baggageKeys = entries.map(([key]) => key);
             expect(baggageKeys).toContain("langfuse_user_id");
             expect(baggageKeys).toContain("langfuse_session_id");
+            expect(baggageKeys).toContain("langfuse_version");
             expect(baggageKeys).toContain("langfuse_metadata_env");
-            expect(baggageKeys).toContain("langfuse_metadata_version");
+            expect(baggageKeys).toContain("langfuse_metadata_region");
 
             // Check baggage values
             const userIdEntry = entries.find(
@@ -440,6 +515,11 @@ describe("propagateAttributes", () => {
               ([key]) => key === "langfuse_session_id",
             );
             expect(sessionIdEntry?.[1].value).toBe("session_abc");
+
+            const versionEntry = entries.find(
+              ([key]) => key === "langfuse_version",
+            );
+            expect(versionEntry?.[1].value).toBe("v2.0");
 
             const envEntry = entries.find(
               ([key]) => key === "langfuse_metadata_env",
@@ -461,6 +541,7 @@ describe("propagateAttributes", () => {
           {
             userId: "baggage_user",
             sessionId: "baggage_session",
+            version: "v1.0-baggage",
             metadata: { source: "baggage" },
             asBaggage: true,
           },
@@ -482,6 +563,9 @@ describe("propagateAttributes", () => {
       expect(
         child?.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID],
       ).toBe("baggage_session");
+      expect(child?.attributes[LangfuseOtelSpanAttributes.VERSION]).toBe(
+        "v1.0-baggage",
+      );
       expect(
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.source`
@@ -642,6 +726,16 @@ describe("propagateAttributes", () => {
       );
     });
 
+    it("should read version from context", () => {
+      const context = ROOT_CONTEXT.setValue(
+        LangfuseOtelContextKeys["version"],
+        "v3.1.4",
+      );
+      const attributes = getPropagatedAttributesFromContext(context);
+
+      expect(attributes[LangfuseOtelSpanAttributes.VERSION]).toBe("v3.1.4");
+    });
+
     it("should read metadata from context", () => {
       const context = ROOT_CONTEXT.setValue(
         LangfuseOtelContextKeys["metadata"],
@@ -666,6 +760,7 @@ describe("propagateAttributes", () => {
       baggage = baggage.setEntry("langfuse_session_id", {
         value: "baggage_session",
       });
+      baggage = baggage.setEntry("langfuse_version", { value: "v2.5.1" });
       baggage = baggage.setEntry("langfuse_metadata_env", { value: "prod" });
 
       const context = propagation.setBaggage(ROOT_CONTEXT, baggage);
@@ -677,6 +772,7 @@ describe("propagateAttributes", () => {
       expect(attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID]).toBe(
         "baggage_session",
       );
+      expect(attributes[LangfuseOtelSpanAttributes.VERSION]).toBe("v2.5.1");
       expect(
         attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
       ).toBe("prod");
