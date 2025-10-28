@@ -343,17 +343,23 @@ type SetPropagatedAttributeParams = {
 function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
   const { key, value, span, asBaggage } = params;
   let context = params.context;
+  let mergedMetadata: Record<string, string> =
+    key === "metadata" ? getContextMergedMetadata(context, value) : {};
 
   // Get the context key for this attribute
   const contextKey = getContextKeyForPropagatedKey(key);
 
   // Set in context
-  context = context.setValue(contextKey, value);
+  if (key === "metadata") {
+    context = context.setValue(contextKey, mergedMetadata);
+  } else {
+    context = context.setValue(contextKey, value);
+  }
 
   // Set on current span
   if (span && span.isRecording()) {
     if (key === "metadata") {
-      for (const [k, v] of Object.entries(value)) {
+      for (const [k, v] of Object.entries(mergedMetadata)) {
         span.setAttribute(
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.${k}`,
           v,
@@ -372,7 +378,7 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
       propagation.getBaggage(context) || propagation.createBaggage();
 
     if (key === "metadata") {
-      for (const [k, v] of Object.entries(value)) {
+      for (const [k, v] of Object.entries(mergedMetadata)) {
         baggage = baggage.setEntry(`${baggageKey}_${k}`, { value: v });
       }
     } else {
@@ -383,6 +389,26 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
   }
 
   return context;
+}
+
+function getContextMergedMetadata(
+  context: Context,
+  newMetadata: Record<string, string>,
+): Record<string, string> {
+  const existingMetadata = context.getValue(
+    LangfuseOtelContextKeys["metadata"],
+  );
+
+  if (
+    existingMetadata &&
+    typeof existingMetadata === "object" &&
+    existingMetadata !== null &&
+    !Array.isArray(existingMetadata)
+  ) {
+    return { ...(existingMetadata as Record<string, string>), ...newMetadata };
+  } else {
+    return newMetadata;
+  }
 }
 
 function isValidPropagatedString(params: {

@@ -282,6 +282,375 @@ describe("propagateAttributes", () => {
     });
   });
 
+  describe("Metadata Merging", () => {
+    it("should merge metadata from multiple propagateAttributes calls", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ metadata: { key1: "value1" } }, () => {
+          propagateAttributes({ metadata: { key2: "value2" } }, () => {
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // Child should have both key1 and key2
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value1");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
+      ).toBe("value2");
+    });
+
+    it("should allow metadata values to be overwritten by subsequent calls", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ metadata: { key1: "value1" } }, () => {
+          propagateAttributes({ metadata: { key1: "value2" } }, () => {
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // Newer value should override
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value2");
+    });
+
+    it("should preserve existing metadata when adding new keys", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ metadata: { existing: "value" } }, () => {
+          const child1 = startObservation("child-1");
+          child1.end();
+
+          propagateAttributes({ metadata: { new: "value2" } }, () => {
+            const child2 = startObservation("child-2");
+            child2.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child1 = spans.find((s) => s.name === "child-1");
+      const child2 = spans.find((s) => s.name === "child-2");
+
+      // child1 should only have "existing"
+      expect(
+        child1?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.existing`
+        ],
+      ).toBe("value");
+      expect(
+        child1?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.new`],
+      ).toBeUndefined();
+
+      // child2 should have both "existing" and "new"
+      expect(
+        child2?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.existing`
+        ],
+      ).toBe("value");
+      expect(
+        child2?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.new`],
+      ).toBe("value2");
+    });
+
+    it("should merge metadata across nested contexts", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { metadata: { level: "outer", shared: "outer" } },
+          () => {
+            const spanOuter1 = startObservation("span-outer-1");
+            spanOuter1.end();
+
+            propagateAttributes(
+              { metadata: { shared: "inner", extra: "inner" } },
+              () => {
+                const spanInner = startObservation("span-inner");
+                spanInner.end();
+              },
+            );
+
+            // Back to outer context
+            const spanOuter2 = startObservation("span-outer-2");
+            spanOuter2.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 4);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const spanOuter1 = spans.find((s) => s.name === "span-outer-1");
+      const spanInner = spans.find((s) => s.name === "span-inner");
+      const spanOuter2 = spans.find((s) => s.name === "span-outer-2");
+
+      // spanOuter1: {level: "outer", shared: "outer"}
+      expect(
+        spanOuter1?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.level`
+        ],
+      ).toBe("outer");
+      expect(
+        spanOuter1?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.shared`
+        ],
+      ).toBe("outer");
+      expect(
+        spanOuter1?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.extra`
+        ],
+      ).toBeUndefined();
+
+      // spanInner: {level: "outer", shared: "inner", extra: "inner"}
+      expect(
+        spanInner?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.level`
+        ],
+      ).toBe("outer");
+      expect(
+        spanInner?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.shared`
+        ],
+      ).toBe("inner");
+      expect(
+        spanInner?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.extra`
+        ],
+      ).toBe("inner");
+
+      // spanOuter2: {level: "outer", shared: "outer"} (restored)
+      expect(
+        spanOuter2?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.level`
+        ],
+      ).toBe("outer");
+      expect(
+        spanOuter2?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.shared`
+        ],
+      ).toBe("outer");
+      expect(
+        spanOuter2?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.extra`
+        ],
+      ).toBeUndefined();
+    });
+
+    it("should merge metadata from multiple sequential calls in same context", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ metadata: { key1: "value1" } }, () => {
+          propagateAttributes({ metadata: { key2: "value2" } }, () => {
+            propagateAttributes({ metadata: { key3: "value3" } }, () => {
+              const child = startObservation("child");
+              child.end();
+            });
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // All three keys should be present
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value1");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
+      ).toBe("value2");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key3`],
+      ).toBe("value3");
+    });
+
+    it("should handle empty metadata object in merge", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ metadata: { key1: "value1" } }, () => {
+          propagateAttributes({ metadata: {} }, () => {
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // key1 should still be present
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value1");
+    });
+
+    it("should handle undefined metadata in subsequent calls", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ metadata: { key1: "value1" } }, () => {
+          propagateAttributes({ userId: "user123" }, () => {
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // Both metadata and userId should be present
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value1");
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user123",
+      );
+    });
+
+    it("should merge metadata after some keys were dropped due to validation", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          {
+            metadata: { valid: "ok", invalid: "x".repeat(201) },
+          },
+          () => {
+            propagateAttributes({ metadata: { additional: "value" } }, () => {
+              const child = startObservation("child");
+              child.end();
+            });
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // valid and additional should be present, invalid should be dropped
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.valid`],
+      ).toBe("ok");
+      expect(
+        child?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.additional`
+        ],
+      ).toBe("value");
+      expect(
+        child?.attributes[
+          `${LangfuseOtelSpanAttributes.TRACE_METADATA}.invalid`
+        ],
+      ).toBeUndefined();
+    });
+
+    it("should merge metadata while updating other attributes", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { userId: "user1", metadata: { key1: "value1" } },
+          () => {
+            propagateAttributes(
+              { userId: "user2", metadata: { key2: "value2" } },
+              () => {
+                const child = startObservation("child");
+                child.end();
+              },
+            );
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // userId should be user2 (overwritten), both metadata keys should be present
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user2",
+      );
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value1");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
+      ).toBe("value2");
+    });
+
+    it("should merge metadata when only metadata is being updated", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          {
+            userId: "user1",
+            sessionId: "session1",
+            metadata: { key1: "value1" },
+          },
+          () => {
+            propagateAttributes({ metadata: { key2: "value2" } }, () => {
+              const child = startObservation("child");
+              child.end();
+            });
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // All attributes should be present with merged metadata
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user1",
+      );
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID],
+      ).toBe("session1");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value1");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
+      ).toBe("value2");
+    });
+  });
+
   describe("Validation", () => {
     it("should drop userId over 200 characters", async () => {
       const tracer = otelTrace.getTracer("test");
@@ -477,6 +846,59 @@ describe("propagateAttributes", () => {
   });
 
   describe("Baggage Propagation", () => {
+    it("should merge metadata in baggage mode", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { metadata: { key1: "value1" }, asBaggage: true },
+          () => {
+            propagateAttributes(
+              { metadata: { key2: "value2" }, asBaggage: true },
+              () => {
+                const currentContext = otelContext.active();
+                const baggage = propagation.getBaggage(currentContext);
+
+                expect(baggage).toBeDefined();
+                const entries = Array.from(baggage!.getAllEntries());
+                const baggageKeys = entries.map(([key]) => key);
+
+                // Both metadata keys should be in baggage
+                expect(baggageKeys).toContain("langfuse_metadata_key1");
+                expect(baggageKeys).toContain("langfuse_metadata_key2");
+
+                const key1Entry = entries.find(
+                  ([key]) => key === "langfuse_metadata_key1",
+                );
+                expect(key1Entry?.[1].value).toBe("value1");
+
+                const key2Entry = entries.find(
+                  ([key]) => key === "langfuse_metadata_key2",
+                );
+                expect(key2Entry?.[1].value).toBe("value2");
+
+                // Child span should also have both metadata keys
+                const child = startObservation("child");
+                child.end();
+              },
+            );
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
+      ).toBe("value1");
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
+      ).toBe("value2");
+    });
+
     it("should set baggage when asBaggage=true", async () => {
       const tracer = otelTrace.getTracer("test");
 
