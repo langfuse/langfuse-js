@@ -17,14 +17,23 @@ import {
 import { LangfuseOtelSpanAttributes } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
 
-export type PropagatedKey = "userId" | "sessionId" | "metadata" | "version";
+export type PropagatedKey =
+  | "userId"
+  | "sessionId"
+  | "metadata"
+  | "version"
+  | "tags";
 
 export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   userId: createContextKey("langfuse_user_id"),
   sessionId: createContextKey("langfuse_session_id"),
   metadata: createContextKey("langfuse_metadata"),
   version: createContextKey("langfuse_version"),
+  tags: createContextKey("langfuse_tags"),
 };
+
+const LANGFUSE_BAGGAGE_PREFIX = "langfuse_";
+const LANGFUSE_BAGGAGE_TAGS_SEPARATOR = ",";
 
 /**
  * Parameters for propagateAttributes function.
@@ -59,6 +68,11 @@ export interface PropagateAttributesParams {
    * Version identfier for parts of your application that are independently versioned, e.g. agents
    */
   version?: string;
+
+  /**
+   * List of tags to categorize the group of observations
+   */
+  tags?: string[];
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -189,7 +203,7 @@ export function propagateAttributes<
   const span = otelTraceApi.getActiveSpan();
   const asBaggage = params.asBaggage ?? false;
 
-  const { userId, sessionId, metadata, version } = params;
+  const { userId, sessionId, metadata, version, tags } = params;
 
   // Validate and set userId
   if (userId) {
@@ -240,6 +254,26 @@ export function propagateAttributes<
     }
   }
 
+  // Validate and set version
+  if (tags && tags.length > 0) {
+    const validTags = tags.filter((tag) =>
+      isValidPropagatedString({
+        value: tag,
+        attributeName: "tag",
+      }),
+    );
+
+    if (validTags.length > 0) {
+      context = setPropagatedAttribute({
+        key: "tags",
+        value: validTags,
+        context,
+        span,
+        asBaggage,
+      });
+    }
+  }
+
   // Validate and set metadata
   if (metadata) {
     // Filter metadata to only include valid string values
@@ -273,8 +307,8 @@ export function propagateAttributes<
 
 export function getPropagatedAttributesFromContext(
   context: Context,
-): Record<string, string> {
-  const propagatedAttributes: Record<string, string> = {};
+): Record<string, string | string[]> {
+  const propagatedAttributes: Record<string, string | string[]> = {};
 
   // Handle baggage
   const baggage = propagation.getBaggage(context);
@@ -285,7 +319,12 @@ export function getPropagatedAttributesFromContext(
         const spanKey = getSpanKeyFromBaggageKey(baggageKey);
 
         if (spanKey) {
-          propagatedAttributes[spanKey] = baggageEntry.value;
+          const isMergedTags =
+            baggageKey == getBaggageKeyForPropagatedKey("tags");
+
+          propagatedAttributes[spanKey] = isMergedTags
+            ? baggageEntry.value.split(LANGFUSE_BAGGAGE_TAGS_SEPARATOR)
+            : baggageEntry.value;
         }
       }
     });
@@ -313,6 +352,13 @@ export function getPropagatedAttributesFromContext(
     propagatedAttributes[spanKey] = version;
   }
 
+  const tags = context.getValue(LangfuseOtelContextKeys["tags"]);
+  if (tags && Array.isArray(tags)) {
+    const spanKey = getSpanKeyForPropagatedKey("tags");
+
+    propagatedAttributes[spanKey] = tags;
+  }
+
   const metadata = context.getValue(LangfuseOtelContextKeys["metadata"]);
   if (metadata && typeof metadata === "object" && metadata !== null) {
     for (const [k, v] of Object.entries(metadata)) {
@@ -338,13 +384,19 @@ type SetPropagatedAttributeParams = {
       key: "metadata";
       value: Record<string, string>;
     }
+  | {
+      key: "tags";
+      value: string[];
+    }
 );
 
 function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
   const { key, value, span, asBaggage } = params;
+
   let context = params.context;
   let mergedMetadata: Record<string, string> =
     key === "metadata" ? getContextMergedMetadata(context, value) : {};
+  let mergedTags = key === "tags" ? getContextMergedTags(context, value) : [];
 
   // Get the context key for this attribute
   const contextKey = getContextKeyForPropagatedKey(key);
@@ -352,6 +404,8 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
   // Set in context
   if (key === "metadata") {
     context = context.setValue(contextKey, mergedMetadata);
+  } else if (key === "tags") {
+    context = context.setValue(contextKey, mergedTags);
   } else {
     context = context.setValue(contextKey, value);
   }
@@ -365,6 +419,9 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
           v,
         );
       }
+    } else if (key === "tags") {
+      const spanKey = getSpanKeyForPropagatedKey(key);
+      span.setAttribute(spanKey, mergedTags);
     } else {
       const spanKey = getSpanKeyForPropagatedKey(key);
       span.setAttribute(spanKey, value);
@@ -381,6 +438,10 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
       for (const [k, v] of Object.entries(mergedMetadata)) {
         baggage = baggage.setEntry(`${baggageKey}_${k}`, { value: v });
       }
+    } else if (key === "tags") {
+      baggage = baggage.setEntry(baggageKey, {
+        value: mergedTags.join(LANGFUSE_BAGGAGE_TAGS_SEPARATOR),
+      });
     } else {
       baggage = baggage.setEntry(baggageKey, { value });
     }
@@ -389,6 +450,16 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
   }
 
   return context;
+}
+
+function getContextMergedTags(context: Context, newTags: string[]): string[] {
+  const existingTags = context.getValue(LangfuseOtelContextKeys["tags"]);
+
+  if (existingTags && Array.isArray(existingTags)) {
+    return [...new Set([...existingTags, ...newTags])];
+  } else {
+    return newTags;
+  }
 }
 
 function getContextMergedMetadata(
@@ -450,6 +521,8 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.VERSION;
     case "metadata":
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
+    case "tags":
+      return LangfuseOtelSpanAttributes.TRACE_TAGS;
     default: {
       const fallback: never = key;
 
@@ -457,8 +530,6 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
     }
   }
 }
-
-const LANGFUSE_BAGGAGE_PREFIX = "langfuse_";
 
 function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
   // baggage keys must be snake case for correct cross service propagation
@@ -472,6 +543,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}version`;
     case "metadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
+    case "tags":
+      return `${LANGFUSE_BAGGAGE_PREFIX}tags`;
     default: {
       const fallback: never = key;
 
@@ -495,6 +568,9 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
 
   if (suffix === "version") {
     return LangfuseOtelSpanAttributes.VERSION;
+  }
+  if (suffix === "tags") {
+    return LangfuseOtelSpanAttributes.TRACE_TAGS;
   }
 
   // Metadata keys have format: langfuse_metadata_{key_name}

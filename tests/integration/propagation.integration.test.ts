@@ -282,6 +282,302 @@ describe("propagateAttributes", () => {
     });
   });
 
+  describe("Tags Propagation", () => {
+    it("should propagate tags to child spans", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ tags: ["production", "experiment-a"] }, () => {
+          const child1 = startObservation("child-1");
+          child1.end();
+
+          const child2 = startObservation("child-2");
+          child2.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child1 = spans.find((s) => s.name === "child-1");
+      const child2 = spans.find((s) => s.name === "child-2");
+
+      expect(child1?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual(
+        ["production", "experiment-a"],
+      );
+      expect(child2?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual(
+        ["production", "experiment-a"],
+      );
+    });
+
+    it("should merge tags from multiple propagateAttributes calls", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ tags: ["tag1", "tag2"] }, () => {
+          propagateAttributes({ tags: ["tag3", "tag4"] }, () => {
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // Child should have all four tags merged
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual(
+        expect.arrayContaining(["tag1", "tag2", "tag3", "tag4"]),
+      );
+      expect(
+        (child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS] as string[])
+          ?.length,
+      ).toBe(4);
+    });
+
+    it("should deduplicate tags when merging", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ tags: ["tag1", "tag2"] }, () => {
+          propagateAttributes({ tags: ["tag2", "tag3"] }, () => {
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // Should have unique tags only: tag1, tag2, tag3
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual(
+        expect.arrayContaining(["tag1", "tag2", "tag3"]),
+      );
+      expect(
+        (child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS] as string[])
+          ?.length,
+      ).toBe(3);
+    });
+
+    it("should merge tags across nested contexts", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ tags: ["outer", "shared"] }, () => {
+          const spanOuter1 = startObservation("span-outer-1");
+          spanOuter1.end();
+
+          propagateAttributes({ tags: ["inner", "shared"] }, () => {
+            const spanInner = startObservation("span-inner");
+            spanInner.end();
+          });
+
+          const spanOuter2 = startObservation("span-outer-2");
+          spanOuter2.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 4);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const spanOuter1 = spans.find((s) => s.name === "span-outer-1");
+      const spanInner = spans.find((s) => s.name === "span-inner");
+      const spanOuter2 = spans.find((s) => s.name === "span-outer-2");
+
+      // spanOuter1: ["outer", "shared"]
+      expect(
+        spanOuter1?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS],
+      ).toEqual(expect.arrayContaining(["outer", "shared"]));
+      expect(
+        (
+          spanOuter1?.attributes[
+            LangfuseOtelSpanAttributes.TRACE_TAGS
+          ] as string[]
+        )?.length,
+      ).toBe(2);
+
+      // spanInner: ["outer", "shared", "inner"] - "shared" deduplicated
+      expect(
+        spanInner?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS],
+      ).toEqual(expect.arrayContaining(["outer", "shared", "inner"]));
+      expect(
+        (
+          spanInner?.attributes[
+            LangfuseOtelSpanAttributes.TRACE_TAGS
+          ] as string[]
+        )?.length,
+      ).toBe(3);
+
+      // spanOuter2: ["outer", "shared"] - restored to outer context
+      expect(
+        spanOuter2?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS],
+      ).toEqual(expect.arrayContaining(["outer", "shared"]));
+      expect(
+        (
+          spanOuter2?.attributes[
+            LangfuseOtelSpanAttributes.TRACE_TAGS
+          ] as string[]
+        )?.length,
+      ).toBe(2);
+    });
+
+    it("should handle empty tags array", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ tags: ["tag1"] }, () => {
+          propagateAttributes({ tags: [] }, () => {
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      // Should still have tag1 from outer context
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual([
+        "tag1",
+      ]);
+    });
+
+    it("should propagate tags in baggage mode", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { tags: ["tag1", "tag2", "tag3"], asBaggage: true },
+          () => {
+            const currentContext = otelContext.active();
+            const baggage = propagation.getBaggage(currentContext);
+
+            expect(baggage).toBeDefined();
+            const entries = Array.from(baggage!.getAllEntries());
+            const tagsEntry = entries.find(([key]) => key === "langfuse_tags");
+
+            expect(tagsEntry).toBeDefined();
+            // Tags should be comma-separated in baggage
+            expect(tagsEntry?.[1].value).toBe("tag1,tag2,tag3");
+
+            const child = startObservation("child");
+            child.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual([
+        "tag1",
+        "tag2",
+        "tag3",
+      ]);
+    });
+
+    it("should merge tags in baggage mode", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ tags: ["tag1"], asBaggage: true }, () => {
+          propagateAttributes({ tags: ["tag2"], asBaggage: true }, () => {
+            const currentContext = otelContext.active();
+            const baggage = propagation.getBaggage(currentContext);
+
+            expect(baggage).toBeDefined();
+            const entries = Array.from(baggage!.getAllEntries());
+            const tagsEntry = entries.find(([key]) => key === "langfuse_tags");
+
+            expect(tagsEntry).toBeDefined();
+            // Merged tags should be comma-separated
+            expect(tagsEntry?.[1].value).toBe("tag1,tag2");
+
+            const child = startObservation("child");
+            child.end();
+          });
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual(
+        expect.arrayContaining(["tag1", "tag2"]),
+      );
+    });
+
+    it("should drop tags over 200 characters", async () => {
+      const tracer = otelTrace.getTracer("test");
+      const longTag = "x".repeat(201);
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ tags: ["valid-tag", longTag] }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual([
+        "valid-tag",
+      ]);
+    });
+
+    it("should propagate tags with other attributes", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          {
+            userId: "user123",
+            sessionId: "session456",
+            tags: ["production", "test"],
+            metadata: { env: "prod" },
+          },
+          () => {
+            const child = startObservation("child");
+            child.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user123",
+      );
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID],
+      ).toBe("session456");
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual([
+        "production",
+        "test",
+      ]);
+      expect(
+        child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
+      ).toBe("prod");
+    });
+  });
+
   describe("Metadata Merging", () => {
     it("should merge metadata from multiple propagateAttributes calls", async () => {
       const tracer = otelTrace.getTracer("test");
