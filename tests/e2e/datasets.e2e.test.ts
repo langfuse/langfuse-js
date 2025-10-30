@@ -27,7 +27,7 @@ describe("Langfuse Datasets E2E", () => {
     });
 
     it("create and get dataset, name only, special character", async () => {
-      const datasetName = nanoid() + "+ 7/";
+      const datasetName = nanoid() + "+ 7?";
       await langfuse.api.datasets.create({ name: datasetName });
       const getDataset = await langfuse.dataset.get(datasetName);
 

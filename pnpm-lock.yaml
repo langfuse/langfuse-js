@@ -140,6 +140,10 @@ importers:
         version: 4.2.6
 
   packages/core:
+    dependencies:
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.0
     devDependencies:
       '@types/node':
         specifier: ^24.1.0
