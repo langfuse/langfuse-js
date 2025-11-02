@@ -307,7 +307,7 @@ export function propagateAttributes<
     }
   }
 
-  // Validate and set version
+  // Validate and set tags
   if (tags && tags.length > 0) {
     const validTags = tags.filter((tag) =>
       isValidPropagatedString({
