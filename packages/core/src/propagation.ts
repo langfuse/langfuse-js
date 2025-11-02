@@ -17,14 +17,7 @@ import {
 import { LangfuseOtelSpanAttributes } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
 
-const correlatedKeys = [
-  "userId",
-  "sessionId",
-  "metadata",
-  "version",
-  "tags",
-] as const;
-type CorrelatedKey = (typeof correlatedKeys)[number];
+type CorrelatedKey = "userId" | "sessionId" | "metadata" | "version" | "tags";
 
 const experimentKeys = [
   "experimentId",
@@ -38,12 +31,6 @@ const experimentKeys = [
 type ExperimentKey = (typeof experimentKeys)[number];
 
 type PropagatedKey = CorrelatedKey | ExperimentKey;
-function isPropagatedKey(key: string): key is PropagatedKey {
-  return (
-    experimentKeys.includes(key as ExperimentKey) ||
-    correlatedKeys.includes(key as CorrelatedKey)
-  );
-}
 
 type PropagatedExperimentAttributes = {
   experimentId: string;
@@ -673,7 +660,28 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
     return `${LangfuseOtelSpanAttributes.TRACE_METADATA}.${metadataKey}`;
   }
 
-  if (!isPropagatedKey(suffix)) return;
-
-  return getSpanKeyForPropagatedKey(suffix);
+  switch (suffix) {
+    case "user_id":
+      return getSpanKeyForPropagatedKey("userId");
+    case "session_id":
+      return getSpanKeyForPropagatedKey("sessionId");
+    case "version":
+      return getSpanKeyForPropagatedKey("version");
+    case "tags":
+      return getSpanKeyForPropagatedKey("tags");
+    case "experiment_id":
+      return getSpanKeyForPropagatedKey("experimentId");
+    case "experiment_name":
+      return getSpanKeyForPropagatedKey("experimentName");
+    case "experiment_metadata":
+      return getSpanKeyForPropagatedKey("experimentMetadata");
+    case "experiment_dataset_id":
+      return getSpanKeyForPropagatedKey("experimentDatasetId");
+    case "experiment_item_id":
+      return getSpanKeyForPropagatedKey("experimentItemId");
+    case "experiment_item_metadata":
+      return getSpanKeyForPropagatedKey("experimentItemMetadata");
+    case "experiment_item_root_observation_id":
+      return getSpanKeyForPropagatedKey("experimentItemRootObservationId");
+  }
 }
