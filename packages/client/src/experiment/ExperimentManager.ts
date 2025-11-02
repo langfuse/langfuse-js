@@ -1,4 +1,12 @@
-import { DatasetItem, getGlobalLogger } from "@langfuse/core";
+import {
+  DatasetItem,
+  getGlobalLogger,
+  propagateAttributes,
+  serializeValue,
+  createExperimentId,
+  createExperimentItemId,
+  LangfuseOtelSpanAttributes,
+} from "@langfuse/core";
 import { startActiveObservation } from "@langfuse/tracing";
 import { ProxyTracerProvider, trace } from "@opentelemetry/api";
 
@@ -349,53 +357,107 @@ export class ExperimentManager {
     task: ExperimentTask<Input, ExpectedOutput, Metadata>;
     evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
   }): Promise<ExperimentItemResult<Input, ExpectedOutput, Metadata>> {
-    const { item, evaluators = [], task, experimentMetadata = {} } = params;
+    const { item, evaluators = [], task, experimentMetadata } = params;
 
-    const { output, traceId, observationId } = await startActiveObservation(
-      "experiment-item-run",
-      async (span) => {
-        const output = await task(item);
+    const { output, traceId, observationId, datasetRunId } =
+      await startActiveObservation("experiment-item-run", async (span) => {
+        // Extract experiment data
+        const input = item.input;
+        const expectedOutput = item.expectedOutput;
+        const itemMetadata = item.metadata;
+        const datasetId = "datasetId" in item ? item.datasetId : undefined;
+        const datasetItemId = "id" in item ? item.id : undefined;
+
+        // Validate input is present
+        if (input === undefined) {
+          throw new Error("Experiment item is missing input. Skipping item.");
+        }
+
+        let datasetRunId: string | undefined = undefined;
+
+        if (datasetItemId) {
+          try {
+            const result = await this.langfuseClient.api.datasetRunItems.create(
+              {
+                runName: params.experimentRunName,
+                runDescription: params.experimentDescription,
+                metadata: params.experimentMetadata,
+                datasetItemId,
+                traceId,
+                observationId,
+              },
+            );
+
+            datasetRunId = result.datasetRunId;
+          } catch (err) {
+            this.logger.error("Linking dataset run item failed", err);
+          }
+        }
+
+        // Generate IDs
+        const experimentItemId =
+          datasetItemId || (await createExperimentItemId(input));
+        const experimentId = datasetRunId || (await createExperimentId());
+
+        // Set non-propagated experiment attributes directly on root span
+        const rootSpanAttributes: Record<string, string> = {};
+        if (params.experimentDescription) {
+          rootSpanAttributes[
+            LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION
+          ] = params.experimentDescription;
+        }
+
+        if (expectedOutput !== undefined) {
+          const serialized = serializeValue(expectedOutput);
+          if (serialized) {
+            rootSpanAttributes[
+              LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_EXPECTED_OUTPUT
+            ] = serialized;
+          }
+        }
+
+        span.otelSpan.setAttributes(rootSpanAttributes);
+
+        // Propagate experiment context to all child spans
+        const output = await propagateAttributes(
+          {
+            _internalExperiment: {
+              experimentId,
+              experimentName: params.experimentRunName,
+              experimentMetadata: serializeValue(experimentMetadata),
+              experimentDatasetId: datasetId,
+              experimentItemId,
+              experimentItemMetadata: serializeValue(itemMetadata),
+              experimentItemRootObservationId: span.id,
+            },
+          },
+          async () => await task(item),
+        );
 
         span.update({
-          input: item.input,
+          input,
           output,
           metadata: {
             experiment_name: params.experimentName,
             experiment_run_name: params.experimentRunName,
             ...experimentMetadata,
-            ...(item.metadata ?? {}),
-            ...("id" in item && "datasetId" in item
+            ...(itemMetadata ?? {}),
+            ...(datasetId && datasetItemId
               ? {
-                  dataset_id: item["datasetId"],
-                  dataset_item_id: item["id"],
+                  dataset_id: datasetId,
+                  dataset_item_id: datasetItemId,
                 }
               : {}),
           },
         });
 
-        return { output, traceId: span.traceId, observationId: span.id };
-      },
-    );
-
-    let datasetRunId: string | undefined = undefined;
-
-    if ("id" in item) {
-      await this.langfuseClient.api.datasetRunItems
-        .create({
-          runName: params.experimentRunName,
-          runDescription: params.experimentDescription,
-          metadata: params.experimentMetadata,
-          datasetItemId: item.id,
-          traceId,
-          observationId,
-        })
-        .then((result) => {
-          datasetRunId = result.datasetRunId;
-        })
-        .catch((err) =>
-          this.logger.error("Linking dataset run item failed", err),
-        );
-    }
+        return {
+          output,
+          traceId: span.traceId,
+          observationId: span.id,
+          datasetRunId,
+        };
+      });
 
     const evalPromises: Promise<Evaluation[]>[] = evaluators.map(
       async (evaluator) => {
@@ -434,6 +496,7 @@ export class ExperimentManager {
     for (const ev of evals) {
       this.langfuseClient.score.create({
         traceId,
+        observationId,
         ...ev,
       });
     }

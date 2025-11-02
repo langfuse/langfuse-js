@@ -41,6 +41,17 @@ export enum LangfuseOtelSpanAttributes {
   // Internal
   AS_ROOT = "langfuse.internal.as_root",
 
+  // Experiment attributes
+  EXPERIMENT_ID = "langfuse.experiment.id",
+  EXPERIMENT_NAME = "langfuse.experiment.name",
+  EXPERIMENT_DESCRIPTION = "langfuse.experiment.description",
+  EXPERIMENT_METADATA = "langfuse.experiment.metadata",
+  EXPERIMENT_DATASET_ID = "langfuse.experiment.dataset.id",
+  EXPERIMENT_ITEM_ID = "langfuse.experiment.item.id",
+  EXPERIMENT_ITEM_EXPECTED_OUTPUT = "langfuse.experiment.item.expected_output",
+  EXPERIMENT_ITEM_METADATA = "langfuse.experiment.item.metadata",
+  EXPERIMENT_ITEM_ROOT_OBSERVATION_ID = "langfuse.experiment.item.root_observation_id",
+
   // Compatibility - Map properties that were documented in https://langfuse.com/docs/opentelemetry/get-started#property-mapping,
   // but have a new assignment
   TRACE_COMPAT_USER_ID = "langfuse.user.id",

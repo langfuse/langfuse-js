@@ -17,12 +17,43 @@ import {
 import { LangfuseOtelSpanAttributes } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
 
-export type PropagatedKey =
-  | "userId"
-  | "sessionId"
-  | "metadata"
-  | "version"
-  | "tags";
+const correlatedKeys = [
+  "userId",
+  "sessionId",
+  "metadata",
+  "version",
+  "tags",
+] as const;
+type CorrelatedKey = (typeof correlatedKeys)[number];
+
+const experimentKeys = [
+  "experimentId",
+  "experimentName",
+  "experimentMetadata",
+  "experimentDatasetId",
+  "experimentItemId",
+  "experimentItemMetadata",
+  "experimentItemRootObservationId",
+] as const;
+type ExperimentKey = (typeof experimentKeys)[number];
+
+type PropagatedKey = CorrelatedKey | ExperimentKey;
+function isPropagatedKey(key: string): key is PropagatedKey {
+  return (
+    experimentKeys.includes(key as ExperimentKey) ||
+    correlatedKeys.includes(key as CorrelatedKey)
+  );
+}
+
+type PropagatedExperimentAttributes = {
+  experimentId: string;
+  experimentName: string;
+  experimentMetadata?: string; // serialized JSON
+  experimentDatasetId?: string;
+  experimentItemId: string;
+  experimentItemMetadata?: string; // serialized JSON
+  experimentItemRootObservationId: string;
+};
 
 export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   userId: createContextKey("langfuse_user_id"),
@@ -30,6 +61,17 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   metadata: createContextKey("langfuse_metadata"),
   version: createContextKey("langfuse_version"),
   tags: createContextKey("langfuse_tags"),
+
+  // Experiments
+  experimentId: createContextKey("langfuse_experiment_id"),
+  experimentName: createContextKey("langfuse_experiment_name"),
+  experimentMetadata: createContextKey("langfuse_experiment_metadata"),
+  experimentDatasetId: createContextKey("langfuse_experiment_dataset_id"),
+  experimentItemId: createContextKey("langfuse_experiment_item_id"),
+  experimentItemMetadata: createContextKey("langfuse_experiment_item_metadata"),
+  experimentItemRootObservationId: createContextKey(
+    "langfuse_experiment_item_root_observation_id",
+  ),
 };
 
 const LANGFUSE_BAGGAGE_PREFIX = "langfuse_";
@@ -85,6 +127,16 @@ export interface PropagateAttributesParams {
    * @defaultValue false
    */
   asBaggage?: boolean;
+
+  /**
+   * **INTERNAL USE ONLY** - For Langfuse experiment framework.
+   *
+   * This parameter is used internally by the Langfuse experiment system to propagate
+   * experiment context to child spans. It should NOT be used by external code.
+   *
+   * @internal
+   */
+  _internalExperiment?: PropagatedExperimentAttributes;
 }
 
 /**
@@ -203,7 +255,8 @@ export function propagateAttributes<
   const span = otelTraceApi.getActiveSpan();
   const asBaggage = params.asBaggage ?? false;
 
-  const { userId, sessionId, metadata, version, tags } = params;
+  const { userId, sessionId, metadata, version, tags, _internalExperiment } =
+    params;
 
   // Validate and set userId
   if (userId) {
@@ -301,6 +354,22 @@ export function propagateAttributes<
     }
   }
 
+  // Handle experiment attributes
+  if (_internalExperiment) {
+    for (const [key, value] of Object.entries(_internalExperiment)) {
+      if (value !== undefined) {
+        // Experiment attributes are already serialized, no validation needed
+        context = setPropagatedAttribute({
+          key: key as ExperimentKey,
+          value,
+          context,
+          span,
+          asBaggage,
+        });
+      }
+    }
+  }
+
   // Execute callback in the new context
   return otelContextApi.with(context, fn);
 }
@@ -368,6 +437,17 @@ export function getPropagatedAttributesFromContext(
     }
   }
 
+  // Extract experiment attributes
+  for (const key of experimentKeys) {
+    const contextKey = LangfuseOtelContextKeys[key];
+    const value = context.getValue(contextKey);
+
+    if (value && typeof value === "string") {
+      const spanKey = getSpanKeyForPropagatedKey(key);
+      propagatedAttributes[spanKey] = value;
+    }
+  }
+
   return propagatedAttributes;
 }
 
@@ -377,7 +457,7 @@ type SetPropagatedAttributeParams = {
   asBaggage: boolean;
 } & (
   | {
-      key: "userId" | "sessionId" | "version";
+      key: "userId" | "sessionId" | "version" | ExperimentKey;
       value: string;
     }
   | {
@@ -523,6 +603,20 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
     case "tags":
       return LangfuseOtelSpanAttributes.TRACE_TAGS;
+    case "experimentId":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_ID;
+    case "experimentName":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_NAME;
+    case "experimentMetadata":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_METADATA;
+    case "experimentDatasetId":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_DATASET_ID;
+    case "experimentItemId":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_ID;
+    case "experimentItemMetadata":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_METADATA;
+    case "experimentItemRootObservationId":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_ROOT_OBSERVATION_ID;
     default: {
       const fallback: never = key;
 
@@ -545,6 +639,20 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
     case "tags":
       return `${LANGFUSE_BAGGAGE_PREFIX}tags`;
+    case "experimentId":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_id`;
+    case "experimentName":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_name`;
+    case "experimentMetadata":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_metadata`;
+    case "experimentDatasetId":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_dataset_id`;
+    case "experimentItemId":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_item_id`;
+    case "experimentItemMetadata":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_item_metadata`;
+    case "experimentItemRootObservationId":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_item_root_observation_id`;
     default: {
       const fallback: never = key;
 
@@ -558,21 +666,6 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
 
   const suffix = baggageKey.slice(LANGFUSE_BAGGAGE_PREFIX.length);
 
-  if (suffix === "user_id") {
-    return LangfuseOtelSpanAttributes.TRACE_USER_ID;
-  }
-
-  if (suffix === "session_id") {
-    return LangfuseOtelSpanAttributes.TRACE_SESSION_ID;
-  }
-
-  if (suffix === "version") {
-    return LangfuseOtelSpanAttributes.VERSION;
-  }
-  if (suffix === "tags") {
-    return LangfuseOtelSpanAttributes.TRACE_TAGS;
-  }
-
   // Metadata keys have format: langfuse_metadata_{key_name}
   if (suffix.startsWith("metadata_")) {
     const metadataKey = suffix.slice("metadata_".length);
@@ -580,5 +673,7 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
     return `${LangfuseOtelSpanAttributes.TRACE_METADATA}.${metadataKey}`;
   }
 
-  return;
+  if (!isPropagatedKey(suffix)) return;
+
+  return getSpanKeyForPropagatedKey(suffix);
 }
