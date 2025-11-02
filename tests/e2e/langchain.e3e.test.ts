@@ -1,19 +1,20 @@
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { DynamicTool } from "@langchain/core/tools";
+import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
+import { ChatOpenAI } from "@langchain/openai";
 import { LangfuseClient } from "@langfuse/client";
+import { configureGlobalLogger } from "@langfuse/core";
+import { CallbackHandler } from "@langfuse/langchain";
+import { startActiveObservation } from "@langfuse/tracing";
+import { nanoid } from "nanoid";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
+
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
   waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
-import { nanoid } from "nanoid";
-import { startActiveObservation } from "@langfuse/tracing";
-import { ChatOpenAI } from "@langchain/openai";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { CallbackHandler } from "@langfuse/langchain";
-import { DynamicTool } from "@langchain/core/tools";
-import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
-import { configureGlobalLogger } from "@langfuse/core";
 
 describe("Langchain integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
@@ -540,9 +541,10 @@ describe("Langchain integration E2E tests", () => {
     expect(output.tool_calls).toBeDefined();
 
     // Verify the tool call was properly structured in the original result
-    expect(output.tool_calls[0].name).toBe("calculator");
-    expect(output.tool_calls[0].args.input).toContain("25");
-    expect(output.tool_calls[0].args.input).toContain("4");
+    expect(output.tool_calls[0].function.name).toBe("calculator");
+    console.log(output.tool_calls[0].function);
+    expect(output.tool_calls[0].function.arguments).toContain("25");
+    expect(output.tool_calls[0].function.arguments).toContain("4");
   });
 
   it("should trace a langgraph execution", async () => {

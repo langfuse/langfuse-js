@@ -126,7 +126,11 @@ export class MediaService {
                     }
 
                     //ImagePart
-                    if (part["image"] != null && part["mediaType"] != null) {
+                    if (
+                      part["image"] != null &&
+                      part["mediaType"] != null &&
+                      !part["image"].startsWith("http") // skip URLs
+                    ) {
                       base64Content = part["image"];
                     }
 
