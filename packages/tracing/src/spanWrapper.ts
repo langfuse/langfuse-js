@@ -1,4 +1,3 @@
-import { getGlobalLogger } from "@langfuse/core";
 import { Span, TimeInput } from "@opentelemetry/api";
 
 import {
@@ -194,63 +193,8 @@ abstract class LangfuseBaseObservation {
 
   /**
    * Updates the parent trace with new attributes.
-   *
-   * @deprecated Use `propagateAttributes()` instead for proper attribute propagation.
-   * This method only sets attributes on the current span, not child spans.
-   *
-   * **Current behavior**: This method still works as expected - it sets trace-level
-   * attributes on the current span. However, it will be removed in a future version,
-   * so please migrate to `propagateAttributes()`.
-   *
-   * **Why deprecated**: This method only sets attributes on a single span, which means
-   * child spans created later won't have these attributes. This causes gaps when
-   * using Langfuse aggregation queries (e.g., filtering by userId or calculating
-   * costs per sessionId) because only the span with the attribute is included.
-   *
-   * **Migration**: Replace with `propagateAttributes()` to set attributes on ALL
-   * child spans created within the context. Call it as early as possible in your trace:
-   *
-   * @example
-   * ```typescript
-   * // OLD (deprecated)
-   * const span = startObservation('handle-request');
-   * const user = authenticateUser(request);
-   * span.updateTrace({
-   *   userId: user.id,
-   *   sessionId: request.sessionId
-   * });
-   * // Child spans created here won't have userId/sessionId
-   * const response = processRequest(request);
-   * span.end();
-   *
-   * // NEW (recommended)
-   * await startActiveObservation('handle-request', async (span) => {
-   *   const user = authenticateUser(request);
-   *   await propagateAttributes({
-   *     userId: user.id,
-   *     sessionId: request.sessionId,
-   *     metadata: { environment: 'production' }
-   *   }, async () => {
-   *     // All child spans will have these attributes
-   *     const response = await processRequest(request);
-   *   });
-   * });
-   * ```
-   *
-   * @param attributes - Trace attributes to set
-   * @returns This observation for method chaining
-   *
-   * @see {@link propagateAttributes} Recommended replacement
    */
   public updateTrace(attributes: LangfuseTraceAttributes) {
-    getGlobalLogger().warn(
-      "updateTrace() is deprecated and will be removed in a future version. " +
-        "While it still works today, it only sets attributes on a single span, causing gaps in aggregation queries in the future. " +
-        "Migrate to propagateAttributes({ userId: ..., sessionId: ..., metadata: {...} }) to propagate attributes to ALL child spans. " +
-        "Call propagateAttributes() as early as possible in your trace for complete coverage. " +
-        "See: https://langfuse.com/docs/sdk/typescript/decorators#trace-level-attributes",
-    );
-
     this.otelSpan.setAttributes(createTraceAttributes(attributes));
 
     return this;

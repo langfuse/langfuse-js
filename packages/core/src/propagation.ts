@@ -217,11 +217,6 @@ export interface PropagateAttributesParams {
  * ```
  *
  * @remarks
- * - **Nesting**: Nesting `propagateAttributes` contexts is possible but
- *   discouraged. Inner contexts will overwrite outer values for the same keys.
- * - **Migration**: This replaces the deprecated `updateTrace()` method, which only
- *   sets attributes on a single span (causing aggregation gaps). Always use
- *   `propagateAttributes` for new code.
  * - **Validation**: All attribute values (userId, sessionId, metadata values)
  *   must be strings ≤200 characters. Invalid values will be dropped with a
  *   warning logged. Ensure values meet constraints before calling.
