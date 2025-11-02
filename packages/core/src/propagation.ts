@@ -107,7 +107,7 @@ export interface PropagateAttributesParams {
   metadata?: Record<string, string>;
 
   /**
-   * Version identfier for parts of your application that are independently versioned, e.g. agents
+   * Version identifier for parts of your application that are independently versioned, e.g. agents
    */
   version?: string;
 
