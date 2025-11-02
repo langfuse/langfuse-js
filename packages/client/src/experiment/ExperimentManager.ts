@@ -367,6 +367,8 @@ export class ExperimentManager {
         const itemMetadata = item.metadata;
         const datasetId = "datasetId" in item ? item.datasetId : undefined;
         const datasetItemId = "id" in item ? item.id : undefined;
+        const traceId = span.traceId;
+        const observationId = span.id;
 
         // Validate input is present
         if (input === undefined) {
@@ -453,8 +455,8 @@ export class ExperimentManager {
 
         return {
           output,
-          traceId: span.traceId,
-          observationId: span.id,
+          traceId,
+          observationId,
           datasetRunId,
         };
       });
