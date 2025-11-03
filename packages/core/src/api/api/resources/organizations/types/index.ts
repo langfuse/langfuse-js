@@ -6,3 +6,5 @@ export * from "./MembershipDeletionResponse.js";
 export * from "./MembershipsResponse.js";
 export * from "./OrganizationProject.js";
 export * from "./OrganizationProjectsResponse.js";
+export * from "./OrganizationApiKey.js";
+export * from "./OrganizationApiKeysResponse.js";

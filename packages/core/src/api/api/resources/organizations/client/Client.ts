@@ -929,6 +929,124 @@ export class Organizations {
     }
   }
 
+  /**
+   * Get all API keys for the organization associated with the API key (requires organization-scoped API key)
+   *
+   * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.organizations.getOrganizationApiKeys()
+   */
+  public getOrganizationApiKeys(
+    requestOptions?: Organizations.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.OrganizationApiKeysResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__getOrganizationApiKeys(requestOptions),
+    );
+  }
+
+  private async __getOrganizationApiKeys(
+    requestOptions?: Organizations.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.OrganizationApiKeysResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/organizations/apiKeys",
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.OrganizationApiKeysResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/organizations/apiKeys.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
   protected async _getAuthorizationHeader(): Promise<string | undefined> {
     const username = await core.Supplier.get(this._options.username);
     const password = await core.Supplier.get(this._options.password);
