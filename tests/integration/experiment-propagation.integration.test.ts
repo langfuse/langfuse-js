@@ -542,7 +542,7 @@ describe("Experiment Attribute Propagation", () => {
       );
     });
 
-    it("should set experiment environment value to 'langfuse-sdk-experiment'", async () => {
+    it("should set experiment environment value to 'sdk-experiment'", async () => {
       await langfuse.experiment.run({
         name: "environment-value-test",
         data: [{ input: "test" }],
@@ -560,7 +560,7 @@ describe("Experiment Attribute Propagation", () => {
       // Verify the exact value
       expect(
         childSpan?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT],
-      ).toBe("langfuse-sdk-experiment");
+      ).toBe("sdk-experiment");
     });
   });
 
