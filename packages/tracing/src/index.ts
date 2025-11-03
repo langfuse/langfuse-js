@@ -63,6 +63,10 @@ export {
   getLangfuseTracerProvider,
   getLangfuseTracer,
 } from "./tracerProvider.js";
+export {
+  propagateAttributes,
+  type PropagateAttributesParams,
+} from "@langfuse/core";
 
 export { LangfuseOtelSpanAttributes } from "@langfuse/core";
 

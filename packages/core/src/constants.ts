@@ -4,6 +4,8 @@ export const LANGFUSE_TRACER_NAME = "langfuse-sdk";
 export const LANGFUSE_SDK_VERSION = packageJson.version;
 export const LANGFUSE_SDK_NAME = "javascript";
 
+export const LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT = "sdk-experiment";
+
 // From Langfuse platform: web/src/features/otel/server/attributes.ts
 export enum LangfuseOtelSpanAttributes {
   // Langfuse-Trace attributes
@@ -40,6 +42,17 @@ export enum LangfuseOtelSpanAttributes {
 
   // Internal
   AS_ROOT = "langfuse.internal.as_root",
+
+  // Experiment attributes
+  EXPERIMENT_ID = "langfuse.experiment.id",
+  EXPERIMENT_NAME = "langfuse.experiment.name",
+  EXPERIMENT_DESCRIPTION = "langfuse.experiment.description",
+  EXPERIMENT_METADATA = "langfuse.experiment.metadata",
+  EXPERIMENT_DATASET_ID = "langfuse.experiment.dataset.id",
+  EXPERIMENT_ITEM_ID = "langfuse.experiment.item.id",
+  EXPERIMENT_ITEM_EXPECTED_OUTPUT = "langfuse.experiment.item.expected_output",
+  EXPERIMENT_ITEM_METADATA = "langfuse.experiment.item.metadata",
+  EXPERIMENT_ITEM_ROOT_OBSERVATION_ID = "langfuse.experiment.item.root_observation_id",
 
   // Compatibility - Map properties that were documented in https://langfuse.com/docs/opentelemetry/get-started#property-mapping,
   // but have a new assignment

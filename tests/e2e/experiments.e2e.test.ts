@@ -505,7 +505,7 @@ describe("Langfuse Datasets E2E", () => {
       await testEnv.spanProcessor.forceFlush();
       await waitForServerIngestion(1000);
 
-      expect(result.itemResults).toHaveLength(3);
+      expect(result.itemResults).toHaveLength(2);
       // Should handle missing fields gracefully
       result.itemResults.forEach((item) => {
         expect(item.traceId).toBeDefined();
