@@ -193,12 +193,6 @@ abstract class LangfuseBaseObservation {
 
   /**
    * Updates the parent trace with new attributes.
-   *
-   * This sets trace-level attributes that apply to the entire trace,
-   * not just this specific observation.
-   *
-   * @param attributes - Trace attributes to set
-   * @returns This observation for method chaining
    */
   public updateTrace(attributes: LangfuseTraceAttributes) {
     this.otelSpan.setAttributes(createTraceAttributes(attributes));

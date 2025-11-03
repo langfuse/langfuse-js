@@ -85,3 +85,46 @@ export function base64Decode(input: string): string {
   const bytes = base64ToBytes(input);
   return new TextDecoder().decode(bytes);
 }
+
+/**
+ * Generate a random experiment ID (16 hex characters from 8 random bytes).
+ * @internal
+ */
+export async function createExperimentId(): Promise<string> {
+  const randomBytes = new Uint8Array(8);
+  crypto.getRandomValues(randomBytes);
+
+  return Array.from(randomBytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Generate experiment item ID from input hash (first 16 hex chars of SHA-256).
+ * Skips serialization if input is already a string.
+ * @internal
+ */
+export async function createExperimentItemId(input: any): Promise<string> {
+  const serialized = serializeValue(input);
+  const data = new TextEncoder().encode(serialized);
+
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return hashHex.slice(0, 16);
+}
+
+/**
+ * Serialize a value to JSON string, handling undefined/null.
+ * Skips serialization if value is already a string.
+ * @internal
+ */
+export function serializeValue(value: any): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string") return value;
+
+  return JSON.stringify(value);
+}
