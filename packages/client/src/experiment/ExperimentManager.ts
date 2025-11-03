@@ -6,6 +6,7 @@ import {
   createExperimentId,
   createExperimentItemId,
   LangfuseOtelSpanAttributes,
+  LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
 } from "@langfuse/core";
 import { startActiveObservation } from "@langfuse/tracing";
 import { ProxyTracerProvider, trace } from "@opentelemetry/api";
@@ -402,7 +403,10 @@ export class ExperimentManager {
         const experimentId = datasetRunId || (await createExperimentId());
 
         // Set non-propagated experiment attributes directly on root span
-        const rootSpanAttributes: Record<string, string> = {};
+        const rootSpanAttributes: Record<string, string> = {
+          [LangfuseOtelSpanAttributes.ENVIRONMENT]:
+            LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+        };
         if (params.experimentDescription) {
           rootSpanAttributes[
             LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION

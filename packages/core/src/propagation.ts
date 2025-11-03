@@ -14,7 +14,10 @@ import {
   createContextKey,
 } from "@opentelemetry/api";
 
-import { LangfuseOtelSpanAttributes } from "./constants.js";
+import {
+  LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+  LangfuseOtelSpanAttributes,
+} from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
 
 type CorrelatedKey = "userId" | "sessionId" | "metadata" | "version" | "tags";
@@ -29,7 +32,6 @@ const experimentKeys = [
   "experimentItemRootObservationId",
 ] as const;
 type ExperimentKey = (typeof experimentKeys)[number];
-
 type PropagatedKey = CorrelatedKey | ExperimentKey;
 
 type PropagatedExperimentAttributes = {
@@ -428,6 +430,16 @@ export function getPropagatedAttributesFromContext(
       const spanKey = getSpanKeyForPropagatedKey(key);
       propagatedAttributes[spanKey] = value;
     }
+  }
+
+  // add environment if propagation is for experiment
+  if (
+    propagatedAttributes[
+      getSpanKeyForPropagatedKey("experimentItemRootObservationId")
+    ]
+  ) {
+    propagatedAttributes[LangfuseOtelSpanAttributes.ENVIRONMENT] =
+      LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT;
   }
 
   return propagatedAttributes;

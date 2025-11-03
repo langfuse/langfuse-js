@@ -6,7 +6,10 @@
  */
 
 import { LangfuseClient } from "@langfuse/client";
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
+import {
+  LangfuseOtelSpanAttributes,
+  LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+} from "@langfuse/core";
 import { startObservation, startActiveObservation } from "@langfuse/tracing";
 import { trace as otelTrace } from "@opentelemetry/api";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -497,6 +500,67 @@ describe("Experiment Attribute Propagation", () => {
 
       // Should not be double-serialized
       expect(metadataAttr).toBe(stringMetadata);
+    });
+  });
+
+  describe("Environment Attribute", () => {
+    it("should set experiment environment on ALL spans including root", async () => {
+      await langfuse.experiment.run({
+        name: "environment-test",
+        data: [{ input: "test" }],
+        task: async () => {
+          await startActiveObservation("level-1", async () => {
+            await startActiveObservation("level-2", async () => {
+              const level3 = startObservation("level-3");
+              level3.end();
+            });
+          });
+          return "output";
+        },
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 4); // root + 3 children
+      const spans = testEnv.mockExporter.exportedSpans;
+
+      const rootSpan = spans.find((s) => s.name === "experiment-item-run");
+      const level1 = spans.find((s) => s.name === "level-1");
+      const level2 = spans.find((s) => s.name === "level-2");
+      const level3 = spans.find((s) => s.name === "level-3");
+
+      // ALL spans should have the experiment environment attribute
+      expect(rootSpan?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+      );
+      expect(level1?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+      );
+      expect(level2?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+      );
+      expect(level3?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+      );
+    });
+
+    it("should set experiment environment value to 'langfuse-sdk-experiment'", async () => {
+      await langfuse.experiment.run({
+        name: "environment-value-test",
+        data: [{ input: "test" }],
+        task: async () => {
+          const child = startObservation("child");
+          child.end();
+          return "output";
+        },
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const childSpan = spans.find((s) => s.name === "child");
+
+      // Verify the exact value
+      expect(
+        childSpan?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT],
+      ).toBe("langfuse-sdk-experiment");
     });
   });
 

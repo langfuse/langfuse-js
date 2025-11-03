@@ -4,6 +4,8 @@ export const LANGFUSE_TRACER_NAME = "langfuse-sdk";
 export const LANGFUSE_SDK_VERSION = packageJson.version;
 export const LANGFUSE_SDK_NAME = "javascript";
 
+export const LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT = "langfuse-sdk-experiment";
+
 // From Langfuse platform: web/src/features/otel/server/attributes.ts
 export enum LangfuseOtelSpanAttributes {
   // Langfuse-Trace attributes
