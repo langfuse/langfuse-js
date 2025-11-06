@@ -6,4 +6,8 @@ export interface CreateDatasetRequest {
   name: string;
   description?: string;
   metadata?: unknown;
+  /** JSON Schema for validating dataset item inputs. When set, all new and existing dataset items will be validated against this schema. */
+  inputSchema?: unknown;
+  /** JSON Schema for validating dataset item expected outputs. When set, all new and existing dataset items will be validated against this schema. */
+  expectedOutputSchema?: unknown;
 }

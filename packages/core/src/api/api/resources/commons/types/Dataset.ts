@@ -7,6 +7,10 @@ export interface Dataset {
   name: string;
   description?: string;
   metadata?: unknown;
+  /** JSON Schema for validating dataset item inputs */
+  inputSchema?: unknown;
+  /** JSON Schema for validating dataset item expected outputs */
+  expectedOutputSchema?: unknown;
   projectId: string;
   createdAt: string;
   updatedAt: string;

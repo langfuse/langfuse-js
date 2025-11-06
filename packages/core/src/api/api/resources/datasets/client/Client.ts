@@ -331,7 +331,9 @@ export class Datasets {
    *     await client.datasets.create({
    *         name: "name",
    *         description: undefined,
-   *         metadata: undefined
+   *         metadata: undefined,
+   *         inputSchema: undefined,
+   *         expectedOutputSchema: undefined
    *     })
    */
   public create(
