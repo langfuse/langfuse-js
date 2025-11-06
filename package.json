@@ -1,6 +1,6 @@
 {
   "name": "langfuse-js",
-  "version": "4.4.0",
+  "version": "4.4.1",
   "description": "Langfuse JavaScript / TypeScript SDK",
   "author": "Langfuse",
   "license": "MIT",
