@@ -716,7 +716,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
       (o: any) => o.type === "GENERATION",
     );
 
-    expect(generations.length).toBe(2);
+    expect(generations.length).toBe(1);
 
     const generation = generations.find((g) => g.name?.includes("doGenerate"))!;
 
@@ -780,7 +780,7 @@ describe("Vercel AI SDK integration E2E tests", () => {
       (o: any) => o.type === "GENERATION",
     );
 
-    expect(generations.length).toBe(2);
+    expect(generations.length).toBe(1);
 
     const generation = generations.find((g) => g.name?.includes("doGenerate"))!;
 

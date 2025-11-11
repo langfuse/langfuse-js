@@ -286,6 +286,7 @@ export class PromptManager {
     const cacheKey = this.cache.createKey({
       name,
       label: options?.label,
+      version: options?.version,
     });
     const cachedPrompt = this.cache.getIncludingExpired(cacheKey);
     if (!cachedPrompt || options?.cacheTtlSeconds === 0) {

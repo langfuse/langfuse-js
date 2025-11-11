@@ -3,15 +3,15 @@ import {
   PromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
-import { describe, it, expect, beforeEach, vi } from "vitest";
-
-import { LangfuseClient } from "@langfuse/client";
 import {
+  LangfuseClient,
   ChatPromptClient,
   TextPromptClient,
   ChatMessageType,
 } from "@langfuse/client";
 import type { ChatMessage, ChatMessageWithPlaceholders } from "@langfuse/core";
+import { nanoid } from "nanoid";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 describe("Langfuse Prompts E2E", () => {
   let langfuse: LangfuseClient;
@@ -207,6 +207,39 @@ describe("Langfuse Prompts E2E", () => {
       expect(result.name).toBe("test-cache-prompt");
       expect(result.prompt).toBe("This is a cached prompt with {{variable}}");
       expect(result.config).toEqual({ temperature: 0.7 });
+    });
+
+    it("should fetch and cache a prompt with correct version when not in cache", async () => {
+      const promptName = "test-cache-prompt-versioned-" + nanoid();
+
+      // Create two prompts first
+      await langfuse.prompt.create({
+        name: promptName,
+        prompt: "This is a cached prompt with {{variable}}",
+        config: { temperature: 0.7 },
+        labels: ["production"],
+      });
+
+      await langfuse.prompt.create({
+        name: promptName,
+        prompt: "This is a cached prompt with {{variable}}",
+        config: { temperature: 0.7 },
+      });
+
+      // Get it (should fetch and cache)
+      const result = await langfuse.prompt.get(promptName);
+
+      expect(result).toBeInstanceOf(TextPromptClient);
+      expect(result.name).toBe(promptName);
+      expect(result.version).toBe(1);
+
+      const result2 = await langfuse.prompt.get(promptName, {
+        version: 2,
+      });
+
+      expect(result2).toBeInstanceOf(TextPromptClient);
+      expect(result2.name).toBe(promptName);
+      expect(result2.version).toBe(2);
     });
 
     it("should throw an error if prompt not found", async () => {
