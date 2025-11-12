@@ -5,8 +5,8 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export interface CategoricalScore extends LangfuseAPI.BaseScore {
-  /** Only defined if a config is linked. Represents the numeric category mapping of the stringValue */
-  value?: number;
+  /** Represents the numeric category mapping of the stringValue. If no config is linked, defaults to 0. */
+  value: number;
   /** The string representation of the score value. If no config is linked, can be any string. Otherwise, must map to a config category */
   stringValue: string;
 }
