@@ -14,6 +14,8 @@ export type MediaContentType =
   | "image/svg+xml"
   | "image/tiff"
   | "image/bmp"
+  | "image/avif"
+  | "image/heic"
   | "audio/mpeg"
   | "audio/mp3"
   | "audio/wav"
@@ -22,19 +24,40 @@ export type MediaContentType =
   | "audio/aac"
   | "audio/mp4"
   | "audio/flac"
+  | "audio/opus"
+  | "audio/webm"
   | "video/mp4"
   | "video/webm"
+  | "video/ogg"
+  | "video/mpeg"
+  | "video/quicktime"
+  | "video/x-msvideo"
+  | "video/x-matroska"
   | "text/plain"
   | "text/html"
   | "text/css"
   | "text/csv"
+  | "text/markdown"
+  | "text/x-python"
+  | "application/javascript"
+  | "text/x-typescript"
+  | "application/x-yaml"
   | "application/pdf"
   | "application/msword"
   | "application/vnd.ms-excel"
+  | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   | "application/zip"
   | "application/json"
   | "application/xml"
-  | "application/octet-stream";
+  | "application/octet-stream"
+  | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  | "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  | "application/rtf"
+  | "application/x-ndjson"
+  | "application/vnd.apache.parquet"
+  | "application/gzip"
+  | "application/x-tar"
+  | "application/x-7z-compressed";
 export const MediaContentType = {
   ImagePng: "image/png",
   ImageJpeg: "image/jpeg",
@@ -44,6 +67,8 @@ export const MediaContentType = {
   ImageSvgXml: "image/svg+xml",
   ImageTiff: "image/tiff",
   ImageBmp: "image/bmp",
+  ImageAvif: "image/avif",
+  ImageHeic: "image/heic",
   AudioMpeg: "audio/mpeg",
   AudioMp3: "audio/mp3",
   AudioWav: "audio/wav",
@@ -52,17 +77,41 @@ export const MediaContentType = {
   AudioAac: "audio/aac",
   AudioMp4: "audio/mp4",
   AudioFlac: "audio/flac",
+  AudioOpus: "audio/opus",
+  AudioWebm: "audio/webm",
   VideoMp4: "video/mp4",
   VideoWebm: "video/webm",
+  VideoOgg: "video/ogg",
+  VideoMpeg: "video/mpeg",
+  VideoQuicktime: "video/quicktime",
+  VideoXMsvideo: "video/x-msvideo",
+  VideoXMatroska: "video/x-matroska",
   TextPlain: "text/plain",
   TextHtml: "text/html",
   TextCss: "text/css",
   TextCsv: "text/csv",
+  TextMarkdown: "text/markdown",
+  TextXPython: "text/x-python",
+  ApplicationJavascript: "application/javascript",
+  TextXTypescript: "text/x-typescript",
+  ApplicationXYaml: "application/x-yaml",
   ApplicationPdf: "application/pdf",
   ApplicationMsword: "application/msword",
   ApplicationMsExcel: "application/vnd.ms-excel",
+  ApplicationOpenxmlSpreadsheet:
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ApplicationZip: "application/zip",
   ApplicationJson: "application/json",
   ApplicationXml: "application/xml",
   ApplicationOctetStream: "application/octet-stream",
+  ApplicationOpenxmlWord:
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ApplicationOpenxmlPresentation:
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ApplicationRtf: "application/rtf",
+  ApplicationXNdjson: "application/x-ndjson",
+  ApplicationParquet: "application/vnd.apache.parquet",
+  ApplicationGzip: "application/gzip",
+  ApplicationXTar: "application/x-tar",
+  ApplicationX7ZCompressed: "application/x-7z-compressed",
 } as const;
