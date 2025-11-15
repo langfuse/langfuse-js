@@ -63,7 +63,9 @@ export class PromptVersion {
   /**
    * Update labels for a specific prompt version
    *
-   * @param {string} name - The name of the prompt
+   * @param {string} name - The name of the prompt. If the prompt is in a folder (e.g., "folder/subfolder/prompt-name"),
+   *                        the folder path must be URL encoded. For example, use "folder%2Fsubfolder%2Fprompt-name" instead
+   *                        of "folder/subfolder/prompt-name". The forward slash (/) character must be encoded as %2F.
    * @param {number} version - Version of the prompt to update
    * @param {LangfuseAPI.UpdatePromptRequest} request
    * @param {PromptVersion.RequestOptions} requestOptions - Request-specific configuration.

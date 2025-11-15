@@ -63,7 +63,9 @@ export class Prompts {
   /**
    * Get a prompt
    *
-   * @param {string} promptName - The name of the prompt
+   * @param {string} promptName - The name of the prompt. If the prompt is in a folder (e.g., "folder/subfolder/prompt-name"),
+   *                              the folder path must be URL encoded. For example, use "folder%2Fsubfolder%2Fprompt-name" instead
+   *                              of "folder/subfolder/prompt-name". The forward slash (/) character must be encoded as %2F.
    * @param {LangfuseAPI.GetPromptRequest} request
    * @param {Prompts.RequestOptions} requestOptions - Request-specific configuration.
    *
