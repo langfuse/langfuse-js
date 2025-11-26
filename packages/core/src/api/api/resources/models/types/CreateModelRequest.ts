@@ -13,12 +13,33 @@ export interface CreateModelRequest {
   startDate?: string;
   /** Unit used by this model. */
   unit?: LangfuseAPI.ModelUsageUnit;
-  /** Price (USD) per input unit */
+  /** Deprecated. Use 'pricingTiers' instead. Price (USD) per input unit. Creates a default tier if pricingTiers not provided. */
   inputPrice?: number;
-  /** Price (USD) per output unit */
+  /** Deprecated. Use 'pricingTiers' instead. Price (USD) per output unit. Creates a default tier if pricingTiers not provided. */
   outputPrice?: number;
-  /** Price (USD) per total units. Cannot be set if input or output price is set. */
+  /** Deprecated. Use 'pricingTiers' instead. Price (USD) per total units. Cannot be set if input or output price is set. Creates a default tier if pricingTiers not provided. */
   totalPrice?: number;
+  /**
+   * Optional. Array of pricing tiers for this model.
+   *
+   * Use pricing tiers for all models - both those with threshold-based pricing variations and those with simple flat pricing:
+   *
+   * - For models with standard flat pricing: Create a single default tier with your prices
+   *   (e.g., one tier with isDefault=true, priority=0, conditions=[], and your standard prices)
+   *
+   * - For models with threshold-based pricing: Create a default tier plus additional conditional tiers
+   *   (e.g., default tier for standard usage + high-volume tier for usage above certain thresholds)
+   *
+   * Requirements:
+   * - Cannot be provided with flat prices (inputPrice/outputPrice/totalPrice) - use one approach or the other
+   * - Must include exactly one default tier with isDefault=true, priority=0, and conditions=[]
+   * - All tier names and priorities must be unique within the model
+   * - Each tier must define at least one price
+   *
+   * If omitted, you must provide flat prices instead (inputPrice/outputPrice/totalPrice),
+   * which will automatically create a single default tier named "Standard".
+   */
+  pricingTiers?: LangfuseAPI.PricingTierInput[];
   /** Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
   tokenizerId?: string;
   /** Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
