@@ -117,12 +117,20 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof inputs === "object" &&
         "input" in inputs &&
         Array.isArray(inputs["input"]) &&
-        inputs["input"].every((m) => m instanceof BaseMessage)
+        inputs["input"].every((m: unknown) => m instanceof BaseMessage)
       ) {
-        finalInput = inputs["input"].map((m) =>
+        finalInput = inputs["input"].map((m: BaseMessage) =>
           this.extractChatMessageContent(m),
         );
       } else if (
+          typeof inputs === "object" &&
+          "messages" in inputs &&
+          Array.isArray(inputs["messages"]) &&
+          inputs["messages"].every((m: unknown) => m instanceof BaseMessage)
+      ) {
+          finalInput = inputs["messages"].map((m: BaseMessage) => this.extractChatMessageContent(m));
+      }
+      else if (
         typeof inputs === "object" &&
         "content" in inputs &&
         typeof inputs["content"] === "string"
@@ -353,6 +361,15 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof outputs["output"] === "string"
       ) {
         finalOutput = outputs["output"];
+      } else if (
+        typeof outputs === "object" &&
+        "messages" in outputs &&
+        Array.isArray(outputs["messages"]) &&
+        outputs["messages"].every((m: unknown) => m instanceof BaseMessage)
+      ) {
+        finalOutput = {
+          messages: outputs.messages.map((message: BaseMessage) => this.extractChatMessageContent(message)),
+        };
       }
 
       this.handleOtelSpanEnd({
