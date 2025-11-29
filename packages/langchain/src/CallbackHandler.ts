@@ -128,7 +128,7 @@ export class CallbackHandler extends BaseCallbackHandler {
           Array.isArray(inputs["messages"]) &&
           inputs["messages"].every((m: unknown) => m instanceof BaseMessage)
       ) {
-          finalInput = inputs["messages"].map((m: BaseMessage) => this.extractChatMessageContent(m))
+          finalInput = inputs["messages"].map((m: BaseMessage) => this.extractChatMessageContent(m));
       }
       else if (
         typeof inputs === "object" &&
