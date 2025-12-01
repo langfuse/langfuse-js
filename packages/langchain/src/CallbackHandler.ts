@@ -123,14 +123,15 @@ export class CallbackHandler extends BaseCallbackHandler {
           this.extractChatMessageContent(m),
         );
       } else if (
-          typeof inputs === "object" &&
-          "messages" in inputs &&
-          Array.isArray(inputs["messages"]) &&
-          inputs["messages"].every((m: unknown) => m instanceof BaseMessage)
+        typeof inputs === "object" &&
+        "messages" in inputs &&
+        Array.isArray(inputs["messages"]) &&
+        inputs["messages"].every((m: unknown) => m instanceof BaseMessage)
       ) {
-          finalInput = inputs["messages"].map((m: BaseMessage) => this.extractChatMessageContent(m));
-      }
-      else if (
+        finalInput = inputs["messages"].map((m: BaseMessage) =>
+          this.extractChatMessageContent(m),
+        );
+      } else if (
         typeof inputs === "object" &&
         "content" in inputs &&
         typeof inputs["content"] === "string"
@@ -368,7 +369,9 @@ export class CallbackHandler extends BaseCallbackHandler {
         outputs["messages"].every((m: unknown) => m instanceof BaseMessage)
       ) {
         finalOutput = {
-          messages: outputs.messages.map((message: BaseMessage) => this.extractChatMessageContent(message)),
+          messages: outputs.messages.map((message: BaseMessage) =>
+            this.extractChatMessageContent(message),
+          ),
         };
       }
 
