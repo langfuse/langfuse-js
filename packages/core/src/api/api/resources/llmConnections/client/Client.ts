@@ -214,7 +214,8 @@ export class LlmConnections {
    *         baseURL: undefined,
    *         customModels: undefined,
    *         withDefaultModels: undefined,
-   *         extraHeaders: undefined
+   *         extraHeaders: undefined,
+   *         config: undefined
    *     })
    */
   public upsert(
