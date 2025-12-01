@@ -21,6 +21,8 @@ export interface LlmConnection {
   withDefaultModels: boolean;
   /** Keys of extra headers sent with requests (values excluded for security) */
   extraHeaderKeys: string[];
+  /** Adapter-specific configuration. Required for Bedrock (`{"region":"us-east-1"}`), optional for VertexAI (`{"location":"us-central1"}`), not used by other adapters. */
+  config?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

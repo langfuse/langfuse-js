@@ -81,6 +81,7 @@ export class Models {
    *         inputPrice: undefined,
    *         outputPrice: undefined,
    *         totalPrice: undefined,
+   *         pricingTiers: undefined,
    *         tokenizerId: undefined,
    *         tokenizerConfig: undefined
    *     })
