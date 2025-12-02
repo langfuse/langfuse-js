@@ -111,22 +111,36 @@ export const parseUsageDetails = (
       prompt_tokens_details,
     } = completionUsage;
 
+    const flatPromptTokensDetails = Object.fromEntries(
+      Object.entries(prompt_tokens_details ?? {}).map(([key, value]) => [
+        `input_${key}`,
+        value as number,
+      ]),
+    );
+
+    const flatCompletionTokensDetails = Object.fromEntries(
+      Object.entries(completion_tokens_details ?? {}).map(([key, value]) => [
+        `output_${key}`,
+        value as number,
+      ]),
+    );
+
+    let finalInputTokens = prompt_tokens as number;
+    Object.values(flatPromptTokensDetails).forEach((value) => {
+      finalInputTokens = Math.max(finalInputTokens - value, 0);
+    });
+
+    let finalOutputTokens = completion_tokens as number;
+    Object.values(flatCompletionTokensDetails).forEach((value) => {
+      finalOutputTokens = Math.max(finalOutputTokens - value, 0);
+    });
+
     return {
-      input: prompt_tokens,
-      output: completion_tokens,
+      input: finalInputTokens,
+      output: finalOutputTokens,
       total: total_tokens,
-      ...Object.fromEntries(
-        Object.entries(prompt_tokens_details ?? {}).map(([key, value]) => [
-          `input_${key}`,
-          value as number,
-        ]),
-      ),
-      ...Object.fromEntries(
-        Object.entries(completion_tokens_details ?? {}).map(([key, value]) => [
-          `output_${key}`,
-          value as number,
-        ]),
-      ),
+      ...flatPromptTokensDetails,
+      ...flatCompletionTokensDetails,
     };
   } else if ("input_tokens" in completionUsage) {
     const {
