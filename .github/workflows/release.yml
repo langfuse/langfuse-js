@@ -187,13 +187,14 @@ jobs:
         with:
           payload: |
             {
-              "text": "✅ Release v${{ steps.version.outputs.version }} published successfully",
+              "text": "✅ Langfuse JS/TS SDK v${{ steps.version.outputs.version }} published to npm",
               "blocks": [
                 {
-                  "type": "section",
+                  "type": "header",
                   "text": {
-                    "type": "mrkdwn",
-                    "text": "✅ *Release v${{ steps.version.outputs.version }} published successfully*"
+                    "type": "plain_text",
+                    "text": "✅ Langfuse JS/TS SDK Released",
+                    "emoji": true
                   }
                 },
                 {
@@ -201,19 +202,71 @@ jobs:
                   "fields": [
                     {
                       "type": "mrkdwn",
-                      "text": "*Version:*\nv${{ steps.version.outputs.version }}"
+                      "text": "*Version:*\n`v${{ steps.version.outputs.version }}`"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Tag:*\n${{ steps.release-params.outputs.tag }}"
+                      "text": "*npm Tag:*\n`${{ steps.release-params.outputs.tag }}`"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                      "text": "*Released by:*\n${{ github.actor }}"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Release:*\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}|View Release>"
+                      "text": "*Packages:*\n6 packages published"
+                    }
+                  ]
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*📦 Published Packages:*\n• `@langfuse/client`\n• `@langfuse/core`\n• `@langfuse/tracing`\n• `@langfuse/otel`\n• `@langfuse/openai`\n• `@langfuse/langchain`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "📋 View Release Notes",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}",
+                      "style": "primary"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "📦 View on npm",
+                        "emoji": true
+                      },
+                      "url": "https://www.npmjs.com/package/@langfuse/client/v/${{ steps.version.outputs.version }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "🔧 View Workflow",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "🔒 Published with provenance attestations • 🤖 Automated release"
                     }
                   ]
                 }
@@ -229,13 +282,21 @@ jobs:
         with:
           payload: |
             {
-              "text": "🧪 Dry run completed successfully for v${{ steps.version.outputs.version }}",
+              "text": "🧪 Langfuse JS/TS SDK dry run completed for v${{ steps.version.outputs.version }}",
               "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🧪 Langfuse JS/TS SDK Dry Run",
+                    "emoji": true
+                  }
+                },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🧪 *Dry run completed successfully*"
+                    "text": "Release dry run completed successfully. No packages were published."
                   }
                 },
                 {
@@ -243,19 +304,52 @@ jobs:
                   "fields": [
                     {
                       "type": "mrkdwn",
-                      "text": "*Version:*\nv${{ steps.version.outputs.version }}"
+                      "text": "*Version:*\n`v${{ steps.version.outputs.version }}`"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Tag:*\n${{ steps.release-params.outputs.tag }}"
+                      "text": "*npm Tag:*\n`${{ steps.release-params.outputs.tag }}`"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                      "text": "*Triggered by:*\n${{ github.actor }}"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Note:*\nNo packages were published (dry run mode)"
+                      "text": "*Mode:*\nDry run (testing only)"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "🔧 View Workflow",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "style": "primary"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "📁 View Repository",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "ℹ️ This was a test run. To publish, re-run without dry run mode."
                     }
                   ]
                 }
@@ -271,13 +365,21 @@ jobs:
         with:
           payload: |
             {
-              "text": "❌ Release workflow failed",
+              "text": "❌ Langfuse JS/TS SDK release workflow failed",
               "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ Langfuse JS/TS SDK Release Failed",
+                    "emoji": true
+                  }
+                },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "❌ *Release workflow failed*"
+                    "text": "⚠️ The release workflow encountered an error and did not complete successfully."
                   }
                 },
                 {
@@ -285,7 +387,7 @@ jobs:
                   "fields": [
                     {
                       "type": "mrkdwn",
-                      "text": "*Requested Version:*\n${{ inputs.version }}"
+                      "text": "*Requested Version:*\n`${{ inputs.version }}`"
                     },
                     {
                       "type": "mrkdwn",
@@ -293,11 +395,54 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Dry Run:*\n${{ inputs.dry_run }}"
+                      "text": "*Triggered by:*\n${{ github.actor }}"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                      "text": "*Dry Run:*\n${{ inputs.dry_run }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🔍 Next Steps:*\n• Check the workflow logs for error details\n• Verify all prerequisites are met\n• Check npm Trusted Publishing configuration\n• Verify Slack webhook secrets are set"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "🔧 View Workflow Logs",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "style": "danger"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "📖 View Documentation",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/blob/main/CONTRIBUTING.md"
+                    }
+                  ]
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "🚨 Action required • Check workflow logs for details"
                     }
                   ]
                 }
