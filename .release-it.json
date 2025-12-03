@@ -21,7 +21,7 @@
   },
   "github": {
     "release": true,
-    "releaseName": "${version}",
+    "releaseName": "v${version}",
     "autoGenerate": true,
     "web": true
   },

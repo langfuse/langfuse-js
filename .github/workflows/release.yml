@@ -21,16 +21,32 @@ on:
           - alpha
           - beta
           - rc
+      dry_run:
+        description: "Dry run (skip publish and git push)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
   id-token: write # Required for npm provenance via OIDC
   pull-requests: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Verify branch
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "❌ Error: Releases can only be triggered from main branch"
+            echo "Current ref: ${{ github.ref }}"
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -56,25 +72,43 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Determine release command
-        id: release-cmd
+      - name: Verify lockfile integrity
+        run: |
+          echo "Verifying pnpm lockfile has not been tampered with..."
+          git diff --exit-code pnpm-lock.yaml || {
+            echo "❌ Error: pnpm-lock.yaml was modified during install"
+            exit 1
+          }
+
+      - name: Determine release parameters
+        id: release-params
         run: |
           if [ "${{ inputs.version }}" = "prerelease" ]; then
             if [ -z "${{ inputs.prerelease_type }}" ]; then
-              echo "Error: prerelease_type must be specified when version is 'prerelease'"
+              echo "❌ Error: prerelease_type must be specified when version is 'prerelease'"
               exit 1
             fi
-            echo "cmd=release-it --preRelease=${{ inputs.prerelease_type }} --ci --config .release-it.ci.json" >> $GITHUB_OUTPUT
+            echo "prerelease_flag=--preRelease=${{ inputs.prerelease_type }}" >> $GITHUB_OUTPUT
             echo "tag=${{ inputs.prerelease_type }}" >> $GITHUB_OUTPUT
           else
-            echo "cmd=release-it ${{ inputs.version }} --ci --config .release-it.ci.json" >> $GITHUB_OUTPUT
+            echo "prerelease_flag=${{ inputs.version }}" >> $GITHUB_OUTPUT
             echo "tag=latest" >> $GITHUB_OUTPUT
           fi
 
       - name: Run release-it (version bump and git operations)
+        if: inputs.dry_run == false
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-        run: ${{ steps.release-cmd.outputs.cmd }}
+        run: |
+          release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json
+
+      - name: Run release-it (dry run)
+        if: inputs.dry_run == true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+        run: |
+          echo "🧪 Running in DRY RUN mode - no changes will be pushed"
+          release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json --dry-run
 
       - name: Get version
         id: version
@@ -83,20 +117,62 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
+      - name: Verify build artifacts
+        run: |
+          echo "Verifying all packages have dist folders..."
+          for pkg in packages/*/package.json; do
+            pkg_dir=$(dirname $pkg)
+            pkg_name=$(basename $pkg_dir)
+            if [ ! -d "$pkg_dir/dist" ]; then
+              echo "❌ Error: Missing dist folder for $pkg_name"
+              exit 1
+            fi
+            echo "✅ $pkg_name: dist folder exists"
+          done
+
+          echo "Checking for suspicious files in dist folders..."
+          if find packages/*/dist -type f \( -name "*.sh" -o -name "*.exe" -o -name "*.bat" -o -name "*.cmd" \) | grep -q .; then
+            echo "❌ Error: Found suspicious executable files in dist folders"
+            find packages/*/dist -type f \( -name "*.sh" -o -name "*.exe" -o -name "*.bat" -o -name "*.cmd" \)
+            exit 1
+          fi
+          echo "✅ No suspicious files found"
+
+          echo "Verifying package sizes are reasonable..."
+          for dist_dir in packages/*/dist; do
+            size=$(du -sh "$dist_dir" | cut -f1)
+            echo "  $(basename $(dirname $dist_dir)): $size"
+          done
+
       - name: Publish to npm with provenance
-        run: pnpm -r publish --access public --no-git-checks --tag ${{ steps.release-cmd.outputs.tag }} --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: npm_publish
+        if: inputs.dry_run == false
+        run: |
+          echo "Publishing packages to npm with provenance attestations..."
+          pnpm -r publish --access public --no-git-checks --tag ${{ steps.release-params.outputs.tag }} --provenance
+        # NOTE: No NODE_AUTH_TOKEN needed - npm CLI auto-detects OIDC environment for Trusted Publishing
+
+      - name: Dry run - Skip npm publish
+        if: inputs.dry_run == true
+        run: |
+          echo "🧪 DRY RUN: Would publish packages with tag '${{ steps.release-params.outputs.tag }}'"
+          echo "Packages that would be published:"
+          pnpm -r exec pwd
 
       - name: Create release artifacts archive
+        if: inputs.dry_run == false
         run: |
           mkdir -p release-artifacts
           for pkg in packages/*/dist; do
             pkg_name=$(basename $(dirname $pkg))
+            echo "Creating archive for $pkg_name..."
             tar -czf release-artifacts/${pkg_name}-${{ steps.version.outputs.version }}.tar.gz -C $(dirname $pkg) dist
           done
+          echo "Build artifacts:"
+          ls -lh release-artifacts/
 
       - name: Upload release artifacts to GitHub Release
+        if: inputs.dry_run == false
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
@@ -106,7 +182,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Notify Slack on success
-        if: success()
+        if: success() && inputs.dry_run == false
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
@@ -129,7 +205,7 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Tag:*\n${{ steps.release-cmd.outputs.tag }}"
+                      "text": "*Tag:*\n${{ steps.release-params.outputs.tag }}"
                     },
                     {
                       "type": "mrkdwn",
@@ -145,6 +221,48 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_RELEASES }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify Slack on dry run success
+        if: success() && inputs.dry_run == true
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "🧪 Dry run completed successfully for v${{ steps.version.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🧪 *Dry run completed successfully*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\nv${{ steps.version.outputs.version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Tag:*\n${{ steps.release-params.outputs.tag }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Note:*\nNo packages were published (dry run mode)"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Notify Slack on failure
@@ -175,11 +293,11 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                      "text": "*Dry Run:*\n${{ inputs.dry_run }}"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Triggered by:*\n${{ github.actor }}"
+                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
                     }
                   ]
                 }
@@ -188,3 +306,15 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Rollback notification on partial failure
+        if: failure() && steps.npm_publish.outcome == 'success'
+        run: |
+          echo "⚠️  CRITICAL: npm publish succeeded but subsequent steps failed"
+          echo "Published version: v${{ steps.version.outputs.version }}"
+          echo "Manual intervention may be required"
+          echo ""
+          echo "Options:"
+          echo "1. Re-run the workflow to complete GitHub release creation"
+          echo "2. Manually create GitHub release for tag v${{ steps.version.outputs.version }}"
+          echo "3. If necessary, deprecate the npm version: npm deprecate @langfuse/package@${{ steps.version.outputs.version }}"

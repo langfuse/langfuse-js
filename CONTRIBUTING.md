@@ -105,22 +105,42 @@ Releases are primarily handled through GitHub Actions with npm Trusted Publishin
    - `major` - Breaking changes (4.4.4 → 5.0.0)
    - `prerelease` - Alpha/beta/rc versions
 4. If prerelease, select type (`alpha`, `beta`, or `rc`)
-5. Click **Run workflow**
+5. (Optional) Check **Dry run** to test without publishing
+6. Click **Run workflow**
 
 The automated workflow will:
 
+- Verify release is triggered from main branch
 - Update versions in all package.json files across the monorepo
 - Generate a changelog based on conventional commits
 - Create a git commit and tag
 - Build all packages
-- Publish to npm with provenance attestations
+- Verify build artifacts and check for suspicious files
+- Publish to npm with provenance attestations via Trusted Publishing
 - Create a GitHub release with build artifacts
 - Send Slack notifications (#releases for success, #team-engineering for failures)
+
+**Security Features:**
+
+- Branch verification (must run from main)
+- Lockfile integrity checks
+- Build artifact verification
+- npm provenance attestations (cryptographic proof of origin)
+- Concurrency control (one release at a time)
+- Rollback detection and notification
 
 **Prerequisites:**
 
 - Write access to the repository
 - npm Trusted Publishing configured for `@langfuse/*` packages
+
+**Dry Run Mode:**
+
+To test the release process without actually publishing:
+
+- Check the "Dry run" option when triggering the workflow
+- The workflow will perform all steps except npm publish and git push
+- Useful for testing version bumps and verifying the release process
 
 ### Manual Local Releases (Fallback)
 
