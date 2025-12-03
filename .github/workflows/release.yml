@@ -1,19 +1,190 @@
+name: Release
+
 on:
   workflow_dispatch:
-  push:
-    # Pattern matched against refs/tags
-    tags:
-      - "v[0-9]+.[0-9]+.[0-9]+" # Semantic version tags
+    inputs:
+      version:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      prerelease_type:
+        description: 'Pre-release type (only used if version is "prerelease")'
+        type: choice
+        default: ""
+        options:
+          - ""
+          - alpha
+          - beta
+          - rc
+
+permissions:
+  contents: write
+  id-token: write # Required for npm provenance via OIDC
+  pull-requests: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    environment: "protected branches"
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          ref: main # Always checkout main even for tagged releases
           fetch-depth: 0
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-      - name: Push to production
-        run: git push origin +main:production
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Configure Git
+        run: |
+          git config user.name "langfuse-bot"
+          git config user.email "langfuse-bot@langfuse.com"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Determine release command
+        id: release-cmd
+        run: |
+          if [ "${{ inputs.version }}" = "prerelease" ]; then
+            if [ -z "${{ inputs.prerelease_type }}" ]; then
+              echo "Error: prerelease_type must be specified when version is 'prerelease'"
+              exit 1
+            fi
+            echo "cmd=release-it --preRelease=${{ inputs.prerelease_type }} --ci --config .release-it.ci.json" >> $GITHUB_OUTPUT
+            echo "tag=${{ inputs.prerelease_type }}" >> $GITHUB_OUTPUT
+          else
+            echo "cmd=release-it ${{ inputs.version }} --ci --config .release-it.ci.json" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run release-it (version bump and git operations)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+        run: ${{ steps.release-cmd.outputs.cmd }}
+
+      - name: Get version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Publish to npm with provenance
+        run: pnpm -r publish --access public --no-git-checks --tag ${{ steps.release-cmd.outputs.tag }} --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release artifacts archive
+        run: |
+          mkdir -p release-artifacts
+          for pkg in packages/*/dist; do
+            pkg_name=$(basename $(dirname $pkg))
+            tar -czf release-artifacts/${pkg_name}-${{ steps.version.outputs.version }}.tar.gz -C $(dirname $pkg) dist
+          done
+
+      - name: Upload release artifacts to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          files: release-artifacts/*.tar.gz
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "✅ Release v${{ steps.version.outputs.version }} published successfully",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *Release v${{ steps.version.outputs.version }} published successfully*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\nv${{ steps.version.outputs.version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Tag:*\n${{ steps.release-cmd.outputs.tag }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Release:*\n<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}|View Release>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_RELEASES }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "❌ Release workflow failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "❌ *Release workflow failed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Requested Version:*\n${{ inputs.version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Pre-release Type:*\n${{ inputs.prerelease_type || 'N/A' }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.actor }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

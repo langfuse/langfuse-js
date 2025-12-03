@@ -91,75 +91,81 @@ pnpm ci
 
 This project uses lockstep versioning - all packages are released together with the same version number. Releases are managed using [release-it](https://github.com/release-it/release-it) with conventional commits and automated changelog generation.
 
-### Production Releases
+### Automated Releases via GitHub Actions (Recommended)
+
+Releases are primarily handled through GitHub Actions with npm Trusted Publishing for secure, automated deployments.
+
+**To create a new release:**
+
+1. Navigate to **Actions** → **Release** workflow
+2. Click **Run workflow**
+3. Select the version bump type:
+   - `patch` - Bug fixes (4.4.4 → 4.4.5)
+   - `minor` - New features (4.4.4 → 4.5.0)
+   - `major` - Breaking changes (4.4.4 → 5.0.0)
+   - `prerelease` - Alpha/beta/rc versions
+4. If prerelease, select type (`alpha`, `beta`, or `rc`)
+5. Click **Run workflow**
+
+The automated workflow will:
+
+- Update versions in all package.json files across the monorepo
+- Generate a changelog based on conventional commits
+- Create a git commit and tag
+- Build all packages
+- Publish to npm with provenance attestations
+- Create a GitHub release with build artifacts
+- Send Slack notifications (#releases for success, #team-engineering for failures)
+
+**Prerequisites:**
+
+- Write access to the repository
+- npm Trusted Publishing configured for `@langfuse/*` packages
+
+### Manual Local Releases (Fallback)
+
+If GitHub Actions are unavailable, you can release locally:
 
 ```bash
-# Create and publish a new release
+# Production release
 pnpm release
+
+# Pre-release versions
+pnpm release:alpha  # Alpha release
+pnpm release:beta   # Beta release
+pnpm release:rc     # Release candidate
+
+# Dry run (preview changes without publishing)
+pnpm release:dry
 ```
 
-The release process is fully automated and will:
+**Local release prerequisites:**
 
-- Fetch the NPM token from 1Password
-- Prompt for the version bump type (patch, minor, major)
-- Generate a changelog based on conventional commits
-- Update all package.json files in the monorepo to maintain version consistency
-- Create a git commit with the version bump
-- Create and push a git tag
-- Build all packages
-- Publish to npm with the `latest` dist-tag
+- npm authentication (`npm login`) with publish access
+- Clean working directory
+- On the main branch
+- Upstream remote configured
+- Git push access
+
+**Note:** Local releases use the default `.release-it.json` configuration which includes npm publishing. For local testing without publishing, use the dry run command.
 
 ### Pre-release Versions
 
-For testing unreleased features:
+Pre-release versions (alpha, beta, rc):
 
-```bash
-# Create alpha pre-release
-pnpm release:alpha
-
-# Create beta pre-release
-pnpm release:beta
-
-# Create release candidate
-pnpm release:rc
-```
-
-Pre-release versions:
-
-- Are published with appropriate npm dist-tags (`alpha`, `beta`, `rc`)
+- Are published with appropriate npm dist-tags
 - Won't be installed by default with `npm install @langfuse/client`
 - Must be explicitly installed: `npm install @langfuse/client@alpha`
 - Are tagged in git for full traceability
 - Generate pre-release entries in the changelog
 
-### NPM Two-Factor Authentication (2FA/OTP)
+### Provenance Attestations
 
-If your npm account has two-factor authentication enabled (recommended), you **must** provide an OTP via environment variable:
+All packages published via GitHub Actions include npm provenance attestations, providing cryptographic proof that packages were built from this repository. Users can verify package authenticity with:
 
 ```bash
-# Provide OTP via environment variable (required for 2FA accounts)
-otp=123456 pnpm release
-
-# For pre-releases
-otp=123456 pnpm release:alpha
-otp=123456 pnpm release:beta
-otp=123456 pnpm release:rc
+npm view @langfuse/client --json | jq .dist.attestations
 ```
-
-**Important**: The OTP cannot be provided interactively during the release process - it must be set as an environment variable before running the release command.
-
-### Release Prerequisites
-
-Before running any release command:
-
-- **NPM Authentication**: You must be logged into npm (`npm login`) with publish access
-- **Two-Factor Authentication**: If 2FA is enabled, you must provide `otp=123456` before the command
-- **Clean Repository**: No uncommitted or staged changes
-- **Main Branch**: Must be on the main branch
-- **Upstream Remote**: Must have an upstream remote configured
-- **Git Authentication**: Must be able to push tags to the repository
-
-The release-it configuration enforces these requirements automatically.
 
 ## Development Workflow
 
