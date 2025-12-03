@@ -100,7 +100,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json
+          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json
 
       - name: Run release-it (dry run)
         if: inputs.dry_run == true
@@ -108,7 +108,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🧪 Running in DRY RUN mode - no changes will be pushed"
-          release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json --dry-run
+          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json --dry-run
 
       - name: Get version
         id: version
