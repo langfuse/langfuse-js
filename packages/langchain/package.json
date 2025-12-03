@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/langchain",
-  "version": "4.4.10-alpha.1",
+  "version": "4.4.10-alpha.2",
   "description": "Langfuse integration for LangChain",
   "type": "module",
   "sideEffects": false,
