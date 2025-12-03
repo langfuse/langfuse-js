@@ -1,6 +1,6 @@
 {
   "git": {
-    "requireCleanWorkingDir": true,
+    "requireCleanWorkingDir": false,
     "requireUpstream": true,
     "addUntrackedFiles": false,
     "commit": true,
@@ -11,13 +11,11 @@
     "pushArgs": ["--follow-tags"]
   },
   "npm": {
-    "publish": true,
-    "publishArgs": ["--access", "public"]
+    "publish": false
   },
   "hooks": {
-    "before:init": ["pnpm clean", "pnpm install"],
-    "before:release": ["pnpm build"],
-    "after:release": ["echo '\n✅ Packages published successfully to npm'"]
+    "before:init": [],
+    "before:release": []
   },
   "github": {
     "release": true,
@@ -29,5 +27,6 @@
     "@release-it/bumper": {
       "out": ["packages/*/package.json"]
     }
-  }
+  },
+  "ci": true
 }
