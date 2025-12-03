@@ -96,25 +96,6 @@ jobs:
             echo "tag=latest" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run release-it (version bump and git operations)
-        if: inputs.dry_run == false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-        run: |
-          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json
-
-      - name: Run release-it (dry run)
-        if: inputs.dry_run == true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-        run: |
-          echo "🧪 Running in DRY RUN mode - no changes will be pushed"
-          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json --dry-run
-
-      - name: Get version
-        id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
       - name: Build all packages
         run: pnpm build
 
@@ -145,20 +126,27 @@ jobs:
             echo "  $(basename $(dirname $dist_dir)): $size"
           done
 
-      - name: Publish to npm with provenance
-        id: npm_publish
+      - name: Run release-it (version, git, npm publish)
+        id: release
         if: inputs.dry_run == false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
         run: |
-          echo "Publishing packages to npm with provenance attestations..."
-          pnpm -r publish --access public --no-git-checks --tag ${{ steps.release-params.outputs.tag }} --provenance
-        # NOTE: No NODE_AUTH_TOKEN needed - npm CLI auto-detects OIDC environment for Trusted Publishing
+          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --npm.tag=${{ steps.release-params.outputs.tag }} --ci --config .release-it.ci.json
 
-      - name: Dry run - Skip npm publish
+      - name: Run release-it (dry run)
         if: inputs.dry_run == true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
         run: |
-          echo "🧪 DRY RUN: Would publish packages with tag '${{ steps.release-params.outputs.tag }}'"
-          echo "Packages that would be published:"
-          pnpm -r exec pwd
+          echo "🧪 Running in DRY RUN mode - no changes will be pushed"
+          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --npm.tag=${{ steps.release-params.outputs.tag }} --ci --config .release-it.ci.json --dry-run
+
+      - name: Get version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Create release artifacts archive
         if: inputs.dry_run == false
@@ -454,13 +442,12 @@ jobs:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Rollback notification on partial failure
-        if: failure() && steps.npm_publish.outcome == 'success'
+        if: failure() && steps.release.outcome == 'success'
         run: |
-          echo "⚠️  CRITICAL: npm publish succeeded but subsequent steps failed"
+          echo "⚠️  CRITICAL: Release succeeded but subsequent steps failed"
           echo "Published version: v${{ steps.version.outputs.version }}"
           echo "Manual intervention may be required"
           echo ""
           echo "Options:"
-          echo "1. Re-run the workflow to complete GitHub release creation"
-          echo "2. Manually create GitHub release for tag v${{ steps.version.outputs.version }}"
-          echo "3. If necessary, deprecate the npm version: npm deprecate @langfuse/package@${{ steps.version.outputs.version }}"
+          echo "1. Re-run the workflow to complete GitHub release artifacts upload"
+          echo "2. Manually upload release artifacts for tag v${{ steps.version.outputs.version }}"

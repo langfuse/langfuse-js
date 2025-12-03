@@ -12,7 +12,8 @@
     "pushArgs": ["--follow-tags"]
   },
   "npm": {
-    "publish": false
+    "publish": true,
+    "publishArgs": ["--access", "public", "--provenance"]
   },
   "hooks": {
     "before:init": [],
