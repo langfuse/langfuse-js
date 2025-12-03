@@ -1,4 +1,4 @@
-name: Release
+name: Release JS/TS SDK
 
 on:
   workflow_dispatch:
@@ -32,11 +32,11 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: release
+  group: js-sdk-release
   cancel-in-progress: false
 
 jobs:
-  release:
+  release-js-sdk:
     runs-on: ubuntu-latest
     steps:
       - name: Verify branch
