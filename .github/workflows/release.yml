@@ -155,7 +155,7 @@ jobs:
           for pkg in packages/*/dist; do
             pkg_name=$(basename $(dirname $pkg))
             echo "Creating archive for $pkg_name..."
-            tar -czf release-artifacts/${pkg_name}-${{ steps.version.outputs.version }}.tar.gz -C $(dirname $pkg) dist
+            tar -czf release-artifacts/langfuse-js-sdk-${pkg_name}-${{ steps.version.outputs.version }}.tar.gz -C $(dirname $pkg) dist
           done
           echo "Build artifacts:"
           ls -lh release-artifacts/
