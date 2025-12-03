@@ -38,6 +38,7 @@ concurrency:
 jobs:
   release-js-sdk:
     runs-on: ubuntu-latest
+    environment: protected branches
     steps:
       - name: Verify branch
         run: |
