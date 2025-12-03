@@ -24,6 +24,11 @@
   },
   "author": "Langfuse",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/langfuse/langfuse-js.git",
+    "directory": "packages/langchain"
+  },
   "files": [
     "dist"
   ],
