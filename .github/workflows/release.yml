@@ -131,18 +131,18 @@ jobs:
         if: inputs.dry_run == false
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
+          NPM_CONFIG_TAG: ${{ steps.release-params.outputs.tag }}
         run: |
-          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --npm.tag=${{ steps.release-params.outputs.tag }} --ci --config .release-it.ci.json
+          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json
 
       - name: Run release-it (dry run)
         if: inputs.dry_run == true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
+          NPM_CONFIG_TAG: ${{ steps.release-params.outputs.tag }}
         run: |
           echo "🧪 Running in DRY RUN mode - no changes will be pushed"
-          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --npm.tag=${{ steps.release-params.outputs.tag }} --ci --config .release-it.ci.json --dry-run
+          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json --dry-run
 
       - name: Get version
         id: version
