@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -98,14 +98,14 @@ jobs:
       - name: Run release-it (version bump and git operations)
         if: inputs.dry_run == false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
           pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json
 
       - name: Run release-it (dry run)
         if: inputs.dry_run == true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
           echo "🧪 Running in DRY RUN mode - no changes will be pushed"
           pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json --dry-run
@@ -179,7 +179,7 @@ jobs:
           files: release-artifacts/*.tar.gz
           fail_on_unmatched_files: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Notify Slack on success
         if: success() && inputs.dry_run == false
