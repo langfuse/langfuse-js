@@ -301,14 +301,22 @@ export class MediaService {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
+        const isSelfHostedGcsBucket = uploadUrl.includes(
+          "storage.googleapis.com",
+        );
+
+        const headers = isSelfHostedGcsBucket
+          ? { "Content-Type": contentType }
+          : {
+              "Content-Type": contentType,
+              "x-amz-checksum-sha256": contentSha256Hash,
+              "x-ms-blob-type": "BlockBlob",
+            };
+
         const uploadResponse = await fetch(uploadUrl, {
           method: "PUT",
           body: contentBytes,
-          headers: {
-            "Content-Type": contentType,
-            "x-amz-checksum-sha256": contentSha256Hash,
-            "x-ms-blob-type": "BlockBlob",
-          },
+          headers,
         });
 
         if (
