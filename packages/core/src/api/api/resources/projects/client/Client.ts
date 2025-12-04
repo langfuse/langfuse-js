@@ -61,7 +61,7 @@ export class Projects {
   }
 
   /**
-   * Get Project associated with API key
+   * Get Project associated with API key (requires project-scoped API key). You can use GET /api/public/organizations/projects to get all projects with an organization-scoped key.
    *
    * @param {Projects.RequestOptions} requestOptions - Request-specific configuration.
    *
