@@ -449,6 +449,79 @@ describe("Langfuse Prompts E2E", () => {
       });
     });
 
+    describe("delete method", () => {
+      it("should delete prompt and invalidate cache", async () => {
+        const promptName = "folder/test-delete-prompt-" + nanoid();
+
+        const createdPrompt = await langfuse.prompt.create({
+          name: promptName,
+          prompt: "This prompt will be deleted",
+          labels: ["production"],
+        });
+
+        expect(createdPrompt.name).toBe(promptName);
+
+        // make it cache
+        const cachedPrompt = await langfuse.prompt.get(promptName);
+        expect(cachedPrompt.name).toBe(promptName);
+        expect(cachedPrompt.prompt).toBe("This prompt will be deleted");
+
+        // was cache invalidated?
+        const fetchSpy = vi.spyOn(langfuse.prompt.apiClient.prompts, "get");
+
+        await langfuse.prompt.delete(promptName);
+
+        // should now make API call to try an get the prompt as not in cache
+        await expect(langfuse.prompt.get(promptName)).rejects.toThrow();
+        expect(fetchSpy).toHaveBeenCalled();
+
+        fetchSpy.mockRestore();
+      });
+
+      it("should delete specific version and invalidate that version's cache", async () => {
+        const promptName = "folder/subfolder/test-delete-version-" + nanoid();
+
+        // Create version 1
+        const v1 = await langfuse.prompt.create({
+          name: promptName,
+          prompt: "Version 1",
+          labels: ["production"],
+        });
+
+        // Create version 2
+        const v2 = await langfuse.prompt.create({
+          name: promptName,
+          prompt: "Version 2",
+          labels: ["staging"],
+        });
+
+        // Cache both versions
+        await langfuse.prompt.get(promptName, { version: v1.version });
+        await langfuse.prompt.get(promptName, { version: v2.version });
+
+        // Delete version 1 only
+        await langfuse.prompt.delete(promptName, { version: v1.version });
+
+        // Version 1 should be gone
+        await expect(
+          langfuse.prompt.get(promptName, { version: v1.version }),
+        ).rejects.toThrow();
+
+        // Version 2 should still exist (and come from cache or fresh fetch)
+        const remainingPrompt = await langfuse.prompt.get(promptName, {
+          version: v2.version,
+        });
+        expect(remainingPrompt.version).toBe(2);
+        expect(remainingPrompt.prompt).toBe("Version 2");
+      });
+
+      it("should throw error when deleting non-existent prompt", async () => {
+        await expect(
+          langfuse.prompt.delete("non-existent/prompt-" + nanoid()),
+        ).rejects.toThrow();
+      });
+    });
+
     describe("fallback behavior", () => {
       it("should use text fallback when prompt not found", async () => {
         const result = await langfuse.prompt.get(

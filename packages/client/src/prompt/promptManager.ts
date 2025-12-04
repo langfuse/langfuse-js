@@ -177,6 +177,50 @@ export class PromptManager {
   }
 
   /**
+   * Delete prompt versions. If neither version nor label is specified, all versions of the prompt are deleted.
+   *
+   * The Langfuse SDK prompt cache is invalidated for all cached versions with the specified name.
+   *
+   * @param name - Name of the prompt to delete
+   * @param options - Optional deletion configuration
+   * @param options.version - Optional version to delete. If specified, deletes only this specific version
+   * @param options.label - Optional label to filter deletion. If specified, deletes all prompt versions with this label
+   *
+   * @returns Promise that resolves when deletion is complete
+   *
+   * @throws {LangfuseAPI.NotFoundError} If the prompt does not exist
+   * @throws {LangfuseAPI.Error} If the API request fails
+   *
+   * @example
+   * ```typescript
+   * // Delete all versions of a prompt
+   * await langfuse.prompt.delete("my-prompt");
+   *
+   * // Delete specific version
+   * await langfuse.prompt.delete("my-prompt", { version: 2 });
+   *
+   * // Delete all versions with a specific label
+   * await langfuse.prompt.delete("my-prompt", { label: "staging" });
+   * ```
+   */
+  async delete(
+    name: string,
+    options?: {
+      /** Optional version to delete. If specified, deletes only this specific version */
+      version?: number;
+      /** Optional label to filter deletion. If specified, deletes all prompt versions with this label */
+      label?: string;
+    },
+  ): Promise<void> {
+    await this.apiClient.prompts.delete(name, {
+      version: options?.version,
+      label: options?.label,
+    });
+
+    this.cache.invalidate(name);
+  }
+
+  /**
    * Retrieves a text prompt by name.
    *
    * @param name - Name of the prompt to retrieve
