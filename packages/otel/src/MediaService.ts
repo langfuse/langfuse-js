@@ -302,12 +302,16 @@ export class MediaService {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         let parsedHostname: string;
+
         try {
           parsedHostname = new URL(uploadUrl).hostname;
         } catch {
           parsedHostname = "";
         }
-        const isSelfHostedGcsBucket = parsedHostname === "storage.googleapis.com";
+
+        const isSelfHostedGcsBucket = parsedHostname.includes(
+          "storage.googleapis.com",
+        );
 
         const headers = isSelfHostedGcsBucket
           ? { "Content-Type": contentType }
