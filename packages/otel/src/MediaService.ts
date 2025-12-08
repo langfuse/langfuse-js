@@ -309,9 +309,8 @@ export class MediaService {
           parsedHostname = "";
         }
 
-        const isSelfHostedGcsBucket = parsedHostname.includes(
-          "storage.googleapis.com",
-        );
+        const isSelfHostedGcsBucket = parsedHostname === "storage.googleapis.com" ||
+          parsedHostname.endsWith(".storage.googleapis.com");
 
         const headers = isSelfHostedGcsBucket
           ? { "Content-Type": contentType }
