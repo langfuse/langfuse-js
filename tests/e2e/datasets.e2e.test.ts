@@ -75,6 +75,7 @@ describe("Langfuse Datasets E2E", () => {
 
       const item1 = await langfuse.api.datasetItems.create({
         datasetName: datasetNameRandom,
+        input: "hello",
         metadata: { test: "test" },
       });
 
@@ -117,6 +118,7 @@ describe("Langfuse Datasets E2E", () => {
         expect.arrayContaining([
           expect.objectContaining({
             id: item1.id,
+            input: "hello",
             metadata: { test: "test" },
           }),
           expect.objectContaining({
@@ -135,6 +137,7 @@ describe("Langfuse Datasets E2E", () => {
       const getDatasetItem = await langfuse.api.datasetItems.get(item1.id);
       expect(getDatasetItem).toMatchObject({
         id: item1.id,
+        input: "hello",
         metadata: { test: "test" },
       });
     }, 10000);
