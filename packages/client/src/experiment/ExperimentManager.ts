@@ -471,6 +471,7 @@ export class ExperimentManager {
           input: item.input as any,
           expectedOutput: item.expectedOutput as any,
           output,
+          metadata: item.metadata as any,
         };
 
         return evaluator(params)
