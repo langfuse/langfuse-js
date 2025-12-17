@@ -120,6 +120,33 @@ describe("propagateAttributes", () => {
       );
     });
 
+    it("should propagate traceName to child spans", async () => {
+      const tracer = otelTrace.getTracer("test");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ traceName: "my-trace-name" }, () => {
+          const child1 = startObservation("child-1");
+          child1.end();
+
+          const child2 = startObservation("child-2");
+          child2.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child1 = spans.find((s) => s.name === "child-1");
+      const child2 = spans.find((s) => s.name === "child-2");
+
+      expect(child1?.attributes[LangfuseOtelSpanAttributes.TRACE_NAME]).toBe(
+        "my-trace-name",
+      );
+      expect(child2?.attributes[LangfuseOtelSpanAttributes.TRACE_NAME]).toBe(
+        "my-trace-name",
+      );
+    });
+
     it("should propagate metadata to child spans", async () => {
       const tracer = otelTrace.getTracer("test");
 
@@ -1053,6 +1080,48 @@ describe("propagateAttributes", () => {
       );
     });
 
+    it("should drop traceName over 200 characters", async () => {
+      const tracer = otelTrace.getTracer("test");
+      const longTraceName = "t".repeat(201);
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ traceName: longTraceName }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.TRACE_NAME],
+      ).toBeUndefined();
+    });
+
+    it("should accept traceName exactly 200 characters", async () => {
+      const tracer = otelTrace.getTracer("test");
+      const traceName200 = "t".repeat(200);
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ traceName: traceName200 }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_NAME]).toBe(
+        traceName200,
+      );
+    });
+
     it("should drop metadata values over 200 characters", async () => {
       const tracer = otelTrace.getTracer("test");
       const longValue = "z".repeat(201);
@@ -1204,6 +1273,7 @@ describe("propagateAttributes", () => {
             userId: "user_123",
             sessionId: "session_abc",
             version: "v2.0",
+            traceName: "my-trace",
             metadata: { env: "test", region: "us-east" },
             asBaggage: true,
           },
@@ -1220,6 +1290,7 @@ describe("propagateAttributes", () => {
             expect(baggageKeys).toContain("langfuse_user_id");
             expect(baggageKeys).toContain("langfuse_session_id");
             expect(baggageKeys).toContain("langfuse_version");
+            expect(baggageKeys).toContain("langfuse_trace_name");
             expect(baggageKeys).toContain("langfuse_metadata_env");
             expect(baggageKeys).toContain("langfuse_metadata_region");
 
@@ -1238,6 +1309,11 @@ describe("propagateAttributes", () => {
               ([key]) => key === "langfuse_version",
             );
             expect(versionEntry?.[1].value).toBe("v2.0");
+
+            const traceNameEntry = entries.find(
+              ([key]) => key === "langfuse_trace_name",
+            );
+            expect(traceNameEntry?.[1].value).toBe("my-trace");
 
             const envEntry = entries.find(
               ([key]) => key === "langfuse_metadata_env",
@@ -1260,6 +1336,7 @@ describe("propagateAttributes", () => {
             userId: "baggage_user",
             sessionId: "baggage_session",
             version: "v1.0-baggage",
+            traceName: "baggage-trace",
             metadata: { source: "baggage" },
             asBaggage: true,
           },
@@ -1283,6 +1360,9 @@ describe("propagateAttributes", () => {
       ).toBe("baggage_session");
       expect(child?.attributes[LangfuseOtelSpanAttributes.VERSION]).toBe(
         "v1.0-baggage",
+      );
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_NAME]).toBe(
+        "baggage-trace",
       );
       expect(
         child?.attributes[
@@ -1454,6 +1534,18 @@ describe("propagateAttributes", () => {
       expect(attributes[LangfuseOtelSpanAttributes.VERSION]).toBe("v3.1.4");
     });
 
+    it("should read traceName from context", () => {
+      const context = ROOT_CONTEXT.setValue(
+        LangfuseOtelContextKeys["traceName"],
+        "context-trace-name",
+      );
+      const attributes = getPropagatedAttributesFromContext(context);
+
+      expect(attributes[LangfuseOtelSpanAttributes.TRACE_NAME]).toBe(
+        "context-trace-name",
+      );
+    });
+
     it("should read metadata from context", () => {
       const context = ROOT_CONTEXT.setValue(
         LangfuseOtelContextKeys["metadata"],
@@ -1479,6 +1571,9 @@ describe("propagateAttributes", () => {
         value: "baggage_session",
       });
       baggage = baggage.setEntry("langfuse_version", { value: "v2.5.1" });
+      baggage = baggage.setEntry("langfuse_trace_name", {
+        value: "baggage-trace",
+      });
       baggage = baggage.setEntry("langfuse_metadata_env", { value: "prod" });
 
       const context = propagation.setBaggage(ROOT_CONTEXT, baggage);
@@ -1491,6 +1586,9 @@ describe("propagateAttributes", () => {
         "baggage_session",
       );
       expect(attributes[LangfuseOtelSpanAttributes.VERSION]).toBe("v2.5.1");
+      expect(attributes[LangfuseOtelSpanAttributes.TRACE_NAME]).toBe(
+        "baggage-trace",
+      );
       expect(
         attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
       ).toBe("prod");

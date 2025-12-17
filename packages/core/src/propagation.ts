@@ -20,7 +20,13 @@ import {
 } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
 
-type CorrelatedKey = "userId" | "sessionId" | "metadata" | "version" | "tags";
+type CorrelatedKey =
+  | "userId"
+  | "sessionId"
+  | "metadata"
+  | "version"
+  | "tags"
+  | "traceName";
 
 const experimentKeys = [
   "experimentId",
@@ -50,6 +56,7 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   metadata: createContextKey("langfuse_metadata"),
   version: createContextKey("langfuse_version"),
   tags: createContextKey("langfuse_tags"),
+  traceName: createContextKey("langfuse_trace_name"),
 
   // Experiments
   experimentId: createContextKey("langfuse_experiment_id"),
@@ -104,6 +111,12 @@ export interface PropagateAttributesParams {
    * List of tags to categorize the group of observations
    */
   tags?: string[];
+
+  /**
+   * Trace name to associate with all spans in this context.
+   * Must be a string ≤200 characters.
+   */
+  traceName?: string;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -239,8 +252,15 @@ export function propagateAttributes<
   const span = otelTraceApi.getActiveSpan();
   const asBaggage = params.asBaggage ?? false;
 
-  const { userId, sessionId, metadata, version, tags, _internalExperiment } =
-    params;
+  const {
+    userId,
+    sessionId,
+    metadata,
+    version,
+    tags,
+    traceName,
+    _internalExperiment,
+  } = params;
 
   // Validate and set userId
   if (userId) {
@@ -284,6 +304,24 @@ export function propagateAttributes<
       context = setPropagatedAttribute({
         key: "version",
         value: version,
+        context,
+        span,
+        asBaggage,
+      });
+    }
+  }
+
+  // Validate and set traceName
+  if (traceName) {
+    if (
+      isValidPropagatedString({
+        value: traceName,
+        attributeName: "traceName",
+      })
+    ) {
+      context = setPropagatedAttribute({
+        key: "traceName",
+        value: traceName,
         context,
         span,
         asBaggage,
@@ -405,6 +443,13 @@ export function getPropagatedAttributesFromContext(
     propagatedAttributes[spanKey] = version;
   }
 
+  const traceName = context.getValue(LangfuseOtelContextKeys["traceName"]);
+  if (traceName && typeof traceName === "string") {
+    const spanKey = getSpanKeyForPropagatedKey("traceName");
+
+    propagatedAttributes[spanKey] = traceName;
+  }
+
   const tags = context.getValue(LangfuseOtelContextKeys["tags"]);
   if (tags && Array.isArray(tags)) {
     const spanKey = getSpanKeyForPropagatedKey("tags");
@@ -451,7 +496,7 @@ type SetPropagatedAttributeParams = {
   asBaggage: boolean;
 } & (
   | {
-      key: "userId" | "sessionId" | "version" | ExperimentKey;
+      key: "userId" | "sessionId" | "version" | "traceName" | ExperimentKey;
       value: string;
     }
   | {
@@ -593,6 +638,8 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.TRACE_SESSION_ID;
     case "version":
       return LangfuseOtelSpanAttributes.VERSION;
+    case "traceName":
+      return LangfuseOtelSpanAttributes.TRACE_NAME;
     case "metadata":
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
     case "tags":
@@ -629,6 +676,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}session_id`;
     case "version":
       return `${LANGFUSE_BAGGAGE_PREFIX}version`;
+    case "traceName":
+      return `${LANGFUSE_BAGGAGE_PREFIX}trace_name`;
     case "metadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
     case "tags":
@@ -674,6 +723,8 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
       return getSpanKeyForPropagatedKey("sessionId");
     case "version":
       return getSpanKeyForPropagatedKey("version");
+    case "trace_name":
+      return getSpanKeyForPropagatedKey("traceName");
     case "tags":
       return getSpanKeyForPropagatedKey("tags");
     case "experiment_id":
