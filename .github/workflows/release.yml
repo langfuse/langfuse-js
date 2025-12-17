@@ -25,6 +25,10 @@ on:
         description: "Dry run (skip publish and git push)"
         type: boolean
         default: false
+      confirm_major:
+        description: "Type RELEASE MAJOR to confirm a major release"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -47,7 +51,13 @@ jobs:
             echo "Current ref: ${{ github.ref }}"
             exit 1
           fi
-
+      - name: Confirm major release
+        if: ${{ inputs.version == 'major' && inputs.dry_run == false }}
+        run: |
+          if [ "${{ inputs.confirm_major }}" != "RELEASE MAJOR" ]; then
+            echo "❌ For major releases, set confirm_major to RELEASE MAJOR"
+            exit 1
+          fi
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
