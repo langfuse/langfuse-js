@@ -14,8 +14,10 @@ import { Health } from "./api/resources/health/client/Client.js";
 import { Ingestion } from "./api/resources/ingestion/client/Client.js";
 import { LlmConnections } from "./api/resources/llmConnections/client/Client.js";
 import { Media } from "./api/resources/media/client/Client.js";
+import { MetricsV2 } from "./api/resources/metricsV2/client/Client.js";
 import { Metrics } from "./api/resources/metrics/client/Client.js";
 import { Models } from "./api/resources/models/client/Client.js";
+import { ObservationsV2 } from "./api/resources/observationsV2/client/Client.js";
 import { Observations } from "./api/resources/observations/client/Client.js";
 import { Opentelemetry } from "./api/resources/opentelemetry/client/Client.js";
 import { Organizations } from "./api/resources/organizations/client/Client.js";
@@ -84,8 +86,10 @@ export class LangfuseAPIClient {
   protected _ingestion: Ingestion | undefined;
   protected _llmConnections: LlmConnections | undefined;
   protected _media: Media | undefined;
+  protected _metricsV2: MetricsV2 | undefined;
   protected _metrics: Metrics | undefined;
   protected _models: Models | undefined;
+  protected _observationsV2: ObservationsV2 | undefined;
   protected _observations: Observations | undefined;
   protected _opentelemetry: Opentelemetry | undefined;
   protected _organizations: Organizations | undefined;
@@ -155,12 +159,20 @@ export class LangfuseAPIClient {
     return (this._media ??= new Media(this._options));
   }
 
+  public get metricsV2(): MetricsV2 {
+    return (this._metricsV2 ??= new MetricsV2(this._options));
+  }
+
   public get metrics(): Metrics {
     return (this._metrics ??= new Metrics(this._options));
   }
 
   public get models(): Models {
     return (this._models ??= new Models(this._options));
+  }
+
+  public get observationsV2(): ObservationsV2 {
+    return (this._observationsV2 ??= new ObservationsV2(this._options));
   }
 
   public get observations(): Observations {
