@@ -13,7 +13,7 @@ export interface ScoreConfig {
   createdAt: string;
   updatedAt: string;
   projectId: string;
-  dataType: LangfuseAPI.ScoreDataType;
+  dataType: LangfuseAPI.ScoreConfigDataType;
   /** Whether the score config is archived. Defaults to false */
   isArchived: boolean;
   /** Sets minimum value for numerical scores. If not set, the minimum value defaults to -∞ */
