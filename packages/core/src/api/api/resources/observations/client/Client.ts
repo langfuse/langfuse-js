@@ -182,7 +182,9 @@ export class Observations {
   }
 
   /**
-   * Get a list of observations
+   * Get a list of observations.
+   *
+   * Consider using the [v2 observations endpoint](/api-reference/observations-v2/getMany) for cursor-based pagination and field selection.
    *
    * @param {LangfuseAPI.GetObservationsRequest} request
    * @param {Observations.RequestOptions} requestOptions - Request-specific configuration.
