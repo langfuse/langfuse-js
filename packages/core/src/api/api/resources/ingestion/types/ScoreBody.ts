@@ -82,6 +82,7 @@ export interface ScoreBody {
   sessionId?: string;
   observationId?: string;
   datasetRunId?: string;
+  /** The name of the score. Always overrides "output" for correction scores. */
   name: string;
   environment?: string;
   /** The annotation queue referenced by the score. Indicates if score was initially created while processing annotation queue. */

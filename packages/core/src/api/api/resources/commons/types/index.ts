@@ -37,4 +37,5 @@ export * from "./MapValue.js";
 export * from "./CommentObjectType.js";
 export * from "./DatasetStatus.js";
 export * from "./ScoreSource.js";
+export * from "./ScoreConfigDataType.js";
 export * from "./ScoreDataType.js";
