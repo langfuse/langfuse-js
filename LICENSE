@@ -1,5 +1,8 @@
-Copyright (c) 2023 Finto Technologies GmbH
+MIT License
 
+This repository is licensed under the MIT License. Portions of this codebase are derived from posthog/posthog-js-lite by PostHog, which is also licensed under the MIT License.
+
+Copyright (c) 2023-2026 Langfuse GmbH
 Copyright (c) 2022 PostHog (part of Hiberly Inc)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
