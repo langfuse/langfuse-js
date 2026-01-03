@@ -107,6 +107,7 @@ export class ScoreV2 {
       queueId,
       dataType,
       traceTags,
+      fields,
     } = request;
     const _queryParams: Record<
       string,
@@ -190,6 +191,10 @@ export class ScoreV2 {
       } else {
         _queryParams["traceTags"] = traceTags;
       }
+    }
+
+    if (fields != null) {
+      _queryParams["fields"] = fields;
     }
 
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
