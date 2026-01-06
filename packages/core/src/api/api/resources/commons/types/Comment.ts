@@ -13,4 +13,12 @@ export interface Comment {
   objectId: string;
   content: string;
   authorUserId?: string;
+  /** For inline comments, the IO field (input, output, metadata) */
+  dataField?: string;
+  /** JSON Path expressions for comment location */
+  path?: string[];
+  /** Start character offsets (inclusive, UTF-16) */
+  rangeStart?: number[];
+  /** End character offsets (exclusive, UTF-16) */
+  rangeEnd?: number[];
 }

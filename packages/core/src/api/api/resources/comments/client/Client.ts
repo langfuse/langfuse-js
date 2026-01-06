@@ -78,7 +78,11 @@ export class Comments {
    *         objectType: "objectType",
    *         objectId: "objectId",
    *         content: "content",
-   *         authorUserId: undefined
+   *         authorUserId: undefined,
+   *         dataField: undefined,
+   *         path: undefined,
+   *         rangeStart: undefined,
+   *         rangeEnd: undefined
    *     })
    */
   public create(

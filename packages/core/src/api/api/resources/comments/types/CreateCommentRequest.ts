@@ -13,4 +13,12 @@ export interface CreateCommentRequest {
   content: string;
   /** The id of the user who created the comment. */
   authorUserId?: string;
+  /** For inline comments on IO, specifies which field (input, output, or metadata). Must be set together with path, rangeStart, and rangeEnd. */
+  dataField?: string;
+  /** JSON Path expressions specifying comment location within the dataField. Must have same length as rangeStart and rangeEnd. */
+  path?: string[];
+  /** Start character offsets (inclusive, UTF-16 code units) for each path entry. */
+  rangeStart?: number[];
+  /** End character offsets (exclusive, UTF-16 code units) for each path entry. */
+  rangeEnd?: number[];
 }
