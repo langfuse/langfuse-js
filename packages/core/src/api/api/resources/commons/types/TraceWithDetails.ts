@@ -8,11 +8,11 @@ export interface TraceWithDetails extends LangfuseAPI.Trace {
   /** Path of trace in Langfuse UI */
   htmlPath: string;
   /** Latency of trace in seconds */
-  latency: number;
+  latency?: number | null;
   /** Cost of trace in USD */
-  totalCost: number;
+  totalCost?: number | null;
   /** List of observation ids */
-  observations: string[];
+  observations?: string[] | null;
   /** List of score ids */
-  scores: string[];
+  scores?: string[] | null;
 }

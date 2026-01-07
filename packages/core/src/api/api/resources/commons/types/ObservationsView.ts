@@ -6,25 +6,25 @@ import * as LangfuseAPI from "../../../index.js";
 
 export interface ObservationsView extends LangfuseAPI.Observation {
   /** The name of the prompt associated with the observation */
-  promptName?: string;
+  promptName: string | null;
   /** The version of the prompt associated with the observation */
-  promptVersion?: number;
+  promptVersion: number | null;
   /** The unique identifier of the model */
-  modelId?: string;
+  modelId: string | null;
   /** The price of the input in USD */
-  inputPrice?: number;
+  inputPrice: number | null;
   /** The price of the output in USD. */
-  outputPrice?: number;
+  outputPrice: number | null;
   /** The total price in USD. */
-  totalPrice?: number;
+  totalPrice: number | null;
   /** (Deprecated. Use usageDetails and costDetails instead.) The calculated cost of the input in USD */
-  calculatedInputCost?: number;
+  calculatedInputCost: number | null;
   /** (Deprecated. Use usageDetails and costDetails instead.) The calculated cost of the output in USD */
-  calculatedOutputCost?: number;
+  calculatedOutputCost: number | null;
   /** (Deprecated. Use usageDetails and costDetails instead.) The calculated total cost in USD */
-  calculatedTotalCost?: number;
+  calculatedTotalCost: number | null;
   /** The latency in seconds. */
-  latency?: number;
+  latency: number | null;
   /** The time to the first token in seconds */
-  timeToFirstToken?: number;
+  timeToFirstToken: number | null;
 }

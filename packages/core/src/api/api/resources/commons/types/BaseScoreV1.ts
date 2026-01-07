@@ -9,17 +9,21 @@ export interface BaseScoreV1 {
   traceId: string;
   name: string;
   source: LangfuseAPI.ScoreSource;
-  observationId?: string;
+  /** The observation ID associated with the score */
+  observationId?: string | null;
   timestamp: string;
   createdAt: string;
   updatedAt: string;
-  authorUserId?: string;
-  comment?: string;
+  /** The user ID of the author */
+  authorUserId: string | null;
+  /** Comment on the score */
+  comment: string | null;
+  /** Metadata associated with the score */
   metadata?: unknown;
   /** Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
-  configId?: string;
+  configId: string | null;
   /** The annotation queue referenced by the score. Indicates if score was initially created while processing annotation queue. */
-  queueId?: string;
+  queueId: string | null;
   /** The environment from which this score originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
-  environment?: string;
+  environment: string;
 }

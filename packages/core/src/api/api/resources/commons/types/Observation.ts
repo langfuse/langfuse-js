@@ -8,43 +8,43 @@ export interface Observation {
   /** The unique identifier of the observation */
   id: string;
   /** The trace ID associated with the observation */
-  traceId?: string;
+  traceId: string | null;
   /** The type of the observation */
   type: string;
   /** The name of the observation */
-  name?: string;
+  name: string | null;
   /** The start time of the observation */
   startTime: string;
   /** The end time of the observation. */
-  endTime?: string;
+  endTime: string | null;
   /** The completion start time of the observation */
-  completionStartTime?: string;
+  completionStartTime: string | null;
   /** The model used for the observation */
-  model?: string;
+  model: string | null;
   /** The parameters of the model used for the observation */
-  modelParameters?: Record<string, LangfuseAPI.MapValue>;
+  modelParameters?: unknown;
   /** The input data of the observation */
   input?: unknown;
   /** The version of the observation */
-  version?: string;
+  version: string | null;
   /** Additional metadata of the observation */
   metadata?: unknown;
   /** The output data of the observation */
   output?: unknown;
   /** (Deprecated. Use usageDetails and costDetails instead.) The usage data of the observation */
-  usage?: LangfuseAPI.Usage;
+  usage: LangfuseAPI.Usage;
   /** The level of the observation */
   level: LangfuseAPI.ObservationLevel;
   /** The status message of the observation */
-  statusMessage?: string;
+  statusMessage: string | null;
   /** The parent observation ID */
-  parentObservationId?: string;
+  parentObservationId: string | null;
   /** The prompt ID associated with the observation */
-  promptId?: string;
+  promptId: string | null;
   /** The usage details of the observation. Key is the name of the usage metric, value is the number of units consumed. The total key is the sum of all (non-total) usage metrics or the total value ingested. */
-  usageDetails?: Record<string, number>;
+  usageDetails: Record<string, number>;
   /** The cost details of the observation. Key is the name of the cost metric, value is the cost in USD. The total key is the sum of all (non-total) cost metrics or the total value ingested. */
-  costDetails?: Record<string, number>;
+  costDetails: Record<string, number>;
   /** The environment from which this observation originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
-  environment?: string;
+  environment: string;
 }

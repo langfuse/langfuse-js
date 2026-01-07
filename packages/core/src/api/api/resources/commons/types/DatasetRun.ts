@@ -8,7 +8,7 @@ export interface DatasetRun {
   /** Name of the dataset run */
   name: string;
   /** Description of the run */
-  description?: string;
+  description: string | null;
   /** Metadata of the dataset run */
   metadata?: unknown;
   /** Id of the associated dataset */

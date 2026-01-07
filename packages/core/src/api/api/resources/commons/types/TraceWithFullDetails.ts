@@ -8,9 +8,9 @@ export interface TraceWithFullDetails extends LangfuseAPI.Trace {
   /** Path of trace in Langfuse UI */
   htmlPath: string;
   /** Latency of trace in seconds */
-  latency: number;
+  latency?: number | null;
   /** Cost of trace in USD */
-  totalCost: number;
+  totalCost?: number | null;
   /** List of observations */
   observations: LangfuseAPI.ObservationsView[];
   /** List of scores */

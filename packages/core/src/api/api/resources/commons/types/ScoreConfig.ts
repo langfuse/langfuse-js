@@ -17,10 +17,11 @@ export interface ScoreConfig {
   /** Whether the score config is archived. Defaults to false */
   isArchived: boolean;
   /** Sets minimum value for numerical scores. If not set, the minimum value defaults to -∞ */
-  minValue?: number;
+  minValue?: number | null;
   /** Sets maximum value for numerical scores. If not set, the maximum value defaults to +∞ */
-  maxValue?: number;
+  maxValue?: number | null;
   /** Configures custom categories for categorical scores */
   categories?: LangfuseAPI.ConfigCategory[];
-  description?: string;
+  /** Description of the score config */
+  description?: string | null;
 }

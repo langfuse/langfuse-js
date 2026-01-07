@@ -16,6 +16,13 @@ export interface GetObservationsV2Request {
    * Example: "basic,usage,model"
    */
   fields?: string;
+  /**
+   * Comma-separated list of metadata keys to return non-truncated.
+   * By default, metadata values over 200 characters are truncated.
+   * Use this parameter to retrieve full values for specific keys.
+   * Example: "key1,key2"
+   */
+  expandMetadata?: string;
   /** Number of items to return per page. Maximum 1000, default 50. */
   limit?: number;
   /** Base64-encoded cursor for pagination. Use the cursor from the previous response to get the next page. */

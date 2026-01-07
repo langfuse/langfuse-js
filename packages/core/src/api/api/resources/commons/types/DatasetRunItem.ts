@@ -8,7 +8,8 @@ export interface DatasetRunItem {
   datasetRunName: string;
   datasetItemId: string;
   traceId: string;
-  observationId?: string;
+  /** The observation ID associated with this run item */
+  observationId: string | null;
   createdAt: string;
   updatedAt: string;
 }

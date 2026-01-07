@@ -5,12 +5,14 @@
 export interface Dataset {
   id: string;
   name: string;
-  description?: string;
+  /** Description of the dataset */
+  description: string | null;
+  /** Metadata associated with the dataset */
   metadata?: unknown;
   /** JSON Schema for validating dataset item inputs */
-  inputSchema?: unknown;
+  inputSchema: unknown | null;
   /** JSON Schema for validating dataset item expected outputs */
-  expectedOutputSchema?: unknown;
+  expectedOutputSchema: unknown | null;
   projectId: string;
   createdAt: string;
   updatedAt: string;

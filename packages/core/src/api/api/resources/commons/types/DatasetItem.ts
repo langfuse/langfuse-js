@@ -7,11 +7,16 @@ import * as LangfuseAPI from "../../../index.js";
 export interface DatasetItem {
   id: string;
   status: LangfuseAPI.DatasetStatus;
+  /** Input data for the dataset item */
   input?: unknown;
+  /** Expected output for the dataset item */
   expectedOutput?: unknown;
+  /** Metadata associated with the dataset item */
   metadata?: unknown;
-  sourceTraceId?: string;
-  sourceObservationId?: string;
+  /** The trace ID that sourced this dataset item */
+  sourceTraceId: string | null;
+  /** The observation ID that sourced this dataset item */
+  sourceObservationId: string | null;
   datasetId: string;
   datasetName: string;
   createdAt: string;

@@ -8,25 +8,25 @@ export interface Trace {
   /** The timestamp when the trace was created */
   timestamp: string;
   /** The name of the trace */
-  name?: string;
+  name: string | null;
   /** The input data of the trace. Can be any JSON. */
   input?: unknown;
   /** The output data of the trace. Can be any JSON. */
   output?: unknown;
   /** The session identifier associated with the trace */
-  sessionId?: string;
+  sessionId: string | null;
   /** The release version of the application when the trace was created */
-  release?: string;
+  release: string | null;
   /** The version of the trace */
-  version?: string;
+  version: string | null;
   /** The user identifier associated with the trace */
-  userId?: string;
+  userId: string | null;
   /** The metadata associated with the trace. Can be any JSON. */
   metadata?: unknown;
-  /** The tags associated with the trace. Can be an array of strings or null. */
-  tags?: string[];
+  /** The tags associated with the trace. */
+  tags: string[];
   /** Public traces are accessible via url without login */
-  public?: boolean;
+  public: boolean;
   /** The environment from which this trace originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
-  environment?: string;
+  environment: string;
 }
