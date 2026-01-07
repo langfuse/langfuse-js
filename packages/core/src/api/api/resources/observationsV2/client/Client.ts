@@ -74,7 +74,7 @@ export class ObservationsV2 {
    * - `basic` - name, level, statusMessage, version, environment, bookmarked, public, userId, sessionId
    * - `time` - completionStartTime, createdAt, updatedAt
    * - `io` - input, output
-   * - `metadata` - metadata
+   * - `metadata` - metadata (truncated to 200 chars by default, use `expandMetadata` to get full values)
    * - `model` - providedModelName, internalModelId, modelParameters
    * - `usage` - usageDetails, costDetails, totalCost
    * - `prompt` - promptId, promptName, promptVersion
@@ -113,6 +113,7 @@ export class ObservationsV2 {
   ): Promise<core.WithRawResponse<LangfuseAPI.ObservationsV2Response>> {
     const {
       fields,
+      expandMetadata,
       limit,
       cursor,
       parseIoAsJson,
@@ -134,6 +135,10 @@ export class ObservationsV2 {
     > = {};
     if (fields != null) {
       _queryParams["fields"] = fields;
+    }
+
+    if (expandMetadata != null) {
+      _queryParams["expandMetadata"] = expandMetadata;
     }
 
     if (limit != null) {
