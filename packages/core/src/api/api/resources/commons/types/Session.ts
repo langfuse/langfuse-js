@@ -7,5 +7,5 @@ export interface Session {
   createdAt: string;
   projectId: string;
   /** The environment from which this session originated. */
-  environment?: string;
+  environment: string;
 }

@@ -12,5 +12,6 @@ export interface Comment {
   objectType: LangfuseAPI.CommentObjectType;
   objectId: string;
   content: string;
-  authorUserId?: string;
+  /** The user ID of the comment author */
+  authorUserId?: string | null;
 }

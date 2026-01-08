@@ -6,22 +6,29 @@ import * as LangfuseAPI from "../../../index.js";
 
 export interface BaseScore {
   id: string;
-  traceId?: string;
-  sessionId?: string;
-  observationId?: string;
-  datasetRunId?: string;
+  /** The trace ID associated with the score */
+  traceId?: string | null;
+  /** The session ID associated with the score */
+  sessionId?: string | null;
+  /** The observation ID associated with the score */
+  observationId?: string | null;
+  /** The dataset run ID associated with the score */
+  datasetRunId?: string | null;
   name: string;
   source: LangfuseAPI.ScoreSource;
   timestamp: string;
   createdAt: string;
   updatedAt: string;
-  authorUserId?: string;
-  comment?: string;
+  /** The user ID of the author */
+  authorUserId: string | null;
+  /** Comment on the score */
+  comment: string | null;
+  /** Metadata associated with the score */
   metadata?: unknown;
   /** Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
-  configId?: string;
+  configId: string | null;
   /** The annotation queue referenced by the score. Indicates if score was initially created while processing annotation queue. */
-  queueId?: string;
+  queueId: string | null;
   /** The environment from which this score originated. Can be any lowercase alphanumeric string with hyphens and underscores that does not start with 'langfuse'. */
-  environment?: string;
+  environment: string;
 }

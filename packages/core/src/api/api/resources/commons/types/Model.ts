@@ -22,17 +22,17 @@ export interface Model {
   /** Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
   matchPattern: string;
   /** Apply only to generations which are newer than this ISO date. */
-  startDate?: string;
+  startDate: string | null;
   /** Unit used by this model. */
-  unit?: LangfuseAPI.ModelUsageUnit;
+  unit?: LangfuseAPI.ModelUsageUnit | null;
   /** Deprecated. See 'prices' instead. Price (USD) per input unit */
-  inputPrice?: number;
+  inputPrice: number | null;
   /** Deprecated. See 'prices' instead. Price (USD) per output unit */
-  outputPrice?: number;
+  outputPrice: number | null;
   /** Deprecated. See 'prices' instead. Price (USD) per total unit. Cannot be set if input or output price is set. */
-  totalPrice?: number;
+  totalPrice: number | null;
   /** Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
-  tokenizerId?: string;
+  tokenizerId: string | null;
   /** Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
   tokenizerConfig?: unknown;
   isLangfuseManaged: boolean;
