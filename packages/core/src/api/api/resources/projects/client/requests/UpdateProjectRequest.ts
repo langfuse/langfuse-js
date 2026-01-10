@@ -7,13 +7,18 @@
  *     {
  *         name: "name",
  *         metadata: undefined,
- *         retention: 1
+ *         retention: undefined
  *     }
  */
 export interface UpdateProjectRequest {
   name: string;
   /** Optional metadata for the project */
   metadata?: Record<string, unknown>;
-  /** Number of days to retain data. Must be 0 or at least 3 days. Requires data-retention entitlement for non-zero values. Optional. */
-  retention: number;
+  /**
+   * Number of days to retain data.
+   * Must be 0 or at least 3 days.
+   * Requires data-retention entitlement for non-zero values.
+   * Optional. Will retain existing retention setting if omitted.
+   */
+  retention?: number;
 }

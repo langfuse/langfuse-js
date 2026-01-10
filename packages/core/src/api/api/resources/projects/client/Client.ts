@@ -321,7 +321,7 @@ export class Projects {
    *     await client.projects.update("projectId", {
    *         name: "name",
    *         metadata: undefined,
-   *         retention: 1
+   *         retention: undefined
    *     })
    */
   public update(
