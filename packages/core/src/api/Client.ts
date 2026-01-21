@@ -49,6 +49,8 @@ export declare namespace LangfuseAPIClient {
       string,
       string | core.Supplier<string | null | undefined> | null | undefined
     >;
+    /** Custom fetch function to use for HTTP requests */
+    fetch?: typeof fetch;
   }
 
   export interface RequestOptions {
