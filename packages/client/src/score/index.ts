@@ -5,6 +5,7 @@ import {
   generateUUID,
   ScoreBody,
   getGlobalLogger,
+  LogLevel,
   safeSetTimeout,
   IngestionResponse,
 } from "@langfuse/core";
@@ -93,10 +94,12 @@ export class ScoreManager {
     }
 
     this.eventQueue.push(scoreIngestionEvent);
-    this.logger.debug(
-      "Added score event to queue:\n",
-      JSON.stringify(scoreIngestionEvent, null, 2),
-    );
+    if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
+      this.logger.debug(
+        "Added score event to queue:\n",
+        JSON.stringify(scoreIngestionEvent, null, 2),
+      );
+    }
 
     if (this.eventQueue.length >= this.flushAtCount) {
       this.flushPromise = this.flush();
