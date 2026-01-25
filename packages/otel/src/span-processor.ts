@@ -1,5 +1,6 @@
 import {
   Logger,
+  LogLevel,
   getGlobalLogger,
   LangfuseAPIClient,
   LANGFUSE_SDK_VERSION,
@@ -398,26 +399,28 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     this.applyMaskInPlace(span);
     await this.mediaService.process(span);
 
-    this.logger.debug(
-      `Processed span:\n${JSON.stringify(
-        {
-          name: span.name,
-          traceId: span.spanContext().traceId,
-          spanId: span.spanContext().spanId,
-          parentSpanId: span.parentSpanContext?.spanId ?? null,
-          attributes: span.attributes,
-          startTime: new Date(hrTimeToMilliseconds(span.startTime)),
-          endTime: new Date(hrTimeToMilliseconds(span.endTime)),
-          durationMs: hrTimeToMilliseconds(span.duration),
-          kind: span.kind,
-          status: span.status,
-          resource: span.resource.attributes,
-          instrumentationScope: span.instrumentationScope,
-        },
-        null,
-        2,
-      )}`,
-    );
+    if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
+      this.logger.debug(
+        `Processed span:\n${JSON.stringify(
+          {
+            name: span.name,
+            traceId: span.spanContext().traceId,
+            spanId: span.spanContext().spanId,
+            parentSpanId: span.parentSpanContext?.spanId ?? null,
+            attributes: span.attributes,
+            startTime: new Date(hrTimeToMilliseconds(span.startTime)),
+            endTime: new Date(hrTimeToMilliseconds(span.endTime)),
+            durationMs: hrTimeToMilliseconds(span.duration),
+            kind: span.kind,
+            status: span.status,
+            resource: span.resource.attributes,
+            instrumentationScope: span.instrumentationScope,
+          },
+          null,
+          2,
+        )}`,
+      );
+    }
 
     this.processor.onEnd(span);
   }

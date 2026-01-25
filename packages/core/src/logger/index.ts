@@ -163,6 +163,24 @@ export class Logger {
   getLevel(): LogLevel {
     return this.config.level;
   }
+
+  /**
+   * Checks if a given log level is enabled.
+   * Use this to guard expensive operations (like JSON.stringify) before debug logging.
+   *
+   * @param level - The log level to check
+   * @returns True if the level is enabled, false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (logger.isLevelEnabled(LogLevel.DEBUG)) {
+   *   logger.debug('Expensive data:', JSON.stringify(largeObject));
+   * }
+   * ```
+   */
+  isLevelEnabled(level: LogLevel): boolean {
+    return this.shouldLog(level);
+  }
 }
 
 /**
