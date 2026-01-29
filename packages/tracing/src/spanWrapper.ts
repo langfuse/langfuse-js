@@ -1,15 +1,16 @@
+import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import { Span, TimeInput } from "@opentelemetry/api";
 
 import {
   createObservationAttributes,
-  createTraceAttributes,
+  createTraceIOAttributes,
 } from "./attributes.js";
 import { getLangfuseTracer } from "./tracerProvider.js";
 import {
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
   LangfuseEventAttributes,
-  LangfuseTraceAttributes,
+  LangfuseTraceIOAttributes,
 } from "./types.js";
 import type {
   LangfuseAgentAttributes,
@@ -49,9 +50,6 @@ import { startObservation } from "./index.js";
  * // Function accepting any observation type
  * function logObservation(obs: LangfuseObservation) {
  *   console.log(`Observation ${obs.id} in trace ${obs.traceId}`);
- *
- *   // All observations have common methods
- *   obs.updateTrace({ tags: ['logged'] });
  *   obs.end();
  * }
  *
@@ -116,7 +114,7 @@ type LangfuseObservationParams = {
  *
  * ## Common Methods
  * - `end()`: Marks the observation as complete with optional timestamp
- * - `updateTrace()`: Sets trace-level attributes like user ID, session ID, tags
+ * - `setTraceIO()`: Sets trace-level input/output (deprecated, for legacy platform features)
  * - `startObservation()`: Creates child observations with inherited context
  *
  * @example
@@ -128,13 +126,6 @@ type LangfuseObservationParams = {
  * console.log(`Observation ID: ${observation.id}`);
  * console.log(`Trace ID: ${observation.traceId}`);
  * console.log(`Type: ${observation.type}`);
- *
- * // Common methods available on all observations
- * observation.updateTrace({
- *   userId: 'user-123',
- *   sessionId: 'session-456',
- *   tags: ['production', 'api-v2']
- * });
  *
  * // Create child observations
  * const child = observation.startObservation('child-operation', {
@@ -192,10 +183,53 @@ abstract class LangfuseBaseObservation {
   }
 
   /**
-   * Updates the parent trace with new attributes.
+   * Set trace-level input and output for the trace this observation belongs to.
+   *
+   * @deprecated This is a legacy method for backward compatibility with Langfuse platform
+   * features that still rely on trace-level input/output (e.g., legacy LLM-as-a-judge
+   * evaluators). It will be removed in a future major version.
+   *
+   * For setting other trace attributes (userId, sessionId, metadata, tags, version),
+   * use {@link propagateAttributes} instead.
+   *
+   * @param attributes - Input and output data to associate with the trace
+   * @returns The observation instance for method chaining
+   *
+   * @example
+   * ```typescript
+   * const span = startObservation('my-operation');
+   * span.setTraceIO({
+   *   input: { query: 'user question' },
+   *   output: { response: 'assistant answer' }
+   * });
+   * ```
    */
-  public updateTrace(attributes: LangfuseTraceAttributes) {
-    this.otelSpan.setAttributes(createTraceAttributes(attributes));
+  public setTraceIO(attributes: LangfuseTraceIOAttributes) {
+    this.otelSpan.setAttributes(createTraceIOAttributes(attributes));
+
+    return this;
+  }
+
+  /**
+   * Make the trace this observation belongs to publicly accessible via its URL.
+   *
+   * When a trace is published, anyone with the trace link can view the full trace
+   * without needing to be logged in to Langfuse. This action cannot be undone
+   * programmatically - once any span in a trace is published, the entire trace
+   * becomes public.
+   *
+   * @returns The observation instance for method chaining
+   *
+   * @example
+   * ```typescript
+   * const span = startObservation('my-operation');
+   * span.publishTrace();
+   * ```
+   */
+  public publishTrace() {
+    this.otelSpan.setAttributes({
+      [LangfuseOtelSpanAttributes.TRACE_PUBLIC]: true,
+    });
 
     return this;
   }

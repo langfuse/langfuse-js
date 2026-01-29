@@ -5,6 +5,7 @@ import {
   LangfuseObservationAttributes,
   LangfuseObservationType,
   LangfuseTraceAttributes,
+  LangfuseTraceIOAttributes,
 } from "./types.js";
 
 /**
@@ -58,6 +59,34 @@ export function createTraceAttributes({
     [LangfuseOtelSpanAttributes.ENVIRONMENT]: environment,
     [LangfuseOtelSpanAttributes.TRACE_PUBLIC]: isPublic,
     ..._flattenAndSerializeMetadata(metadata, "trace"),
+  };
+
+  return Object.fromEntries(
+    Object.entries(attributes).filter(([_, v]) => v != null),
+  );
+}
+
+/**
+ * Creates OpenTelemetry attributes from Langfuse trace IO attributes.
+ *
+ * Converts trace input/output into the internal OpenTelemetry
+ * attribute format required by the span processor.
+ *
+ * @param attributes - Langfuse trace IO attributes to convert
+ * @returns OpenTelemetry attributes object with non-null values
+ *
+ * @deprecated This is for backward compatibility with legacy platform features
+ * that still rely on trace-level input/output. Use propagateAttributes for other trace attributes.
+ *
+ * @internal
+ */
+export function createTraceIOAttributes({
+  input,
+  output,
+}: LangfuseTraceIOAttributes = {}): Attributes {
+  const attributes = {
+    [LangfuseOtelSpanAttributes.TRACE_INPUT]: _serialize(input),
+    [LangfuseOtelSpanAttributes.TRACE_OUTPUT]: _serialize(output),
   };
 
   return Object.fromEntries(
