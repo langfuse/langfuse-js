@@ -13,7 +13,10 @@ export type Score =
   | LangfuseAPI.Score.Categorical
   /**
    * Score with BOOLEAN data type */
-  | LangfuseAPI.Score.Boolean;
+  | LangfuseAPI.Score.Boolean
+  /**
+   * Score with CORRECTION data type */
+  | LangfuseAPI.Score.Correction;
 
 export namespace Score {
   export interface Numeric extends LangfuseAPI.NumericScore {
@@ -26,5 +29,9 @@ export namespace Score {
 
   export interface Boolean extends LangfuseAPI.BooleanScore {
     dataType: "BOOLEAN";
+  }
+
+  export interface Correction extends LangfuseAPI.CorrectionScore {
+    dataType: "CORRECTION";
   }
 }
