@@ -8,6 +8,7 @@ export interface CreateChatPromptRequest {
   name: string;
   prompt: LangfuseAPI.ChatMessageWithPlaceholders[];
   config?: unknown;
+  type: LangfuseAPI.CreateChatPromptType;
   /** List of deployment labels of this prompt version. */
   labels?: string[];
   /** List of tags to apply to all versions of this prompt. */

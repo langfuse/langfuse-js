@@ -1,4 +1,8 @@
-import { LangfuseGeneration, startObservation } from "@langfuse/tracing";
+import {
+  LangfuseGeneration,
+  startObservation,
+  propagateAttributes,
+} from "@langfuse/tracing";
 import type OpenAI from "openai";
 
 import {
@@ -58,107 +62,112 @@ const wrapMethod = <T extends GenericMethod>(
   config?: LangfuseConfig,
   ...args: Parameters<T>
 ): ReturnType<T> | any => {
-  const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
-
-  const finalModelParams = { ...modelParameters, response_format: "" };
-  const finalMetadata = {
-    ...config?.generationMetadata,
-    response_format:
-      "response_format" in modelParameters
-        ? modelParameters.response_format
-        : undefined,
-  };
-
-  const generation = startObservation(
-    config?.generationName ?? "OpenAI-completion",
+  return propagateAttributes(
     {
-      model,
-      input,
-      modelParameters: finalModelParams,
-      prompt: config?.langfusePrompt,
-      metadata: finalMetadata,
+      userId: config?.userId,
+      sessionId: config?.sessionId,
+      tags: config?.tags,
+      traceName: config?.traceName,
     },
-    {
-      asType: "generation",
-      parentSpanContext: config?.parentSpanContext,
-    },
-  ).updateTrace({
-    userId: config?.userId,
-    sessionId: config?.sessionId,
-    tags: config?.tags,
-    name: config?.traceName,
-  });
+    () => {
+      const { model, input, modelParameters } = parseInputArgs(args[0] ?? {});
 
-  try {
-    const res = tracedMethod(...args);
+      const finalModelParams = { ...modelParameters, response_format: "" };
+      const finalMetadata = {
+        ...config?.generationMetadata,
+        response_format:
+          "response_format" in modelParameters
+            ? modelParameters.response_format
+            : undefined,
+      };
 
-    // Handle stream responses
-    if (isAsyncIterable(res)) {
-      return wrapAsyncIterable(res, generation);
-    }
-
-    if (res instanceof Promise) {
-      const wrappedPromise = res
-        .then((result) => {
-          if (isAsyncIterable(result)) {
-            return wrapAsyncIterable(result, generation);
-          }
-
-          const output = parseCompletionOutput(result);
-          const usageDetails = parseUsageDetailsFromResponse(result);
-          const {
-            model: modelFromResponse,
-            modelParameters: modelParametersFromResponse,
-            metadata: metadataFromResponse,
-          } = parseModelDataFromResponse(result);
-
-          generation
-            .update({
-              output,
-              usageDetails,
-              model: modelFromResponse,
-              modelParameters: modelParametersFromResponse,
-              metadata: metadataFromResponse,
-            })
-            .end();
-
-          return result;
-        })
-        .catch((err) => {
-          generation
-            .update({
-              statusMessage: String(err),
-              level: "ERROR",
-              costDetails: {
-                input: 0,
-                output: 0,
-                total: 0,
-              },
-            })
-            .end();
-
-          throw err;
-        });
-
-      return wrappedPromise;
-    }
-
-    return res;
-  } catch (error) {
-    generation
-      .update({
-        statusMessage: String(error),
-        level: "ERROR",
-        costDetails: {
-          input: 0,
-          output: 0,
-          total: 0,
+      const generation = startObservation(
+        config?.generationName ?? "OpenAI-completion",
+        {
+          model,
+          input,
+          modelParameters: finalModelParams,
+          prompt: config?.langfusePrompt,
+          metadata: finalMetadata,
         },
-      })
-      .end();
+        {
+          asType: "generation",
+          parentSpanContext: config?.parentSpanContext,
+        },
+      );
 
-    throw error;
-  }
+      try {
+        const res = tracedMethod(...args);
+
+        // Handle stream responses
+        if (isAsyncIterable(res)) {
+          return wrapAsyncIterable(res, generation);
+        }
+
+        if (res instanceof Promise) {
+          const wrappedPromise = res
+            .then((result) => {
+              if (isAsyncIterable(result)) {
+                return wrapAsyncIterable(result, generation);
+              }
+
+              const output = parseCompletionOutput(result);
+              const usageDetails = parseUsageDetailsFromResponse(result);
+              const {
+                model: modelFromResponse,
+                modelParameters: modelParametersFromResponse,
+                metadata: metadataFromResponse,
+              } = parseModelDataFromResponse(result);
+
+              generation
+                .update({
+                  output,
+                  usageDetails,
+                  model: modelFromResponse,
+                  modelParameters: modelParametersFromResponse,
+                  metadata: metadataFromResponse,
+                })
+                .end();
+
+              return result;
+            })
+            .catch((err) => {
+              generation
+                .update({
+                  statusMessage: String(err),
+                  level: "ERROR",
+                  costDetails: {
+                    input: 0,
+                    output: 0,
+                    total: 0,
+                  },
+                })
+                .end();
+
+              throw err;
+            });
+
+          return wrappedPromise;
+        }
+
+        return res;
+      } catch (error) {
+        generation
+          .update({
+            statusMessage: String(error),
+            level: "ERROR",
+            costDetails: {
+              input: 0,
+              output: 0,
+              total: 0,
+            },
+          })
+          .end();
+
+        throw error;
+      }
+    },
+  );
 };
 
 /**
