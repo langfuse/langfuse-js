@@ -5,15 +5,5 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export type CreatePromptRequest =
-  | LangfuseAPI.CreatePromptRequest.Chat
-  | LangfuseAPI.CreatePromptRequest.Text;
-
-export namespace CreatePromptRequest {
-  export interface Chat extends LangfuseAPI.CreateChatPromptRequest {
-    type: "chat";
-  }
-
-  export interface Text extends LangfuseAPI.CreateTextPromptRequest {
-    type: "text";
-  }
-}
+  | LangfuseAPI.CreateChatPromptRequest
+  | LangfuseAPI.CreateTextPromptRequest;
