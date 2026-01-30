@@ -2816,7 +2816,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
               });
 
               // Make the trace publicly accessible
-              span.publishTrace();
+              span.setTraceAsPublic();
 
               return span;
             },

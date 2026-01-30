@@ -71,7 +71,7 @@ describe("Server Export E2E Tests", () => {
             );
 
             // Make the trace public
-            generation.publishTrace();
+            generation.setTraceAsPublic();
 
             // Simulate LLM response
             generation.update({

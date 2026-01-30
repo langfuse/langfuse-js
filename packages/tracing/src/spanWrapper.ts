@@ -223,10 +223,10 @@ abstract class LangfuseBaseObservation {
    * @example
    * ```typescript
    * const span = startObservation('my-operation');
-   * span.publishTrace();
+   * span.setTraceAsPublic();
    * ```
    */
-  public publishTrace() {
+  public setTraceAsPublic() {
     this.otelSpan.setAttributes({
       [LangfuseOtelSpanAttributes.TRACE_PUBLIC]: true,
     });

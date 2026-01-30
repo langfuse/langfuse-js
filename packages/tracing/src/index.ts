@@ -930,17 +930,17 @@ export function setActiveTraceIO(attributes: LangfuseTraceIOAttributes) {
  *
  * @example
  * ```typescript
- * import { publishActiveTrace, startActiveObservation } from '@langfuse/tracing';
+ * import { setActiveTraceAsPublic, startActiveObservation } from '@langfuse/tracing';
  *
  * startActiveObservation('my-operation', () => {
  *   // Make this trace publicly accessible
- *   publishActiveTrace();
+ *   setActiveTraceAsPublic();
  * });
  * ```
  *
  * @public
  */
-export function publishActiveTrace() {
+export function setActiveTraceAsPublic() {
   const span = trace.getActiveSpan();
 
   if (!span) {
