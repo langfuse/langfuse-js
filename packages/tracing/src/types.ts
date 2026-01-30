@@ -145,39 +145,6 @@ export type LangfuseTraceIOAttributes = {
 };
 
 /**
- * Attributes for Langfuse traces.
- *
- * Traces are the top-level containers that group related observations together.
- * They represent a complete workflow, request, or user interaction.
- *
- * @public
- */
-export type LangfuseTraceAttributes = {
-  /** Human-readable name for the trace */
-  name?: string;
-  /** Identifier for the user associated with this trace */
-  userId?: string;
-  /** Session identifier for grouping related traces */
-  sessionId?: string;
-  /** Version identifier for the code/application */
-  version?: string;
-  /** Release identifier for deployment tracking */
-  release?: string;
-  /** Input data that initiated the trace */
-  input?: unknown;
-  /** Final output data from the trace */
-  output?: unknown;
-  /** Additional metadata for the trace */
-  metadata?: unknown;
-  /** Tags for categorizing and filtering traces */
-  tags?: string[];
-  /** Whether this trace should be publicly visible */
-  public?: boolean;
-  /** Environment where the trace was captured */
-  environment?: string;
-};
-
-/**
  * Context information for linking observations to traces.
  *
  * Used internally for maintaining parent-child relationships between observations.
