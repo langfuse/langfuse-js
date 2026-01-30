@@ -6,5 +6,5 @@ import * as LangfuseAPI from "../../../index.js";
 
 export interface PlaceholderMessage {
   name: string;
-  type: LangfuseAPI.PlaceholderMessageType;
+  type?: LangfuseAPI.PlaceholderMessageType;
 }

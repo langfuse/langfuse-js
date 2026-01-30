@@ -371,11 +371,11 @@ export class Prompts {
    *         prompt: [{
    *                 role: "role",
    *                 content: "content",
-   *                 type: "chatmessage"
+   *                 type: undefined
    *             }, {
    *                 role: "role",
    *                 content: "content",
-   *                 type: "chatmessage"
+   *                 type: undefined
    *             }],
    *         config: undefined,
    *         type: "chat",

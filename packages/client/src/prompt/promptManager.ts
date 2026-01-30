@@ -6,6 +6,7 @@ import {
   ChatMessage,
   CreateTextPromptRequest,
   CreateChatPromptRequest,
+  PlaceholderMessage,
 } from "@langfuse/core";
 
 import { LangfusePromptCache } from "./promptCache.js";
@@ -119,15 +120,15 @@ export class PromptManager {
             prompt: body.prompt.map((item) => {
               if ("type" in item && item.type === ChatMessageType.Placeholder) {
                 return {
-                  type: ChatMessageType.Placeholder as const,
+                  type: ChatMessageType.Placeholder,
                   name: item.name,
-                };
+                } as PlaceholderMessage;
               } else {
                 // Handle regular ChatMessage (without type field) from API
                 return {
                   ...item,
-                  type: ChatMessageType.ChatMessage as const,
-                };
+                  type: ChatMessageType.ChatMessage,
+                } as ChatMessage;
               }
             }),
           }

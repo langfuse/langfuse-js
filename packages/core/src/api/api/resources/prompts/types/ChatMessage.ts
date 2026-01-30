@@ -7,5 +7,5 @@ import * as LangfuseAPI from "../../../index.js";
 export interface ChatMessage {
   role: string;
   content: string;
-  type: LangfuseAPI.ChatMessageType;
+  type?: LangfuseAPI.ChatMessageType;
 }
