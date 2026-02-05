@@ -10,6 +10,12 @@ export interface GetDatasetItemsRequest {
   datasetName?: string;
   sourceTraceId?: string;
   sourceObservationId?: string;
+  /**
+   * ISO 8601 timestamp (RFC 3339, Section 5.6) in UTC (e.g., "2026-01-21T14:35:42Z").
+   * If provided, returns state of dataset at this timestamp.
+   * If not provided, returns the latest version. Requires datasetName to be specified.
+   */
+  version?: string;
   /** page number, starts at 1 */
   page?: number;
   /** limit of items per page */

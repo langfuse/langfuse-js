@@ -313,7 +313,8 @@ export class DatasetItems {
   }
 
   /**
-   * Get dataset items
+   * Get dataset items. Optionally specify a version to get the items as they existed at that point in time.
+   * Note: If version parameter is provided, datasetName must also be provided.
    *
    * @param {LangfuseAPI.GetDatasetItemsRequest} request
    * @param {DatasetItems.RequestOptions} requestOptions - Request-specific configuration.
@@ -340,8 +341,14 @@ export class DatasetItems {
     request: LangfuseAPI.GetDatasetItemsRequest = {},
     requestOptions?: DatasetItems.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.PaginatedDatasetItems>> {
-    const { datasetName, sourceTraceId, sourceObservationId, page, limit } =
-      request;
+    const {
+      datasetName,
+      sourceTraceId,
+      sourceObservationId,
+      version,
+      page,
+      limit,
+    } = request;
     const _queryParams: Record<
       string,
       string | string[] | object | object[] | null
@@ -356,6 +363,10 @@ export class DatasetItems {
 
     if (sourceObservationId != null) {
       _queryParams["sourceObservationId"] = sourceObservationId;
+    }
+
+    if (version != null) {
+      _queryParams["version"] = version;
     }
 
     if (page != null) {

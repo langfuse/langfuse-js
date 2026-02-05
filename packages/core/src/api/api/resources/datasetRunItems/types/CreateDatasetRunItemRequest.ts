@@ -12,4 +12,11 @@ export interface CreateDatasetRunItemRequest {
   observationId?: string;
   /** traceId should always be provided. For compatibility with older SDK versions it can also be inferred from the provided observationId. */
   traceId?: string;
+  /**
+   * ISO 8601 timestamp (RFC 3339, Section 5.6) in UTC (e.g., "2026-01-21T14:35:42Z").
+   * Specifies the dataset version to use for this experiment run.
+   * If provided, the experiment will use dataset items as they existed at or before this timestamp.
+   * If not provided, uses the latest version of dataset items.
+   */
+  datasetVersion?: string;
 }

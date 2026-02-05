@@ -17,6 +17,7 @@ export * from "./BaseScore.js";
 export * from "./NumericScore.js";
 export * from "./BooleanScore.js";
 export * from "./CategoricalScore.js";
+export * from "./CorrectionScore.js";
 export * from "./Score.js";
 export * from "./CreateScoreValue.js";
 export * from "./Comment.js";
