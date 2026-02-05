@@ -530,5 +530,45 @@ describe("Langfuse Datasets E2E", () => {
         ]),
       );
     }, 25000);
+
+    it("get dataset with version parameter returns items at specific timestamp", async () => {
+      const datasetName = nanoid();
+      await langfuse.api.datasets.create({ name: datasetName });
+
+      // Create first item (will have earlier timestamp)
+      const item1 = await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: "first item",
+        expectedOutput: "first output",
+      });
+
+      // Wait a bit to ensure different timestamps
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Create second item (will have later timestamp)
+      await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: "second item",
+        expectedOutput: "second output",
+      });
+
+      // Get dataset with version timestamp using item1's createdAt timestamp
+      // This should return only items that existed at that point in time (only item1)
+      const datasetAtVersion = await langfuse.dataset.get(datasetName, {
+        version: item1.createdAt,
+      });
+
+      // Should only have item1, not item2
+      expect(datasetAtVersion.items).toHaveLength(1);
+      expect(datasetAtVersion.items[0]).toMatchObject({
+        id: item1.id,
+        input: "first item",
+        expectedOutput: "first output",
+      });
+
+      // Get latest dataset (no version parameter) - should have both items
+      const datasetLatest = await langfuse.dataset.get(datasetName);
+      expect(datasetLatest.items).toHaveLength(2);
+    }, 10000);
   });
 });
