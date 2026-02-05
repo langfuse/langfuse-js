@@ -542,12 +542,14 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: "first output",
       });
 
-      // Calculate a hardcoded timestamp between item1 and item2 (500ms after item1)
-      const item1Time = new Date(item1.createdAt).getTime();
-      const versionTimestamp = new Date(item1Time + 500).toISOString();
+      // Wait to ensure item1 is fully created
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Wait a bit to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Capture hardcoded timestamp at this exact moment (between item1 and item2)
+      const versionTimestamp = new Date().toISOString();
+
+      // Wait again before creating item2
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Create second item (will have later timestamp)
       await langfuse.api.datasetItems.create({
@@ -573,6 +575,6 @@ describe("Langfuse Datasets E2E", () => {
       // Get latest dataset (no version parameter) - should have both items
       const datasetLatest = await langfuse.dataset.get(datasetName);
       expect(datasetLatest.items).toHaveLength(2);
-    }, 10000);
+    }, 25000);
   });
 });
