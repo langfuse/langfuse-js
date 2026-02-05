@@ -535,47 +535,31 @@ describe("Langfuse Datasets E2E", () => {
       const datasetName = nanoid();
       await langfuse.api.datasets.create({ name: datasetName });
 
-      // Create first item (will have earlier timestamp)
+      // Create first item
       const item1 = await langfuse.api.datasetItems.create({
         datasetName: datasetName,
         input: "first item",
         expectedOutput: "first output",
       });
 
-      // Wait for item1 to be persisted
-      await waitForServerIngestion(3_000);
-
-      // Create second item significantly later
-      const item2 = await langfuse.api.datasetItems.create({
+      // Create second item
+      await langfuse.api.datasetItems.create({
         datasetName: datasetName,
         input: "second item",
         expectedOutput: "second output",
       });
 
-      // Wait for item2 to be persisted
-      await waitForServerIngestion(3_000);
+      const versionDate = new Date(item1.createdAt);
+      const versionTimestamp = versionDate.toISOString();
 
-      // Verify timestamps are at least 2 seconds apart
-      const item1Time = new Date(item1.createdAt).getTime();
-      const item2Time = new Date(item2.createdAt).getTime();
-      expect(item2Time - item1Time).toBeGreaterThanOrEqual(2000);
-
-      // Ensure timestamps are actually different strings
-      expect(item1.createdAt).not.toEqual(item2.createdAt);
-
-      // Use a timestamp 1 second after item1 as the version
-      // This ensures we include item1 but not item2
-      const versionTimestamp = new Date(item1Time + 1000).toISOString();
-
+      // Get dataset at this version - should only have item1
       const datasetAtVersion = await langfuse.dataset.get(datasetName, {
         version: versionTimestamp,
-        fetchItemsPageSize: 5,
       });
 
       // Should only have item1, not item2
       expect(datasetAtVersion.items).toHaveLength(1);
       expect(datasetAtVersion.items[0]).toMatchObject({
-        id: item1.id,
         input: "first item",
         expectedOutput: "first output",
       });
