@@ -542,30 +542,21 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: "first output",
       });
 
-      // Wait to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await waitForServerIngestion(2_000);
 
       // Create second item (will have later timestamp)
-      const item2 = await langfuse.api.datasetItems.create({
+      await langfuse.api.datasetItems.create({
         datasetName: datasetName,
         input: "second item",
         expectedOutput: "second output",
       });
 
-      // Calculate hardcoded timestamp between item1 and item2 using server timestamps
-      // Add 1ms to item1's timestamp to ensure we're strictly after it
-      const item1Time = new Date(item1.createdAt).getTime();
-      const item2Time = new Date(item2.createdAt).getTime();
-      const versionTimestamp = new Date(item1Time + 1).toISOString();
-
-      // Verify that our version timestamp is actually between the two (in milliseconds)
-      expect(new Date(versionTimestamp).getTime()).toBeGreaterThan(item1Time);
-      expect(new Date(versionTimestamp).getTime()).toBeLessThan(item2Time);
+      await waitForServerIngestion(2_000);
 
       // Get dataset with version timestamp that's between item1 and item2 creation
       // This should return only items that existed at that point in time (only item1)
       const datasetAtVersion = await langfuse.dataset.get(datasetName, {
-        version: versionTimestamp,
+        version: item1.createdAt,
       });
 
       // Should only have item1, not item2
