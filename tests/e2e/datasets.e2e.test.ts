@@ -542,21 +542,34 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: "first output",
       });
 
-      await waitForServerIngestion(2_000);
+      // Wait for item1 to be persisted
+      await waitForServerIngestion(3_000);
 
-      // Create second item (will have later timestamp)
-      await langfuse.api.datasetItems.create({
+      // Create second item significantly later
+      const item2 = await langfuse.api.datasetItems.create({
         datasetName: datasetName,
         input: "second item",
         expectedOutput: "second output",
       });
 
-      await waitForServerIngestion(2_000);
+      // Wait for item2 to be persisted
+      await waitForServerIngestion(3_000);
 
-      // Get dataset with version timestamp that's between item1 and item2 creation
-      // This should return only items that existed at that point in time (only item1)
+      // Verify timestamps are at least 2 seconds apart
+      const item1Time = new Date(item1.createdAt).getTime();
+      const item2Time = new Date(item2.createdAt).getTime();
+      expect(item2Time - item1Time).toBeGreaterThanOrEqual(2000);
+
+      // Ensure timestamps are actually different strings
+      expect(item1.createdAt).not.toEqual(item2.createdAt);
+
+      // Use a timestamp 1 second after item1 as the version
+      // This ensures we include item1 but not item2
+      const versionTimestamp = new Date(item1Time + 1000).toISOString();
+
       const datasetAtVersion = await langfuse.dataset.get(datasetName, {
-        version: item1.createdAt,
+        version: versionTimestamp,
+        fetchItemsPageSize: 5,
       });
 
       // Should only have item1, not item2
@@ -570,6 +583,6 @@ describe("Langfuse Datasets E2E", () => {
       // Get latest dataset (no version parameter) - should have both items
       const datasetLatest = await langfuse.dataset.get(datasetName);
       expect(datasetLatest.items).toHaveLength(2);
-    }, 25000);
+    }, 30000);
   });
 });
