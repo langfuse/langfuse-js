@@ -251,7 +251,7 @@ export class DatasetManager {
         datasetName: name,
         limit: options?.fetchItemsPageSize ?? 50,
         page,
-        version: options?.version ?? undefined,
+        ...(options?.version && { version: options.version }),
       });
 
       items.push(...itemsResponse.data);
