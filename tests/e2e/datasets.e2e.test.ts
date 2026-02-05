@@ -542,6 +542,10 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: "first output",
       });
 
+      // Calculate a hardcoded timestamp between item1 and item2 (500ms after item1)
+      const item1Time = new Date(item1.createdAt).getTime();
+      const versionTimestamp = new Date(item1Time + 500).toISOString();
+
       // Wait a bit to ensure different timestamps
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -552,10 +556,10 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: "second output",
       });
 
-      // Get dataset with version timestamp using item1's createdAt timestamp
+      // Get dataset with version timestamp that's between item1 and item2 creation
       // This should return only items that existed at that point in time (only item1)
       const datasetAtVersion = await langfuse.dataset.get(datasetName, {
-        version: item1.createdAt,
+        version: versionTimestamp,
       });
 
       // Should only have item1, not item2
