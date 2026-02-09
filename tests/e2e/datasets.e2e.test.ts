@@ -530,5 +530,43 @@ describe("Langfuse Datasets E2E", () => {
         ]),
       );
     }, 25000);
+
+    it("get dataset with version parameter returns items at specific timestamp", async () => {
+      const datasetName = nanoid();
+      await langfuse.api.datasets.create({ name: datasetName });
+
+      // Create first item
+      const item1 = await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: "first item",
+        expectedOutput: "first output",
+      });
+
+      // Create second item
+      await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: "second item",
+        expectedOutput: "second output",
+      });
+
+      const versionDate = new Date(item1.createdAt);
+      const versionTimestamp = versionDate.toISOString();
+
+      // Get dataset at this version - should only have item1
+      const datasetAtVersion = await langfuse.dataset.get(datasetName, {
+        version: versionTimestamp,
+      });
+
+      // Should only have item1, not item2
+      expect(datasetAtVersion.items).toHaveLength(1);
+      expect(datasetAtVersion.items[0]).toMatchObject({
+        input: "first item",
+        expectedOutput: "first output",
+      });
+
+      // Get latest dataset (no version parameter) - should have both items
+      const datasetLatest = await langfuse.dataset.get(datasetName);
+      expect(datasetLatest.items).toHaveLength(2);
+    }, 30000);
   });
 });
