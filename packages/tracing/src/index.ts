@@ -11,7 +11,7 @@ import {
 
 import {
   createObservationAttributes,
-  createTraceIOAttributes,
+  createTraceAttributes,
 } from "./attributes.js";
 import {
   LangfuseAgent,
@@ -39,7 +39,7 @@ import {
   LangfuseGenerationAttributes,
   LangfuseObservationType,
   LangfuseSpanAttributes,
-  LangfuseTraceIOAttributes,
+  LangfuseTraceAttributes,
   LangfuseObservationAttributes,
 } from "./types.js";
 
@@ -50,12 +50,12 @@ export type {
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
   LangfuseObservationAttributes,
-  LangfuseTraceIOAttributes,
+  LangfuseTraceAttributes,
 } from "./types.js";
 
 export * from "./spanWrapper.js";
 export {
-  createTraceIOAttributes,
+  createTraceAttributes,
   createObservationAttributes,
 } from "./attributes.js";
 export {
@@ -904,7 +904,7 @@ export function startActiveObservation<
  *
  * @public
  */
-export function setActiveTraceIO(attributes: LangfuseTraceIOAttributes) {
+export function setActiveTraceIO(attributes: LangfuseTraceAttributes) {
   const span = trace.getActiveSpan();
 
   if (!span) {
@@ -915,7 +915,7 @@ export function setActiveTraceIO(attributes: LangfuseTraceIOAttributes) {
     return;
   }
 
-  span.setAttributes(createTraceIOAttributes(attributes));
+  span.setAttributes(createTraceAttributes(attributes));
 }
 
 /**

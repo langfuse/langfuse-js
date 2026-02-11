@@ -137,7 +137,7 @@ export type LangfuseObservationAttributes = LangfuseSpanAttributes &
  *
  * @public
  */
-export type LangfuseTraceIOAttributes = {
+export type LangfuseTraceAttributes = {
   /** Input data that initiated the trace */
   input?: unknown;
   /** Final output data from the trace */

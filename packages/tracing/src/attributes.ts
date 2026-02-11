@@ -4,7 +4,7 @@ import { type Attributes } from "@opentelemetry/api";
 import {
   LangfuseObservationAttributes,
   LangfuseObservationType,
-  LangfuseTraceIOAttributes,
+  LangfuseTraceAttributes,
 } from "./types.js";
 
 /**
@@ -21,10 +21,10 @@ import {
  *
  * @internal
  */
-export function createTraceIOAttributes({
+export function createTraceAttributes({
   input,
   output,
-}: LangfuseTraceIOAttributes = {}): Attributes {
+}: LangfuseTraceAttributes = {}): Attributes {
   const attributes = {
     [LangfuseOtelSpanAttributes.TRACE_INPUT]: _serialize(input),
     [LangfuseOtelSpanAttributes.TRACE_OUTPUT]: _serialize(output),
