@@ -79,7 +79,8 @@ export class DatasetRunItems {
    *         metadata: undefined,
    *         datasetItemId: "datasetItemId",
    *         observationId: undefined,
-   *         traceId: undefined
+   *         traceId: undefined,
+   *         datasetVersion: undefined
    *     })
    */
   public create(
