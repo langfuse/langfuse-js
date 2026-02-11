@@ -39,6 +39,8 @@ export interface GetScoresRequest {
   datasetRunId?: string;
   /** Retrieve only scores with a specific traceId. */
   traceId?: string;
+  /** Comma-separated list of observation IDs to filter scores by. */
+  observationId?: string;
   /** Retrieve only scores with a specific annotation queueId. */
   queueId?: string;
   /** Retrieve only scores with a specific dataType. */

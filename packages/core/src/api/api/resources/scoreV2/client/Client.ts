@@ -104,6 +104,7 @@ export class ScoreV2 {
       sessionId,
       datasetRunId,
       traceId,
+      observationId,
       queueId,
       dataType,
       traceTags,
@@ -175,6 +176,10 @@ export class ScoreV2 {
 
     if (traceId != null) {
       _queryParams["traceId"] = traceId;
+    }
+
+    if (observationId != null) {
+      _queryParams["observationId"] = observationId;
     }
 
     if (queueId != null) {
