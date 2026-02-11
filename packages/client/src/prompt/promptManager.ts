@@ -2,9 +2,11 @@ import {
   CreatePromptRequest,
   getGlobalLogger,
   LangfuseAPIClient,
-  PlaceholderMessage,
   Prompt,
   ChatMessage,
+  CreateTextPromptRequest,
+  CreateChatPromptRequest,
+  PlaceholderMessage,
 } from "@langfuse/core";
 
 import { LangfusePromptCache } from "./promptCache.js";
@@ -65,7 +67,7 @@ export class PromptManager {
    * @returns Promise that resolves to a TextPromptClient
    */
   async create(
-    body: Omit<CreatePromptRequest.Text, "type"> & { type?: "text" },
+    body: Omit<CreateTextPromptRequest, "type"> & { type?: "text" },
   ): Promise<TextPromptClient>;
 
   /**
@@ -74,7 +76,7 @@ export class PromptManager {
    * @param body - The prompt data to create (chat prompt)
    * @returns Promise that resolves to a ChatPromptClient
    */
-  async create(body: CreatePromptRequest.Chat): Promise<ChatPromptClient>;
+  async create(body: CreateChatPromptRequest): Promise<ChatPromptClient>;
 
   /**
    * Creates a new prompt in Langfuse.
@@ -107,8 +109,8 @@ export class PromptManager {
    */
   async create(
     body:
-      | CreatePromptRequest.Chat
-      | (Omit<CreatePromptRequest.Text, "type"> & { type?: "text" })
+      | CreateChatPromptRequest
+      | (Omit<CreateTextPromptRequest, "type"> & { type?: "text" })
       | CreateChatPromptBodyWithPlaceholders,
   ): Promise<LangfusePromptClient> {
     const requestBody: CreatePromptRequest =
@@ -119,11 +121,14 @@ export class PromptManager {
               if ("type" in item && item.type === ChatMessageType.Placeholder) {
                 return {
                   type: ChatMessageType.Placeholder,
-                  name: (item as PlaceholderMessage).name,
-                };
+                  name: item.name,
+                } as PlaceholderMessage;
               } else {
                 // Handle regular ChatMessage (without type field) from API
-                return { type: ChatMessageType.ChatMessage, ...item };
+                return {
+                  ...item,
+                  type: ChatMessageType.ChatMessage,
+                } as ChatMessage;
               }
             }),
           }
@@ -360,8 +365,8 @@ export class PromptManager {
                 ...sharedFallbackParams,
                 type: "chat",
                 prompt: (options.fallback as ChatMessage[]).map((msg) => ({
-                  type: ChatMessageType.ChatMessage,
                   ...msg,
+                  type: ChatMessageType.ChatMessage,
                 })),
               },
               true,

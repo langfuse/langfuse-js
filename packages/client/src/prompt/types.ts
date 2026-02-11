@@ -2,7 +2,7 @@ import {
   ChatMessage,
   PlaceholderMessage,
   ChatMessageWithPlaceholders,
-  CreatePromptRequest,
+  CreateChatPromptRequest,
 } from "@langfuse/core";
 
 /**
@@ -53,7 +53,7 @@ export type LangchainMessagesPlaceholder = {
 export type CreateChatPromptBodyWithPlaceholders = {
   /** Specifies this is a chat prompt */
   type: "chat";
-} & Omit<CreatePromptRequest.Chat, "type" | "prompt"> & {
+} & Omit<CreateChatPromptRequest, "type" | "prompt"> & {
     /** Array of chat messages and/or placeholders */
     prompt: (ChatMessage | ChatMessageWithPlaceholders)[];
   };

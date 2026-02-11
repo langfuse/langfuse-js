@@ -367,18 +367,18 @@ export class Prompts {
    *
    * @example
    *     await client.prompts.create({
-   *         type: "chat",
    *         name: "name",
    *         prompt: [{
-   *                 type: "chatmessage",
    *                 role: "role",
-   *                 content: "content"
+   *                 content: "content",
+   *                 type: undefined
    *             }, {
-   *                 type: "chatmessage",
    *                 role: "role",
-   *                 content: "content"
+   *                 content: "content",
+   *                 type: undefined
    *             }],
    *         config: undefined,
+   *         type: "chat",
    *         labels: undefined,
    *         tags: undefined,
    *         commitMessage: undefined
