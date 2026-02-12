@@ -237,6 +237,14 @@ export type ExperimentParams<
    * Set lower values for expensive operations or rate-limited services.
    */
   maxConcurrency?: number;
+
+  /**
+   * Whether to show a terminal progress bar (tqdm-style) when running in Node with a TTY.
+   *
+   * Default: true when stderr is a TTY, false otherwise (e.g. browser, CI, piped output).
+   * Set to false to disable the bar.
+   */
+  progress?: boolean;
 };
 
 export type ExperimentItemResult<

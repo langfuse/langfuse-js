@@ -370,6 +370,42 @@ describe("Langfuse Datasets E2E", () => {
     expect(result.datasetRunId).toBeUndefined();
   });
 
+  describe("Progress bar", () => {
+    it("should run experiment with progress: false (no bar)", async () => {
+      const result = await langfuse.experiment.run({
+        name: "Progress disabled",
+        description: "Experiment with progress bar disabled",
+        data: dataset.slice(0, 2),
+        task,
+        evaluators: [createEvaluatorFromAutoevals(Factuality)],
+        progress: false,
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(2);
+      expect(result.runName).toContain("Progress disabled");
+    });
+
+    it("should run experiment with progress: true (bar when TTY)", async () => {
+      const result = await langfuse.experiment.run({
+        name: "Progress enabled",
+        description: "Experiment with progress bar enabled",
+        data: dataset.slice(0, 2),
+        task,
+        evaluators: [createEvaluatorFromAutoevals(Factuality)],
+        progress: true,
+      });
+
+      await testEnv.spanProcessor.forceFlush();
+      await waitForServerIngestion(1000);
+
+      expect(result.itemResults).toHaveLength(2);
+      expect(result.runName).toContain("Progress enabled");
+    });
+  });
+
   // Error Handling Tests
   describe("Error Handling", () => {
     it("should handle evaluator failures gracefully", async () => {

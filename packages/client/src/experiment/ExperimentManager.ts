@@ -187,6 +187,7 @@ export class ExperimentManager {
       metadata,
       maxConcurrency: batchSize = 50,
       runEvaluators,
+      progress: progressOption,
     } = config;
 
     const runName = this.createExperimentRunName({
@@ -200,6 +201,29 @@ export class ExperimentManager {
       );
     }
 
+    let progressBar: { tick: (n?: number) => void } | null = null;
+    const showProgress =
+      progressOption ??
+      (typeof process !== "undefined" && process.stderr?.isTTY === true);
+    const canShowBar =
+      showProgress &&
+      typeof process !== "undefined" &&
+      data.length > 0 &&
+      (process.stderr?.isTTY === true || progressOption === true);
+    if (canShowBar) {
+      const Progress = (await import("progress")).default as new (
+        format: string,
+        options: { total: number; stream: NodeJS.WritableStream },
+      ) => { tick: (n?: number) => void };
+      progressBar = new Progress(
+        "Experiment [:bar] :current/:total :percent :eta",
+        {
+          total: data.length,
+          stream: process.stderr,
+        },
+      );
+    }
+
     const itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[] =
       [];
 
@@ -208,8 +232,8 @@ export class ExperimentManager {
 
       const promises: Promise<
         ExperimentItemResult<Input, ExpectedOutput, Metadata>
-      >[] = batch.map(async (item) => {
-        return this.runItem({
+      >[] = batch.map((item) =>
+        this.runItem({
           item,
           evaluators,
           task,
@@ -217,8 +241,10 @@ export class ExperimentManager {
           experimentRunName: runName,
           experimentDescription: description,
           experimentMetadata: metadata,
-        });
-      });
+        }).finally(() => {
+          progressBar?.tick(1);
+        }),
+      );
 
       const settledResults = await Promise.allSettled(promises);
       const results = settledResults.reduce(
