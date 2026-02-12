@@ -211,17 +211,23 @@ export class ExperimentManager {
       data.length > 0 &&
       (process.stderr?.isTTY === true || progressOption === true);
     if (canShowBar) {
-      const Progress = (await import("progress")).default as new (
-        format: string,
-        options: { total: number; stream: NodeJS.WritableStream },
-      ) => { tick: (n?: number) => void };
-      progressBar = new Progress(
-        "Experiment [:bar] :current/:total :percent :eta",
-        {
-          total: data.length,
-          stream: process.stderr,
-        },
-      );
+    if (canShowBar) {
+      try {
+        const Progress = (await import("progress")).default as new (
+          format: string,
+          options: { total: number; stream: NodeJS.WritableStream },
+        ) => { tick: (n?: number) => void };
+        progressBar = new Progress(
+          "Experiment [:bar] :current/:total :percent :eta",
+          {
+            total: data.length,
+            stream: process.stderr,
+          },
+        );
+      } catch (error) {
+        // Progress module not available, continue without progress bar
+      }
+    }
     }
 
     const itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[] =
