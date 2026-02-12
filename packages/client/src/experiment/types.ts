@@ -239,6 +239,13 @@ export type ExperimentParams<
   maxConcurrency?: number;
 
   /**
+   * Optional ISO 8601 timestamp (RFC 3339, Section 5.6) in UTC (e.g., "2026-01-21T14:35:42Z").
+   * If provided, returns state of dataset at this timestamp.
+   * If not provided, returns the latest version.
+   */
+  datasetVersion?: string;
+
+  /**
    * Whether to show a terminal progress bar (tqdm-style) when running in Node with a TTY.
    *
    * Default: true when stderr is a TTY, false otherwise (e.g. browser, CI, piped output).

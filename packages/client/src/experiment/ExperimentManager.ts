@@ -241,6 +241,7 @@ export class ExperimentManager {
           experimentRunName: runName,
           experimentDescription: description,
           experimentMetadata: metadata,
+          datasetVersion: config.datasetVersion,
         }).finally(() => {
           progressBar?.tick(1);
         }),
@@ -383,6 +384,7 @@ export class ExperimentManager {
     item: ExperimentParams<Input, ExpectedOutput, Metadata>["data"][0];
     task: ExperimentTask<Input, ExpectedOutput, Metadata>;
     evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
+    datasetVersion?: string;
   }): Promise<ExperimentItemResult<Input, ExpectedOutput, Metadata>> {
     const { item, evaluators = [], task, experimentMetadata } = params;
 
@@ -414,6 +416,9 @@ export class ExperimentManager {
                 datasetItemId,
                 traceId,
                 observationId,
+                ...(params.datasetVersion && {
+                  datasetVersion: params.datasetVersion,
+                }),
               },
             );
 
