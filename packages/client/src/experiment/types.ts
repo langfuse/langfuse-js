@@ -244,6 +244,14 @@ export type ExperimentParams<
    * If not provided, returns the latest version.
    */
   datasetVersion?: string;
+
+  /**
+   * Whether to show a terminal progress bar (tqdm-style) when running in Node with a TTY.
+   *
+   * Default: true when stderr is a TTY, false otherwise (e.g. browser, CI, piped output).
+   * Set to false to disable the bar.
+   */
+  progress?: boolean;
 };
 
 export type ExperimentItemResult<
