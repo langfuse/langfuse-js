@@ -252,9 +252,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         url: `${baseUrl}/api/public/otel/v1/traces`,
         headers: {
           Authorization: `Basic ${authHeaderValue}`,
-          x_langfuse_sdk_name: "javascript",
-          x_langfuse_sdk_version: LANGFUSE_SDK_VERSION,
-          x_langfuse_public_key: publicKey ?? "<missing>",
+          "x-langfuse-sdk-name": "javascript",
+          "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+          "x-langfuse-public-key": publicKey ?? "<missing>",
           ...params?.additionalHeaders,
         },
         timeoutMillis: timeoutSeconds * 1_000,

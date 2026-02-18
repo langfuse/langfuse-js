@@ -8,56 +8,26 @@ import {
 } from "./types.js";
 
 /**
- * Creates OpenTelemetry attributes from Langfuse trace attributes.
+ * Creates OpenTelemetry attributes from Langfuse trace IO attributes.
  *
- * Converts user-friendly trace attributes into the internal OpenTelemetry
+ * Converts trace input/output into the internal OpenTelemetry
  * attribute format required by the span processor.
  *
- * @param attributes - Langfuse trace attributes to convert
+ * @param attributes - Langfuse trace IO attributes to convert
  * @returns OpenTelemetry attributes object with non-null values
  *
- * @example
- * ```typescript
- * import { createTraceAttributes } from '@langfuse/tracing';
+ * @deprecated This is for backward compatibility with legacy platform features
+ * that still rely on trace-level input/output. Use propagateAttributes for other trace attributes.
  *
- * const otelAttributes = createTraceAttributes({
- *   name: 'user-checkout-flow',
- *   userId: 'user-123',
- *   sessionId: 'session-456',
- *   tags: ['checkout', 'payment'],
- *   metadata: { version: '2.1.0' }
- * });
- *
- * span.setAttributes(otelAttributes);
- * ```
- *
- * @public
+ * @internal
  */
 export function createTraceAttributes({
-  name,
-  userId,
-  sessionId,
-  version,
-  release,
   input,
   output,
-  metadata,
-  tags,
-  environment,
-  public: isPublic,
 }: LangfuseTraceAttributes = {}): Attributes {
   const attributes = {
-    [LangfuseOtelSpanAttributes.TRACE_NAME]: name,
-    [LangfuseOtelSpanAttributes.TRACE_USER_ID]: userId,
-    [LangfuseOtelSpanAttributes.TRACE_SESSION_ID]: sessionId,
-    [LangfuseOtelSpanAttributes.VERSION]: version,
-    [LangfuseOtelSpanAttributes.RELEASE]: release,
     [LangfuseOtelSpanAttributes.TRACE_INPUT]: _serialize(input),
     [LangfuseOtelSpanAttributes.TRACE_OUTPUT]: _serialize(output),
-    [LangfuseOtelSpanAttributes.TRACE_TAGS]: tags,
-    [LangfuseOtelSpanAttributes.ENVIRONMENT]: environment,
-    [LangfuseOtelSpanAttributes.TRACE_PUBLIC]: isPublic,
-    ..._flattenAndSerializeMetadata(metadata, "trace"),
   };
 
   return Object.fromEntries(
