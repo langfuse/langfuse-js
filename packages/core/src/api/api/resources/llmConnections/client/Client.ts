@@ -28,6 +28,8 @@ export declare namespace LlmConnections {
       string,
       string | core.Supplier<string | null | undefined> | null | undefined
     >;
+    /** Custom fetch function to use for HTTP requests */
+    fetch?: typeof fetch;
   }
 
   export interface RequestOptions {
@@ -131,6 +133,7 @@ export class LlmConnections {
           : 60000,
       maxRetries: requestOptions?.maxRetries,
       abortSignal: requestOptions?.abortSignal,
+      fetch: this._options.fetch,
     });
     if (_response.ok) {
       return {
@@ -264,6 +267,7 @@ export class LlmConnections {
           : 60000,
       maxRetries: requestOptions?.maxRetries,
       abortSignal: requestOptions?.abortSignal,
+      fetch: this._options.fetch,
     });
     if (_response.ok) {
       return {
