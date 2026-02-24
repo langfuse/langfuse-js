@@ -150,29 +150,14 @@ export class CallbackHandler extends BaseCallbackHandler {
         },
       });
 
-      // If there's no parent run, this is a top-level chain execution
-      // and we need to store trace attributes on the span
-      const traceTags = [...new Set([...(tags ?? []), ...this.tags])];
-
-      if (!parentRunId) {
-        span.updateTrace({
-          tags: traceTags,
-          userId:
-            metadata &&
-            "langfuseUserId" in metadata &&
-            typeof metadata["langfuseUserId"] === "string"
-              ? metadata["langfuseUserId"]
-              : this.userId,
-          sessionId:
-            metadata &&
-            "langfuseSessionId" in metadata &&
-            typeof metadata["langfuseSessionId"] === "string"
-              ? metadata["langfuseSessionId"]
-              : this.sessionId,
-          metadata: this.traceMetadata,
-          version: this.version,
-        });
-      }
+      this.updateTraceOnStart({
+        span,
+        parentRunId,
+        runName,
+        input: finalInput,
+        tags,
+        metadata,
+      });
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
     }
@@ -298,7 +283,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.deregisterLangfusePrompt(parentRunId);
     }
 
-    this.startAndRegisterOtelSpan({
+    const observation = this.startAndRegisterOtelSpan({
       type: "generation",
       runId,
       parentRunId,
@@ -311,6 +296,15 @@ export class CallbackHandler extends BaseCallbackHandler {
         modelParameters: modelParameters,
         prompt: registeredPrompt,
       },
+    });
+
+    this.updateTraceOnStart({
+      span: observation,
+      parentRunId,
+      runName,
+      input: messages,
+      tags,
+      metadata,
     });
   }
 
@@ -349,7 +343,6 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleChainEnd(
     outputs: ChainValues,
     runId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     parentRunId?: string | undefined,
   ): Promise<void> {
     try {
@@ -375,12 +368,15 @@ export class CallbackHandler extends BaseCallbackHandler {
         };
       }
 
+      this.updateTraceOnEnd({ runId, parentRunId, output: finalOutput });
+
       this.handleOtelSpanEnd({
         runId,
         attributes: {
           output: finalOutput,
         },
       });
+
       this.deregisterLangfusePrompt(runId);
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
@@ -427,15 +423,25 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this.logger.debug(`Tool start with ID: ${runId}`);
 
-      this.startAndRegisterOtelSpan({
+      const runName = name ?? tool.id.at(-1)?.toString() ?? "Tool execution";
+      const span = this.startAndRegisterOtelSpan({
         runId,
         parentRunId,
-        runName: name ?? tool.id.at(-1)?.toString() ?? "Tool execution",
+        runName,
         attributes: {
           input,
         },
         metadata,
         tags,
+      });
+
+      this.updateTraceOnStart({
+        span,
+        parentRunId,
+        runName,
+        input,
+        tags,
+        metadata,
       });
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
@@ -454,13 +460,23 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this.logger.debug(`Retriever start with ID: ${runId}`);
 
-      this.startAndRegisterOtelSpan({
+      const runName = name ?? retriever.id.at(-1)?.toString() ?? "Retriever";
+      const span = this.startAndRegisterOtelSpan({
         runId,
         parentRunId,
-        runName: name ?? retriever.id.at(-1)?.toString() ?? "Retriever",
+        runName,
         attributes: {
           input: query,
         },
+        tags,
+        metadata,
+      });
+
+      this.updateTraceOnStart({
+        span,
+        parentRunId,
+        runName,
+        input: query,
         tags,
         metadata,
       });
@@ -472,11 +488,12 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleRetrieverEnd(
     documents: Document<Record<string, any>>[],
     runId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     parentRunId?: string | undefined,
   ): Promise<void> {
     try {
       this.logger.debug(`Retriever end with ID: ${runId}`);
+
+      this.updateTraceOnEnd({ runId, parentRunId, output: documents });
 
       this.handleOtelSpanEnd({
         runId,
@@ -511,11 +528,12 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleToolEnd(
     output: string,
     runId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     parentRunId?: string | undefined,
   ): Promise<void> {
     try {
       this.logger.debug(`Tool end with ID: ${runId}`);
+
+      this.updateTraceOnEnd({ runId, parentRunId, output });
 
       this.handleOtelSpanEnd({
         runId,
@@ -550,7 +568,6 @@ export class CallbackHandler extends BaseCallbackHandler {
   async handleLLMEnd(
     output: LLMResult,
     runId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     parentRunId?: string | undefined,
   ): Promise<void> {
     try {
@@ -609,6 +626,8 @@ export class CallbackHandler extends BaseCallbackHandler {
               lastResponse["message"] as BaseMessage,
             )
           : lastResponse.text;
+
+      this.updateTraceOnEnd({ runId, parentRunId, output: extractedOutput });
 
       this.handleOtelSpanEnd({
         runId,
@@ -782,6 +801,58 @@ export class CallbackHandler extends BaseCallbackHandler {
     this.last_trace_id = span.traceId;
     this.runMap.delete(runId);
   }
+  /**
+   * Updates trace-level attributes when this is a root observation (no parentRunId).
+   * This ensures trace metadata is set regardless of whether the root observation
+   * is a chain, generation, tool, or retriever.
+   */
+  private updateTraceOnStart(params: {
+    span: LangfuseSpan | LangfuseGeneration;
+    parentRunId?: string;
+    runName: string;
+    input: unknown;
+    tags?: string[];
+    metadata?: Record<string, unknown>;
+  }): void {
+    if (params.parentRunId) return;
+
+    const traceTags = [...new Set([...(params.tags ?? []), ...this.tags])];
+    params.span.updateTrace({
+      name: params.runName,
+      input: params.input,
+      tags: traceTags,
+      userId:
+        params.metadata &&
+        "langfuseUserId" in params.metadata &&
+        typeof params.metadata["langfuseUserId"] === "string"
+          ? params.metadata["langfuseUserId"]
+          : this.userId,
+      sessionId:
+        params.metadata &&
+        "langfuseSessionId" in params.metadata &&
+        typeof params.metadata["langfuseSessionId"] === "string"
+          ? params.metadata["langfuseSessionId"]
+          : this.sessionId,
+      metadata: this.traceMetadata,
+      version: this.version,
+    });
+  }
+
+  /**
+   * Updates trace output when this is a root observation (no parentRunId).
+   * Must be called before handleOtelSpanEnd since that removes the span from runMap.
+   */
+  private updateTraceOnEnd(params: {
+    runId: string;
+    parentRunId?: string;
+    output: unknown;
+  }): void {
+    if (params.parentRunId) return;
+
+    const span = this.runMap.get(params.runId);
+    span?.updateTrace({ output: params.output });
+  }
+
   private parseAzureRefusalError(err: any): string {
     // Azure has the refusal status for harmful messages in the error property
     // This would not be logged as the error message is only a generic message
