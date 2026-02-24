@@ -195,7 +195,7 @@ describe("ScoreManager Integration Tests", () => {
       const span = startObservation("test-operation");
 
       await trace
-        .getTracer("test")
+        .getTracer("langfuse-sdk")
         .startActiveSpan("active-span", async (activeSpan) => {
           const { spanId, traceId } = activeSpan.spanContext();
 
@@ -223,7 +223,7 @@ describe("ScoreManager Integration Tests", () => {
       const span = startObservation("test-operation");
 
       await trace
-        .getTracer("test")
+        .getTracer("langfuse-sdk")
         .startActiveSpan("active-span", async (activeSpan) => {
           const { traceId } = activeSpan.spanContext();
 

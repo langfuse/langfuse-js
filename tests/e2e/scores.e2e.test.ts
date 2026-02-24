@@ -253,7 +253,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       const traceScoreId = nanoid();
 
       await trace
-        .getTracer("test")
+        .getTracer("langfuse-sdk")
         .startActiveSpan(activeSpanName, async (activeSpan) => {
           const spanContext = activeSpan.spanContext();
           activeSpanId = spanContext.spanId;
@@ -432,7 +432,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       let activeTraceId: string = "";
 
       await trace
-        .getTracer("test")
+        .getTracer("langfuse-sdk")
         .startActiveSpan(activeSpanName, async (activeSpan) => {
           const spanContext = activeSpan.spanContext();
           activeSpanId = spanContext.spanId;
@@ -476,7 +476,7 @@ describe("LangfuseClient Score E2E Tests", () => {
       let activeTraceId: string = "";
 
       await trace
-        .getTracer("test")
+        .getTracer("langfuse-sdk")
         .startActiveSpan(activeSpanName, async (activeSpan) => {
           const spanContext = activeSpan.spanContext();
           activeTraceId = spanContext.traceId;
