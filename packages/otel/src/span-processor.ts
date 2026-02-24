@@ -394,12 +394,10 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private async processEndedSpan(span: ReadableSpan) {
     try {
       if (this.shouldExportSpan({ otelSpan: span }) === false) {
-        if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
-          this.logger.debug("Dropped span due to shouldExportSpan filter.", {
-            spanName: span.name,
-            instrumentationScope: span.instrumentationScope.name,
-          });
-        }
+        this.logger.debug("Dropped span due to shouldExportSpan filter.", {
+          spanName: span.name,
+          instrumentationScope: span.instrumentationScope.name,
+        });
 
         return;
       }
