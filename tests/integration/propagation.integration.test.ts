@@ -40,7 +40,7 @@ describe("propagateAttributes", () => {
 
   describe("Basic Propagation", () => {
     it("should propagate userId to child spans", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ userId: "user_123" }, () => {
@@ -67,7 +67,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate sessionId to child spans", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ sessionId: "session_abc" }, () => {
@@ -94,7 +94,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate version to child spans", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ version: "v1.2.3" }, () => {
@@ -121,7 +121,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate traceName to child spans", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ traceName: "my-trace-name" }, () => {
@@ -148,7 +148,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate metadata to child spans", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -194,7 +194,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate all attributes together", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -236,7 +236,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should maintain return value", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       const returnValue = await propagateAttributes(
         { userId: "user_123" },
@@ -270,7 +270,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate all attributes together (async)", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         await propagateAttributes(
@@ -311,7 +311,7 @@ describe("propagateAttributes", () => {
 
   describe("Tags Propagation", () => {
     it("should propagate tags to child spans", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ tags: ["production", "experiment-a"] }, () => {
@@ -338,7 +338,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge tags from multiple propagateAttributes calls", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ tags: ["tag1", "tag2"] }, () => {
@@ -365,7 +365,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should deduplicate tags when merging", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ tags: ["tag1", "tag2"] }, () => {
@@ -392,7 +392,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge tags across nested contexts", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ tags: ["outer", "shared"] }, () => {
@@ -454,7 +454,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should handle empty tags array", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ tags: ["tag1"] }, () => {
@@ -477,7 +477,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate tags in baggage mode", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -513,7 +513,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge tags in baggage mode", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ tags: ["tag1"], asBaggage: true }, () => {
@@ -546,7 +546,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should drop tags over 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const longTag = "x".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -567,7 +567,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate tags with other attributes", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -607,7 +607,7 @@ describe("propagateAttributes", () => {
 
   describe("Metadata Merging", () => {
     it("should merge metadata from multiple propagateAttributes calls", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ metadata: { key1: "value1" } }, () => {
@@ -633,7 +633,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should allow metadata values to be overwritten by subsequent calls", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ metadata: { key1: "value1" } }, () => {
@@ -656,7 +656,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should preserve existing metadata when adding new keys", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ metadata: { existing: "value" } }, () => {
@@ -698,7 +698,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge metadata across nested contexts", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -782,7 +782,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge metadata from multiple sequential calls in same context", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ metadata: { key1: "value1" } }, () => {
@@ -813,7 +813,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should handle empty metadata object in merge", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ metadata: { key1: "value1" } }, () => {
@@ -836,7 +836,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should handle undefined metadata in subsequent calls", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ metadata: { key1: "value1" } }, () => {
@@ -862,7 +862,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge metadata after some keys were dropped due to validation", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -900,7 +900,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge metadata while updating other attributes", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -935,7 +935,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should merge metadata when only metadata is being updated", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -976,7 +976,7 @@ describe("propagateAttributes", () => {
 
   describe("Validation", () => {
     it("should drop userId over 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const longUserId = "x".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -997,7 +997,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should accept userId exactly 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const userId200 = "x".repeat(200);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -1018,7 +1018,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should drop sessionId over 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const longSessionId = "y".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -1039,7 +1039,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should drop version over 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const longVersion = "v".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -1060,7 +1060,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should accept version exactly 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const version200 = "v".repeat(200);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -1081,7 +1081,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should drop traceName over 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const longTraceName = "t".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -1102,7 +1102,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should accept traceName exactly 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const traceName200 = "t".repeat(200);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -1123,7 +1123,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should drop metadata values over 200 characters", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
       const longValue = "z".repeat(201);
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
@@ -1149,7 +1149,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should drop non-string userId", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ userId: 12345 as any }, () => {
@@ -1169,7 +1169,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should keep valid metadata and drop invalid", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -1212,7 +1212,7 @@ describe("propagateAttributes", () => {
 
   describe("Baggage Propagation", () => {
     it("should merge metadata in baggage mode", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -1265,7 +1265,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should set baggage when asBaggage=true", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -1328,7 +1328,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should propagate attributes from baggage to child spans", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -1372,7 +1372,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should not set baggage when asBaggage=false (default)", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes(
@@ -1396,7 +1396,7 @@ describe("propagateAttributes", () => {
 
   describe("Nesting and Context Isolation", () => {
     it("should allow nested contexts with different values", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ userId: "user1" }, () => {
@@ -1425,7 +1425,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should restore outer context after inner context exits", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         propagateAttributes({ userId: "user1" }, () => {
@@ -1462,7 +1462,7 @@ describe("propagateAttributes", () => {
     });
 
     it("should not propagate to spans outside context", async () => {
-      const tracer = otelTrace.getTracer("test");
+      const tracer = otelTrace.getTracer("langfuse-sdk");
 
       await tracer.startActiveSpan("parent", async (parentSpan) => {
         // Span before propagation

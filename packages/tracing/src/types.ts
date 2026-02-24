@@ -126,36 +126,22 @@ export type LangfuseObservationAttributes = LangfuseSpanAttributes &
   LangfuseGuardrailAttributes;
 
 /**
- * Attributes for Langfuse traces.
+ * Attributes for setting trace-level input and output only.
  *
- * Traces are the top-level containers that group related observations together.
- * They represent a complete workflow, request, or user interaction.
+ * This is a restricted type used by the deprecated setTraceIO methods,
+ * which only allow setting input and output on traces for backward
+ * compatibility with legacy Langfuse platform features.
+ *
+ * @deprecated This type is for backward compatibility with legacy platform features
+ * that still rely on trace-level input/output. Use propagateAttributes for other trace attributes.
  *
  * @public
  */
 export type LangfuseTraceAttributes = {
-  /** Human-readable name for the trace */
-  name?: string;
-  /** Identifier for the user associated with this trace */
-  userId?: string;
-  /** Session identifier for grouping related traces */
-  sessionId?: string;
-  /** Version identifier for the code/application */
-  version?: string;
-  /** Release identifier for deployment tracking */
-  release?: string;
   /** Input data that initiated the trace */
   input?: unknown;
   /** Final output data from the trace */
   output?: unknown;
-  /** Additional metadata for the trace */
-  metadata?: unknown;
-  /** Tags for categorizing and filtering traces */
-  tags?: string[];
-  /** Whether this trace should be publicly visible */
-  public?: boolean;
-  /** Environment where the trace was captured */
-  environment?: string;
 };
 
 /**

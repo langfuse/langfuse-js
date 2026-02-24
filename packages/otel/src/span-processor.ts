@@ -22,6 +22,7 @@ import {
 } from "@opentelemetry/sdk-trace-base";
 
 import { MediaService } from "./MediaService.js";
+import { isDefaultExportSpan } from "./span-filter.js";
 
 /**
  * Function type for masking sensitive data in spans before export.
@@ -46,6 +47,7 @@ export type MaskFunction = (params: { data: any }) => any;
 
 /**
  * Function type for determining whether a span should be exported to Langfuse.
+ * If provided, this is treated as a full override of the default filtering behavior.
  *
  * @param params - Object containing the span to evaluate
  * @param params.otelSpan - The OpenTelemetry span to evaluate
@@ -107,6 +109,8 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Function to determine whether a span should be exported to Langfuse.
+   * If not provided, a smart default filter is applied to export Langfuse spans,
+   * spans with `gen_ai.` attributes, and spans from known LLM instrumentors.
    */
   shouldExportSpan?: ShouldExportSpan;
 
@@ -151,6 +155,7 @@ export interface LangfuseSpanProcessorParams {
  * - Media content extraction and upload from base64 data URIs
  * - Data masking capabilities for sensitive information
  * - Conditional span export based on custom logic
+ *   (or default smart filtering when no custom filter is provided)
  * - Environment and release tagging
  *
  * @example
@@ -186,7 +191,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private environment?: string;
   private release?: string;
   private mask?: MaskFunction;
-  private shouldExportSpan?: ShouldExportSpan;
+  private shouldExportSpan: ShouldExportSpan;
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
   private mediaService: MediaService;
@@ -211,8 +216,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    *       : data;
    *   },
    *   shouldExportSpan: ({ otelSpan }) => {
-   *     // Only export spans from specific services
-   *     return otelSpan.name.startsWith('my-service');
+   *     // Full override of default filtering:
+   *     // export only spans from specific services
+   *     return otelSpan.name.startsWith("my-service");
    *   }
    * });
    * ```
@@ -252,9 +258,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         url: `${baseUrl}/api/public/otel/v1/traces`,
         headers: {
           Authorization: `Basic ${authHeaderValue}`,
-          x_langfuse_sdk_name: "javascript",
-          x_langfuse_sdk_version: LANGFUSE_SDK_VERSION,
-          x_langfuse_public_key: publicKey ?? "<missing>",
+          "x-langfuse-sdk-name": "javascript",
+          "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+          "x-langfuse-public-key": publicKey ?? "<missing>",
           ...params?.additionalHeaders,
         },
         timeoutMillis: timeoutSeconds * 1_000,
@@ -276,7 +282,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       params?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
     this.release = params?.release ?? getEnv("LANGFUSE_RELEASE");
     this.mask = params?.mask;
-    this.shouldExportSpan = params?.shouldExportSpan;
+    this.shouldExportSpan =
+      params?.shouldExportSpan ??
+      (({ otelSpan }) => isDefaultExportSpan(otelSpan));
     this.apiClient = new LangfuseAPIClient({
       baseUrl: this.baseUrl,
       username: this.publicKey,
@@ -328,7 +336,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * Called when a span ends. Processes the span for export to Langfuse.
    *
    * This method:
-   * 1. Checks if the span should be exported using the shouldExportSpan function
+   * 1. Checks if the span should be exported using shouldExportSpan
+   *    (custom override or default smart filter)
    * 2. Applies data masking to sensitive attributes
    * 3. Handles media content extraction and upload
    * 4. Logs span details in debug mode
@@ -383,17 +392,26 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private async processEndedSpan(span: ReadableSpan) {
-    if (this.shouldExportSpan) {
-      try {
-        if (this.shouldExportSpan({ otelSpan: span }) === false) return;
-      } catch (err) {
-        this.logger.error(
-          "ShouldExportSpan failed with error. Excluding span. Error: ",
-          err,
-        );
+    try {
+      if (this.shouldExportSpan({ otelSpan: span }) === false) {
+        this.logger.debug("Dropped span due to shouldExportSpan filter.", {
+          spanName: span.name,
+          instrumentationScope: span.instrumentationScope.name,
+        });
 
         return;
       }
+    } catch (err) {
+      this.logger.error(
+        "shouldExportSpan failed with error. Dropping span.",
+        {
+          spanName: span.name,
+          instrumentationScope: span.instrumentationScope.name,
+        },
+        err,
+      );
+
+      return;
     }
 
     this.applyMaskInPlace(span);

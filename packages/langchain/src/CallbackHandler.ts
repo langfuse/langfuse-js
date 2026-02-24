@@ -14,11 +14,12 @@ import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { ChainValues } from "@langchain/core/utils/types";
 import { getGlobalLogger } from "@langfuse/core";
 import {
-  startObservation,
+  startActiveObservation,
   LangfuseGeneration,
   LangfuseSpan,
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
+  propagateAttributes,
 } from "@langfuse/tracing";
 
 const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
@@ -139,38 +140,65 @@ export class CallbackHandler extends BaseCallbackHandler {
         finalInput = inputs["content"];
       }
 
-      const span = this.startAndRegisterOtelSpan({
-        runName,
-        parentRunId,
-        runId,
-        tags,
-        metadata,
-        attributes: {
-          input: finalInput,
-        },
-      });
-
       // If there's no parent run, this is a top-level chain execution
-      // and we need to store trace attributes on the span
-      const traceTags = [...new Set([...(tags ?? []), ...this.tags])];
-
+      // and we need to propagate trace attributes
       if (!parentRunId) {
-        span.updateTrace({
-          tags: traceTags,
-          userId:
-            metadata &&
-            "langfuseUserId" in metadata &&
-            typeof metadata["langfuseUserId"] === "string"
-              ? metadata["langfuseUserId"]
-              : this.userId,
-          sessionId:
-            metadata &&
-            "langfuseSessionId" in metadata &&
-            typeof metadata["langfuseSessionId"] === "string"
-              ? metadata["langfuseSessionId"]
-              : this.sessionId,
-          metadata: this.traceMetadata,
-          version: this.version,
+        const traceTags = [...new Set([...(tags ?? []), ...this.tags])];
+
+        const traceUserId =
+          metadata &&
+          "langfuseUserId" in metadata &&
+          typeof metadata["langfuseUserId"] === "string"
+            ? metadata["langfuseUserId"]
+            : this.userId;
+
+        const traceSessionId =
+          metadata &&
+          "langfuseSessionId" in metadata &&
+          typeof metadata["langfuseSessionId"] === "string"
+            ? metadata["langfuseSessionId"]
+            : this.sessionId;
+
+        const traceMetadata = this.traceMetadata
+          ? Object.fromEntries(
+              Object.entries(this.traceMetadata).map(([k, v]) => [
+                k,
+                typeof v === "string" ? v : JSON.stringify(v),
+              ]),
+            )
+          : undefined;
+
+        propagateAttributes(
+          {
+            tags: traceTags,
+            userId: traceUserId,
+            sessionId: traceSessionId,
+            metadata: traceMetadata,
+            version: this.version,
+          },
+          () => {
+            this.startAndRegisterOtelSpan({
+              runName,
+              parentRunId,
+              runId,
+              tags,
+              metadata,
+              attributes: {
+                input: finalInput,
+              },
+            });
+          },
+        );
+      } else {
+        this.startAndRegisterOtelSpan({
+          runName,
+          parentRunId,
+          runId,
+          tags,
+          metadata,
+          attributes: {
+            input: finalInput,
+          },
         });
       }
     } catch (e) {
@@ -711,41 +739,40 @@ export class CallbackHandler extends BaseCallbackHandler {
     const { type, runName, runId, parentRunId, attributes, metadata, tags } =
       params;
 
+    const observationAttributes = {
+      version: this.version,
+      metadata: this.joinTagsAndMetaData(tags, metadata),
+      level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
+      ...attributes,
+    } as LangfuseGenerationAttributes;
+
     const observation =
       type === "generation"
-        ? startObservation(
+        ? startActiveObservation(
             runName,
-            {
-              version: this.version,
-              metadata: this.joinTagsAndMetaData(tags, metadata),
-              level:
-                tags && tags.includes(LANGSMITH_HIDDEN_TAG)
-                  ? "DEBUG"
-                  : undefined,
-              ...attributes,
+            (gen) => {
+              gen.update(observationAttributes);
+              return gen;
             },
             {
               asType: "generation",
               parentSpanContext: parentRunId
                 ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
                 : undefined,
+              endOnExit: false,
             },
           )
-        : startObservation(
+        : startActiveObservation(
             runName,
-            {
-              version: this.version,
-              metadata: this.joinTagsAndMetaData(tags, metadata),
-              level:
-                tags && tags.includes(LANGSMITH_HIDDEN_TAG)
-                  ? "DEBUG"
-                  : undefined,
-              ...attributes,
+            (span) => {
+              span.update(observationAttributes);
+              return span;
             },
             {
               parentSpanContext: parentRunId
                 ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
                 : undefined,
+              endOnExit: false,
             },
           );
     this.runMap.set(runId, observation);

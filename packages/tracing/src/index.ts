@@ -877,41 +877,83 @@ export function startActiveObservation<
 }
 
 /**
- * Updates the currently active trace with new attributes.
+ * Set trace-level input and output for the currently active trace.
  *
- * This function finds the currently active OpenTelemetry span and updates
- * it with trace-level attributes. If no active span is found, a warning is logged.
+ * This function finds the currently active OpenTelemetry span and sets
+ * trace-level input/output on it. If no active span is found, a warning is logged.
  *
- * @param attributes - Trace attributes to set
+ * @deprecated This is a legacy function for backward compatibility with Langfuse platform
+ * features that still rely on trace-level input/output (e.g., legacy LLM-as-a-judge
+ * evaluators). It will be removed in a future major version.
+ *
+ * For setting other trace attributes (userId, sessionId, metadata, tags, version),
+ * use {@link propagateAttributes} instead.
+ *
+ * @param attributes - Input and output data to associate with the trace
  *
  * @example
  * ```typescript
- * import { updateActiveTrace } from '@langfuse/tracing';
+ * import { setActiveTraceIO } from '@langfuse/tracing';
  *
  * // Inside an active span context
- * updateActiveTrace({
- *   name: 'user-workflow',
- *   userId: '123',
- *   sessionId: 'session-456',
- *   tags: ['production', 'critical'],
- *   public: true
+ * setActiveTraceIO({
+ *   input: { query: 'user question' },
+ *   output: { response: 'assistant answer' }
  * });
  * ```
  *
  * @public
  */
-export function updateActiveTrace(attributes: LangfuseTraceAttributes) {
+export function setActiveTraceIO(attributes: LangfuseTraceAttributes) {
   const span = trace.getActiveSpan();
 
   if (!span) {
     getGlobalLogger().warn(
-      "No active OTEL span in context. Skipping trace update.",
+      "No active OTEL span in context. Skipping trace IO update.",
     );
 
     return;
   }
 
   span.setAttributes(createTraceAttributes(attributes));
+}
+
+/**
+ * Make the trace of the currently active span publicly accessible via its URL.
+ *
+ * When a trace is published, anyone with the trace link can view the full trace
+ * without needing to be logged in to Langfuse. This action cannot be undone
+ * programmatically - once any span in a trace is published, the entire trace
+ * becomes public.
+ *
+ * If called outside of an active span context, the operation is skipped with a warning.
+ *
+ * @example
+ * ```typescript
+ * import { setActiveTraceAsPublic, startActiveObservation } from '@langfuse/tracing';
+ *
+ * startActiveObservation('my-operation', () => {
+ *   // Make this trace publicly accessible
+ *   setActiveTraceAsPublic();
+ * });
+ * ```
+ *
+ * @public
+ */
+export function setActiveTraceAsPublic() {
+  const span = trace.getActiveSpan();
+
+  if (!span) {
+    getGlobalLogger().warn(
+      "No active OTEL span in context. Skipping trace publish.",
+    );
+
+    return;
+  }
+
+  span.setAttributes({
+    [LangfuseOtelSpanAttributes.TRACE_PUBLIC]: true,
+  });
 }
 
 /**
@@ -1041,7 +1083,7 @@ export function updateActiveTrace(attributes: LangfuseTraceAttributes) {
  * ```
  *
  * @see {@link startActiveObservation} - For creating active observation contexts
- * @see {@link updateActiveTrace} - For updating trace-level attributes
+ * @see {@link setActiveTraceIO} - For setting trace-level input/output (deprecated)
  *
  * @public
  */

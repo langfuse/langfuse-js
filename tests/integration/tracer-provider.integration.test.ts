@@ -1,4 +1,5 @@
 import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { LANGFUSE_TRACER_NAME } from "@langfuse/core";
 import {
   setLangfuseTracerProvider,
   getLangfuseTracerProvider,
@@ -157,7 +158,7 @@ describe("Tracer Provider Isolation Integration Tests", () => {
     });
 
     it("should maintain global context even when isolated provider has issues", async () => {
-      const globalTracer = trace.getTracer("global-tracer");
+      const globalTracer = trace.getTracer(LANGFUSE_TRACER_NAME);
 
       // Create global span
       const globalSpan = globalTracer.startSpan("global-span");

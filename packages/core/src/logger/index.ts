@@ -15,6 +15,9 @@ export enum LogLevel {
 
 function parseLogLevelFromEnv(): LogLevel | undefined {
   if (typeof process === "object" && "env" in process) {
+    if (getEnv("LANGFUSE_DEBUG")?.toLowerCase() === "true")
+      return LogLevel.DEBUG;
+
     const envValue = getEnv("LANGFUSE_LOG_LEVEL");
     const value = (envValue ?? "").toUpperCase();
 
