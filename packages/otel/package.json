@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/otel",
-  "version": "4.6.1",
+  "version": "5.0.0-beta.0",
   "author": "Langfuse",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/core",
-  "version": "4.6.1",
+  "version": "5.0.0-beta.0",
   "description": "Core functions and utilities for Langfuse packages",
   "type": "module",
   "sideEffects": false,
