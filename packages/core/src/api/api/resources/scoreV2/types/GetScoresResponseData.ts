@@ -7,7 +7,8 @@ import * as LangfuseAPI from "../../../index.js";
 export type GetScoresResponseData =
   | LangfuseAPI.GetScoresResponseData.Numeric
   | LangfuseAPI.GetScoresResponseData.Categorical
-  | LangfuseAPI.GetScoresResponseData.Boolean;
+  | LangfuseAPI.GetScoresResponseData.Boolean
+  | LangfuseAPI.GetScoresResponseData.Correction;
 
 export namespace GetScoresResponseData {
   export interface Numeric extends LangfuseAPI.GetScoresResponseDataNumeric {
@@ -21,5 +22,10 @@ export namespace GetScoresResponseData {
 
   export interface Boolean extends LangfuseAPI.GetScoresResponseDataBoolean {
     dataType: "BOOLEAN";
+  }
+
+  export interface Correction
+    extends LangfuseAPI.GetScoresResponseDataCorrection {
+    dataType: "CORRECTION";
   }
 }

@@ -67,6 +67,11 @@ export type RunExperimentOnDataset = (
 export type FetchedDataset = Dataset & {
   /** Dataset items with additional linking functionality */
   items: (DatasetItem & { link: LinkDatasetItemFunction })[];
+  /** ISO 8601 timestamp (RFC 3339, Section 5.6) in UTC (e.g., "2026-01-21T14:35:42Z").
+   * If provided, returns state of dataset at this timestamp.
+   * If not provided, returns the latest version.
+   */
+  version?: string;
   /** Function to run experiments directly on this dataset */
   runExperiment: RunExperimentOnDataset;
 };
@@ -232,7 +237,13 @@ export class DatasetManager {
   async get(
     name: string,
     options?: {
-      fetchItemsPageSize: number;
+      fetchItemsPageSize?: number;
+      /**
+       * ISO 8601 timestamp (RFC 3339, Section 5.6) in UTC (e.g., "2026-01-21T14:35:42Z").
+       * If provided, returns state of dataset at this timestamp.
+       * If not provided, returns the latest version.
+       */
+      version?: string;
     },
   ): Promise<FetchedDataset> {
     const dataset = await this.langfuseClient.api.datasets.get(name);
@@ -245,6 +256,7 @@ export class DatasetManager {
         datasetName: name,
         limit: options?.fetchItemsPageSize ?? 50,
         page,
+        ...(options?.version && { version: options.version }),
       });
 
       items.push(...itemsResponse.data);
@@ -264,6 +276,7 @@ export class DatasetManager {
     const runExperiment: RunExperimentOnDataset = (params) => {
       return this.langfuseClient.experiment.run({
         data: items,
+        datasetVersion: options?.version,
         ...params,
       });
     };
@@ -271,6 +284,7 @@ export class DatasetManager {
     const returnDataset = {
       ...dataset,
       items: itemsWithLinkMethod,
+      version: options?.version,
       runExperiment,
     };
 

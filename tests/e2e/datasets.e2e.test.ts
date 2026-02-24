@@ -1,7 +1,7 @@
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
-import { LangfuseClient } from "@langfuse/client";
+import { ExperimentTask, LangfuseClient } from "@langfuse/client";
 import { startObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
 import { describe, it, expect, beforeEach } from "vitest";
@@ -530,5 +530,120 @@ describe("Langfuse Datasets E2E", () => {
         ]),
       );
     }, 25000);
+
+    it("get dataset with version parameter returns items at specific timestamp", async () => {
+      const datasetName = nanoid();
+      await langfuse.api.datasets.create({ name: datasetName });
+
+      // Create first item
+      const item1 = await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: "first item",
+        expectedOutput: "first output",
+      });
+
+      // Create second item
+      await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: "second item",
+        expectedOutput: "second output",
+      });
+
+      const versionDate = new Date(item1.createdAt);
+      const versionTimestamp = versionDate.toISOString();
+
+      // Get dataset at this version - should only have item1
+      const datasetAtVersion = await langfuse.dataset.get(datasetName, {
+        version: versionTimestamp,
+      });
+
+      // Should only have item1, not item2
+      expect(datasetAtVersion.items).toHaveLength(1);
+      expect(datasetAtVersion.items[0]).toMatchObject({
+        input: "first item",
+        expectedOutput: "first output",
+      });
+
+      // Get latest dataset (no version parameter) - should have both items
+      const datasetLatest = await langfuse.dataset.get(datasetName);
+      expect(datasetLatest.items).toHaveLength(2);
+    }, 30000);
+
+    it("run experiment with versioned dataset", async () => {
+      const datasetName = nanoid();
+      await langfuse.api.datasets.create({ name: datasetName });
+
+      // Create first item
+      await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: { question: "What is 2+2?" },
+        expectedOutput: 4,
+      });
+
+      await waitForServerIngestion(3_000);
+
+      // Fetch dataset to get the actual server-assigned timestamp of item1
+      const datasetAfterItem1 = await langfuse.dataset.get(datasetName);
+      expect(datasetAfterItem1.items).toHaveLength(1);
+      const item1Id = datasetAfterItem1.items[0].id;
+      const item1CreatedAt = new Date(datasetAfterItem1.items[0].createdAt);
+
+      // Use a timestamp 1 second after item1's creation
+      const versionTimestamp = new Date(
+        item1CreatedAt.getTime() + 1000,
+      ).toISOString();
+
+      await waitForServerIngestion(3_000);
+
+      // Update item1 after the version timestamp (this should not affect versioned query)
+      await langfuse.api.datasetItems.create({
+        id: item1Id,
+        datasetName: datasetName,
+        input: { question: "What is 4+4?" },
+        expectedOutput: 8,
+      });
+
+      await waitForServerIngestion(3_000);
+
+      // Create second item (after version timestamp)
+      await langfuse.api.datasetItems.create({
+        datasetName: datasetName,
+        input: { question: "What is 3+3?" },
+        expectedOutput: 6,
+      });
+
+      await waitForServerIngestion(3_000);
+
+      // Get versioned dataset (should only have first item with ORIGINAL state)
+      const versionedDataset = await langfuse.dataset.get(datasetName, {
+        version: versionTimestamp,
+      });
+
+      expect(versionedDataset.items).toHaveLength(1);
+      expect(versionedDataset.version).toBe(versionTimestamp);
+      // Verify it returns the ORIGINAL version of item1 (before the update)
+      expect(versionedDataset.items[0].input).toEqual({
+        question: "What is 2+2?",
+      });
+      expect(versionedDataset.items[0].expectedOutput).toBe(4);
+      expect(versionedDataset.items[0].id).toBe(item1Id);
+
+      // Run a simple experiment on the versioned dataset
+      const simpleTask: ExperimentTask = async (params) => {
+        // Just return a static answer
+        return params.expectedOutput;
+      };
+
+      const result = await versionedDataset.runExperiment({
+        name: "Versioned Dataset Test",
+        description: "Testing experiment with versioned dataset",
+        task: simpleTask,
+      });
+
+      // Verify experiment ran successfully
+      expect(result.runName).toContain("Versioned Dataset Test");
+      expect(result.itemResults).toHaveLength(1); // Only one item in versioned dataset
+      expect(result.itemResults[0].output).toBe(4);
+    }, 40000);
   });
 });
