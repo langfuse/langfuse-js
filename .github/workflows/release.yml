@@ -11,9 +11,11 @@ on:
           - patch
           - minor
           - major
-          - prerelease
+          - prepatch
+          - preminor
+          - premajor
       prerelease_type:
-        description: 'Pre-release type (only used if version is "prerelease")'
+        description: "Pre-release type (used when version is prepatch/preminor/premajor)"
         type: choice
         default: ""
         options:
@@ -26,7 +28,7 @@ on:
         type: boolean
         default: false
       confirm_major:
-        description: "Type RELEASE MAJOR to confirm a major release"
+        description: "Type RELEASE MAJOR to confirm a major or premajor release"
         required: false
         default: ""
 
@@ -52,10 +54,10 @@ jobs:
             exit 1
           fi
       - name: Confirm major release
-        if: ${{ inputs.version == 'major' && inputs.dry_run == false }}
+        if: ${{ inputs.version == 'major' || inputs.version == 'premajor' }}
         run: |
           if [ "${{ inputs.confirm_major }}" != "RELEASE MAJOR" ]; then
-            echo "❌ For major releases, set confirm_major to RELEASE MAJOR"
+            echo "❌ For major/premajor releases, set confirm_major to RELEASE MAJOR"
             exit 1
           fi
       - name: Checkout repository
@@ -99,15 +101,68 @@ jobs:
       - name: Determine release parameters
         id: release-params
         run: |
-          if [ "${{ inputs.version }}" = "prerelease" ]; then
-            if [ -z "${{ inputs.prerelease_type }}" ]; then
-              echo "❌ Error: prerelease_type must be specified when version is 'prerelease'"
+          version_type="${{ inputs.version }}"
+
+          if [ "$version_type" = "prepatch" ] || [ "$version_type" = "preminor" ] || [ "$version_type" = "premajor" ]; then
+            prerelease_type="${{ inputs.prerelease_type }}"
+            if [ -z "$prerelease_type" ]; then
+              echo "❌ Error: prerelease_type must be specified when version is prepatch/preminor/premajor"
               exit 1
             fi
-            echo "prerelease_flag=--preRelease=${{ inputs.prerelease_type }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ inputs.prerelease_type }}" >> $GITHUB_OUTPUT
+
+            current_version=$(node -p "require('./package.json').version")
+            base_version="${current_version%%-*}"
+            IFS='.' read -r major minor patch <<< "$base_version"
+
+            if echo "$current_version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+-'; then
+              current_is_prerelease="true"
+            else
+              current_is_prerelease="false"
+            fi
+
+            case "$version_type" in
+              premajor)
+                if [ "$current_is_prerelease" = "true" ] && [ "$minor" -eq 0 ] && [ "$patch" -eq 0 ]; then
+                  target_major=$major
+                else
+                  target_major=$((major + 1))
+                fi
+                target_minor=0
+                target_patch=0
+                ;;
+              preminor)
+                target_major=$major
+                if [ "$current_is_prerelease" = "true" ] && [ "$patch" -eq 0 ] && [ "$minor" -gt 0 ]; then
+                  target_minor=$minor
+                else
+                  target_minor=$((minor + 1))
+                fi
+                target_patch=0
+                ;;
+              prepatch)
+                target_major=$major
+                target_minor=$minor
+                if [ "$current_is_prerelease" = "true" ] && [ "$patch" -gt 0 ]; then
+                  target_patch=$patch
+                else
+                  target_patch=$((patch + 1))
+                fi
+                ;;
+            esac
+
+            target_base_version="${target_major}.${target_minor}.${target_patch}"
+            if [ "$current_is_prerelease" = "true" ] && [ "$base_version" = "$target_base_version" ]; then
+              release_increment="prerelease"
+            else
+              release_increment="$version_type"
+            fi
+
+            echo "release_increment=${release_increment}" >> $GITHUB_OUTPUT
+            echo "pre_release_flag=--preRelease=${prerelease_type}" >> $GITHUB_OUTPUT
+            echo "tag=${prerelease_type}" >> $GITHUB_OUTPUT
           else
-            echo "prerelease_flag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "release_increment=${version_type}" >> $GITHUB_OUTPUT
+            echo "pre_release_flag=" >> $GITHUB_OUTPUT
             echo "tag=latest" >> $GITHUB_OUTPUT
           fi
 
@@ -148,7 +203,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
           NPM_CONFIG_TAG: ${{ steps.release-params.outputs.tag }}
         run: |
-          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json
+          pnpm exec release-it ${{ steps.release-params.outputs.release_increment }} ${{ steps.release-params.outputs.pre_release_flag }} --ci --config .release-it.ci.json
 
       - name: Run release-it (dry run)
         if: inputs.dry_run == true
@@ -157,7 +212,7 @@ jobs:
           NPM_CONFIG_TAG: ${{ steps.release-params.outputs.tag }}
         run: |
           echo "🧪 Running in DRY RUN mode - no changes will be pushed"
-          pnpm exec release-it ${{ steps.release-params.outputs.prerelease_flag }} --ci --config .release-it.ci.json --dry-run
+          pnpm exec release-it ${{ steps.release-params.outputs.release_increment }} ${{ steps.release-params.outputs.pre_release_flag }} --ci --config .release-it.ci.json --dry-run
 
       - name: Get version
         id: version
