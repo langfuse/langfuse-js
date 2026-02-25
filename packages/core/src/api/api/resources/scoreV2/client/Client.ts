@@ -109,6 +109,7 @@ export class ScoreV2 {
       dataType,
       traceTags,
       fields,
+      filter,
     } = request;
     const _queryParams: Record<
       string,
@@ -200,6 +201,10 @@ export class ScoreV2 {
 
     if (fields != null) {
       _queryParams["fields"] = fields;
+    }
+
+    if (filter != null) {
+      _queryParams["filter"] = filter;
     }
 
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(

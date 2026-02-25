@@ -28,8 +28,9 @@ export interface GetObservationsV2Request {
   /** Base64-encoded cursor for pagination. Use the cursor from the previous response to get the next page. */
   cursor?: string;
   /**
-   * Set to `true` to parse input/output fields as JSON, or `false` to return raw strings.
-   * Defaults to `false` if not provided.
+   * **Deprecated.** Setting this to `true` will return a 400 error.
+   * Input/output fields are always returned as raw strings.
+   * Remove this parameter or set it to `false`.
    */
   parseIoAsJson?: boolean;
   name?: string;
