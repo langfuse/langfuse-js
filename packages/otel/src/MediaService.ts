@@ -121,7 +121,12 @@ export class MediaService {
                   if (part["type"] === "file") {
                     let base64Content: string | null = null;
                     // FilePart
-                    if (part["data"] != null && part["mediaType"] != null) {
+                    if (
+                      part["data"] != null &&
+                      part["mediaType"] != null &&
+                      typeof part["data"] !== "object" && // skip URL instances
+                      !String(part["data"]).startsWith("http") // skip URL strings
+                    ) {
                       base64Content = part["data"];
                     }
 
