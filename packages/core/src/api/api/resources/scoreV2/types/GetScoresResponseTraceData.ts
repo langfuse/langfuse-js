@@ -9,4 +9,6 @@ export interface GetScoresResponseTraceData {
   tags?: string[];
   /** The environment of the trace referenced by score */
   environment?: string;
+  /** The session ID associated with the trace referenced by score */
+  sessionId?: string;
 }
