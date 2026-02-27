@@ -5,6 +5,7 @@ export * from "./Session.js";
 export * from "./SessionWithTraces.js";
 export * from "./Observation.js";
 export * from "./ObservationsView.js";
+export * from "./ObservationV2.js";
 export * from "./Usage.js";
 export * from "./ScoreConfig.js";
 export * from "./ConfigCategory.js";
