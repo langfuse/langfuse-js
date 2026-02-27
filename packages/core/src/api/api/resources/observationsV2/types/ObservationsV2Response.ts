@@ -12,6 +12,6 @@ import * as LangfuseAPI from "../../../index.js";
  */
 export interface ObservationsV2Response {
   /** Array of observation objects. Fields included depend on the `fields` parameter in the request. */
-  data: Record<string, unknown>[];
+  data: LangfuseAPI.ObservationV2[];
   meta: LangfuseAPI.ObservationsV2Meta;
 }
