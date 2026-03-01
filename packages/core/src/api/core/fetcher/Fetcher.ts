@@ -43,6 +43,7 @@ export declare namespace Fetcher {
       | "arrayBuffer"
       | "binary-response";
     duplex?: "half";
+    fetch?: typeof fetch;
   }
 
   export type Error =
@@ -105,7 +106,7 @@ export async function fetcherImpl<R = unknown>(
     body: args.body,
     type: args.requestType === "json" ? "json" : "other",
   });
-  const fetchFn = await getFetchFn();
+  const fetchFn = args.fetch ?? (await getFetchFn());
 
   try {
     const response = await requestWithRetries(
