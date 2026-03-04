@@ -25,17 +25,23 @@ export function attachLangfuseIds<T>(
   generation: LangfuseGeneration,
 ): asserts result is T & WithLangfuseIds<T> {
   if (result && typeof result === "object") {
-    Object.defineProperty(result, "langfuseObservationId", {
-      value: generation.id,
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    });
-    Object.defineProperty(result, "langfuseTraceId", {
-      value: generation.traceId,
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    });
+    try {
+      Object.defineProperty(result, "langfuseObservationId", {
+        value: generation.id,
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      });
+      Object.defineProperty(result, "langfuseTraceId", {
+        value: generation.traceId,
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      });
+    } catch {
+      // In practice this never happens: OpenAI SDK responses are plain objects
+      // from JSON parsing (never frozen/sealed), and this function is only called
+      // once per response. Guard kept for defensive robustness.
+    }
   }
 }
