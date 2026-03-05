@@ -49,6 +49,24 @@ export interface LangfuseClientParams {
    * Additional HTTP headers to include with API requests.
    */
   additionalHeaders?: Record<string, string>;
+
+  /**
+   * Custom fetch function to use for HTTP requests.
+   * Useful for testing, proxying, or customizing request behavior.
+   *
+   * @example
+   * ```typescript
+   * const customFetch = async (url, init) => {
+   *   console.log('Making request to:', url);
+   *   return fetch(url, init);
+   * };
+   *
+   * const langfuse = new LangfuseClient({
+   *   fetch: customFetch
+   * });
+   * ```
+   */
+  fetch?: typeof fetch;
 }
 
 /**
@@ -284,6 +302,7 @@ export class LangfuseClient {
       xLangfuseSdkName: "javascript",
       environment: "", // noop as baseUrl is set
       headers: params?.additionalHeaders,
+      fetch: params?.fetch,
     });
 
     logger.debug("Initialized LangfuseClient with params:", {
