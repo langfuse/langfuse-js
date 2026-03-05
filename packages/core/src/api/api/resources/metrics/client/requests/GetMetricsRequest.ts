@@ -13,41 +13,49 @@ export interface GetMetricsRequest {
    * JSON string containing the query parameters with the following structure:
    * ```json
    * {
-   *   "view": string,           // Required. One of "traces", "observations", "scores-numeric", "scores-categorical"
+   *   "view": string,           // Required. One of "observations", "scores-numeric", "scores-categorical"
    *   "dimensions": [           // Optional. Default: []
    *     {
-   *       "field": string       // Field to group by, e.g. "name", "userId", "sessionId"
+   *       "field": string       // Field to group by (see available dimensions above)
    *     }
    *   ],
    *   "metrics": [              // Required. At least one metric must be provided
    *     {
-   *       "measure": string,    // What to measure, e.g. "count", "latency", "value"
-   *       "aggregation": string // How to aggregate, e.g. "count", "sum", "avg", "p95", "histogram"
+   *       "measure": string,    // What to measure (see available measures above)
+   *       "aggregation": string // How to aggregate: "sum", "avg", "count", "max", "min", "p50", "p75", "p90", "p95", "p99", "histogram"
    *     }
    *   ],
    *   "filters": [              // Optional. Default: []
    *     {
-   *       "column": string,     // Column to filter on
-   *       "operator": string,   // Operator, e.g. "=", ">", "<", "contains"
+   *       "column": string,     // Column to filter on (any dimension field)
+   *       "operator": string,   // Operator based on type:
+   *                             // - datetime: ">", "<", ">=", "<="
+   *                             // - string: "=", "contains", "does not contain", "starts with", "ends with"
+   *                             // - stringOptions: "any of", "none of"
+   *                             // - arrayOptions: "any of", "none of", "all of"
+   *                             // - number: "=", ">", "<", ">=", "<="
+   *                             // - stringObject/numberObject: same as string/number with required "key"
+   *                             // - boolean: "=", "<>"
+   *                             // - null: "is null", "is not null"
    *       "value": any,         // Value to compare against
-   *       "type": string,       // Data type, e.g. "string", "number", "stringObject"
-   *       "key": string         // Required only when filtering on metadata
+   *       "type": string,       // Data type: "datetime", "string", "number", "stringOptions", "categoryOptions", "arrayOptions", "stringObject", "numberObject", "boolean", "null"
+   *       "key": string         // Required only for stringObject/numberObject types (e.g., metadata filtering)
    *     }
    *   ],
    *   "timeDimension": {        // Optional. Default: null. If provided, results will be grouped by time
-   *     "granularity": string   // One of "minute", "hour", "day", "week", "month", "auto"
+   *     "granularity": string   // One of "auto", "minute", "hour", "day", "week", "month"
    *   },
    *   "fromTimestamp": string,  // Required. ISO datetime string for start of time range
-   *   "toTimestamp": string,    // Required. ISO datetime string for end of time range
+   *   "toTimestamp": string,    // Required. ISO datetime string for end of time range (must be after fromTimestamp)
    *   "orderBy": [              // Optional. Default: null
    *     {
-   *       "field": string,      // Field to order by
+   *       "field": string,      // Field to order by (dimension or metric alias)
    *       "direction": string   // "asc" or "desc"
    *     }
    *   ],
    *   "config": {               // Optional. Query-specific configuration
-   *     "bins": number,         // Optional. Number of bins for histogram (1-100), default: 10
-   *     "row_limit": number     // Optional. Row limit for results (1-1000)
+   *     "bins": number,         // Optional. Number of bins for histogram aggregation (1-100), default: 10
+   *     "row_limit": number     // Optional. Maximum number of rows to return (1-1000), default: 100
    *   }
    * }
    * ```

@@ -61,9 +61,9 @@ export class Score {
   }
 
   /**
-   * Create a score (supports both trace and session scores)
+   * Get a list of scores (supports both trace and session scores)
    *
-   * @param {LangfuseAPI.CreateScoreRequest} request
+   * @param {LangfuseAPI.GetScoresRequest} request
    * @param {Score.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -73,35 +73,140 @@ export class Score {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.score.create({
-   *         id: undefined,
-   *         traceId: undefined,
-   *         sessionId: undefined,
-   *         observationId: undefined,
-   *         datasetRunId: undefined,
-   *         name: "name",
-   *         value: 1.1,
-   *         comment: undefined,
-   *         metadata: undefined,
-   *         environment: undefined,
-   *         queueId: undefined,
-   *         dataType: undefined,
-   *         configId: undefined
-   *     })
+   *     await client.score.get()
    */
-  public create(
-    request: LangfuseAPI.CreateScoreRequest,
+  public get(
+    request: LangfuseAPI.GetScoresRequest = {},
     requestOptions?: Score.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse> {
+  ): core.HttpResponsePromise<LangfuseAPI.GetScoresResponse> {
     return core.HttpResponsePromise.fromPromise(
-      this.__create(request, requestOptions),
+      this.__get(request, requestOptions),
     );
   }
 
-  private async __create(
-    request: LangfuseAPI.CreateScoreRequest,
+  private async __get(
+    request: LangfuseAPI.GetScoresRequest = {},
     requestOptions?: Score.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.CreateScoreResponse>> {
+  ): Promise<core.WithRawResponse<LangfuseAPI.GetScoresResponse>> {
+    const {
+      page,
+      limit,
+      userId,
+      name,
+      fromTimestamp,
+      toTimestamp,
+      environment,
+      source,
+      operator,
+      value,
+      scoreIds,
+      configId,
+      sessionId,
+      datasetRunId,
+      traceId,
+      observationId,
+      queueId,
+      dataType,
+      traceTags,
+      fields,
+      filter,
+    } = request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (page != null) {
+      _queryParams["page"] = page.toString();
+    }
+
+    if (limit != null) {
+      _queryParams["limit"] = limit.toString();
+    }
+
+    if (userId != null) {
+      _queryParams["userId"] = userId;
+    }
+
+    if (name != null) {
+      _queryParams["name"] = name;
+    }
+
+    if (fromTimestamp != null) {
+      _queryParams["fromTimestamp"] = fromTimestamp;
+    }
+
+    if (toTimestamp != null) {
+      _queryParams["toTimestamp"] = toTimestamp;
+    }
+
+    if (environment != null) {
+      if (Array.isArray(environment)) {
+        _queryParams["environment"] = environment.map((item) => item);
+      } else {
+        _queryParams["environment"] = environment;
+      }
+    }
+
+    if (source != null) {
+      _queryParams["source"] = source;
+    }
+
+    if (operator != null) {
+      _queryParams["operator"] = operator;
+    }
+
+    if (value != null) {
+      _queryParams["value"] = value.toString();
+    }
+
+    if (scoreIds != null) {
+      _queryParams["scoreIds"] = scoreIds;
+    }
+
+    if (configId != null) {
+      _queryParams["configId"] = configId;
+    }
+
+    if (sessionId != null) {
+      _queryParams["sessionId"] = sessionId;
+    }
+
+    if (datasetRunId != null) {
+      _queryParams["datasetRunId"] = datasetRunId;
+    }
+
+    if (traceId != null) {
+      _queryParams["traceId"] = traceId;
+    }
+
+    if (observationId != null) {
+      _queryParams["observationId"] = observationId;
+    }
+
+    if (queueId != null) {
+      _queryParams["queueId"] = queueId;
+    }
+
+    if (dataType != null) {
+      _queryParams["dataType"] = dataType;
+    }
+
+    if (traceTags != null) {
+      if (Array.isArray(traceTags)) {
+        _queryParams["traceTags"] = traceTags.map((item) => item);
+      } else {
+        _queryParams["traceTags"] = traceTags;
+      }
+    }
+
+    if (fields != null) {
+      _queryParams["fields"] = fields;
+    }
+
+    if (filter != null) {
+      _queryParams["filter"] = filter;
+    }
+
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -121,14 +226,11 @@ export class Score {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        "/api/public/scores",
+        "/api/public/v2/scores",
       ),
-      method: "POST",
+      method: "GET",
       headers: _headers,
-      contentType: "application/json",
-      queryParameters: requestOptions?.queryParams,
-      requestType: "json",
-      body: request,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
           ? requestOptions.timeoutInSeconds * 1000
@@ -138,7 +240,7 @@ export class Score {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.CreateScoreResponse,
+        data: _response.body as LangfuseAPI.GetScoresResponse,
         rawResponse: _response.rawResponse,
       };
     }
@@ -188,7 +290,7 @@ export class Score {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling POST /api/public/scores.",
+          "Timeout exceeded when calling GET /api/public/v2/scores.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
@@ -199,7 +301,7 @@ export class Score {
   }
 
   /**
-   * Delete a score (supports both trace and session scores)
+   * Get a score (supports both trace and session scores)
    *
    * @param {string} scoreId - The unique langfuse identifier of a score
    * @param {Score.RequestOptions} requestOptions - Request-specific configuration.
@@ -211,21 +313,21 @@ export class Score {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.score.delete("scoreId")
+   *     await client.score.getById("scoreId")
    */
-  public delete(
+  public getById(
     scoreId: string,
     requestOptions?: Score.RequestOptions,
-  ): core.HttpResponsePromise<void> {
+  ): core.HttpResponsePromise<LangfuseAPI.Score> {
     return core.HttpResponsePromise.fromPromise(
-      this.__delete(scoreId, requestOptions),
+      this.__getById(scoreId, requestOptions),
     );
   }
 
-  private async __delete(
+  private async __getById(
     scoreId: string,
     requestOptions?: Score.RequestOptions,
-  ): Promise<core.WithRawResponse<void>> {
+  ): Promise<core.WithRawResponse<LangfuseAPI.Score>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -245,9 +347,9 @@ export class Score {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        `/api/public/scores/${encodeURIComponent(scoreId)}`,
+        `/api/public/v2/scores/${encodeURIComponent(scoreId)}`,
       ),
-      method: "DELETE",
+      method: "GET",
       headers: _headers,
       queryParameters: requestOptions?.queryParams,
       timeoutMs:
@@ -258,7 +360,10 @@ export class Score {
       abortSignal: requestOptions?.abortSignal,
     });
     if (_response.ok) {
-      return { data: undefined, rawResponse: _response.rawResponse };
+      return {
+        data: _response.body as LangfuseAPI.Score,
+        rawResponse: _response.rawResponse,
+      };
     }
 
     if (_response.error.reason === "status-code") {
@@ -306,7 +411,7 @@ export class Score {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling DELETE /api/public/scores/{scoreId}.",
+          "Timeout exceeded when calling GET /api/public/v2/scores/{scoreId}.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
