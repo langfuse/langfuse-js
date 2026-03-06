@@ -10,7 +10,7 @@ import {
 } from "../../../../core/headers.js";
 import * as errors from "../../../../errors/index.js";
 
-export declare namespace ScoreV2 {
+export declare namespace Scores {
   export interface Options {
     environment: core.Supplier<string>;
     /** Specify a custom URL to connect the client to. */
@@ -53,10 +53,10 @@ export declare namespace ScoreV2 {
   }
 }
 
-export class ScoreV2 {
-  protected readonly _options: ScoreV2.Options;
+export class Scores {
+  protected readonly _options: Scores.Options;
 
-  constructor(_options: ScoreV2.Options) {
+  constructor(_options: Scores.Options) {
     this._options = _options;
   }
 
@@ -64,7 +64,7 @@ export class ScoreV2 {
    * Get a list of scores (supports both trace and session scores)
    *
    * @param {LangfuseAPI.GetScoresRequest} request
-   * @param {ScoreV2.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
    * @throws {@link LangfuseAPI.UnauthorizedError}
@@ -73,20 +73,20 @@ export class ScoreV2 {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.scoreV2.get()
+   *     await client.scores.getMany()
    */
-  public get(
+  public getMany(
     request: LangfuseAPI.GetScoresRequest = {},
-    requestOptions?: ScoreV2.RequestOptions,
+    requestOptions?: Scores.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.GetScoresResponse> {
     return core.HttpResponsePromise.fromPromise(
-      this.__get(request, requestOptions),
+      this.__getMany(request, requestOptions),
     );
   }
 
-  private async __get(
+  private async __getMany(
     request: LangfuseAPI.GetScoresRequest = {},
-    requestOptions?: ScoreV2.RequestOptions,
+    requestOptions?: Scores.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.GetScoresResponse>> {
     const {
       page,
@@ -304,7 +304,7 @@ export class ScoreV2 {
    * Get a score (supports both trace and session scores)
    *
    * @param {string} scoreId - The unique langfuse identifier of a score
-   * @param {ScoreV2.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
    * @throws {@link LangfuseAPI.UnauthorizedError}
@@ -313,11 +313,11 @@ export class ScoreV2 {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.scoreV2.getById("scoreId")
+   *     await client.scores.getById("scoreId")
    */
   public getById(
     scoreId: string,
-    requestOptions?: ScoreV2.RequestOptions,
+    requestOptions?: Scores.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Score> {
     return core.HttpResponsePromise.fromPromise(
       this.__getById(scoreId, requestOptions),
@@ -326,7 +326,7 @@ export class ScoreV2 {
 
   private async __getById(
     scoreId: string,
-    requestOptions?: ScoreV2.RequestOptions,
+    requestOptions?: Scores.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.Score>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
