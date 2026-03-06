@@ -61,13 +61,109 @@ export class Metrics {
   }
 
   /**
-   * Get metrics from the Langfuse project using a query object.
+   * Get metrics from the Langfuse project using a query object. V2 endpoint with optimized performance.
    *
-   * Consider using the [v2 metrics endpoint](/api-reference#tag/metricsv2/GET/api/public/v2/metrics) for better performance.
+   * ## V2 Differences
+   * - Supports `observations`, `scores-numeric`, and `scores-categorical` views only (traces view not supported)
+   * - Direct access to tags and release fields on observations
+   * - Backwards-compatible: traceName, traceRelease, traceVersion dimensions are still available on observations view
+   * - High cardinality dimensions are not supported and will return a 400 error (see below)
    *
    * For more details, see the [Metrics API documentation](https://langfuse.com/docs/metrics/features/metrics-api).
    *
-   * @param {LangfuseAPI.GetMetricsRequest} request
+   * ## Available Views
+   *
+   * ### observations
+   * Query observation-level data (spans, generations, events).
+   *
+   * **Dimensions:**
+   * - `environment` - Deployment environment (e.g., production, staging)
+   * - `type` - Type of observation (SPAN, GENERATION, EVENT)
+   * - `name` - Name of the observation
+   * - `level` - Logging level of the observation
+   * - `version` - Version of the observation
+   * - `tags` - User-defined tags
+   * - `release` - Release version
+   * - `traceName` - Name of the parent trace (backwards-compatible)
+   * - `traceRelease` - Release version of the parent trace (backwards-compatible, maps to release)
+   * - `traceVersion` - Version of the parent trace (backwards-compatible, maps to version)
+   * - `providedModelName` - Name of the model used
+   * - `promptName` - Name of the prompt used
+   * - `promptVersion` - Version of the prompt used
+   * - `startTimeMonth` - Month of start_time in YYYY-MM format
+   *
+   * **Measures:**
+   * - `count` - Total number of observations
+   * - `latency` - Observation latency (milliseconds)
+   * - `streamingLatency` - Generation latency from completion start to end (milliseconds)
+   * - `inputTokens` - Sum of input tokens consumed
+   * - `outputTokens` - Sum of output tokens produced
+   * - `totalTokens` - Sum of all tokens consumed
+   * - `outputTokensPerSecond` - Output tokens per second
+   * - `tokensPerSecond` - Total tokens per second
+   * - `inputCost` - Input cost (USD)
+   * - `outputCost` - Output cost (USD)
+   * - `totalCost` - Total cost (USD)
+   * - `timeToFirstToken` - Time to first token (milliseconds)
+   * - `countScores` - Number of scores attached to the observation
+   *
+   * ### scores-numeric
+   * Query numeric and boolean score data.
+   *
+   * **Dimensions:**
+   * - `environment` - Deployment environment
+   * - `name` - Name of the score (e.g., accuracy, toxicity)
+   * - `source` - Origin of the score (API, ANNOTATION, EVAL)
+   * - `dataType` - Data type (NUMERIC, BOOLEAN)
+   * - `configId` - Identifier of the score config
+   * - `timestampMonth` - Month in YYYY-MM format
+   * - `timestampDay` - Day in YYYY-MM-DD format
+   * - `value` - Numeric value of the score
+   * - `traceName` - Name of the parent trace
+   * - `tags` - Tags
+   * - `traceRelease` - Release version
+   * - `traceVersion` - Version
+   * - `observationName` - Name of the associated observation
+   * - `observationModelName` - Model name of the associated observation
+   * - `observationPromptName` - Prompt name of the associated observation
+   * - `observationPromptVersion` - Prompt version of the associated observation
+   *
+   * **Measures:**
+   * - `count` - Total number of scores
+   * - `value` - Score value (for aggregations)
+   *
+   * ### scores-categorical
+   * Query categorical score data. Same dimensions as scores-numeric except uses `stringValue` instead of `value`.
+   *
+   * **Measures:**
+   * - `count` - Total number of scores
+   *
+   * ## High Cardinality Dimensions
+   * The following dimensions cannot be used as grouping dimensions in v2 metrics API as they can cause performance issues.
+   * Use them in filters instead.
+   *
+   * **observations view:**
+   * - `id` - Use traceId filter to narrow down results
+   * - `traceId` - Use traceId filter instead
+   * - `userId` - Use userId filter instead
+   * - `sessionId` - Use sessionId filter instead
+   * - `parentObservationId` - Use parentObservationId filter instead
+   *
+   * **scores-numeric / scores-categorical views:**
+   * - `id` - Use specific filters to narrow down results
+   * - `traceId` - Use traceId filter instead
+   * - `userId` - Use userId filter instead
+   * - `sessionId` - Use sessionId filter instead
+   * - `observationId` - Use observationId filter instead
+   *
+   * ## Aggregations
+   * Available aggregation functions: `sum`, `avg`, `count`, `max`, `min`, `p50`, `p75`, `p90`, `p95`, `p99`, `histogram`
+   *
+   * ## Time Granularities
+   * Available granularities for timeDimension: `auto`, `minute`, `hour`, `day`, `week`, `month`
+   * - `auto` bins the data into approximately 50 buckets based on the time range
+   *
+   * @param {LangfuseAPI.GetMetricsV2Request} request
    * @param {Metrics.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -82,18 +178,18 @@ export class Metrics {
    *     })
    */
   public metrics(
-    request: LangfuseAPI.GetMetricsRequest,
+    request: LangfuseAPI.GetMetricsV2Request,
     requestOptions?: Metrics.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.MetricsResponse> {
+  ): core.HttpResponsePromise<LangfuseAPI.MetricsV2Response> {
     return core.HttpResponsePromise.fromPromise(
       this.__metrics(request, requestOptions),
     );
   }
 
   private async __metrics(
-    request: LangfuseAPI.GetMetricsRequest,
+    request: LangfuseAPI.GetMetricsV2Request,
     requestOptions?: Metrics.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.MetricsResponse>> {
+  ): Promise<core.WithRawResponse<LangfuseAPI.MetricsV2Response>> {
     const { query } = request;
     const _queryParams: Record<
       string,
@@ -119,7 +215,7 @@ export class Metrics {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        "/api/public/metrics",
+        "/api/public/v2/metrics",
       ),
       method: "GET",
       headers: _headers,
@@ -133,7 +229,7 @@ export class Metrics {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.MetricsResponse,
+        data: _response.body as LangfuseAPI.MetricsV2Response,
         rawResponse: _response.rawResponse,
       };
     }
@@ -183,7 +279,7 @@ export class Metrics {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/metrics.",
+          "Timeout exceeded when calling GET /api/public/v2/metrics.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
