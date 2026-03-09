@@ -89,7 +89,7 @@ jobs:
           TELEMETRY_ENABLED=false \
           LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=http://localhost:9090 \
           LANGFUSE_INGESTION_QUEUE_DELAY_MS=10 \
-          LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS=10
+          LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS=10 \
           docker compose up -d
 
           echo "::endgroup::"
