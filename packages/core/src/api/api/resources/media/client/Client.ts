@@ -28,6 +28,8 @@ export declare namespace Media {
       string,
       string | core.Supplier<string | null | undefined> | null | undefined
     >;
+    /** Custom fetch function to use for HTTP requests */
+    fetch?: typeof fetch;
   }
 
   export interface RequestOptions {
@@ -118,6 +120,7 @@ export class Media {
           : 60000,
       maxRetries: requestOptions?.maxRetries,
       abortSignal: requestOptions?.abortSignal,
+      fetch: this._options.fetch,
     });
     if (_response.ok) {
       return {
@@ -250,6 +253,7 @@ export class Media {
           : 60000,
       maxRetries: requestOptions?.maxRetries,
       abortSignal: requestOptions?.abortSignal,
+      fetch: this._options.fetch,
     });
     if (_response.ok) {
       return { data: undefined, rawResponse: _response.rawResponse };
@@ -378,6 +382,7 @@ export class Media {
           : 60000,
       maxRetries: requestOptions?.maxRetries,
       abortSignal: requestOptions?.abortSignal,
+      fetch: this._options.fetch,
     });
     if (_response.ok) {
       return {
