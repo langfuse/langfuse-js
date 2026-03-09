@@ -1,1 +1,1 @@
-export * from "./MetricsResponse.js";
+export * from "./MetricsV2Response.js";

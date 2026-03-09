@@ -12,12 +12,11 @@ import { DatasetRunItems } from "./api/resources/datasetRunItems/client/Client.j
 import { Datasets } from "./api/resources/datasets/client/Client.js";
 import { Health } from "./api/resources/health/client/Client.js";
 import { Ingestion } from "./api/resources/ingestion/client/Client.js";
+import { Legacy } from "./api/resources/legacy/client/Client.js";
 import { LlmConnections } from "./api/resources/llmConnections/client/Client.js";
 import { Media } from "./api/resources/media/client/Client.js";
-import { MetricsV2 } from "./api/resources/metricsV2/client/Client.js";
 import { Metrics } from "./api/resources/metrics/client/Client.js";
 import { Models } from "./api/resources/models/client/Client.js";
-import { ObservationsV2 } from "./api/resources/observationsV2/client/Client.js";
 import { Observations } from "./api/resources/observations/client/Client.js";
 import { Opentelemetry } from "./api/resources/opentelemetry/client/Client.js";
 import { Organizations } from "./api/resources/organizations/client/Client.js";
@@ -26,8 +25,7 @@ import { PromptVersion } from "./api/resources/promptVersion/client/Client.js";
 import { Prompts } from "./api/resources/prompts/client/Client.js";
 import { Scim } from "./api/resources/scim/client/Client.js";
 import { ScoreConfigs } from "./api/resources/scoreConfigs/client/Client.js";
-import { ScoreV2 } from "./api/resources/scoreV2/client/Client.js";
-import { Score } from "./api/resources/score/client/Client.js";
+import { Scores } from "./api/resources/scores/client/Client.js";
 import { Sessions } from "./api/resources/sessions/client/Client.js";
 import { Trace } from "./api/resources/trace/client/Client.js";
 
@@ -84,12 +82,11 @@ export class LangfuseAPIClient {
   protected _datasets: Datasets | undefined;
   protected _health: Health | undefined;
   protected _ingestion: Ingestion | undefined;
+  protected _legacy: Legacy | undefined;
   protected _llmConnections: LlmConnections | undefined;
   protected _media: Media | undefined;
-  protected _metricsV2: MetricsV2 | undefined;
   protected _metrics: Metrics | undefined;
   protected _models: Models | undefined;
-  protected _observationsV2: ObservationsV2 | undefined;
   protected _observations: Observations | undefined;
   protected _opentelemetry: Opentelemetry | undefined;
   protected _organizations: Organizations | undefined;
@@ -98,8 +95,7 @@ export class LangfuseAPIClient {
   protected _prompts: Prompts | undefined;
   protected _scim: Scim | undefined;
   protected _scoreConfigs: ScoreConfigs | undefined;
-  protected _scoreV2: ScoreV2 | undefined;
-  protected _score: Score | undefined;
+  protected _scores: Scores | undefined;
   protected _sessions: Sessions | undefined;
   protected _trace: Trace | undefined;
 
@@ -151,6 +147,10 @@ export class LangfuseAPIClient {
     return (this._ingestion ??= new Ingestion(this._options));
   }
 
+  public get legacy(): Legacy {
+    return (this._legacy ??= new Legacy(this._options));
+  }
+
   public get llmConnections(): LlmConnections {
     return (this._llmConnections ??= new LlmConnections(this._options));
   }
@@ -159,20 +159,12 @@ export class LangfuseAPIClient {
     return (this._media ??= new Media(this._options));
   }
 
-  public get metricsV2(): MetricsV2 {
-    return (this._metricsV2 ??= new MetricsV2(this._options));
-  }
-
   public get metrics(): Metrics {
     return (this._metrics ??= new Metrics(this._options));
   }
 
   public get models(): Models {
     return (this._models ??= new Models(this._options));
-  }
-
-  public get observationsV2(): ObservationsV2 {
-    return (this._observationsV2 ??= new ObservationsV2(this._options));
   }
 
   public get observations(): Observations {
@@ -207,12 +199,8 @@ export class LangfuseAPIClient {
     return (this._scoreConfigs ??= new ScoreConfigs(this._options));
   }
 
-  public get scoreV2(): ScoreV2 {
-    return (this._scoreV2 ??= new ScoreV2(this._options));
-  }
-
-  public get score(): Score {
-    return (this._score ??= new Score(this._options));
+  public get scores(): Scores {
+    return (this._scores ??= new Scores(this._options));
   }
 
   public get sessions(): Sessions {
