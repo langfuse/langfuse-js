@@ -1,6 +1,30 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
+    "//#check:format": {
+      "inputs": [
+        "**/*.{ts,js,json,md}",
+        ".prettierignore",
+        "!.git/**",
+        "!.turbo/**",
+        "!**/node_modules/**",
+        "!**/dist/**",
+        "!build/**",
+        "!coverage/**",
+        "!CHANGELOG.md"
+      ]
+    },
+    "//#check:lint": {
+      "inputs": ["packages/*/src/**/*.ts", "eslint.config.mjs"]
+    },
+    "//#check:type": {
+      "inputs": [
+        "packages/*/src/**/*.ts",
+        "packages/*/tsconfig.json",
+        "tsconfig.json",
+        "tsconfig.base.json"
+      ]
+    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["src/**"],

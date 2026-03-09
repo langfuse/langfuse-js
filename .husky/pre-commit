@@ -10,33 +10,9 @@ if ! command -v pnpm &> /dev/null; then
     exit 1
 fi
 
-# Run ESLint
-echo "🔍 Linting code with ESLint..."
-if ! pnpm lint; then
-    echo "❌ ESLint found issues. Please fix before committing."
+if ! pnpm precommit:check; then
+    echo "❌ Pre-commit checks failed. Please fix the reported issues before committing."
     exit 1
 fi
-echo "✅ ESLint passed"
-echo
-
-# Run Prettier formatting check
-echo "💅 Checking code formatting with Prettier..."
-if ! pnpm format:check; then
-    echo "❌ Code formatting issues found."
-    echo "💡 Run 'pnpm format' to automatically fix formatting issues."
-    exit 1
-fi
-echo "✅ Code formatting is correct"
-echo
-
-# Run TypeScript type checking
-echo "🔧 Running TypeScript type checking..."
-if ! pnpm typecheck; then
-    echo "❌ TypeScript type errors found. Please fix before committing."
-    echo "💡 Run 'pnpm typecheck' to see detailed error information."
-    exit 1
-fi
-echo "✅ TypeScript compilation successful"
-echo
 
 echo "🎉 All pre-commit checks passed! Ready to commit."

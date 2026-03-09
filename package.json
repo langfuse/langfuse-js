@@ -8,6 +8,10 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
+    "check:format": "prettier --check \"**/*.{ts,js,json,md}\" --log-level error --experimental-cli",
+    "check:lint": "eslint \"packages/*/src/**/*.ts\" --quiet",
+    "check:type": "tsc -b --noEmit",
+    "precommit:check": "turbo run check:lint check:type check:format --continue=never",
     "docs": "pnpm build && typedoc --options ./typedoc.config.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
