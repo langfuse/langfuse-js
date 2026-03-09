@@ -4,6 +4,6 @@
 
 export interface CreateAnnotationQueueRequest {
   name: string;
-  description?: string;
+  description?: string | null;
   scoreConfigIds: string[];
 }

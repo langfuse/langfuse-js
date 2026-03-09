@@ -61,132 +61,32 @@ export class Observations {
   }
 
   /**
-   * Get a observation
+   * Get a list of observations with cursor-based pagination and flexible field selection.
    *
-   * @param {string} observationId - The unique langfuse identifier of an observation, can be an event, span or generation
-   * @param {Observations.RequestOptions} requestOptions - Request-specific configuration.
+   * ## Cursor-based Pagination
+   * This endpoint uses cursor-based pagination for efficient traversal of large datasets.
+   * The cursor is returned in the response metadata and should be passed in subsequent requests
+   * to retrieve the next page of results.
    *
-   * @throws {@link LangfuseAPI.Error}
-   * @throws {@link LangfuseAPI.UnauthorizedError}
-   * @throws {@link LangfuseAPI.AccessDeniedError}
-   * @throws {@link LangfuseAPI.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.NotFoundError}
+   * ## Field Selection
+   * Use the `fields` parameter to control which observation fields are returned:
+   * - `core` - Always included: id, traceId, startTime, endTime, projectId, parentObservationId, type
+   * - `basic` - name, level, statusMessage, version, environment, bookmarked, public, userId, sessionId
+   * - `time` - completionStartTime, createdAt, updatedAt
+   * - `io` - input, output
+   * - `metadata` - metadata (truncated to 200 chars by default, use `expandMetadata` to get full values)
+   * - `model` - providedModelName, internalModelId, modelParameters
+   * - `usage` - usageDetails, costDetails, totalCost
+   * - `prompt` - promptId, promptName, promptVersion
+   * - `metrics` - latency, timeToFirstToken
    *
-   * @example
-   *     await client.observations.get("observationId")
-   */
-  public get(
-    observationId: string,
-    requestOptions?: Observations.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.ObservationsView> {
-    return core.HttpResponsePromise.fromPromise(
-      this.__get(observationId, requestOptions),
-    );
-  }
-
-  private async __get(
-    observationId: string,
-    requestOptions?: Observations.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.ObservationsView>> {
-    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
-      this._options?.headers,
-      mergeOnlyDefinedHeaders({
-        Authorization: await this._getAuthorizationHeader(),
-        "X-Langfuse-Sdk-Name":
-          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
-        "X-Langfuse-Sdk-Version":
-          requestOptions?.xLangfuseSdkVersion ??
-          this._options?.xLangfuseSdkVersion,
-        "X-Langfuse-Public-Key":
-          requestOptions?.xLangfusePublicKey ??
-          this._options?.xLangfusePublicKey,
-      }),
-      requestOptions?.headers,
-    );
-    const _response = await core.fetcher({
-      url: core.url.join(
-        (await core.Supplier.get(this._options.baseUrl)) ??
-          (await core.Supplier.get(this._options.environment)),
-        `/api/public/observations/${encodeURIComponent(observationId)}`,
-      ),
-      method: "GET",
-      headers: _headers,
-      queryParameters: requestOptions?.queryParams,
-      timeoutMs:
-        requestOptions?.timeoutInSeconds != null
-          ? requestOptions.timeoutInSeconds * 1000
-          : 60000,
-      maxRetries: requestOptions?.maxRetries,
-      abortSignal: requestOptions?.abortSignal,
-    });
-    if (_response.ok) {
-      return {
-        data: _response.body as LangfuseAPI.ObservationsView,
-        rawResponse: _response.rawResponse,
-      };
-    }
-
-    if (_response.error.reason === "status-code") {
-      switch (_response.error.statusCode) {
-        case 400:
-          throw new LangfuseAPI.Error(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 401:
-          throw new LangfuseAPI.UnauthorizedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 403:
-          throw new LangfuseAPI.AccessDeniedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 405:
-          throw new LangfuseAPI.MethodNotAllowedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 404:
-          throw new LangfuseAPI.NotFoundError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        default:
-          throw new errors.LangfuseAPIError({
-            statusCode: _response.error.statusCode,
-            body: _response.error.body,
-            rawResponse: _response.rawResponse,
-          });
-      }
-    }
-
-    switch (_response.error.reason) {
-      case "non-json":
-        throw new errors.LangfuseAPIError({
-          statusCode: _response.error.statusCode,
-          body: _response.error.rawBody,
-          rawResponse: _response.rawResponse,
-        });
-      case "timeout":
-        throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/observations/{observationId}.",
-        );
-      case "unknown":
-        throw new errors.LangfuseAPIError({
-          message: _response.error.errorMessage,
-          rawResponse: _response.rawResponse,
-        });
-    }
-  }
-
-  /**
-   * Get a list of observations.
+   * If not specified, `core` and `basic` field groups are returned.
    *
-   * Consider using the [v2 observations endpoint](/api-reference#tag/observationsv2/GET/api/public/v2/observations) for cursor-based pagination and field selection.
+   * ## Filters
+   * Multiple filtering options are available via query parameters or the structured `filter` parameter.
+   * When using the `filter` parameter, it takes precedence over individual query parameter filters.
    *
-   * @param {LangfuseAPI.GetObservationsRequest} request
+   * @param {LangfuseAPI.GetObservationsV2Request} request
    * @param {Observations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -199,21 +99,24 @@ export class Observations {
    *     await client.observations.getMany()
    */
   public getMany(
-    request: LangfuseAPI.GetObservationsRequest = {},
+    request: LangfuseAPI.GetObservationsV2Request = {},
     requestOptions?: Observations.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.ObservationsViews> {
+  ): core.HttpResponsePromise<LangfuseAPI.ObservationsV2Response> {
     return core.HttpResponsePromise.fromPromise(
       this.__getMany(request, requestOptions),
     );
   }
 
   private async __getMany(
-    request: LangfuseAPI.GetObservationsRequest = {},
+    request: LangfuseAPI.GetObservationsV2Request = {},
     requestOptions?: Observations.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.ObservationsViews>> {
+  ): Promise<core.WithRawResponse<LangfuseAPI.ObservationsV2Response>> {
     const {
-      page,
+      fields,
+      expandMetadata,
       limit,
+      cursor,
+      parseIoAsJson,
       name,
       userId,
       type: type_,
@@ -230,12 +133,24 @@ export class Observations {
       string,
       string | string[] | object | object[] | null
     > = {};
-    if (page != null) {
-      _queryParams["page"] = page.toString();
+    if (fields != null) {
+      _queryParams["fields"] = fields;
+    }
+
+    if (expandMetadata != null) {
+      _queryParams["expandMetadata"] = expandMetadata;
     }
 
     if (limit != null) {
       _queryParams["limit"] = limit.toString();
+    }
+
+    if (cursor != null) {
+      _queryParams["cursor"] = cursor;
+    }
+
+    if (parseIoAsJson != null) {
+      _queryParams["parseIoAsJson"] = parseIoAsJson.toString();
     }
 
     if (name != null) {
@@ -305,7 +220,7 @@ export class Observations {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        "/api/public/observations",
+        "/api/public/v2/observations",
       ),
       method: "GET",
       headers: _headers,
@@ -319,7 +234,7 @@ export class Observations {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.ObservationsViews,
+        data: _response.body as LangfuseAPI.ObservationsV2Response,
         rawResponse: _response.rawResponse,
       };
     }
@@ -369,7 +284,7 @@ export class Observations {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/observations.",
+          "Timeout exceeded when calling GET /api/public/v2/observations.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
