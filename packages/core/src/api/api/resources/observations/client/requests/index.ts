@@ -1,1 +1,1 @@
-export { type GetObservationsRequest } from "./GetObservationsRequest.js";
+export { type GetObservationsV2Request } from "./GetObservationsV2Request.js";
