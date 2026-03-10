@@ -29,11 +29,11 @@ import { isDefaultExportSpan } from "./span-filter.js";
  *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
- * @returns The masked data (can be of any type)
+ * @returns The masked data, or a promise resolving to it
  *
  * @example
  * ```typescript
- * const maskFunction: MaskFunction = ({ data }) => {
+ * const maskFunction: MaskFunction = async ({ data }) => {
  *   if (typeof data === 'string') {
  *     return data.replace(/password=\w+/g, 'password=***');
  *   }
@@ -43,7 +43,7 @@ import { isDefaultExportSpan } from "./span-filter.js";
  *
  * @public
  */
-export type MaskFunction = (params: { data: any }) => any;
+export type MaskFunction = (params: { data: any }) => any | Promise<any>;
 
 /**
  * Function type for determining whether a span should be exported to Langfuse.
@@ -414,7 +414,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       return;
     }
 
-    this.applyMaskInPlace(span);
+    await this.applyMaskInPlace(span);
     await this.mediaService.process(span);
 
     if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
@@ -442,7 +442,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
     this.processor.onEnd(span);
   }
-  private applyMaskInPlace(span: ReadableSpan): void {
+  private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       LangfuseOtelSpanAttributes.TRACE_INPUT,
@@ -454,18 +454,18 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
     for (const maskCandidate of maskCandidates) {
       if (maskCandidate in span.attributes) {
-        span.attributes[maskCandidate] = this.applyMask(
+        span.attributes[maskCandidate] = await this.applyMask(
           span.attributes[maskCandidate],
         );
       }
     }
   }
 
-  private applyMask<T>(data: T): T | string {
+  private async applyMask<T>(data: T): Promise<T | string> {
     if (!this.mask) return data;
 
     try {
-      return this.mask({ data });
+      return await this.mask({ data });
     } catch (err) {
       this.logger.warn(
         `Applying mask function failed due to error, fully masking property. Error: ${err}`,

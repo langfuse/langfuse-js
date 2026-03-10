@@ -11,6 +11,7 @@ import { SpanAssertions } from "./helpers/assertions.js";
 import {
   setupTestEnvironment,
   teardownTestEnvironment,
+  waitFor,
   waitForSpanExport,
   type TestEnvironment,
 } from "./helpers/testSetup.js";
@@ -67,6 +68,47 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       );
     });
 
+    it("should apply async mask function to span attributes", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: async ({ data }) => {
+            await waitFor(50);
+
+            if (typeof data === "string") {
+              return data.replace(/secret/g, "***");
+            }
+
+            return data;
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("async-masked-span", {
+        input: { message: "This contains secret information" },
+        output: { response: "No secret here" },
+      });
+      span.end();
+
+      await waitFor(10);
+      expect(testEnv.mockExporter.getSpanCount()).toBe(0);
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttributeContains(
+        "async-masked-span",
+        "langfuse.observation.input",
+        "This contains *** information",
+      );
+      assertions.expectSpanAttributeContains(
+        "async-masked-span",
+        "langfuse.observation.output",
+        "No *** here",
+      );
+    });
+
     it("should handle mask function errors gracefully", async () => {
       await teardownTestEnvironment(testEnv);
 
@@ -88,6 +130,33 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
       assertions.expectSpanAttribute(
         "error-mask-span",
+        "langfuse.observation.input",
+        "<fully masked due to failed mask function>",
+      );
+    });
+
+    it("should handle async mask function errors gracefully", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: async () => {
+            await waitFor(10);
+            throw new Error("Async mask function error");
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("async-error-mask-span", {
+        input: { message: "test message" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "async-error-mask-span",
         "langfuse.observation.input",
         "<fully masked due to failed mask function>",
       );
