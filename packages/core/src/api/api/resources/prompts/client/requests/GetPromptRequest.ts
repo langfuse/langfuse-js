@@ -11,4 +11,6 @@ export interface GetPromptRequest {
   version?: number;
   /** Label of the prompt to be retrieved. Defaults to "production" if no label or version is set. */
   label?: string;
+  /** Resolve prompt dependencies before returning the prompt. Defaults to `true`. Set to `false` to return the raw stored prompt with dependency tags intact. This bypasses prompt caching and is intended for debugging or one-off jobs, not production runtime fetches. */
+  resolve?: boolean;
 }
