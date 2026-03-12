@@ -9,18 +9,20 @@ export interface BlobStorageIntegrationResponse {
   projectId: string;
   type: LangfuseAPI.BlobStorageIntegrationType;
   bucketName: string;
-  endpoint?: string;
+  endpoint: string | null;
   region: string;
-  accessKeyId?: string;
+  accessKeyId: string | null;
   prefix: string;
   exportFrequency: LangfuseAPI.BlobStorageExportFrequency;
   enabled: boolean;
   forcePathStyle: boolean;
   fileType: LangfuseAPI.BlobStorageIntegrationFileType;
   exportMode: LangfuseAPI.BlobStorageExportMode;
-  exportStartDate?: string;
-  nextSyncAt?: string;
-  lastSyncAt?: string;
+  exportStartDate: string | null;
+  nextSyncAt: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  lastErrorAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

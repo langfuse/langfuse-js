@@ -12,6 +12,6 @@ export interface BasePrompt {
   tags: string[];
   /** Commit message for this prompt version. */
   commitMessage?: string;
-  /** The dependency resolution graph for the current prompt. Null if prompt has no dependencies. */
+  /** The dependency resolution graph for the current prompt. Null if the prompt has no dependencies or if `resolve=false` was used. */
   resolutionGraph?: Record<string, unknown>;
 }

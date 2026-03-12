@@ -5,4 +5,6 @@ export * from "./BlobStorageExportFrequency.js";
 export * from "./CreateBlobStorageIntegrationRequest.js";
 export * from "./BlobStorageIntegrationResponse.js";
 export * from "./BlobStorageIntegrationsResponse.js";
+export * from "./BlobStorageSyncStatus.js";
+export * from "./BlobStorageIntegrationStatusResponse.js";
 export * from "./BlobStorageIntegrationDeletionResponse.js";
