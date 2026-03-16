@@ -11,7 +11,8 @@
     "check:format": "prettier --check \"**/*.{ts,js,json,md}\" --log-level error --experimental-cli",
     "check:lint": "eslint \"packages/*/src/**/*.ts\" --quiet",
     "check:type": "tsc -b --noEmit",
-    "precommit:check": "turbo run check:lint check:type check:format --continue=never",
+    "check:exports": "node ./scripts/check-package-exports.mjs",
+    "precommit:check": "turbo run check:lint check:type check:format --continue=never && pnpm check:exports",
     "docs": "pnpm build && typedoc --options ./typedoc.config.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -26,7 +27,7 @@
     "release:alpha": "tag=alpha release-it --preRelease=alpha",
     "release:beta": "tag=beta release-it --preRelease=beta",
     "release:rc": "tag=rc release-it --preRelease=rc",
-    "ci": "pnpm build && pnpm test && pnpm lint && pnpm typecheck && pnpm format:check",
+    "ci": "pnpm build && pnpm test && pnpm lint && pnpm typecheck && pnpm check:exports && pnpm format:check",
     "clean": "pnpm -r run clean && rm -rf packages/*/dist && rm -f packages/*/tsconfig.tsbuildinfo",
     "nuke": "pnpm clean && rm -rf node_modules && rm -rf packages/*/node_modules && pnpm install",
     "prepare": "husky"
