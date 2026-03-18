@@ -4,7 +4,7 @@ import { getEnv } from "../utils.js";
  */
 export enum LogLevel {
   /** Not logging anything */
-  NONE = 4
+  NONE = 4,
   /** Critical errors that may cause application failure */
   ERROR = 3,
   /** Warning messages for potentially harmful situations */
