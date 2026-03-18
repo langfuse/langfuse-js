@@ -380,7 +380,7 @@ export class ChatPromptClient extends BasePromptClient {
         item !== null &&
         "role" in item &&
         "content" in item &&
-        typeof content === 'string'
+        typeof item.content === 'string'
       ) {
         return {
           ...item,
