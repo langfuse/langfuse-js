@@ -13,7 +13,7 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 ## Packages
 
 > [!IMPORTANT]
-> The SDK was rewritten in v4 and will be released soon. Refer to the [v4 migration guide](https://langfuse-docs-git-add-js-sdk-v4-docs-langfuse.vercel.app/docs/observability/sdk/typescript/upgrade-path) for instructions on updating your code.
+> The SDK was rewritten in v5 and released in March 2026. Refer to the [v5 migration guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5) for instructions on updating your code.
 
 | Package                                     | NPM                                                                                                               | Description                                               | Environments |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------ |

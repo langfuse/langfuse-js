@@ -135,7 +135,8 @@ export class CallbackHandler extends BaseCallbackHandler {
       } else if (
         typeof inputs === "object" &&
         "content" in inputs &&
-        typeof inputs["content"] === "string"
+        typeof inputs["content"] === "string" &&
+        Object.keys(inputs).length === 1
       ) {
         finalInput = inputs["content"];
       }
