@@ -60,6 +60,17 @@ describe("parseInputArgs", () => {
       });
       expect(result.input).toBe("Hello!");
     });
+
+    it("should not merge instructions when messages is present (chat completions path wins)", () => {
+      const result = parseInputArgs({
+        model: "gpt-4o",
+        instructions: "You are a pirate.",
+        messages: [{ role: "user", content: "Hello!" }],
+      });
+      expect(result.input).toEqual({
+        messages: [{ role: "user", content: "Hello!" }],
+      });
+    });
   });
 
   describe("Chat Completions API: messages handling", () => {
