@@ -33,7 +33,7 @@ export const parseInputArgs = (
   // chat.completions captures system messages in the prompt.
   // See: https://github.com/langfuse/langfuse/issues/9775
   const instructions = args.instructions;
-  if (instructions && typeof instructions === "string") {
+  if (instructions && typeof instructions === "string" && !("messages" in args)) {
     if (typeof input === "string") {
       input = [
         { role: "system", content: instructions },
