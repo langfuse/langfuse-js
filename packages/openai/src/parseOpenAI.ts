@@ -29,6 +29,25 @@ export const parseInputArgs = (
 
   let input: Record<string, any> | string = args.input;
 
+  // Responses API: merge `instructions` into input, mirroring how
+  // chat.completions captures system messages in the prompt.
+  // See: https://github.com/langfuse/langfuse/issues/9775
+  const instructions = args.instructions;
+  if (instructions && typeof instructions === "string") {
+    if (typeof input === "string") {
+      input = [
+        { role: "system", content: instructions },
+        { role: "user", content: input },
+      ];
+    } else if (Array.isArray(input)) {
+      input = [{ role: "system", content: instructions }, ...input];
+    } else if (!input) {
+      input = { instructions };
+    } else {
+      input = { instructions, input };
+    }
+  }
+
   if (
     args &&
     typeof args === "object" &&
