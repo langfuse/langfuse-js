@@ -263,6 +263,7 @@ export class TextPromptClient extends BasePromptClient {
  * @public
  */
 export class ChatPromptClient extends BasePromptClient {
+  private static readonly mustacheTokenCache = new Map<string, any[]>();
   /** The original prompt response from the API */
   public readonly promptResponse: Prompt.Chat;
   /** The chat messages that make up the prompt */
@@ -328,13 +329,56 @@ export class ChatPromptClient extends BasePromptClient {
     variables?: Record<string, string>,
     placeholders?: Record<string, any>,
   ): (ChatMessageOrPlaceholder | any)[] {
-    const messagesWithPlaceholdersReplaced: (ChatMessageOrPlaceholder | any)[] =
-      [];
-    const placeholderValues = placeholders ?? {};
+    const vars = variables ?? {};
+    const phs = placeholders ?? {};
+
+    // 4. ZERO-ALLOCATION CHECK: Skip entirely if no injections needed
+    if (Object.keys(vars).length === 0 && Object.keys(phs).length === 0) {
+      return this.prompt.map((item) => {
+        if ("type" in item && item.type === ChatMessageType.ChatMessage) {
+          return { role: item.role, content: item.content };
+        }
+        return item;
+      });
+    }
+
+    const result: (ChatMessageOrPlaceholder | any)[] = [];
+    const writer = new mustache.Writer();
 
     for (const item of this.prompt) {
-      if ("type" in item && item.type === ChatMessageType.Placeholder) {
-        const placeholderValue = placeholderValues[item.name];
+      // 3. REFINED TYPE-GUARD: Check content type as the very first operation
+      if (item.type === ChatMessageType.ChatMessage) {
+        if (typeof item.content !== "string") {
+          result.push({
+            role: item.role,
+            content: item.content,
+          });
+          continue;
+        }
+
+        // 2. TOKEN CACHING: Use static Map to bypass expensive parsing
+        let tokens = ChatPromptClient.mustacheTokenCache.get(item.content);
+        if (!tokens) {
+          tokens = mustache.parse(item.content);
+          ChatPromptClient.mustacheTokenCache.set(item.content, tokens);
+        }
+
+        const rendered = writer.renderTokens(
+          tokens,
+          new mustache.Context(vars),
+          undefined,
+          item.content,
+        );
+        result.push({
+          role: item.role,
+          content: rendered,
+        });
+        continue;
+      }
+
+      // Handle Placeholders (preserved logic)
+      if (item.type === ChatMessageType.Placeholder) {
+        const placeholderValue = phs[item.name];
         if (
           Array.isArray(placeholderValue) &&
           placeholderValue.length > 0 &&
@@ -343,54 +387,27 @@ export class ChatPromptClient extends BasePromptClient {
               typeof msg === "object" && "role" in msg && "content" in msg,
           )
         ) {
-          messagesWithPlaceholdersReplaced.push(
-            ...(placeholderValue as ChatMessage[]),
-          );
+          result.push(...(placeholderValue as ChatMessage[]));
         } else if (
           Array.isArray(placeholderValue) &&
           placeholderValue.length === 0
         ) {
-          // Empty array provided - skip placeholder (don't include it)
+          // Skip empty placeholder array
         } else if (placeholderValue !== undefined) {
-          // Non-standard placeholder value format, just stringfiy
-          messagesWithPlaceholdersReplaced.push(
-            JSON.stringify(placeholderValue),
-          );
+          // Stringify non-standard formats
+          result.push(JSON.stringify(placeholderValue));
         } else {
-          // Keep unresolved placeholder in the output
-          messagesWithPlaceholdersReplaced.push(
-            item as { type: ChatMessageType.Placeholder } & typeof item,
-          );
+          // Keep unresolved placeholder
+          result.push(item);
         }
-      } else if (
-        "role" in item &&
-        "content" in item &&
-        item.type === ChatMessageType.ChatMessage
-      ) {
-        messagesWithPlaceholdersReplaced.push({
-          role: item.role,
-          content: item.content,
-        });
+        continue;
       }
+
+      // Catch-all for any other message types
+      result.push(item);
     }
 
-    return messagesWithPlaceholdersReplaced.map((item) => {
-      if (
-        typeof item === "object" &&
-        item !== null &&
-        "role" in item &&
-        "content" in item &&
-        typeof item.content === 'string'
-      ) {
-        return {
-          ...item,
-          content: mustache.render(item.content, variables ?? {}),
-        };
-      } else {
-        // Return placeholder or stringified value as-is
-        return item;
-      }
-    });
+    return result;
   }
 
   /**
@@ -438,7 +455,10 @@ export class ChatPromptClient extends BasePromptClient {
             ...(placeholderValue as ChatMessage[]).map((msg) => {
               return {
                 role: msg.role,
-                content: this._transformToLangchainVariables(msg.content),
+                content:
+                  typeof msg.content === "string"
+                    ? this._transformToLangchainVariables(msg.content)
+                    : msg.content,
               };
             }),
           );
@@ -469,7 +489,10 @@ export class ChatPromptClient extends BasePromptClient {
       ) {
         messagesWithPlaceholdersReplaced.push({
           role: item.role,
-          content: this._transformToLangchainVariables(item.content),
+          content:
+            typeof item.content === "string"
+              ? this._transformToLangchainVariables(item.content)
+              : item.content,
         });
       }
     }

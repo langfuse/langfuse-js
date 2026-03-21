@@ -2151,5 +2151,41 @@ Configuration:
         expect(formattedMessages[1].content).toBe(expectedUser);
       });
     });
+
+    it("should handle multimodal array inputs without crashing mustache", () => {
+      const promptClient = new ChatPromptClient({
+        name: "multimodal-test",
+        type: "chat",
+        version: 1,
+        prompt: [
+          {
+            type: ChatMessageType.ChatMessage,
+            role: "user",
+            content: {
+              attachments: [
+                {
+                  type: "image_url",
+                  image_url: { url: "https://example.com/image.png" },
+                },
+              ],
+            } as any,
+          },
+        ],
+        config: {},
+        labels: [],
+        tags: [],
+      });
+
+      // After fix: Should return the multimodal content as-is without crashing
+      const compiled = promptClient.compile();
+      expect(compiled[0].content).toEqual({
+        attachments: [
+          {
+            type: "image_url",
+            image_url: { url: "https://example.com/image.png" },
+          },
+        ],
+      });
+    });
   });
 });
