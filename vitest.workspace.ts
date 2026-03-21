@@ -1,4 +1,5 @@
 import { defineWorkspace } from "vitest/config";
+import { fileURLToPath } from "node:url";
 
 export default defineWorkspace([
   {
@@ -10,30 +11,24 @@ export default defineWorkspace([
     },
     resolve: {
       alias: {
-        "@langfuse/client": new URL(
-          "./packages/client/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/tracing": new URL(
-          "./packages/tracing/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/otel": new URL(
-          "./packages/otel/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/langchain": new URL(
-          "./packages/langchain/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/openai": new URL(
-          "./packages/openai/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/core": new URL(
-          "./packages/core/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
+        "@langfuse/client": fileURLToPath(
+          new URL("./packages/client/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/tracing": fileURLToPath(
+          new URL("./packages/tracing/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/otel": fileURLToPath(
+          new URL("./packages/otel/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/langchain": fileURLToPath(
+          new URL("./packages/langchain/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/openai": fileURLToPath(
+          new URL("./packages/openai/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/core": fileURLToPath(
+          new URL("./packages/core/dist/index.mjs", import.meta.url),
+        ),
       },
     },
   },
@@ -47,30 +42,24 @@ export default defineWorkspace([
     },
     resolve: {
       alias: {
-        "@langfuse/client": new URL(
-          "./packages/client/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/tracing": new URL(
-          "./packages/tracing/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/otel": new URL(
-          "./packages/otel/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/langchain": new URL(
-          "./packages/langchain/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/openai": new URL(
-          "./packages/openai/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
-        "@langfuse/core": new URL(
-          "./packages/core/dist/index.mjs",
-          import.meta.url,
-        ).pathname,
+        "@langfuse/client": fileURLToPath(
+          new URL("./packages/client/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/tracing": fileURLToPath(
+          new URL("./packages/tracing/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/otel": fileURLToPath(
+          new URL("./packages/otel/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/langchain": fileURLToPath(
+          new URL("./packages/langchain/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/openai": fileURLToPath(
+          new URL("./packages/openai/dist/index.mjs", import.meta.url),
+        ),
+        "@langfuse/core": fileURLToPath(
+          new URL("./packages/core/dist/index.mjs", import.meta.url),
+        ),
       },
     },
   },
