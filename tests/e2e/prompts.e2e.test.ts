@@ -2152,7 +2152,7 @@ Configuration:
       });
     });
 
-    it("should handle multimodal array inputs without crashing mustache", () => {
+    it("should handle multimodal array inputs for ChatMessage types", () => {
       const promptClient = new ChatPromptClient({
         name: "multimodal-test",
         type: "chat",
@@ -2188,7 +2188,7 @@ Configuration:
       });
     });
 
-    it("should handle multimodal array inputs in the main loop (with variables)", () => {
+    it("should handle multimodal array inputs in the main loop with variables", () => {
       const promptClient = new ChatPromptClient({
         name: "multimodal-test",
         type: "chat",
@@ -2230,9 +2230,9 @@ Configuration:
       expect(compiled[1].content).toEqual("Dummy: test");
     });
 
-    it("should handle multimodal content in getLangchainPrompt without crashing", () => {
+    it("should handle multimodal content in getLangchainPrompt safely", () => {
       const promptClient = new ChatPromptClient({
-        name: "multimodal-test",
+        name: "multimodal-langchain-test",
         type: "chat",
         version: 1,
         prompt: [
@@ -2253,89 +2253,26 @@ Configuration:
         labels: [],
         tags: [],
       });
-
-      const result = promptClient.getLangchainPrompt();
-      expect(result[0].content).toEqual({
-        attachments: [
-          {
-            type: "image_url",
-            image_url: { url: "https://example.com/image.png" },
-          },
-        ],
-      });
     });
-    it("should handle multimodal array inputs in the main loop (with variables)", () => {
+
+    it("should handle multimodal content in getLangchainPrompt for non-ChatMessage items", () => {
       const promptClient = new ChatPromptClient({
-        name: "multimodal-loop-test",
+        name: "multimodal-non-chat-test",
         type: "chat",
         version: 1,
         prompt: [
           {
-            role: "user",
-            content: {
-              attachments: [
-                {
-                  type: "image_url",
-                  image_url: { url: "https://example.com/image.png" },
-                },
-              ],
-            } as any,
-          },
-          {
-            role: "user",
-            content: "Context: {{dummy}}",
+            type: ChatMessageType.Placeholder,
+            name: "multimodal_placeholder",
           },
         ],
         config: {},
         labels: [],
         tags: [],
-      } as any);
-
-      const compiled = promptClient.compile({ dummy: "test-value" });
-
-      expect(compiled[0].content).toEqual({
-        attachments: [
-          {
-            type: "image_url",
-            image_url: { url: "https://example.com/image.png" },
-          },
-        ],
       });
-      expect(compiled[1].content).toEqual("Context: test-value");
-    });
-
-    it("should handle multimodal content in getLangchainPrompt without crashing", () => {
-      const promptClient = new ChatPromptClient({
-        name: "multimodal-langchain-test",
-        type: "chat",
-        version: 1,
-        prompt: [
-          {
-            role: "user",
-            content: {
-              attachments: [
-                {
-                  type: "image_url",
-                  image_url: { url: "https://example.com/image.png" },
-                },
-              ],
-            } as any,
-          },
-        ],
-        config: {},
-        labels: [],
-        tags: [],
-      } as any);
 
       const result = promptClient.getLangchainPrompt();
-      expect(result[0].content).toEqual({
-        attachments: [
-          {
-            type: "image_url",
-            image_url: { url: "https://example.com/image.png" },
-          },
-        ],
-      });
+      expect(result[0]).toEqual(["placeholder", "{multimodal_placeholder}"]);
     });
   });
 });

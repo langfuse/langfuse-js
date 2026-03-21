@@ -263,6 +263,7 @@ export class TextPromptClient extends BasePromptClient {
  * @public
  */
 export class ChatPromptClient extends BasePromptClient {
+  private static readonly MAX_CACHE_SIZE = 500;
   private static readonly mustacheTokenCache = new Map<string, any[]>();
   /** The original prompt response from the API */
   public readonly promptResponse: Prompt.Chat;
@@ -346,8 +347,8 @@ export class ChatPromptClient extends BasePromptClient {
     const writer = new mustache.Writer();
 
     for (const item of this.prompt) {
-      // 3. REFINED TYPE-GUARD: Check content type as the very first operation
       if (item.type === ChatMessageType.ChatMessage) {
+        // 3. REFINED TYPE-GUARD: Check content type as the very first operation
         if (typeof item.content !== "string") {
           result.push({
             role: item.role,
@@ -356,9 +357,21 @@ export class ChatPromptClient extends BasePromptClient {
           continue;
         }
 
-        // 2. TOKEN CACHING: Use static Map to bypass expensive parsing
+        // 2. TOKEN CACHING: Use static Map to bypass expensive parsing (Memory-Safe)
         let tokens = ChatPromptClient.mustacheTokenCache.get(item.content);
         if (!tokens) {
+          if (
+            ChatPromptClient.mustacheTokenCache.size >=
+            ChatPromptClient.MAX_CACHE_SIZE
+          ) {
+            // FIFO Eviction: Eject the oldest entry
+            const oldestKey = ChatPromptClient.mustacheTokenCache
+              .keys()
+              .next().value;
+            if (oldestKey !== undefined) {
+              ChatPromptClient.mustacheTokenCache.delete(oldestKey);
+            }
+          }
           tokens = mustache.parse(item.content);
           ChatPromptClient.mustacheTokenCache.set(item.content, tokens);
         }
