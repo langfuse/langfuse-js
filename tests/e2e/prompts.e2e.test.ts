@@ -2263,7 +2263,8 @@ Configuration:
           },
         ],
       });
-    });it("should handle multimodal array inputs in the main loop (with variables)", () => {
+    });
+    it("should handle multimodal array inputs in the main loop (with variables)", () => {
       const promptClient = new ChatPromptClient({
         name: "multimodal-loop-test",
         type: "chat",
@@ -2293,7 +2294,12 @@ Configuration:
       const compiled = promptClient.compile({ dummy: "test-value" });
 
       expect(compiled[0].content).toEqual({
-        attachments: [{ type: "image_url", image_url: { url: "https://example.com/image.png" } }],
+        attachments: [
+          {
+            type: "image_url",
+            image_url: { url: "https://example.com/image.png" },
+          },
+        ],
       });
       expect(compiled[1].content).toEqual("Context: test-value");
     });
@@ -2307,7 +2313,12 @@ Configuration:
           {
             role: "user",
             content: {
-              attachments: [{ type: "image_url", image_url: { url: "https://example.com/image.png" } }],
+              attachments: [
+                {
+                  type: "image_url",
+                  image_url: { url: "https://example.com/image.png" },
+                },
+              ],
             } as any,
           },
         ],
@@ -2318,7 +2329,12 @@ Configuration:
 
       const result = promptClient.getLangchainPrompt();
       expect(result[0].content).toEqual({
-        attachments: [{ type: "image_url", image_url: { url: "https://example.com/image.png" } }],
+        attachments: [
+          {
+            type: "image_url",
+            image_url: { url: "https://example.com/image.png" },
+          },
+        ],
       });
     });
   });
