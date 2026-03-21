@@ -2187,5 +2187,82 @@ Configuration:
         ],
       });
     });
+
+    it("should handle multimodal array inputs in the main loop (with variables)", () => {
+      const promptClient = new ChatPromptClient({
+        name: "multimodal-test",
+        type: "chat",
+        version: 1,
+        prompt: [
+          {
+            type: ChatMessageType.ChatMessage,
+            role: "user",
+            content: {
+              attachments: [
+                {
+                  type: "image_url",
+                  image_url: { url: "https://example.com/image.png" },
+                },
+              ],
+            } as any,
+          },
+          {
+            type: ChatMessageType.ChatMessage,
+            role: "user",
+            content: "Dummy: {{dummy}}",
+          },
+        ],
+        config: {},
+        labels: [],
+        tags: [],
+      });
+
+      // Passing a variable forces execution into the main loop
+      const compiled = promptClient.compile({ dummy: "test" });
+      expect(compiled[0].content).toEqual({
+        attachments: [
+          {
+            type: "image_url",
+            image_url: { url: "https://example.com/image.png" },
+          },
+        ],
+      });
+      expect(compiled[1].content).toEqual("Dummy: test");
+    });
+
+    it("should handle multimodal content in getLangchainPrompt without crashing", () => {
+      const promptClient = new ChatPromptClient({
+        name: "multimodal-test",
+        type: "chat",
+        version: 1,
+        prompt: [
+          {
+            type: ChatMessageType.ChatMessage,
+            role: "user",
+            content: {
+              attachments: [
+                {
+                  type: "image_url",
+                  image_url: { url: "https://example.com/image.png" },
+                },
+              ],
+            } as any,
+          },
+        ],
+        config: {},
+        labels: [],
+        tags: [],
+      });
+
+      const result = promptClient.getLangchainPrompt();
+      expect(result[0].content).toEqual({
+        attachments: [
+          {
+            type: "image_url",
+            image_url: { url: "https://example.com/image.png" },
+          },
+        ],
+      });
+    });
   });
 });
