@@ -19,6 +19,7 @@ export interface BlobStorageIntegrationResponse {
   fileType: LangfuseAPI.BlobStorageIntegrationFileType;
   exportMode: LangfuseAPI.BlobStorageExportMode;
   exportStartDate: string | null;
+  compressed: boolean;
   nextSyncAt: string | null;
   lastSyncAt: string | null;
   lastError: string | null;
