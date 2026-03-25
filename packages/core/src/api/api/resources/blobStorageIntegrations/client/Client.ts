@@ -207,7 +207,8 @@ export class BlobStorageIntegrations {
    *         forcePathStyle: true,
    *         fileType: "JSON",
    *         exportMode: "FULL_HISTORY",
-   *         exportStartDate: undefined
+   *         exportStartDate: undefined,
+   *         compressed: undefined
    *     })
    */
   public upsertBlobStorageIntegration(
