@@ -148,8 +148,8 @@ Minimum verification:
   `.codex/environments/environment.toml`.
 - Preserve Cursor workflows by editing `.agents/config.json`, not the generated
   `.cursor/*` files directly.
-- Shared agent setup overview: [`README.md`](README.md)
-- Shared skill index: [`skills/README.md`](skills/README.md)
+- Shared agent setup overview: `.agents/README.md`
+- Shared skill index: `.agents/skills/README.md`
 - This repo does not currently define shared skills beyond the index. Add them
   only when a repo-specific workflow becomes repeated enough to justify durable
   reusable guidance.

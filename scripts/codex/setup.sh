@@ -21,8 +21,10 @@ if ! command -v corepack >/dev/null 2>&1; then
   exit 1
 fi
 
+pnpm_version="$(node -e 'const fs = require("node:fs"); const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")); const packageManager = pkg.packageManager ?? ""; if (!packageManager.startsWith("pnpm@")) { console.error("package.json packageManager must pin pnpm"); process.exit(1); } process.stdout.write(packageManager.slice("pnpm@".length).split("+")[0]);')"
+
 corepack enable
-corepack prepare pnpm@9.15.0 --activate
+corepack prepare "pnpm@${pnpm_version}" --activate
 
 ensure_env_file .env .env.example
 
