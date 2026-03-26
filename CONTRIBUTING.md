@@ -24,6 +24,46 @@ This is a monorepo containing the Langfuse TypeScript/JavaScript SDK packages:
 pnpm install
 ```
 
+### Shared Agent Setup
+
+This repository keeps shared agent setup in source control so developers using
+different tools work against the same instructions, bootstrap command, and MCP
+server catalog.
+
+- Canonical shared docs:
+  - `.agents/AGENTS.md`
+- Root discovery symlinks:
+  - `AGENTS.md`
+  - `CLAUDE.md`
+- Shared agent setup overview: `.agents/README.md`
+- Shared skills index: `.agents/skills/README.md`
+- Shared tool/bootstrap/MCP config: `.agents/config.json`
+- Tool-specific MCP configs generated locally from that catalog and not
+  committed:
+  - `.mcp.json`
+  - `.cursor/mcp.json`
+  - `.vscode/mcp.json`
+  - `.codex/config.toml`
+- Tool-specific runtime shims generated locally from the shared config and not
+  committed:
+  - `.claude/settings.json`
+  - `.cursor/environment.json`
+  - `.codex/environments/environment.toml`
+- Tool-specific skill projections generated locally and not committed:
+  - `.claude/skills/*`
+- Shared bootstrap for agent environments: `bash scripts/codex/setup.sh`
+
+Cursor compatibility is preserved through the generated `.cursor/mcp.json` and
+`.cursor/environment.json` shims, so Cursor users keep the expected discovery
+paths while `.agents/` remains the source of truth.
+
+When you change the shared MCP or bootstrap setup:
+
+1. Edit `.agents/config.json`
+2. Run `pnpm run agents:sync`
+3. Run `pnpm run agents:check`
+4. Do not commit the generated MCP config files or runtime shims
+
 ### Building packages
 
 ```bash

@@ -7,6 +7,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "agents:check": "node scripts/agents/sync-agent-shims.mjs --check",
+    "agents:sync": "node scripts/agents/sync-agent-shims.mjs",
     "build": "turbo run build",
     "check:format": "prettier --check \"**/*.{ts,js,json,md}\" --log-level error --experimental-cli",
     "check:lint": "eslint \"packages/*/src/**/*.ts\" --quiet",
@@ -29,6 +31,7 @@
     "ci": "pnpm build && pnpm test && pnpm lint && pnpm typecheck && pnpm format:check",
     "clean": "pnpm -r run clean && rm -rf packages/*/dist && rm -f packages/*/tsconfig.tsbuildinfo",
     "nuke": "pnpm clean && rm -rf node_modules && rm -rf packages/*/node_modules && pnpm install",
+    "postinstall": "node -e \"const fs = require('node:fs'); const cp = require('node:child_process'); if (!fs.existsSync('scripts/postinstall.sh')) { console.log('Skipping repo postinstall helper: scripts/postinstall.sh is not present in this install context.'); process.exit(0); } cp.execSync('bash scripts/postinstall.sh', { stdio: 'inherit' });\"",
     "prepare": "husky"
   },
   "devDependencies": {

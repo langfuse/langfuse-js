@@ -12,6 +12,15 @@ dist/
 build/
 *.tsbuildinfo
 .turbo
+.playwright-mcp/*
+.mcp.json
+.claude/settings.json
+.claude/skills/
+.cursor/mcp.json
+.cursor/environment.json
+.vscode/mcp.json
+.codex/config.toml
+.codex/environments/environment.toml
 
 # Environment files
 .env

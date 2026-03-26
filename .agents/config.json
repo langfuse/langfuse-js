@@ -1,0 +1,68 @@
+{
+  "shared": {
+    "setupScript": "bash scripts/codex/setup.sh",
+    "devCommand": "pnpm build --watch",
+    "devTerminalDescription": "Main development terminal running package builds in watch mode"
+  },
+  "mcpServers": {
+    "playwright": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--isolated",
+        "--save-trace",
+        "--output-dir",
+        ".playwright-mcp"
+      ]
+    },
+    "datadog": {
+      "transport": "http",
+      "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp"
+    },
+    "langfuse-docs": {
+      "transport": "http",
+      "url": "https://langfuse.com/api/mcp"
+    },
+    "linear": {
+      "transport": "http",
+      "url": "https://mcp.linear.app/mcp"
+    }
+  },
+  "claude": {
+    "settings": {
+      "permissions": {
+        "allow": [
+          "Bash(find:*)",
+          "Bash(rg:*)",
+          "Bash(grep:*)",
+          "Bash(ls:*)",
+          "Bash(cat:*)",
+          "Bash(head:*)",
+          "Bash(tail:*)"
+        ],
+        "deny": [
+          "Read(./.env)",
+          "Read(./.env.local)",
+          "Read(./.env.development.local)",
+          "Read(./.env.test.local)",
+          "Read(./.env.production.local)",
+          "Read(./.npmrc)"
+        ]
+      },
+      "enableAllProjectMcpServers": true
+    }
+  },
+  "codex": {
+    "environment": {
+      "version": 1,
+      "name": "langfuse-js"
+    }
+  },
+  "cursor": {
+    "environment": {
+      "agentCanUpdateSnapshot": false
+    }
+  }
+}
