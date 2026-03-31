@@ -1,6 +1,6 @@
 {
   "name": "langfuse-node",
-  "version": "3.38.11",
+  "version": "3.38.12",
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "axios": "^1.8.2",
-    "langfuse-core": "^3.38.11"
+    "langfuse-core": "^3.38.12"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
