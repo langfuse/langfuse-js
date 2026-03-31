@@ -37,6 +37,7 @@
   "devDependencies": {
     "@ai-sdk/anthropic": "^2",
     "@ai-sdk/openai": "^2",
+    "@eslint/js": "^9.32.0",
     "@langchain/core": "^1.1.24",
     "@langchain/langgraph": "^1.1.4",
     "@langchain/openai": "^1.2.7",
@@ -58,7 +59,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
-    "happy-dom": "^20.0.2",
+    "happy-dom": "^20.8.8",
     "husky": "^9.1.7",
     "mustache": "^4.2.0",
     "nanoid": "^5.1.5",
@@ -79,5 +80,5 @@
   "resolutions": {
     "ml-spectra-processing": "14.14.0"
   },
-  "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c"
+  "packageManager": "pnpm@10.33.0"
 }
