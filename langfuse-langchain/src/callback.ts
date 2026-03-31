@@ -602,7 +602,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
       const lastResponse =
         output.generations[output.generations.length - 1][output.generations[output.generations.length - 1].length - 1];
-      const llmUsage = this.extractUsageMetadata(lastResponse) ?? output.llmOutput?.["tokenUsage"];
+      const llmUsage = this.extractUsageMetadata(lastResponse) ?? output.llmOutput?.["tokenUsage"] ?? {};
       const modelName = this.extractModelNameFromMetadata(lastResponse);
 
       const usageDetails: Record<string, any> = {
