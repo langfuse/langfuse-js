@@ -61,18 +61,16 @@ jobs:
             exit 1
           fi
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9.15.0
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
@@ -232,7 +230,7 @@ jobs:
 
       - name: Upload release artifacts to GitHub Release
         if: inputs.dry_run == false
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           files: release-artifacts/*.tar.gz
@@ -242,8 +240,10 @@ jobs:
 
       - name: Notify Slack on success
         if: success() && inputs.dry_run == false
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_RELEASES }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "✅ Langfuse JS/TS SDK v${{ steps.version.outputs.version }} published to npm",
@@ -331,14 +331,13 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_RELEASES }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Notify Slack on dry run success
         if: success() && inputs.dry_run == true
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🧪 Langfuse JS/TS SDK dry run completed for v${{ steps.version.outputs.version }}",
@@ -414,14 +413,13 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Notify Slack on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "❌ Langfuse JS/TS SDK release workflow failed",
@@ -507,9 +505,6 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Rollback notification on partial failure
         if: failure() && steps.release.outcome == 'success'
