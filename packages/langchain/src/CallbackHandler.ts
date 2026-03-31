@@ -594,18 +594,16 @@ export class CallbackHandler extends BaseCallbackHandler {
         output.llmOutput?.["tokenUsage"];
       const modelName = this.extractModelNameFromMetadata(lastResponse);
 
+      const usageObj =
+        llmUsage && typeof llmUsage === "object"
+          ? (llmUsage as Record<string, any>)
+          : undefined;
+
       const usageDetails: Record<string, any> = {
-        input:
-          llmUsage?.input_tokens ??
-          ("promptTokens" in llmUsage ? llmUsage?.promptTokens : undefined),
+        input: llmUsage?.input_tokens ?? usageObj?.promptTokens ?? undefined,
         output:
-          llmUsage?.output_tokens ??
-          ("completionTokens" in llmUsage
-            ? llmUsage?.completionTokens
-            : undefined),
-        total:
-          llmUsage?.total_tokens ??
-          ("totalTokens" in llmUsage ? llmUsage?.totalTokens : undefined),
+          llmUsage?.output_tokens ?? usageObj?.completionTokens ?? undefined,
+        total: llmUsage?.total_tokens ?? usageObj?.totalTokens ?? undefined,
       };
 
       if (llmUsage && "input_token_details" in llmUsage) {
