@@ -63,6 +63,14 @@ import * as LangfuseAPI from "../../../../../index.js";
  *         configId: "1234-5678-90ab-cdef",
  *         traceId: "cdef-1234-5678-90ab"
  *     }
+ *
+ * @example
+ *     {
+ *         name: "feedback",
+ *         value: "Great explanation of the concept",
+ *         dataType: LangfuseAPI.ScoreDataType.Text,
+ *         traceId: "cdef-1234-5678-90ab"
+ *     }
  */
 export interface CreateScoreRequest {
   id?: string;
