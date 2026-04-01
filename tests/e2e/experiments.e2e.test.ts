@@ -155,6 +155,7 @@ describe("Langfuse Datasets E2E", () => {
     expect(result.runName).toMatch(
       /^Euro capitals - \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
     );
+    expect(result.experimentId).toMatch(/^[0-9a-f]{16}$/);
     // No datasetRunId for local datasets
     expect(result.datasetRunId).toBeUndefined();
 
@@ -233,6 +234,7 @@ describe("Langfuse Datasets E2E", () => {
       /^Euro capitals on LF dataset - \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
     );
     expect(result.datasetRunId).toBeDefined();
+    expect(result.experimentId).toBe(result.datasetRunId);
 
     // Validate item results structure
     result.itemResults.forEach((itemResult, index) => {
@@ -333,6 +335,7 @@ describe("Langfuse Datasets E2E", () => {
     // Should use the custom run name exactly
     expect(result.runName).toBe(customRunName);
     expect(result.datasetRunId).toBeDefined();
+    expect(result.experimentId).toBe(result.datasetRunId);
 
     // Fetch dataset run and verify it has the custom name
     const datasetRun = await langfuse.api.datasets.getRun(
@@ -365,6 +368,7 @@ describe("Langfuse Datasets E2E", () => {
 
     // Should use the custom run name exactly
     expect(result.runName).toBe(customRunName);
+    expect(result.experimentId).toMatch(/^[0-9a-f]{16}$/);
     expect(result.itemResults).toHaveLength(2);
     // No dataset run for local datasets
     expect(result.datasetRunId).toBeUndefined();
@@ -483,6 +487,7 @@ describe("Langfuse Datasets E2E", () => {
       await waitForServerIngestion(500);
 
       expect(result.itemResults).toHaveLength(0);
+      expect(result.experimentId).toMatch(/^[0-9a-f]{16}$/);
       expect(result.runEvaluations).toHaveLength(1); // Run evaluators will still execute with empty data
       expect(await result.format()).toContain("No experiment results");
     });

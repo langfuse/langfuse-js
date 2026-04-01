@@ -119,6 +119,7 @@ export class ExperimentManager {
    * @param config.maxConcurrency - Maximum number of concurrent task executions (default: 50)
    *
    * @returns Promise that resolves to experiment results including:
+   *   - experimentId: Stable identifier for the experiment execution
    *   - runName: The experiment run name (either provided or generated)
    *   - itemResults: Results for each processed data item
    *   - runEvaluations: Results from run-level evaluators
@@ -193,6 +194,7 @@ export class ExperimentManager {
       name,
       runName: providedRunName,
     });
+    const fallbackExperimentId = await createExperimentId();
 
     if (!this.isOtelRegistered()) {
       this.logger.warn(
@@ -217,6 +219,7 @@ export class ExperimentManager {
           experimentRunName: runName,
           experimentDescription: description,
           experimentMetadata: metadata,
+          fallbackExperimentId,
           datasetVersion: config.datasetVersion,
         });
       });
@@ -244,8 +247,10 @@ export class ExperimentManager {
     }
 
     // Get dataset run URL
-    const datasetRunId =
-      itemResults.length > 0 ? itemResults[0].datasetRunId : undefined;
+    const datasetRunId = itemResults.find(
+      (item) => item.datasetRunId,
+    )?.datasetRunId;
+    const experimentId = datasetRunId || fallbackExperimentId;
 
     let datasetRunUrl = undefined;
     if (datasetRunId && data.length > 0 && "datasetId" in data[0]) {
@@ -294,6 +299,7 @@ export class ExperimentManager {
     await this.langfuseClient.score.flush();
 
     return {
+      experimentId,
       runName,
       itemResults,
       datasetRunId,
@@ -355,6 +361,7 @@ export class ExperimentManager {
       ExpectedOutput,
       Metadata
     >["metadata"];
+    fallbackExperimentId: string;
     item: ExperimentParams<Input, ExpectedOutput, Metadata>["data"][0];
     task: ExperimentTask<Input, ExpectedOutput, Metadata>;
     evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
@@ -405,7 +412,7 @@ export class ExperimentManager {
         // Generate IDs
         const experimentItemId =
           datasetItemId || (await createExperimentItemId(input));
-        const experimentId = datasetRunId || (await createExperimentId());
+        const experimentId = datasetRunId || params.fallbackExperimentId;
 
         // Set non-propagated experiment attributes directly on root span
         const rootSpanAttributes: Record<string, string> = {
