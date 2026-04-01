@@ -306,6 +306,8 @@ export type ExperimentItemResult<
  * ```typescript
  * const result = await langfuse.experiment.run(config);
  *
+ * console.log(`Experiment ID: ${result.experimentId}`);
+ *
  * // Access individual results
  * console.log(`Processed ${result.itemResults.length} items`);
  *
@@ -332,6 +334,15 @@ export type ExperimentResult<
   ExpectedOutput = any,
   Metadata extends Record<string, any> = Record<string, any>,
 > = {
+  /**
+   * Stable identifier for this experiment execution.
+   *
+   * For Langfuse datasets, this is the dataset run ID when available.
+   * For local data, this is a generated fallback ID shared across all items
+   * in the run.
+   */
+  experimentId: string;
+
   /**
    * The experiment run name.
    *

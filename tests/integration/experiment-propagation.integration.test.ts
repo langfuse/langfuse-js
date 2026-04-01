@@ -251,7 +251,7 @@ describe("Experiment Attribute Propagation", () => {
   });
 
   describe("Multiple Experiment Items", () => {
-    it("should not leak attributes between experiment items", async () => {
+    it("should share experiment ID across local items while keeping item IDs distinct", async () => {
       const items = [
         { input: "item1", metadata: { index: "1" } },
         { input: "item2", metadata: { index: "2" } },
@@ -260,7 +260,7 @@ describe("Experiment Attribute Propagation", () => {
       const experimentIds: string[] = [];
       const itemIds: string[] = [];
 
-      await langfuse.experiment.run({
+      const result = await langfuse.experiment.run({
         name: "no-leakage-test",
         data: items,
         task: async (item) => {
@@ -285,8 +285,9 @@ describe("Experiment Attribute Propagation", () => {
       // Each item should have different item IDs
       expect(itemIds[0]).not.toBe(itemIds[1]);
 
-      // Each item should have different experiment IDs (randomly generated)
-      expect(experimentIds[0]).not.toBe(experimentIds[1]);
+      // All local items should share the same experiment ID
+      expect(experimentIds[0]).toBe(experimentIds[1]);
+      expect(result.experimentId).toBe(experimentIds[0]);
     });
   });
 
