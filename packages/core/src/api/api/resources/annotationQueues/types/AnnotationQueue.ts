@@ -5,7 +5,7 @@
 export interface AnnotationQueue {
   id: string;
   name: string;
-  description?: string;
+  description: string | null;
   scoreConfigIds: string[];
   createdAt: string;
   updatedAt: string;

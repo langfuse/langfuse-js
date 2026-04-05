@@ -298,7 +298,7 @@ export class ChatPromptClient extends BasePromptClient {
         // Plain ChatMessage (legacy format) - add type field
         return {
           type: ChatMessageType.ChatMessage,
-          ...item,
+          ...(item as Omit<ChatMessage, "type">),
         } as ChatMessageWithPlaceholders;
       }
     });
@@ -379,7 +379,8 @@ export class ChatPromptClient extends BasePromptClient {
         typeof item === "object" &&
         item !== null &&
         "role" in item &&
-        "content" in item
+        "content" in item &&
+        typeof item.content === "string"
       ) {
         return {
           ...item,

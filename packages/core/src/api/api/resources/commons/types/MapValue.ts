@@ -7,6 +7,8 @@ export type MapValue =
   | undefined
   | number
   | undefined
+  | number
+  | undefined
   | boolean
   | undefined
   | string[]

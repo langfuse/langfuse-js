@@ -19,4 +19,6 @@ export interface CreateDatasetRunItemRequest {
    * If not provided, uses the latest version of dataset items.
    */
   datasetVersion?: string;
+  /** Optional timestamp to set the createdAt field of the dataset run item. If not provided or null, defaults to current timestamp. */
+  createdAt?: string;
 }

@@ -1,10 +1,17 @@
+import {
+  LogLevel,
+  configureGlobalLogger,
+  resetGlobalLogger,
+} from "@langfuse/core";
+import { trace } from "@opentelemetry/api";
 import { startObservation } from "@langfuse/tracing";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
 import {
   setupTestEnvironment,
   teardownTestEnvironment,
+  waitFor,
   waitForSpanExport,
   type TestEnvironment,
 } from "./helpers/testSetup.js";
@@ -14,12 +21,15 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
   let assertions: SpanAssertions;
 
   beforeEach(async () => {
+    resetGlobalLogger();
     testEnv = await setupTestEnvironment();
     assertions = new SpanAssertions(testEnv.mockExporter);
   });
 
   afterEach(async () => {
     await teardownTestEnvironment(testEnv);
+    vi.restoreAllMocks();
+    resetGlobalLogger();
   });
 
   describe("Masking functionality", () => {
@@ -58,6 +68,47 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       );
     });
 
+    it("should apply async mask function to span attributes", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: async ({ data }) => {
+            await waitFor(50);
+
+            if (typeof data === "string") {
+              return data.replace(/secret/g, "***");
+            }
+
+            return data;
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("async-masked-span", {
+        input: { message: "This contains secret information" },
+        output: { response: "No secret here" },
+      });
+      span.end();
+
+      await waitFor(10);
+      expect(testEnv.mockExporter.getSpanCount()).toBe(0);
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttributeContains(
+        "async-masked-span",
+        "langfuse.observation.input",
+        "This contains *** information",
+      );
+      assertions.expectSpanAttributeContains(
+        "async-masked-span",
+        "langfuse.observation.output",
+        "No *** here",
+      );
+    });
+
     it("should handle mask function errors gracefully", async () => {
       await teardownTestEnvironment(testEnv);
 
@@ -79,6 +130,33 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
       assertions.expectSpanAttribute(
         "error-mask-span",
+        "langfuse.observation.input",
+        "<fully masked due to failed mask function>",
+      );
+    });
+
+    it("should handle async mask function errors gracefully", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: async () => {
+            await waitFor(10);
+            throw new Error("Async mask function error");
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("async-error-mask-span", {
+        input: { message: "test message" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "async-error-mask-span",
         "langfuse.observation.input",
         "<fully masked due to failed mask function>",
       );
@@ -244,7 +322,114 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
     });
   });
 
+  describe("Default span filtering", () => {
+    it("should export Langfuse spans by default", async () => {
+      const span = startObservation("default-filter-langfuse-span");
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("default-filter-langfuse-span");
+    });
+
+    it("should export gen_ai spans from non-langfuse tracer by default", async () => {
+      const tracer = trace.getTracer("custom.instrumentation");
+      const span = tracer.startSpan("default-filter-gen-ai-span");
+      span.setAttribute("gen_ai.request.model", "gpt-4.1");
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("default-filter-gen-ai-span");
+    });
+
+    it("should export known instrumentor spans by default", async () => {
+      const tracer = trace.getTracer(
+        "openinference.instrumentation.agno.agent",
+      );
+      const span = tracer.startSpan("default-filter-known-instrumentor-span");
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      assertions.expectSpanWithName("default-filter-known-instrumentor-span");
+    });
+
+    it("should drop unknown spans by default", async () => {
+      const tracer = trace.getTracer("unknown.instrumentation");
+      const span = tracer.startSpan("default-filter-unknown-span");
+      span.end();
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      assertions.expectSpanCount(0);
+    });
+
+    it("should log dropped spans on debug level with instrumentation scope", async () => {
+      configureGlobalLogger({ level: LogLevel.DEBUG, enableTimestamp: false });
+      const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+
+      const tracer = trace.getTracer("unknown.instrumentation.debug");
+      const span = tracer.startSpan("default-filter-debug-drop-span");
+      span.end();
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      assertions.expectSpanCount(0);
+
+      const dropLogCall = debugSpy.mock.calls.find((call) =>
+        String(call[0]).includes(
+          "Dropped span due to shouldExportSpan filter.",
+        ),
+      );
+
+      expect(dropLogCall).toBeDefined();
+      expect(dropLogCall?.[1]).toMatchObject({
+        spanName: "default-filter-debug-drop-span",
+        instrumentationScope: "unknown.instrumentation.debug",
+      });
+    });
+  });
+
   describe("shouldExportSpan functionality", () => {
+    it("should use custom shouldExportSpan as full override", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          shouldExportSpan: ({ otelSpan }) => {
+            return otelSpan.name === "override-allowed-span";
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const unknownTracer = trace.getTracer("unknown.override.scope");
+      const allowedSpan = unknownTracer.startSpan("override-allowed-span");
+      allowedSpan.end();
+
+      const blockedLangfuseSpan = startObservation(
+        "override-blocked-langfuse-span",
+      );
+      blockedLangfuseSpan.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanCount(1);
+      const exportedSpan = assertions.expectSpanWithName(
+        "override-allowed-span",
+      );
+      expect(exportedSpan.instrumentationScope.name).toBe(
+        "unknown.override.scope",
+      );
+      expect(
+        testEnv.mockExporter.getSpanByName("override-blocked-langfuse-span"),
+      ).toBeUndefined();
+    });
+
     it("should export spans when shouldExportSpan returns true", async () => {
       await teardownTestEnvironment(testEnv);
 
@@ -388,6 +573,8 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
     it("should handle shouldExportSpan function errors gracefully", async () => {
       await teardownTestEnvironment(testEnv);
+      configureGlobalLogger({ level: LogLevel.ERROR, enableTimestamp: false });
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       let callCount = 0;
       testEnv = await setupTestEnvironment({
@@ -419,10 +606,20 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       // Only the normal span should be exported (error span filtered out due to exception)
       assertions.expectSpanCount(1);
       assertions.expectSpanWithName("normal-span");
+
+      const errorLogCall = errorSpy.mock.calls.find((call) =>
+        String(call[0]).includes(
+          "shouldExportSpan failed with error. Dropping span.",
+        ),
+      );
+      expect(errorLogCall).toBeDefined();
+      expect(errorLogCall?.[1]).toMatchObject({
+        spanName: "error-span",
+        instrumentationScope: "langfuse-sdk",
+      });
     });
 
-    it("should not call shouldExportSpan when not configured", async () => {
-      // Using default testEnv without shouldExportSpan
+    it("should export Langfuse spans when shouldExportSpan is not configured", async () => {
       const span = startObservation("default-span");
       span.end();
 

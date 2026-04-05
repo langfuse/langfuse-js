@@ -1,16 +1,18 @@
-import { OpenAI } from "openai";
 import crypto from "node:crypto";
-import { observeOpenAI } from "@langfuse/openai";
+
 import { LangfuseClient } from "@langfuse/client";
+import { observeOpenAI } from "@langfuse/openai";
+import { startActiveObservation } from "@langfuse/tracing";
+import { nanoid } from "nanoid";
+import { OpenAI } from "openai";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
+
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
   waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
-import { nanoid } from "nanoid";
-import { startActiveObservation } from "@langfuse/tracing";
 
 describe("OpenAI integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
@@ -69,9 +71,11 @@ describe("OpenAI integration E2E tests", () => {
       name: config.traceName,
     });
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: trace.id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: trace.id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -155,9 +159,11 @@ describe("OpenAI integration E2E tests", () => {
     });
     expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: traces.data[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -214,9 +220,11 @@ describe("OpenAI integration E2E tests", () => {
     });
     expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: traces.data[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -280,9 +288,11 @@ describe("OpenAI integration E2E tests", () => {
     });
     expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: traces.data[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -357,9 +367,11 @@ describe("OpenAI integration E2E tests", () => {
     });
     expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: traces.data[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -446,9 +458,11 @@ describe("OpenAI integration E2E tests", () => {
     });
     expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: traces.data[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -554,9 +568,11 @@ describe("OpenAI integration E2E tests", () => {
     });
     expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: traces.data[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -651,9 +667,11 @@ describe("OpenAI integration E2E tests", () => {
     expect(traces.data.length).toBeGreaterThanOrEqual(2);
 
     const firstTrace = traces.data[0];
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: firstTrace.id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: firstTrace.id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -716,9 +734,11 @@ describe("OpenAI integration E2E tests", () => {
     expect(trace.userId).toBeDefined();
     expect(trace.userId).toBe("LangfuseUser");
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: trace.id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: trace.id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];
@@ -792,9 +812,10 @@ describe("OpenAI integration E2E tests", () => {
       expect(trace.userId).toBeDefined();
       expect(trace.userId).toBe("LangfuseUser");
 
-      const observations = await langfuseClient.api.observations.getMany({
-        traceId: trace.id,
-      });
+      const observations =
+        await langfuseClient.api.legacy.observationsV1.getMany({
+          traceId: trace.id,
+        });
 
       expect(observations.data.length).toBe(1);
       const generation = observations.data[0];
@@ -846,9 +867,11 @@ describe("OpenAI integration E2E tests", () => {
     // expect(trace.name).toBe(traceName);
     // expect(trace.metadata).toEqual({ parent: true });
 
-    const observations = await langfuseClient.api.observations.getMany({
-      traceId: trace.id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: trace.id,
+      },
+    );
 
     expect(observations.data.length).toBe(1);
     const generation = observations.data[0];

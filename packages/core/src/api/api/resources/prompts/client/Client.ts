@@ -92,7 +92,7 @@ export class Prompts {
     request: LangfuseAPI.GetPromptRequest = {},
     requestOptions?: Prompts.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.Prompt>> {
-    const { version, label } = request;
+    const { version, label, resolve } = request;
     const _queryParams: Record<
       string,
       string | string[] | object | object[] | null
@@ -103,6 +103,10 @@ export class Prompts {
 
     if (label != null) {
       _queryParams["label"] = label;
+    }
+
+    if (resolve != null) {
+      _queryParams["resolve"] = resolve.toString();
     }
 
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
@@ -367,18 +371,18 @@ export class Prompts {
    *
    * @example
    *     await client.prompts.create({
-   *         type: "chat",
    *         name: "name",
    *         prompt: [{
-   *                 type: "chatmessage",
    *                 role: "role",
-   *                 content: "content"
+   *                 content: "content",
+   *                 type: undefined
    *             }, {
-   *                 type: "chatmessage",
    *                 role: "role",
-   *                 content: "content"
+   *                 content: "content",
+   *                 type: undefined
    *             }],
    *         config: undefined,
+   *         type: "chat",
    *         labels: undefined,
    *         tags: undefined,
    *         commitMessage: undefined

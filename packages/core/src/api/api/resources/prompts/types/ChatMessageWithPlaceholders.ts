@@ -5,15 +5,5 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export type ChatMessageWithPlaceholders =
-  | LangfuseAPI.ChatMessageWithPlaceholders.Chatmessage
-  | LangfuseAPI.ChatMessageWithPlaceholders.Placeholder;
-
-export namespace ChatMessageWithPlaceholders {
-  export interface Chatmessage extends LangfuseAPI.ChatMessage {
-    type: "chatmessage";
-  }
-
-  export interface Placeholder extends LangfuseAPI.PlaceholderMessage {
-    type: "placeholder";
-  }
-}
+  | LangfuseAPI.ChatMessage
+  | LangfuseAPI.PlaceholderMessage;

@@ -200,7 +200,7 @@ export class LangfuseClient {
   /**
    * @deprecated Use api.observations.get instead
    */
-  public fetchObservation: typeof LangfuseAPIClient.prototype.observations.get;
+  public fetchObservation: typeof LangfuseAPIClient.prototype.legacy.observationsV1.get;
   /**
    * @deprecated Use api.observations.list instead
    */
@@ -313,7 +313,7 @@ export class LangfuseClient {
     this.getDataset = this.dataset.get;
     this.fetchTrace = this.api.trace.get;
     this.fetchTraces = this.api.trace.list;
-    this.fetchObservation = this.api.observations.get;
+    this.fetchObservation = this.api.legacy.observationsV1.get;
     this.fetchObservations = this.api.observations.getMany;
     this.fetchSessions = this.api.sessions.get;
     this.getDatasetRun = this.api.datasets.getRun;

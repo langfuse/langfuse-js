@@ -12,7 +12,7 @@
   },
   "hooks": {
     "before:init": ["pnpm clean", "pnpm install"],
-    "before:release": ["pnpm build"],
+    "after:bump": ["pnpm build"],
     "after:release": [
       "pnpm -r publish --access public --no-git-checks --tag $tag --otp $otp"
     ]

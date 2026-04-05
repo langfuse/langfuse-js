@@ -3,6 +3,8 @@ import { getEnv } from "../utils.js";
  * Enumeration of log levels in order of severity (lowest to highest).
  */
 export enum LogLevel {
+  /** Not logging anything */
+  NONE = 4,
   /** Critical errors that may cause application failure */
   ERROR = 3,
   /** Warning messages for potentially harmful situations */
@@ -15,10 +17,15 @@ export enum LogLevel {
 
 function parseLogLevelFromEnv(): LogLevel | undefined {
   if (typeof process === "object" && "env" in process) {
+    if (getEnv("LANGFUSE_DEBUG")?.toLowerCase() === "true")
+      return LogLevel.DEBUG;
+
     const envValue = getEnv("LANGFUSE_LOG_LEVEL");
     const value = (envValue ?? "").toUpperCase();
 
     switch (value) {
+      case "NONE":
+        return LogLevel.NONE;
       case "ERROR":
         return LogLevel.ERROR;
       case "WARN":
