@@ -6,10 +6,12 @@ export type ScoreDataType =
   | "NUMERIC"
   | "BOOLEAN"
   | "CATEGORICAL"
-  | "CORRECTION";
+  | "CORRECTION"
+  | "TEXT";
 export const ScoreDataType = {
   Numeric: "NUMERIC",
   Boolean: "BOOLEAN",
   Categorical: "CATEGORICAL",
   Correction: "CORRECTION",
+  Text: "TEXT",
 } as const;

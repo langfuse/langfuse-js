@@ -16,7 +16,10 @@ export type Score =
   | LangfuseAPI.Score.Boolean
   /**
    * Score with CORRECTION data type */
-  | LangfuseAPI.Score.Correction;
+  | LangfuseAPI.Score.Correction
+  /**
+   * Score with TEXT data type */
+  | LangfuseAPI.Score.Text;
 
 export namespace Score {
   export interface Numeric extends LangfuseAPI.NumericScore {
@@ -33,5 +36,9 @@ export namespace Score {
 
   export interface Correction extends LangfuseAPI.CorrectionScore {
     dataType: "CORRECTION";
+  }
+
+  export interface Text extends LangfuseAPI.TextScore {
+    dataType: "TEXT";
   }
 }
