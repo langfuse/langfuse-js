@@ -8,7 +8,8 @@ export type GetScoresResponseData =
   | LangfuseAPI.GetScoresResponseData.Numeric
   | LangfuseAPI.GetScoresResponseData.Categorical
   | LangfuseAPI.GetScoresResponseData.Boolean
-  | LangfuseAPI.GetScoresResponseData.Correction;
+  | LangfuseAPI.GetScoresResponseData.Correction
+  | LangfuseAPI.GetScoresResponseData.Text;
 
 export namespace GetScoresResponseData {
   export interface Numeric extends LangfuseAPI.GetScoresResponseDataNumeric {
@@ -27,5 +28,9 @@ export namespace GetScoresResponseData {
   export interface Correction
     extends LangfuseAPI.GetScoresResponseDataCorrection {
     dataType: "CORRECTION";
+  }
+
+  export interface Text extends LangfuseAPI.GetScoresResponseDataText {
+    dataType: "TEXT";
   }
 }
