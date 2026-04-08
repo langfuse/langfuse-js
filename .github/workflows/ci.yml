@@ -14,7 +14,7 @@ concurrency:
 jobs:
   test-integration:
     timeout-minutes: 3
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       LANGFUSE_BASE_URL: "http://localhost:3000"
       LANGFUSE_SECRET_KEY: "sk-lf-1234567890"
@@ -31,7 +31,7 @@ jobs:
 
   test-e2e:
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       LANGFUSE_BASE_URL: "http://localhost:3000"
       LANGFUSE_SECRET_KEY: "sk-lf-1234567890"
@@ -76,7 +76,7 @@ jobs:
 
           echo "::group::Seed db"
           cp .env.dev.example .env
-          pnpm run db:migrate          
+          pnpm run db:migrate
           pnpm run db:seed
           rm -rf node_modules
           rm -rf .env
@@ -115,7 +115,7 @@ jobs:
 
   lint:
     timeout-minutes: 3
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
@@ -129,7 +129,7 @@ jobs:
       - run: pnpm format:check
 
   all-tests-passed:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     needs: [test-e2e, test-integration, lint]
     if: always()
     steps:
