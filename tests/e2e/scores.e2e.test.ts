@@ -126,6 +126,34 @@ describe("LangfuseClient Score E2E Tests", () => {
       }
     });
 
+    it("should create TEXT scores", async () => {
+      const client = createLangfuseClient();
+      const scoreId = nanoid();
+      const scoreName = `text-score-${Date.now()}`;
+      const scoreValue = "Helpful summary with supporting context";
+
+      client.score.create({
+        id: scoreId,
+        traceId: nanoid(),
+        name: scoreName,
+        value: scoreValue,
+        dataType: "TEXT",
+        comment: "E2E text score validation",
+        metadata: { testType: "text-score" },
+      });
+
+      await expect(client.flush()).resolves.not.toThrow();
+      await waitForServerIngestion(3000);
+
+      const retrievedScore = await assertions.api.scores.getById(scoreId);
+      expect(retrievedScore.id).toBe(scoreId);
+      expect(retrievedScore.name).toBe(scoreName);
+      expect(retrievedScore.dataType).toBe("TEXT");
+      expect((retrievedScore as any).stringValue).toBe(scoreValue);
+      expect(retrievedScore.comment).toBe("E2E text score validation");
+      expect(retrievedScore.metadata).toEqual({ testType: "text-score" });
+    });
+
     it("should handle batch scoring scenarios", async () => {
       const client = createLangfuseClient();
       const batchSize = 25;
