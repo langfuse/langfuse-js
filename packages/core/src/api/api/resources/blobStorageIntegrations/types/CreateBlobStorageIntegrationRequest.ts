@@ -8,7 +8,7 @@ export interface CreateBlobStorageIntegrationRequest {
   /** ID of the project in which to configure the blob storage integration */
   projectId: string;
   type: LangfuseAPI.BlobStorageIntegrationType;
-  /** Name of the storage bucket */
+  /** Name of the storage bucket. For AZURE_BLOB_STORAGE, must be a valid Azure container name (3-63 chars, lowercase letters, numbers, and hyphens only, must start and end with a letter or number, no consecutive hyphens). */
   bucketName: string;
   /** Custom endpoint URL (required for S3_COMPATIBLE type) */
   endpoint?: string;
