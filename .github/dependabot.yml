@@ -34,6 +34,9 @@ updates:
     directory: "/examples"
     schedule:
       interval: "daily"
+    # making zizmor happy as it requires a cooldown value, but we ignore all dependencies in this folder anyway
+    cooldown:
+      default-days: 7
     labels: []
     ignore:
       - dependency-name: "*"
