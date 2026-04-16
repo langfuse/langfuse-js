@@ -17,6 +17,8 @@ import {
   startActiveObservation,
   LangfuseGeneration,
   LangfuseSpan,
+  LangfuseTool,
+  LangfuseObservationAttributes,
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
   propagateAttributes,
@@ -49,6 +51,8 @@ type ConstructorParams = {
   traceMetadata?: Record<string, unknown>; // added to all traces
 };
 
+type TrackedObservation = LangfuseSpan | LangfuseGeneration | LangfuseTool;
+
 export class CallbackHandler extends BaseCallbackHandler {
   name = "LangfuseCallbackHandler";
 
@@ -60,7 +64,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   private completionStartTimes: Record<string, Date> = {};
   private promptToParentRunMap;
-  private runMap: Map<string, LangfuseSpan | LangfuseGeneration> = new Map();
+  private runMap: Map<string, TrackedObservation> = new Map();
 
   public last_trace_id: string | null = null;
 
@@ -457,6 +461,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.logger.debug(`Tool start with ID: ${runId}`);
 
       this.startAndRegisterOtelSpan({
+        type: "tool",
         runId,
         parentRunId,
         runName: name ?? tool.id.at(-1)?.toString() ?? "Tool execution",
@@ -716,7 +721,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     runName: string;
     runId: string;
     parentRunId?: string;
-    attributes: LangfuseGenerationAttributes;
+    attributes: LangfuseSpanAttributes;
     metadata?: Record<string, unknown>;
     tags?: string[];
   }): LangfuseSpan;
@@ -730,14 +735,23 @@ export class CallbackHandler extends BaseCallbackHandler {
     tags?: string[];
   }): LangfuseGeneration;
   private startAndRegisterOtelSpan(params: {
-    type?: "span" | "generation";
+    type: "tool";
     runName: string;
     runId: string;
     parentRunId?: string;
-    attributes: LangfuseGenerationAttributes;
+    attributes: LangfuseSpanAttributes;
     metadata?: Record<string, unknown>;
     tags?: string[];
-  }): LangfuseSpan | LangfuseGeneration {
+  }): LangfuseTool;
+  private startAndRegisterOtelSpan(params: {
+    type?: "span" | "generation" | "tool";
+    runName: string;
+    runId: string;
+    parentRunId?: string;
+    attributes: LangfuseObservationAttributes;
+    metadata?: Record<string, unknown>;
+    tags?: string[];
+  }): TrackedObservation {
     const { type, runName, runId, parentRunId, attributes, metadata, tags } =
       params;
 
@@ -746,37 +760,50 @@ export class CallbackHandler extends BaseCallbackHandler {
       metadata: this.joinTagsAndMetaData(tags, metadata),
       level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       ...attributes,
-    } as LangfuseGenerationAttributes;
+    } as LangfuseObservationAttributes;
+
+    const parentSpanContext = parentRunId
+      ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
+      : undefined;
 
     const observation =
       type === "generation"
         ? startActiveObservation(
             runName,
             (gen) => {
-              gen.update(observationAttributes);
+              gen.update(observationAttributes as LangfuseGenerationAttributes);
               return gen;
             },
             {
               asType: "generation",
-              parentSpanContext: parentRunId
-                ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
-                : undefined,
+              parentSpanContext,
               endOnExit: false,
             },
           )
-        : startActiveObservation(
-            runName,
-            (span) => {
-              span.update(observationAttributes);
-              return span;
-            },
-            {
-              parentSpanContext: parentRunId
-                ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
-                : undefined,
-              endOnExit: false,
-            },
-          );
+        : type === "tool"
+          ? startActiveObservation(
+              runName,
+              (tool) => {
+                tool.update(observationAttributes as LangfuseSpanAttributes);
+                return tool;
+              },
+              {
+                asType: "tool",
+                parentSpanContext,
+                endOnExit: false,
+              },
+            )
+          : startActiveObservation(
+              runName,
+              (span) => {
+                span.update(observationAttributes as LangfuseSpanAttributes);
+                return span;
+              },
+              {
+                parentSpanContext,
+                endOnExit: false,
+              },
+            );
     this.runMap.set(runId, observation);
 
     return observation;
