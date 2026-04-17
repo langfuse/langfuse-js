@@ -498,12 +498,10 @@ jobs:
       - name: Rollback notification on partial failure
         if: failure() && steps.release.outcome == 'success'
         run: |
-          echo "⚠️  CRITICAL: Release succeeded but subsequent steps failed"
+          echo "⚠️  Release succeeded but post-release steps failed"
           echo "Published version: v${STEPS_VERSION_OUTPUTS_VERSION}"
-          echo "Manual intervention may be required"
           echo ""
-          echo "Options:"
-          echo "1. Re-run the workflow to complete GitHub release artifacts upload"
-          echo "2. Manually upload release artifacts for tag v${STEPS_VERSION_OUTPUTS_VERSION}"
+          echo "The release is fully complete (version bumped, npm published, GitHub release with all artifacts created)."
+          echo "Check the workflow logs for what failed in post-release steps (e.g., Slack notifications)."
         env:
           STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}

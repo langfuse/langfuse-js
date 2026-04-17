@@ -18,7 +18,7 @@
     "before:init": [],
     "after:bump": [
       "pnpm build",
-      "mkdir -p release-artifacts && for pkg in packages/*/dist; do pkg_name=$(basename $(dirname $pkg)); tar -czf release-artifacts/langfuse-js-sdk-$pkg_name-v${version}.tar.gz -C $(dirname $pkg) dist; done"
+      "set -e; mkdir -p release-artifacts && for pkg in packages/*/dist; do pkg_name=$(basename $(dirname $pkg)); tar -czf release-artifacts/langfuse-js-sdk-$pkg_name-${version}.tar.gz -C $(dirname $pkg) dist; done"
     ],
     "after:release": "pnpm -r publish --access public --no-git-checks --provenance"
   },
