@@ -26,11 +26,13 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6.0.0
+      # Pin to v5 — v6 uses pnpm v11 internally which mutates the lockfile
+      # https://github.com/pnpm/action-setup/issues/228
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
-          node-version: 20
-      - run: pnpm install
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
       - run: pnpm test:integration
 
   test-e2e:
@@ -55,10 +57,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6.0.0
+      # Pin to v5 — v6 uses pnpm v11 internally which mutates the lockfile
+      # https://github.com/pnpm/action-setup/issues/228
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Prepare langfuse server compose
         run: |
@@ -85,7 +89,7 @@ jobs:
           docker compose up -d
           echo "::endgroup::"
 
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
 
       - name: Health check for langfuse server
         run: |
@@ -152,12 +156,20 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6.0.0
+      # Pin to v5 — v6 uses pnpm v11 internally which mutates the lockfile
+      # https://github.com/pnpm/action-setup/issues/228
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
-          node-version: 20
+          node-version: 24
 
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
+      - name: Verify lockfile integrity
+        run: |
+          git diff --exit-code pnpm-lock.yaml || {
+            echo "❌ Error: pnpm-lock.yaml was modified during install"
+            exit 1
+          }
       - run: pnpm build
       - run: pnpm lint
       - run: pnpm format:check
