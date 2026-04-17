@@ -227,28 +227,6 @@ jobs:
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-      - name: Create release artifacts archive
-        if: inputs.dry_run == false
-        run: |
-          mkdir -p release-artifacts
-          for pkg in packages/*/dist; do
-            pkg_name=$(basename $(dirname $pkg))
-            echo "Creating archive for $pkg_name..."
-            tar -czf release-artifacts/langfuse-js-sdk-${pkg_name}-${STEPS_VERSION_OUTPUTS_VERSION}.tar.gz -C $(dirname $pkg) dist
-          done
-          echo "Build artifacts:"
-          ls -lh release-artifacts/
-        env:
-          STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
-
-      - name: Upload release artifacts to GitHub Release
-        if: inputs.dry_run == false
-        run: |
-          gh release upload "v${VERSION}" release-artifacts/*.tar.gz --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-
       - name: Notify Slack on success
         if: success() && inputs.dry_run == false
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3
@@ -520,12 +498,10 @@ jobs:
       - name: Rollback notification on partial failure
         if: failure() && steps.release.outcome == 'success'
         run: |
-          echo "⚠️  CRITICAL: Release succeeded but subsequent steps failed"
+          echo "⚠️  Release succeeded but post-release steps failed"
           echo "Published version: v${STEPS_VERSION_OUTPUTS_VERSION}"
-          echo "Manual intervention may be required"
           echo ""
-          echo "Options:"
-          echo "1. Re-run the workflow to complete GitHub release artifacts upload"
-          echo "2. Manually upload release artifacts for tag v${STEPS_VERSION_OUTPUTS_VERSION}"
+          echo "The release is fully complete (version bumped, npm published, GitHub release with all artifacts created)."
+          echo "Check the workflow logs for what failed in post-release steps (e.g., Slack notifications)."
         env:
           STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
