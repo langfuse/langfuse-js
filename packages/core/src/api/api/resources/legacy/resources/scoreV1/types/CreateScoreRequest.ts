@@ -63,6 +63,14 @@ import * as LangfuseAPI from "../../../../../index.js";
  *         configId: "1234-5678-90ab-cdef",
  *         traceId: "cdef-1234-5678-90ab"
  *     }
+ *
+ * @example
+ *     {
+ *         name: "feedback",
+ *         value: "Great explanation of the concept",
+ *         dataType: LangfuseAPI.ScoreDataType.Text,
+ *         traceId: "cdef-1234-5678-90ab"
+ *     }
  */
 export interface CreateScoreRequest {
   id?: string;
@@ -71,7 +79,7 @@ export interface CreateScoreRequest {
   observationId?: string;
   datasetRunId?: string;
   name: string;
-  /** The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false) */
+  /** The value of the score. Must be passed as string for categorical and text scores, and numeric for boolean and numeric scores. Boolean score values must equal either 1 or 0 (true or false). Text score values must be between 1 and 500 characters. */
   value: LangfuseAPI.CreateScoreValue;
   comment?: string;
   metadata?: Record<string, unknown>;

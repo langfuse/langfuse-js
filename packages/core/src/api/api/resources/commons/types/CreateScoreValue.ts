@@ -3,6 +3,6 @@
  */
 
 /**
- * The value of the score. Must be passed as string for categorical scores, and numeric for boolean and numeric scores
+ * The value of the score. Must be passed as string for categorical and text scores, and numeric for boolean and numeric scores
  */
 export type CreateScoreValue = number | string;

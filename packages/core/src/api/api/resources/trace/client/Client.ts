@@ -64,6 +64,7 @@ export class Trace {
    * Get a specific trace
    *
    * @param {string} traceId - The unique langfuse identifier of a trace
+   * @param {LangfuseAPI.GetTraceRequest} request
    * @param {Trace.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -77,17 +78,28 @@ export class Trace {
    */
   public get(
     traceId: string,
+    request: LangfuseAPI.GetTraceRequest = {},
     requestOptions?: Trace.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.TraceWithFullDetails> {
     return core.HttpResponsePromise.fromPromise(
-      this.__get(traceId, requestOptions),
+      this.__get(traceId, request, requestOptions),
     );
   }
 
   private async __get(
     traceId: string,
+    request: LangfuseAPI.GetTraceRequest = {},
     requestOptions?: Trace.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.TraceWithFullDetails>> {
+    const { fields } = request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (fields != null) {
+      _queryParams["fields"] = fields;
+    }
+
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -111,7 +123,7 @@ export class Trace {
       ),
       method: "GET",
       headers: _headers,
-      queryParameters: requestOptions?.queryParams,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
       timeoutMs:
         requestOptions?.timeoutInSeconds != null
           ? requestOptions.timeoutInSeconds * 1000
