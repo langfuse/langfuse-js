@@ -219,6 +219,9 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
     devDependencies:
+      '@ai-sdk/otel':
+        specifier: 1.0.0-beta.57
+        version: 1.0.0-beta.57(zod@3.25.76)
       ai:
         specifier: 7.0.0-beta.111
         version: 7.0.0-beta.111(zod@3.25.76)
@@ -248,6 +251,10 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
+
+  '@ai-sdk/otel@1.0.0-beta.57':
+    resolution: {integrity: sha512-6yh9YtoVjXtdunvWE/6V2i9GrE+/f6jNjLADtK3cXKbhEMT8d7hd5EShp+5HPOoX2EJqW+zbm8PwMKE6s1nEiw==}
+    engines: {node: '>=18'}
 
   '@ai-sdk/provider-utils@3.0.5':
     resolution: {integrity: sha512-HliwB/yzufw3iwczbFVE2Fiwf1XqROB/I6ng8EKUsPM5+2wnIa8f4VbljZcDx+grhFrPV+PnRZH7zBqi8WZM7Q==}
@@ -3667,6 +3674,14 @@ snapshots:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.5(zod@3.25.76)
       zod: 3.25.76
+
+  '@ai-sdk/otel@1.0.0-beta.57(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.0-beta.12
+      '@opentelemetry/api': 1.9.0
+      ai: 7.0.0-beta.111(zod@3.25.76)
+    transitivePeerDependencies:
+      - zod
 
   '@ai-sdk/provider-utils@3.0.5(zod@3.25.76)':
     dependencies:

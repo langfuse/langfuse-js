@@ -1,3 +1,4 @@
+import type { Tracer } from "@opentelemetry/api";
 import type {
   EmbedOnStartEvent,
   ObjectOnStartEvent,
@@ -6,7 +7,6 @@ import type {
   Telemetry,
   TelemetryOptions,
 } from "ai";
-import type { Tracer } from "@opentelemetry/api";
 
 export type LangfusePrompt = {
   name: string;

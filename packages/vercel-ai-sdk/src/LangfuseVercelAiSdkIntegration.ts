@@ -32,11 +32,11 @@ import type {
   ToolSet,
 } from "ai";
 
+import { stringifyForTelemetry } from "./stringifyForTelemetry.js";
 import type {
   LangfuseStartEvent,
   LangfuseVercelAiSdkIntegrationOptions,
 } from "./types.js";
-import { stringifyForTelemetry } from "./stringifyForTelemetry.js";
 import {
   assembleOperationName,
   createLangfusePromptAttributes,
