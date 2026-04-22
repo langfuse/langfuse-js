@@ -18,7 +18,8 @@
       "@langfuse/tracing": ["../packages/tracing/src/index.ts"],
       "@langfuse/otel": ["../packages/otel/src/index.ts"],
       "@langfuse/langchain": ["../packages/langchain/src/index.ts"],
-      "@langfuse/openai": ["../packages/openai/src/index.ts"]
+      "@langfuse/openai": ["../packages/openai/src/index.ts"],
+      "@langfuse/vercel-ai-sdk": ["../packages/vercel-ai-sdk/src/index.ts"]
     },
     "types": ["vitest/globals", "@types/node"]
   },
