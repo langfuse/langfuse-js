@@ -1,19 +1,65 @@
 ![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
 
-# langfuse-js
+# @langfuse/vercel-ai-sdk
 
-[![MIT License](https://img.shields.io/badge/License-MIT-red.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![CI test status](https://img.shields.io/github/actions/workflow/status/langfuse/langfuse-js/ci.yml?style=flat-square&label=All%20tests)](https://github.com/langfuse/langfuse-js/actions/workflows/ci.yml?query=branch%3Amain)
-[![GitHub Repo stars](https://img.shields.io/github/stars/langfuse/langfuse?style=flat-square&logo=GitHub&label=langfuse%2Flangfuse)](https://github.com/langfuse/langfuse)
-[![Discord](https://img.shields.io/discord/1111061815649124414?style=flat-square&logo=Discord&logoColor=white&label=Discord&color=%23434EE4)](https://discord.gg/7NXusRtqYU)
-[![YC W23](https://img.shields.io/badge/Y%20Combinator-W23-orange?style=flat-square)](https://www.ycombinator.com/companies/langfuse)
+This package provides a Langfuse-owned telemetry integration for AI SDK v7 (`ai@7`) using the new callback-based telemetry system.
 
-Modular mono repo for the Langfuse JS/TS client libraries.
+It emits AI SDK-compatible OpenTelemetry spans so it works with the existing Langfuse OTEL ingestion pipeline, and it adds Langfuse-specific trace and prompt attributes for user/session/tag/prompt linking.
+
+## Usage
+
+```ts
+import { generateText } from "ai";
+import { createLangfuseTelemetry } from "@langfuse/vercel-ai-sdk";
+
+await generateText({
+  model,
+  prompt: "Explain RAG in one paragraph",
+  experimental_telemetry: createLangfuseTelemetry({
+    functionId: "chat-assistant",
+    userId: "user-123",
+    sessionId: "session-456",
+    tags: ["production", "chat"],
+    metadata: {
+      feature: "assistant",
+    },
+    prompt: {
+      name: "assistant/default",
+      version: 3,
+      isFallback: false,
+    },
+  }),
+});
+```
+
+For global registration, pass the integration once and provide per-call Langfuse context via `runtimeContext.langfuse`:
+
+```ts
+import { generateText, registerTelemetry } from "ai";
+import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
+
+registerTelemetry(new LangfuseVercelAiSdkIntegration());
+
+await generateText({
+  model,
+  prompt: "Summarize this article",
+  runtimeContext: {
+    langfuse: {
+      userId: "user-123",
+      sessionId: "session-456",
+      tags: ["summaries"],
+      metadata: {
+        feature: "article-summary",
+      },
+    },
+  },
+  experimental_telemetry: {
+    functionId: "article-summary",
+  },
+});
+```
 
 ## Packages
-
-> [!IMPORTANT]
-> The SDK was rewritten in v5 and released in March 2026. Refer to the [v5 migration guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5) for instructions on updating your code.
 
 | Package                                             | NPM                                                                                                                       | Description                                               | Environments |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------ |
@@ -26,21 +72,8 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Documentation
 
-- [Docs](https://langfuse-docs-git-add-js-sdk-v4-docs-langfuse.vercel.app/docs/observability/sdk/typescript/overview)
-- [Reference](https://langfuse-js-git-main-langfuse.vercel.app/)
-
-## Development
-
-This is a monorepo managed with pnpm. See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development instructions.
-
-Quick start:
-
-```bash
-pnpm install    # Install dependencies
-pnpm build      # Build all packages
-pnpm test       # Run tests
-pnpm ci         # Run full CI suite
-```
+- Docs: https://langfuse.com/docs/sdk/typescript
+- Reference: https://js.reference.langfuse.com
 
 ## License
 
