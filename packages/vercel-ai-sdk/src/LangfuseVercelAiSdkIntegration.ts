@@ -265,16 +265,6 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     }
   }
 
-  // Compatibility shim for older v7 betas that still emitted tool call events
-  onToolCallStart?(event: ToolExecutionStartEvent<ToolSet>): void {
-    this.onToolExecutionStart(event);
-  }
-
-  // Compatibility shim for older v7 betas that still emitted tool call events
-  onToolCallFinish?(event: ToolExecutionEndEvent<ToolSet>): void {
-    this.onToolExecutionEnd(event);
-  }
-
   private cleanup(callId: string): void {
     this.contextsByCallId.delete(callId);
 
