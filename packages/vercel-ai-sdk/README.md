@@ -42,7 +42,7 @@ await propagateAttributes(
           },
         },
       },
-      experimental_telemetry: {
+      telemetry: {
         functionId: "chat-assistant",
       },
     }),
@@ -58,7 +58,7 @@ import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
 await generateText({
   model,
   prompt: "Summarize this article",
-  experimental_telemetry: {
+  telemetry: {
     functionId: "article-summary",
     integrations: new LangfuseVercelAiSdkIntegration({
       langfuse: {
