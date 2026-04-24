@@ -6,6 +6,7 @@
     { "path": "./packages/tracing" },
     { "path": "./packages/otel" },
     { "path": "./packages/langchain" },
-    { "path": "./packages/openai" }
+    { "path": "./packages/openai" },
+    { "path": "./packages/vercel-ai-sdk" }
   ]
 }
