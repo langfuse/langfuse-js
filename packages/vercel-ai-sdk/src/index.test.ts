@@ -202,19 +202,6 @@ describe("@langfuse/vercel-ai-sdk", () => {
     expect(tracer.spans[2].ended).toBe(true);
   });
 
-  it("supports the older tool callback names as compatibility shims", () => {
-    const tracer = new MockTracer();
-    const integration = new LangfuseVercelAiSdkIntegration({ tracer });
-
-    integration.onStart!(makeOnStartEvent());
-    integration.onStepStart!(makeStepStartEvent());
-    integration.onToolCallStart?.(makeToolExecutionStartEvent());
-    integration.onToolCallFinish?.(makeToolExecutionEndEvent());
-
-    expect(tracer.spans).toHaveLength(3);
-    expect(tracer.spans[2].ended).toBe(true);
-  });
-
   it("records stream chunk events through the upstream integration", () => {
     const tracer = new MockTracer();
     const integration = new LangfuseVercelAiSdkIntegration({ tracer });
