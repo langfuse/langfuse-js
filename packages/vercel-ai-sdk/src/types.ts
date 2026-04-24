@@ -4,8 +4,6 @@ import type {
   ObjectOnStartEvent,
   OnStartEvent,
   RerankOnStartEvent,
-  Telemetry,
-  TelemetryOptions,
 } from "ai";
 
 export type LangfusePrompt = {
@@ -15,11 +13,12 @@ export type LangfusePrompt = {
 };
 
 export type LangfuseContext = {
-  userId?: string;
-  sessionId?: string;
-  tags?: string[];
+  /**
+   * Metadata attached to AI SDK observations created by this integration.
+   * Trace-level user, session, tags, trace name, and metadata should be set
+   * with `propagateAttributes` from `@langfuse/tracing`.
+   */
   metadata?: Record<string, unknown>;
-  traceName?: string;
   prompt?: LangfusePrompt;
 };
 
@@ -37,12 +36,3 @@ export type LangfuseVercelAiSdkIntegrationOptions = {
   tracer?: Tracer;
   langfuse?: LangfuseContext | LangfuseContextResolver;
 };
-
-export type CreateLangfuseTelemetryOptions = Pick<
-  TelemetryOptions,
-  "functionId" | "isEnabled" | "recordInputs" | "recordOutputs"
-> &
-  LangfuseContext & {
-    tracer?: Tracer;
-    integrations?: Telemetry | Telemetry[];
-  };

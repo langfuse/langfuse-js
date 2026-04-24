@@ -4,57 +4,69 @@
 
 This package provides a Langfuse-owned telemetry integration for AI SDK v7 (`ai@7`) using the new callback-based telemetry system.
 
-It emits AI SDK-compatible OpenTelemetry spans so it works with the existing Langfuse OTEL ingestion pipeline, and it adds Langfuse-specific trace and prompt attributes for user/session/tag/prompt linking.
+It delegates AI SDK-compatible OpenTelemetry span creation to Vercel's `@ai-sdk/otel` package so it works with the existing Langfuse OTEL ingestion pipeline, and it adds Langfuse-specific observation attributes for prompt linking and observation metadata.
+
+Trace-level attributes such as user ID, session ID, tags, trace name, and trace metadata should be set with `propagateAttributes` from `@langfuse/tracing`.
 
 ## Usage
 
 ```ts
-import { generateText } from "ai";
-import { createLangfuseTelemetry } from "@langfuse/vercel-ai-sdk";
+import { generateText, registerTelemetry } from "ai";
+import { propagateAttributes } from "@langfuse/tracing";
+import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
 
-await generateText({
-  model,
-  prompt: "Explain RAG in one paragraph",
-  experimental_telemetry: createLangfuseTelemetry({
-    functionId: "chat-assistant",
+registerTelemetry(new LangfuseVercelAiSdkIntegration());
+
+await propagateAttributes(
+  {
     userId: "user-123",
     sessionId: "session-456",
     tags: ["production", "chat"],
     metadata: {
       feature: "assistant",
     },
-    prompt: {
-      name: "assistant/default",
-      version: 3,
-      isFallback: false,
-    },
-  }),
-});
+  },
+  () =>
+    generateText({
+      model,
+      prompt: "Explain RAG in one paragraph",
+      runtimeContext: {
+        langfuse: {
+          metadata: {
+            route: "support-chat",
+          },
+          prompt: {
+            name: "assistant/default",
+            version: 3,
+            isFallback: false,
+          },
+        },
+      },
+      experimental_telemetry: {
+        functionId: "chat-assistant",
+      },
+    }),
+);
 ```
 
-For global registration, pass the integration once and provide per-call Langfuse context via `runtimeContext.langfuse`:
+You can also pass the integration on a single call:
 
 ```ts
-import { generateText, registerTelemetry } from "ai";
+import { generateText } from "ai";
 import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
-
-registerTelemetry(new LangfuseVercelAiSdkIntegration());
 
 await generateText({
   model,
   prompt: "Summarize this article",
-  runtimeContext: {
-    langfuse: {
-      userId: "user-123",
-      sessionId: "session-456",
-      tags: ["summaries"],
-      metadata: {
-        feature: "article-summary",
-      },
-    },
-  },
   experimental_telemetry: {
     functionId: "article-summary",
+    integrations: new LangfuseVercelAiSdkIntegration({
+      langfuse: {
+        metadata: {
+          feature: "article-summary",
+        },
+      },
+    }),
   },
 });
 ```

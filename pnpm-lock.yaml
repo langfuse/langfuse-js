@@ -212,6 +212,9 @@ importers:
 
   packages/vercel-ai-sdk:
     dependencies:
+      '@ai-sdk/otel':
+        specifier: 1.0.0-beta.57
+        version: 1.0.0-beta.57(zod@3.25.76)
       '@langfuse/core':
         specifier: workspace:^
         version: link:../core
@@ -219,9 +222,6 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
     devDependencies:
-      '@ai-sdk/otel':
-        specifier: 1.0.0-beta.57
-        version: 1.0.0-beta.57(zod@3.25.76)
       ai:
         specifier: 7.0.0-beta.111
         version: 7.0.0-beta.111(zod@3.25.76)

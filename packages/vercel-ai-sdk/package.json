@@ -36,6 +36,7 @@
     "dist"
   ],
   "dependencies": {
+    "@ai-sdk/otel": "1.0.0-beta.57",
     "@langfuse/core": "workspace:^"
   },
   "peerDependencies": {
@@ -43,7 +44,6 @@
     "ai": ">=7.0.0-beta.111 <8"
   },
   "devDependencies": {
-    "@ai-sdk/otel": "1.0.0-beta.57",
     "ai": "7.0.0-beta.111"
   }
 }
