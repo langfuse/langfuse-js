@@ -23,7 +23,6 @@ import type {
   OnStepFinishEvent,
   OnStepStartEvent,
   RerankOnStartEvent,
-  Telemetry,
   ToolExecutionEndEvent,
   ToolExecutionStartEvent,
 } from "ai";
@@ -477,66 +476,4 @@ export function makeToolExecutionEndEvent(
 
 export function makeChunkEvent(chunk: OnChunkEvent["chunk"]): OnChunkEvent {
   return { chunk };
-}
-
-export async function runStreamTextTelemetrySequence(
-  integration: Telemetry,
-): Promise<void> {
-  integration.onStart?.(makeOnStartEvent({ operationId: "ai.streamText" }));
-  integration.onStepStart?.(
-    makeStepStartEvent({
-      promptMessages: [{ role: "user", content: "hello" }],
-    }),
-  );
-  integration.onToolExecutionStart?.(makeToolExecutionStartEvent());
-  await integration.executeTool?.({
-    callId: "call-1",
-    toolCallId: "tool-call-1",
-    execute: async () => "ok",
-  });
-  integration.onToolExecutionEnd?.(makeToolExecutionEndEvent());
-  integration.onChunk?.(
-    makeChunkEvent({
-      type: "ai.stream.firstChunk",
-      callId: "call-1",
-      stepNumber: 0,
-      attributes: {
-        "ai.stream.msToFirstChunk": 42,
-      },
-    }),
-  );
-  integration.onStepFinish?.(makeStepFinishEvent());
-  integration.onFinish?.(makeFinishEvent());
-}
-
-export function normalizeSpans(spans: MockSpan[]) {
-  return spans.map((span) => {
-    const parentSpan = span.parentContext
-      ? trace.getSpan(span.parentContext)
-      : undefined;
-
-    return {
-      name: span.name,
-      parentIndex:
-        parentSpan != null ? spans.indexOf(parentSpan as MockSpan) : null,
-      attributes: Object.fromEntries(
-        Object.entries(span.attributes).sort(([left], [right]) =>
-          left.localeCompare(right),
-        ),
-      ),
-      events: span.events.map((event) => ({
-        name: event.name,
-        attributes:
-          event.attributes == null
-            ? undefined
-            : Object.fromEntries(
-                Object.entries(event.attributes).sort(([left], [right]) =>
-                  left.localeCompare(right),
-                ),
-              ),
-      })),
-      status: span.status,
-      ended: span.ended,
-    };
-  });
 }

@@ -222,6 +222,9 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
     devDependencies:
+      '@ai-sdk/openai':
+        specifier: 4.0.0-beta.38
+        version: 4.0.0-beta.38(zod@3.25.76)
       ai:
         specifier: 7.0.0-beta.111
         version: 7.0.0-beta.111(zod@3.25.76)
@@ -251,6 +254,12 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
+
+  '@ai-sdk/openai@4.0.0-beta.38':
+    resolution: {integrity: sha512-7oWEFHo7/eE0Jqkryl4XnccUqZtyDKhX3EtaZSINCsA+VLs6ka28mT0M0pjLUDtB3QUiYhOx1W6L2/bA8eEPJQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/otel@1.0.0-beta.57':
     resolution: {integrity: sha512-6yh9YtoVjXtdunvWE/6V2i9GrE+/f6jNjLADtK3cXKbhEMT8d7hd5EShp+5HPOoX2EJqW+zbm8PwMKE6s1nEiw==}
@@ -3673,6 +3682,12 @@ snapshots:
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.5(zod@3.25.76)
+      zod: 3.25.76
+
+  '@ai-sdk/openai@4.0.0-beta.38(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.0-beta.12
+      '@ai-sdk/provider-utils': 5.0.0-beta.26(zod@3.25.76)
       zod: 3.25.76
 
   '@ai-sdk/otel@1.0.0-beta.57(zod@3.25.76)':
