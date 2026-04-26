@@ -198,11 +198,35 @@ describe("RegressionError", () => {
   });
 
   it("falls back to the default message for partial structured input", () => {
+    // @ts-expect-error Testing the runtime fallback when a caller bypasses the type system.
     const error = new RegressionError({
       result: createResult(),
       metric: "avg_accuracy",
     });
 
     expect(error.message).toBe("Experiment regression detected");
+  });
+
+  it("only accepts the intended constructor shapes at type level", () => {
+    const result = createResult();
+
+    expect(
+      new RegressionError({ result, message: "custom explanation" }),
+    ).toBeInstanceOf(RegressionError);
+    expect(
+      new RegressionError({
+        result,
+        metric: "avg_accuracy",
+        value: 0.5,
+        threshold: 0.9,
+        message: "custom explanation",
+      }),
+    ).toBeInstanceOf(RegressionError);
+
+    // @ts-expect-error metric requires value.
+    new RegressionError({ result, metric: "avg_accuracy" });
+
+    // @ts-expect-error threshold is only valid in the structured shape.
+    new RegressionError({ result, threshold: 0.9 });
   });
 });

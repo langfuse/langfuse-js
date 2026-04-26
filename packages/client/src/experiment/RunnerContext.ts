@@ -89,17 +89,37 @@ export class RunnerContext<
   }
 }
 
-export type RegressionErrorOptions<
+export type RegressionErrorMessageOptions<
   Input = any,
   ExpectedOutput = any,
   Metadata extends Record<string, any> = Record<string, any>,
 > = {
   result: ExperimentResult<Input, ExpectedOutput, Metadata>;
-  metric?: string;
-  value?: number;
+  message?: string;
+  metric?: never;
+  value?: never;
+  threshold?: never;
+};
+
+export type RegressionErrorMetricOptions<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> = {
+  result: ExperimentResult<Input, ExpectedOutput, Metadata>;
+  metric: string;
+  value: number;
   threshold?: number;
   message?: string;
 };
+
+export type RegressionErrorOptions<
+  Input = any,
+  ExpectedOutput = any,
+  Metadata extends Record<string, any> = Record<string, any>,
+> =
+  | RegressionErrorMessageOptions<Input, ExpectedOutput, Metadata>
+  | RegressionErrorMetricOptions<Input, ExpectedOutput, Metadata>;
 
 /**
  * Raised by experiment runners to signal a CI gate failure.
@@ -118,13 +138,18 @@ export class RegressionError<
   public readonly value?: number;
   public readonly threshold?: number;
 
-  constructor({
-    result,
-    metric,
-    value,
-    threshold,
-    message,
-  }: RegressionErrorOptions<Input, ExpectedOutput, Metadata>) {
+  constructor(
+    params: RegressionErrorMessageOptions<Input, ExpectedOutput, Metadata>,
+  );
+  constructor(
+    params: RegressionErrorMetricOptions<Input, ExpectedOutput, Metadata>,
+  );
+  constructor(params: RegressionErrorOptions<Input, ExpectedOutput, Metadata>) {
+    const { result, message } = params;
+    const metric = "metric" in params ? params.metric : undefined;
+    const value = "value" in params ? params.value : undefined;
+    const threshold = "threshold" in params ? params.threshold : undefined;
+
     super(
       message ??
         (metric !== undefined && value !== undefined
