@@ -15,14 +15,48 @@ This is a monorepo containing the Langfuse TypeScript/JavaScript SDK packages:
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm (package manager)
+- Node.js 20+ for SDK runtime compatibility; Node.js 24 is recommended for
+  development and Codex/CI parity
+- pnpm 10.33.0 via Corepack
 
 ### Installing dependencies
 
 ```bash
 pnpm install
 ```
+
+## Developing with Codex and coding agents
+
+This repository includes [AGENTS.md](./AGENTS.md) as the durable project guide
+for Codex and other coding agents. Update it in the same pull request whenever
+the repo's architecture, package boundaries, mandatory checks, release process,
+or durable coding conventions change.
+
+For Codex cloud environments:
+
+1. Create a new environment for this repository in the Codex UI.
+2. Choose a base environment with Node.js 24 support.
+3. Set the setup script to:
+
+   ```bash
+   bash scripts/codex/setup.sh
+   ```
+
+4. Set the maintenance script to:
+
+   ```bash
+   bash scripts/codex/maintenance.sh
+   ```
+
+5. Keep agent internet access disabled by default, or allow only the minimum
+   domains required for a task.
+6. Add secrets such as `OPENAI_API_KEY`, `LANGFUSE_PUBLIC_KEY`, and
+   `LANGFUSE_SECRET_KEY` in the Codex UI instead of committing them.
+
+The Codex setup installs dependencies with the pinned pnpm version and builds
+the packages once so dist-backed integration and e2e tests are ready. It does
+not start a Langfuse server; e2e tests still require a reachable server and the
+environment variables documented below.
 
 ### Building packages
 
@@ -193,4 +227,20 @@ npm view @langfuse/client --json | jq .dist.attestations
 2. Make your changes
 3. Add tests for your changes
 4. Run `pnpm ci` to ensure all checks pass
-5. Create a pull request
+5. Create a pull request with a Conventional Commits title and list the
+   verification commands you ran
+
+## Commit messages and PR titles
+
+Commit messages and PR titles must follow
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+
+```text
+type(scope): description
+type: description
+```
+
+Allowed common types are `feat`, `fix`, `docs`, `style`, `refactor`, `perf`,
+`test`, `build`, `ci`, `chore`, `revert`, and `security`. Scopes are optional,
+but useful when a change is limited to a package such as `openai`, `tracing`, or
+`client`.

@@ -6,7 +6,18 @@
 
 <!-- What is changed and what information would be useful to a reviewer? -->
 
-## Release info Sub-libraries affected
+## Verification
+
+<!-- List the commands you ran, or explain why a relevant check could not run. -->
+
+- [ ] `pnpm lint`
+- [ ] `pnpm typecheck`
+- [ ] `pnpm test`
+- [ ] `pnpm test:integration`
+- [ ] `pnpm test:e2e`
+- [ ] `pnpm format:check`
+
+## Release info
 
 ### Bump level
 
@@ -21,8 +32,12 @@
 <!-- Please mark which libraries will require a version bump. -->
 
 - [ ] All of them
-- [ ] langfuse
-- [ ] langfuse-node
+- [ ] @langfuse/core
+- [ ] @langfuse/client
+- [ ] @langfuse/tracing
+- [ ] @langfuse/otel
+- [ ] @langfuse/openai
+- [ ] @langfuse/langchain
 
 ### Changelog notes
 

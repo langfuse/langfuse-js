@@ -24,6 +24,11 @@ release-artifacts/
 # local files
 *.local.*
 
+# Agent tool local config
+.codex/
+.mcp.json
+.playwright-mcp/
+
 # IDE and editor files
 .vscode/*
 !.vscode/extensions.json
