@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^2",
-    "@ai-sdk/openai": "^2",
+    "@ai-sdk/openai": "^3",
     "@eslint/js": "^9.32.0",
     "@langchain/core": "^1.1.24",
     "@langchain/langgraph": "^1.1.4",
