@@ -153,7 +153,7 @@ export class RegressionError<
     super(
       message ??
         (metric !== undefined && value !== undefined
-          ? `Regression on \`${metric}\`: ${value} (threshold ${threshold})`
+          ? `Regression on \`${metric}\`: ${value}${threshold !== undefined ? ` (threshold ${threshold})` : ""}`
           : "Experiment regression detected"),
     );
 

@@ -182,6 +182,19 @@ describe("RegressionError", () => {
     );
   });
 
+  it("omits the threshold suffix when no threshold is provided", () => {
+    const error = new RegressionError({
+      result: createResult(),
+      metric: "avg_accuracy",
+      value: 0.78,
+    });
+
+    expect(error.metric).toBe("avg_accuracy");
+    expect(error.value).toBe(0.78);
+    expect(error.threshold).toBeUndefined();
+    expect(error.message).toBe("Regression on `avg_accuracy`: 0.78");
+  });
+
   it("lets an explicit message win over the structured format", () => {
     const error = new RegressionError({
       result: createResult(),
