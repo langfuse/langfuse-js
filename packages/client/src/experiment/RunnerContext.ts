@@ -21,13 +21,9 @@ export type RunnerContextExperimentParams<
   Input = any,
   ExpectedOutput = any,
   Metadata extends Record<string, any> = Record<string, any>,
-> = Omit<
-  ExperimentParams<Input, ExpectedOutput, Metadata>,
-  "data" | "datasetVersion" | "metadata"
-> & {
+> = Omit<ExperimentParams<Input, ExpectedOutput, Metadata>, "data"> & {
+  // Optional because RunnerContext can provide data from its constructor.
   data?: ExperimentItem<Input, ExpectedOutput, Metadata>[];
-  datasetVersion?: string;
-  metadata?: Record<string, any>;
 };
 
 /**
