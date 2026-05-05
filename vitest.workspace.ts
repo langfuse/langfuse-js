@@ -3,6 +3,17 @@ import { defineWorkspace } from "vitest/config";
 export default defineWorkspace([
   {
     test: {
+      name: "vercel-ai-sdk",
+      environment: "node",
+      include: [
+        new URL("./packages/vercel-ai-sdk/src/**/*.test.ts", import.meta.url)
+          .pathname,
+      ],
+      setupFiles: [new URL("./vitest.setup.ts", import.meta.url).pathname],
+    },
+  },
+  {
+    test: {
       name: "integration",
       environment: "node",
       include: ["tests/integration/**/*.test.ts"],
@@ -28,6 +39,10 @@ export default defineWorkspace([
         ).pathname,
         "@langfuse/openai": new URL(
           "./packages/openai/dist/index.mjs",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/vercel-ai-sdk": new URL(
+          "./packages/vercel-ai-sdk/dist/index.mjs",
           import.meta.url,
         ).pathname,
         "@langfuse/core": new URL(
@@ -65,6 +80,10 @@ export default defineWorkspace([
         ).pathname,
         "@langfuse/openai": new URL(
           "./packages/openai/dist/index.mjs",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/vercel-ai-sdk": new URL(
+          "./packages/vercel-ai-sdk/dist/index.mjs",
           import.meta.url,
         ).pathname,
         "@langfuse/core": new URL(
