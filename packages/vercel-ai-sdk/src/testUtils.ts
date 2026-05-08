@@ -15,14 +15,16 @@ import {
   type Tracer,
 } from "@opentelemetry/api";
 import type {
-  EmbedOnStartEvent,
-  ObjectOnStartEvent,
+  EmbedStartEvent,
+  GenerateObjectStartEvent,
+  LanguageModelCallEndEvent,
+  LanguageModelCallStartEvent,
   OnChunkEvent,
   OnFinishEvent,
   OnStartEvent,
   OnStepFinishEvent,
   OnStepStartEvent,
-  RerankOnStartEvent,
+  RerankStartEvent,
   ToolExecutionEndEvent,
   ToolExecutionStartEvent,
 } from "ai";
@@ -202,8 +204,7 @@ export function makeOnStartEvent(
     provider: "mock-provider",
     modelId: "mock-model-id",
     system: undefined,
-    prompt: "Hello",
-    messages: undefined,
+    messages: [],
     tools: undefined,
     toolChoice: undefined,
     activeTools: undefined,
@@ -221,12 +222,7 @@ export function makeOnStartEvent(
       "user-agent": "ai/7-test",
     },
     providerOptions: undefined,
-    stopWhen: [],
     output: undefined,
-    isEnabled: true,
-    recordInputs: undefined,
-    recordOutputs: undefined,
-    functionId: "test-function",
     runtimeContext: {},
     toolsContext: {},
     ...overrides,
@@ -234,8 +230,8 @@ export function makeOnStartEvent(
 }
 
 export function makeObjectStartEvent(
-  overrides: Partial<ObjectOnStartEvent> = {},
-): ObjectOnStartEvent {
+  overrides: Partial<GenerateObjectStartEvent> = {},
+): GenerateObjectStartEvent {
   return {
     callId: "call-1",
     operationId: "ai.generateObject",
@@ -258,17 +254,13 @@ export function makeObjectStartEvent(
     maxRetries: 2,
     headers: undefined,
     providerOptions: undefined,
-    isEnabled: true,
-    recordInputs: undefined,
-    recordOutputs: undefined,
-    functionId: "test-function",
     ...overrides,
   };
 }
 
 export function makeEmbedStartEvent(
-  overrides: Partial<EmbedOnStartEvent> = {},
-): EmbedOnStartEvent {
+  overrides: Partial<EmbedStartEvent> = {},
+): EmbedStartEvent {
   return {
     callId: "call-1",
     operationId: "ai.embed",
@@ -278,17 +270,13 @@ export function makeEmbedStartEvent(
     maxRetries: 2,
     headers: undefined,
     providerOptions: undefined,
-    isEnabled: true,
-    recordInputs: undefined,
-    recordOutputs: undefined,
-    functionId: "embed-function",
     ...overrides,
   };
 }
 
 export function makeRerankStartEvent(
-  overrides: Partial<RerankOnStartEvent> = {},
-): RerankOnStartEvent {
+  overrides: Partial<RerankStartEvent> = {},
+): RerankStartEvent {
   return {
     callId: "call-1",
     operationId: "ai.rerank",
@@ -300,10 +288,6 @@ export function makeRerankStartEvent(
     maxRetries: 2,
     headers: undefined,
     providerOptions: undefined,
-    isEnabled: true,
-    recordInputs: undefined,
-    recordOutputs: undefined,
-    functionId: "rerank-function",
     ...overrides,
   };
 }
@@ -331,16 +315,64 @@ export function makeStepStartEvent(
     activeTools: undefined,
     steps: [],
     providerOptions: undefined,
-    timeout: undefined,
-    headers: undefined,
-    stopWhen: [],
     output: undefined,
-    functionId: "test-function",
     runtimeContext: {},
     toolsContext: {},
     promptMessages: undefined,
     stepTools: undefined,
     stepToolChoice: undefined,
+    ...overrides,
+  };
+}
+
+export function makeLanguageModelCallStartEvent(
+  overrides: Partial<LanguageModelCallStartEvent> = {},
+): LanguageModelCallStartEvent {
+  return {
+    callId: "call-1",
+    provider: "mock-provider",
+    modelId: "mock-model-id",
+    system: undefined,
+    messages: [],
+    tools: undefined,
+    maxOutputTokens: 100,
+    temperature: 0.7,
+    topP: undefined,
+    topK: undefined,
+    presencePenalty: undefined,
+    frequencyPenalty: undefined,
+    stopSequences: undefined,
+    seed: undefined,
+    ...overrides,
+  };
+}
+
+export function makeLanguageModelCallEndEvent(
+  overrides: Partial<LanguageModelCallEndEvent> = {},
+): LanguageModelCallEndEvent {
+  return {
+    callId: "call-1",
+    provider: "mock-provider",
+    modelId: "mock-model-id",
+    finishReason: "stop",
+    usage: {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+      reasoningTokens: undefined,
+      cachedInputTokens: undefined,
+      inputTokenDetails: {
+        noCacheTokens: undefined,
+        cacheReadTokens: undefined,
+        cacheWriteTokens: undefined,
+      },
+      outputTokenDetails: {
+        textTokens: undefined,
+        reasoningTokens: undefined,
+      },
+    },
+    content: [{ type: "text", text: "Hello world" }],
+    responseId: "resp-1",
     ...overrides,
   };
 }
@@ -355,7 +387,6 @@ export function makeStepFinishEvent(
       provider: "mock-provider",
       modelId: "mock-model-id",
     },
-    functionId: "test-function",
     runtimeContext: {},
     toolsContext: {},
     content: [{ type: "text", text: "Hello world" }],
@@ -434,9 +465,6 @@ export function makeToolExecutionStartEvent(
 ): ToolExecutionStartEvent {
   return {
     callId: "call-1",
-    stepNumber: 0,
-    provider: "mock-provider",
-    modelId: "mock-model-id",
     toolCall: {
       type: "tool-call",
       toolCallId: "tool-call-1",
@@ -444,8 +472,7 @@ export function makeToolExecutionStartEvent(
       input: { location: "Berlin" },
     },
     messages: [],
-    functionId: "test-function",
-    context: {},
+    toolContext: undefined,
     ...overrides,
   };
 }
@@ -455,9 +482,6 @@ export function makeToolExecutionEndEvent(
 ): ToolExecutionEndEvent {
   return {
     callId: "call-1",
-    stepNumber: 0,
-    provider: "mock-provider",
-    modelId: "mock-model-id",
     toolCall: {
       type: "tool-call",
       toolCallId: "tool-call-1",
@@ -466,10 +490,14 @@ export function makeToolExecutionEndEvent(
     },
     messages: [],
     durationMs: 42,
-    functionId: "test-function",
-    context: {},
-    success: true as const,
-    output: { temperature: 21 },
+    toolContext: undefined,
+    toolOutput: {
+      type: "tool-result",
+      toolCallId: "tool-call-1",
+      toolName: "weather",
+      input: { location: "Berlin" },
+      output: { temperature: 21 },
+    },
     ...overrides,
   } as ToolExecutionEndEvent;
 }

@@ -1,54 +1,37 @@
+import type { OpenTelemetrySpanType } from "@ai-sdk/otel";
 import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import type { Attributes } from "@opentelemetry/api";
 
-import type {
-  LangfuseContext,
-  LangfuseContextResolver,
-  LangfusePrompt,
-  LangfuseStartEvent,
-} from "./types.js";
+import type { LangfuseContext, LangfusePrompt } from "./types.js";
 
 export type ResolvedLangfuseContext = LangfuseContext;
 
-const GENERATION_SPAN_SUFFIXES = [
-  ".doGenerate",
-  ".doStream",
-  ".doEmbed",
-  ".doRerank",
-];
+const PROMPT_SPAN_TYPES = new Set<OpenTelemetrySpanType>([
+  "languageModel",
+  "embedding",
+  "reranking",
+]);
 
 export function resolveLangfuseContext({
   configuredLangfuse,
-  event,
+  runtimeContext,
 }: {
-  configuredLangfuse?: LangfuseContext | LangfuseContextResolver;
-  event: LangfuseStartEvent;
+  configuredLangfuse?: LangfuseContext;
+  runtimeContext?: Record<string, unknown>;
 }): ResolvedLangfuseContext {
-  const runtimeContext = extractRuntimeLangfuseContext(event);
-  const configuredContext =
-    typeof configuredLangfuse === "function"
-      ? normalizeLangfuseContext(configuredLangfuse(event))
-      : normalizeLangfuseContext(configuredLangfuse);
+  const runtimeLangfuseContext = extractRuntimeLangfuseContext(runtimeContext);
+  const configuredContext = normalizeLangfuseContext(configuredLangfuse);
 
-  return mergeLangfuseContexts(configuredContext, runtimeContext);
-}
-
-export function hasLangfuseObservationAttributes(
-  langfuse: ResolvedLangfuseContext,
-): boolean {
-  return (
-    Boolean(langfuse.prompt && !langfuse.prompt.isFallback) ||
-    Boolean(langfuse.metadata && Object.keys(langfuse.metadata).length > 0)
-  );
+  return mergeLangfuseContexts(configuredContext, runtimeLangfuseContext);
 }
 
 export function createLangfuseObservationAttributes(
   langfuse: ResolvedLangfuseContext,
-  spanName: string,
+  spanType: OpenTelemetrySpanType,
 ): Attributes {
   const attributes: Attributes = {};
 
-  if (shouldAttachPrompt(spanName)) {
+  if (shouldAttachPrompt(spanType)) {
     Object.assign(attributes, createLangfusePromptAttributes(langfuse.prompt));
   }
 
@@ -67,25 +50,9 @@ export function createLangfuseObservationAttributes(
   return attributes;
 }
 
-export function getRuntimeContext(
-  event: Record<string, unknown>,
-): Record<string, unknown> | undefined {
-  const runtimeContext = isPlainObject(event.runtimeContext)
-    ? event.runtimeContext
-    : undefined;
-  if (runtimeContext) {
-    return runtimeContext;
-  }
-
-  return isPlainObject(event.context) ? event.context : undefined;
-}
-
 function extractRuntimeLangfuseContext(
-  event: LangfuseStartEvent,
+  runtimeContext: Record<string, unknown> | undefined,
 ): ResolvedLangfuseContext {
-  const runtimeContext = getRuntimeContext(
-    event as unknown as Record<string, unknown>,
-  );
   if (!runtimeContext || !isPlainObject(runtimeContext.langfuse)) {
     return {};
   }
@@ -155,8 +122,8 @@ function createLangfusePromptAttributes(prompt?: LangfusePrompt): Attributes {
   };
 }
 
-function shouldAttachPrompt(spanName: string): boolean {
-  return GENERATION_SPAN_SUFFIXES.some((suffix) => spanName.endsWith(suffix));
+function shouldAttachPrompt(spanType: OpenTelemetrySpanType): boolean {
+  return PROMPT_SPAN_TYPES.has(spanType);
 }
 
 function isPlainObject(value: unknown): value is Record<string, any> {

@@ -2,8 +2,6 @@ export { LangfuseVercelAiSdkIntegration } from "./LangfuseVercelAiSdkIntegration
 
 export type {
   LangfuseContext,
-  LangfuseContextResolver,
   LangfusePrompt,
-  LangfuseStartEvent,
   LangfuseVercelAiSdkIntegrationOptions,
 } from "./types.js";

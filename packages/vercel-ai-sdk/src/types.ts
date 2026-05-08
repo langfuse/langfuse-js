@@ -1,10 +1,4 @@
 import type { Tracer } from "@opentelemetry/api";
-import type {
-  EmbedOnStartEvent,
-  ObjectOnStartEvent,
-  OnStartEvent,
-  RerankOnStartEvent,
-} from "ai";
 
 export type LangfusePrompt = {
   name: string;
@@ -22,17 +16,7 @@ export type LangfuseContext = {
   prompt?: LangfusePrompt;
 };
 
-export type LangfuseStartEvent =
-  | OnStartEvent
-  | ObjectOnStartEvent
-  | EmbedOnStartEvent
-  | RerankOnStartEvent;
-
-export type LangfuseContextResolver = (
-  event: LangfuseStartEvent,
-) => LangfuseContext | undefined;
-
 export type LangfuseVercelAiSdkIntegrationOptions = {
   tracer?: Tracer;
-  langfuse?: LangfuseContext | LangfuseContextResolver;
+  langfuse?: LangfuseContext;
 };

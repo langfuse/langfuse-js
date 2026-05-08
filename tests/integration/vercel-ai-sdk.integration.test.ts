@@ -71,15 +71,18 @@ describe("@langfuse/vercel-ai-sdk integration", () => {
       );
 
       await env.spanProcessor.forceFlush();
-      await waitForSpanExport(env.mockExporter, 2);
+      await waitForSpanExport(env.mockExporter, 3);
 
       const spans = env.mockExporter.exportedSpans.filter((span) =>
-        span.name.startsWith("ai.generateText"),
+        ["invoke_agent mock-model", "step 1", "chat mock-model"].includes(
+          span.name,
+        ),
       );
 
       expect(spans.map((span) => span.name).sort()).toEqual([
-        "ai.generateText",
-        "ai.generateText.doGenerate",
+        "chat mock-model",
+        "invoke_agent mock-model",
+        "step 1",
       ]);
 
       for (const span of spans) {

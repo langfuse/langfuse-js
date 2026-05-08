@@ -1,29 +1,24 @@
 import { OpenTelemetry } from "@ai-sdk/otel";
-import {
-  Span,
-  trace,
-  type Context as OpenTelemetryContext,
-  type SpanOptions,
-  type Tracer,
-} from "@opentelemetry/api";
 import type {
-  EmbedFinishEvent,
-  EmbedOnFinishEvent,
-  EmbedOnStartEvent,
+  EmbedEndEvent,
   EmbedStartEvent,
-  ObjectOnFinishEvent,
-  ObjectOnStartEvent,
-  ObjectOnStepFinishEvent,
-  ObjectOnStepStartEvent,
-  OnChunkEvent,
-  OnFinishEvent,
-  OnStartEvent,
-  OnStepFinishEvent,
-  OnStepStartEvent,
-  RerankFinishEvent,
-  RerankOnFinishEvent,
-  RerankOnStartEvent,
+  EmbeddingModelCallEndEvent,
+  EmbeddingModelCallStartEvent,
+  GenerateObjectEndEvent,
+  GenerateObjectStartEvent,
+  GenerateObjectStepEndEvent,
+  GenerateObjectStepStartEvent,
+  GenerateTextEndEvent,
+  GenerateTextStartEvent,
+  GenerateTextStepEndEvent,
+  GenerateTextStepStartEvent,
+  LanguageModelCallEndEvent,
+  LanguageModelCallStartEvent,
+  RerankEndEvent,
   RerankStartEvent,
+  RerankingModelCallEndEvent,
+  RerankingModelCallStartEvent,
+  StreamTextChunkEvent,
   Telemetry,
   ToolExecutionEndEvent,
   ToolExecutionStartEvent,
@@ -33,123 +28,27 @@ import type {
 import type { LangfuseVercelAiSdkIntegrationOptions } from "./types.js";
 import {
   createLangfuseObservationAttributes,
-  hasLangfuseObservationAttributes,
   resolveLangfuseContext,
-  type ResolvedLangfuseContext,
 } from "./utils.js";
 
-type CallIdLookup = {
-  getPendingCallId: () => string | undefined;
-  getContext: (callId: string) => ResolvedLangfuseContext | undefined;
-  onSpanStarted: (callId: string, span: Span) => void;
-  getCallIdForParentContext: (
-    parentContext: OpenTelemetryContext | undefined,
-  ) => string | undefined;
-};
-
-class LangfuseDecoratingTracer implements Tracer {
-  constructor(
-    private readonly delegate: Tracer,
-    private readonly callIds: CallIdLookup,
-  ) {}
-
-  startSpan(
-    name: string,
-    options?: SpanOptions,
-    parentContext?: OpenTelemetryContext,
-  ): Span {
-    const callId =
-      this.callIds.getPendingCallId() ??
-      this.callIds.getCallIdForParentContext(parentContext);
-    const langfuseContext = callId
-      ? this.callIds.getContext(callId)
-      : undefined;
-    const langfuseAttributes = langfuseContext
-      ? createLangfuseObservationAttributes(langfuseContext, name)
-      : {};
-
-    const span = this.delegate.startSpan(
-      name,
-      Object.keys(langfuseAttributes).length > 0
-        ? {
-            ...options,
-            attributes: {
-              ...options?.attributes,
-              ...langfuseAttributes,
-            },
-          }
-        : options,
-      parentContext,
-    );
-
-    if (callId) {
-      this.callIds.onSpanStarted(callId, span);
-    }
-
-    return span;
-  }
-
-  startActiveSpan<F extends (span: Span) => unknown>(
-    name: string,
-    fn: F,
-  ): ReturnType<F>;
-  startActiveSpan<F extends (span: Span) => unknown>(
-    name: string,
-    options: SpanOptions,
-    fn: F,
-  ): ReturnType<F>;
-  startActiveSpan<F extends (span: Span) => unknown>(
-    name: string,
-    options: SpanOptions,
-    context: OpenTelemetryContext,
-    fn: F,
-  ): ReturnType<F>;
-  startActiveSpan<F extends (span: Span) => unknown>(
-    name: string,
-    arg1: F | SpanOptions,
-    arg2?: F | OpenTelemetryContext,
-    arg3?: F,
-  ): ReturnType<F> {
-    return (
-      this.delegate.startActiveSpan as (...args: unknown[]) => ReturnType<F>
-    )(name, arg1, arg2, arg3);
-  }
-}
-
 export class LangfuseVercelAiSdkIntegration implements Telemetry {
-  private readonly contextsByCallId = new Map<
-    string,
-    ResolvedLangfuseContext
-  >();
-  private readonly callIdsBySpanId = new Map<string, string>();
   private readonly delegate: OpenTelemetry;
-  private pendingStartCallId: string | undefined;
-  private readonly configuredLangfuse;
 
   constructor(options: LangfuseVercelAiSdkIntegrationOptions = {}) {
-    this.configuredLangfuse = options.langfuse;
-
-    const tracer = new LangfuseDecoratingTracer(
-      options.tracer ?? trace.getTracer("ai"),
+    const openTelemetryOptions: ConstructorParameters<typeof OpenTelemetry>[0] =
       {
-        getPendingCallId: () => this.pendingStartCallId,
-        getContext: (callId) => this.contextsByCallId.get(callId),
-        onSpanStarted: (callId, span) => {
-          this.callIdsBySpanId.set(span.spanContext().spanId, callId);
-        },
-        getCallIdForParentContext: (parentContext) => {
-          const parentSpan = parentContext
-            ? trace.getSpan(parentContext)
-            : undefined;
-          const parentSpanId = parentSpan?.spanContext().spanId;
-          return parentSpanId
-            ? this.callIdsBySpanId.get(parentSpanId)
-            : undefined;
-        },
-      },
-    );
+        tracer: options.tracer,
+        enrichSpan: ({ spanType, runtimeContext }) => {
+          const langfuseContext = resolveLangfuseContext({
+            configuredLangfuse: options.langfuse,
+            runtimeContext,
+          });
 
-    this.delegate = new OpenTelemetry({ tracer });
+          return createLangfuseObservationAttributes(langfuseContext, spanType);
+        },
+      };
+
+    this.delegate = new OpenTelemetry(openTelemetryOptions);
   }
 
   executeTool<T>({
@@ -166,32 +65,24 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
 
   onStart(
     event:
-      | OnStartEvent
-      | ObjectOnStartEvent
-      | EmbedOnStartEvent
-      | RerankOnStartEvent,
+      | GenerateTextStartEvent
+      | GenerateObjectStartEvent
+      | EmbedStartEvent
+      | RerankStartEvent,
   ): void {
-    if (event.isEnabled !== false) {
-      const langfuseContext = resolveLangfuseContext({
-        configuredLangfuse: this.configuredLangfuse,
-        event,
-      });
-
-      if (hasLangfuseObservationAttributes(langfuseContext)) {
-        this.contextsByCallId.set(event.callId, langfuseContext);
-      }
-    }
-
-    this.pendingStartCallId = event.callId;
-    try {
-      this.delegate.onStart(event);
-    } finally {
-      this.pendingStartCallId = undefined;
-    }
+    this.delegate.onStart(event);
   }
 
-  onStepStart(event: OnStepStartEvent): void {
+  onStepStart(event: GenerateTextStepStartEvent): void {
     this.delegate.onStepStart(event);
+  }
+
+  onLanguageModelCallStart(event: LanguageModelCallStartEvent): void {
+    this.delegate.onLanguageModelCallStart(event);
+  }
+
+  onLanguageModelCallEnd(event: LanguageModelCallEndEvent<ToolSet>): void {
+    this.delegate.onLanguageModelCallEnd(event);
   }
 
   onToolExecutionStart(event: ToolExecutionStartEvent<ToolSet>): void {
@@ -202,76 +93,51 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     this.delegate.onToolExecutionEnd(event);
   }
 
-  onChunk(event: OnChunkEvent<ToolSet>): void {
+  onChunk(event: StreamTextChunkEvent<ToolSet>): void {
     this.delegate.onChunk(event);
   }
 
-  onStepFinish(event: OnStepFinishEvent<ToolSet>): void {
+  onStepFinish(event: GenerateTextStepEndEvent<ToolSet>): void {
     this.delegate.onStepFinish(event);
   }
 
   /** @deprecated */
-  onObjectStepStart(event: ObjectOnStepStartEvent): void {
+  onObjectStepStart(event: GenerateObjectStepStartEvent): void {
     this.delegate.onObjectStepStart(event);
   }
 
   /** @deprecated */
-  onObjectStepFinish(event: ObjectOnStepFinishEvent): void {
+  onObjectStepFinish(event: GenerateObjectStepEndEvent): void {
     this.delegate.onObjectStepFinish(event);
   }
 
-  onEmbedStart(event: EmbedStartEvent): void {
+  onEmbedStart(event: EmbeddingModelCallStartEvent): void {
     this.delegate.onEmbedStart(event);
   }
 
-  onEmbedFinish(event: EmbedFinishEvent): void {
+  onEmbedFinish(event: EmbeddingModelCallEndEvent): void {
     this.delegate.onEmbedFinish(event);
   }
 
-  onRerankStart(event: RerankStartEvent): void {
+  onRerankStart(event: RerankingModelCallStartEvent): void {
     this.delegate.onRerankStart(event);
   }
 
-  onRerankFinish(event: RerankFinishEvent): void {
+  onRerankFinish(event: RerankingModelCallEndEvent): void {
     this.delegate.onRerankFinish(event);
   }
 
   onFinish(
     event:
-      | OnFinishEvent<ToolSet>
-      | ObjectOnFinishEvent<unknown>
-      | EmbedOnFinishEvent
-      | RerankOnFinishEvent,
+      | GenerateTextEndEvent<ToolSet>
+      | GenerateObjectEndEvent<unknown>
+      | EmbedEndEvent
+      | RerankEndEvent,
   ): void {
-    try {
-      this.delegate.onFinish(event);
-    } finally {
-      this.cleanup(event.callId);
-    }
+    this.delegate.onFinish(event);
   }
 
   onError(error: unknown): void {
-    const callId =
-      typeof error === "object" && error !== null && "callId" in error
-        ? String(error.callId)
-        : undefined;
-
-    try {
-      this.delegate.onError(error);
-    } finally {
-      if (callId) {
-        this.cleanup(callId);
-      }
-    }
-  }
-
-  private cleanup(callId: string): void {
-    this.contextsByCallId.delete(callId);
-
-    for (const [spanId, spanCallId] of this.callIdsBySpanId.entries()) {
-      if (spanCallId === callId) {
-        this.callIdsBySpanId.delete(spanId);
-      }
-    }
+    this.delegate.onError(error);
   }
 }

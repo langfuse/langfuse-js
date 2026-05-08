@@ -1,0 +1,292 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index ac633f9ac42a7cc8c75ec652c3d6a453372b5c03..225b013fe2c1da3d5796914d173066a4a5dedf47 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -1,13 +1,25 @@
+ import { Telemetry, InferTelemetryEvent, GenerateTextStartEvent, GenerateObjectStartEvent, EmbedStartEvent, RerankStartEvent, GenerateObjectStepStartEvent, GenerateObjectStepEndEvent, GenerateTextStepStartEvent, ToolSet, LanguageModelCallStartEvent, LanguageModelCallEndEvent, ToolExecutionStartEvent, ToolExecutionEndEvent, GenerateTextStepEndEvent, GenerateTextEndEvent, GenerateObjectEndEvent, EmbedEndEvent, RerankEndEvent, EmbeddingModelCallStartEvent, EmbeddingModelCallEndEvent, RerankingModelCallStartEvent, RerankingModelCallEndEvent, StreamTextChunkEvent, OutputInterface } from 'ai';
+-import { Tracer } from '@opentelemetry/api';
++import { Attributes, Tracer } from '@opentelemetry/api';
+ import { LanguageModelV4Prompt } from '@ai-sdk/provider';
+ import { Context } from '@ai-sdk/provider-utils';
+ 
++type OpenTelemetrySpanType = 'operation' | 'step' | 'languageModel' | 'tool' | 'embedding' | 'reranking';
++type EnrichSpan = (options: {
++    spanType: OpenTelemetrySpanType;
++    operationId: string;
++    callId: string;
++    runtimeContext: Record<string, unknown> | undefined;
++}) => Attributes | undefined;
+ type OpenTelemetryOptions = {
+     /**
+      * The tracer to use for the telemetry data.
+      */
+     tracer?: Tracer;
++    /**
++     * Adds custom attributes to spans when they are created. These attributes are
++     * not AI SDK-owned semantics and are intended for observability integrations.
++     */
++    enrichSpan?: EnrichSpan;
+     /**
+      * Emit AI SDK usage details that are not represented by GenAI SemConv.
+      */
+@@ -49,6 +61,7 @@ declare class OpenTelemetry implements Telemetry {
+     private readonly callStates;
+     private readonly tracer;
+     private readonly supplementalAttributes;
++    private readonly enrichSpan;
+     constructor(options?: OpenTelemetryOptions);
+     private getCallState;
+     private cleanupCallState;
+@@ -133,3 +146,4 @@ declare class LegacyOpenTelemetry implements Telemetry {
+ }
+ 
+ export { LegacyOpenTelemetry, OpenTelemetry };
++export type { EnrichSpan, OpenTelemetryOptions, OpenTelemetrySpanType };
+diff --git a/dist/index.js b/dist/index.js
+index a942159dcdf9e523d21d161187f776c8a3cd7db9..41881f16a6774cfb413c4a9b772aea554292e826 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -556,6 +556,7 @@ var OpenTelemetry = class {
+     var _a;
+     this.tracer = (_a = options.tracer) != null ? _a : trace.getTracer("gen_ai");
+     this.supplementalAttributes = normalizeSupplementalAttributes(options);
++    this.enrichSpan = options.enrichSpan;
+   }
+   getCallState(callId) {
+     return this.callStates.get(callId);
+@@ -563,6 +564,29 @@ var OpenTelemetry = class {
+   cleanupCallState(callId) {
+     this.callStates.delete(callId);
+   }
++  getSpanAttributes({
++    attributes,
++    spanType,
++    operationId,
++    callId,
++    runtimeContext
++  }) {
++    let customAttributes;
++    try {
++      customAttributes = this.enrichSpan?.({
++        spanType,
++        operationId,
++        callId,
++        runtimeContext
++      });
++    } catch {
++      customAttributes = void 0;
++    }
++    return {
++      ...customAttributes,
++      ...attributes
++    };
++  }
+   executeTool({
+     callId,
+     toolCallId,
+@@ -614,13 +638,12 @@ var OpenTelemetry = class {
+     };
+     const providerName = mapProviderName(event.provider);
+     const operationName = mapOperationName(event.operationId);
++    const runtimeContext = event.runtimeContext;
+     const baseSupplementalAttributes = selectSupplementalAttributes(
+       telemetry,
+       this.supplementalAttributes,
+       {
+-        runtimeContext: getRuntimeContextAttributes(
+-          event.runtimeContext
+-        ),
++        runtimeContext: getRuntimeContextAttributes(runtimeContext),
+         headers: getHeaderAttributes(event.headers)
+       }
+     );
+@@ -652,7 +675,13 @@ var OpenTelemetry = class {
+     });
+     const spanName = `${operationName} ${event.modelId}`;
+     const rootSpan = this.tracer.startSpan(spanName, {
+-      attributes,
++      attributes: this.getSpanAttributes({
++        attributes,
++        spanType: "operation",
++        operationId: event.operationId,
++        callId: event.callId,
++        runtimeContext
++      }),
+       kind: SpanKind.INTERNAL
+     });
+     const rootContext = trace.setSpan(context2.active(), rootSpan);
+@@ -671,6 +700,7 @@ var OpenTelemetry = class {
+       settings,
+       provider: event.provider,
+       modelId: event.modelId,
++      runtimeContext,
+       baseSupplementalAttributes
+     });
+   }
+@@ -736,7 +766,13 @@ var OpenTelemetry = class {
+     });
+     const spanName = `${operationName} ${event.modelId}`;
+     const rootSpan = this.tracer.startSpan(spanName, {
+-      attributes,
++      attributes: this.getSpanAttributes({
++        attributes,
++        spanType: "operation",
++        operationId: event.operationId,
++        callId: event.callId,
++        runtimeContext: void 0
++      }),
+       kind: SpanKind.INTERNAL
+     });
+     const rootContext = trace.setSpan(context2.active(), rootSpan);
+@@ -755,6 +791,7 @@ var OpenTelemetry = class {
+       settings,
+       provider: event.provider,
+       modelId: event.modelId,
++      runtimeContext: void 0,
+       baseSupplementalAttributes
+     });
+   }
+@@ -870,7 +907,13 @@ var OpenTelemetry = class {
+     });
+     const spanName = `embeddings ${event.modelId}`;
+     const rootSpan = this.tracer.startSpan(spanName, {
+-      attributes,
++      attributes: this.getSpanAttributes({
++        attributes,
++        spanType: "operation",
++        operationId: event.operationId,
++        callId: event.callId,
++        runtimeContext: void 0
++      }),
+       kind: SpanKind.CLIENT
+     });
+     const rootContext = trace.setSpan(context2.active(), rootSpan);
+@@ -889,6 +932,7 @@ var OpenTelemetry = class {
+       settings: { maxRetries: event.maxRetries },
+       provider: event.provider,
+       modelId: event.modelId,
++      runtimeContext: void 0,
+       baseSupplementalAttributes
+     });
+   }
+@@ -896,6 +940,7 @@ var OpenTelemetry = class {
+     const state = this.getCallState(event.callId);
+     if (!(state == null ? void 0 : state.rootSpan) || !state.rootContext) return;
+     const { telemetry } = state;
++    state.runtimeContext = event.runtimeContext;
+     const stepAttributes = selectAttributes(telemetry, {
+       "gen_ai.operation.name": "agent_step",
+       ...state.baseSupplementalAttributes,
+@@ -909,7 +954,16 @@ var OpenTelemetry = class {
+     });
+     state.stepSpan = this.tracer.startSpan(
+       `step ${event.steps.length + 1}`,
+-      { attributes: stepAttributes, kind: SpanKind.INTERNAL },
++      {
++        attributes: this.getSpanAttributes({
++          attributes: stepAttributes,
++          spanType: "step",
++          operationId: state.operationId,
++          callId: event.callId,
++          runtimeContext: state.runtimeContext
++        }),
++        kind: SpanKind.INTERNAL
++      },
+       state.rootContext
+     );
+     state.stepContext = trace.setSpan(state.rootContext, state.stepSpan);
+@@ -946,7 +1000,16 @@ var OpenTelemetry = class {
+     });
+     state.inferenceSpan = this.tracer.startSpan(
+       `chat ${event.modelId}`,
+-      { attributes: inferenceAttributes, kind: SpanKind.CLIENT },
++      {
++        attributes: this.getSpanAttributes({
++          attributes: inferenceAttributes,
++          spanType: "languageModel",
++          operationId: state.operationId,
++          callId: event.callId,
++          runtimeContext: state.runtimeContext
++        }),
++        kind: SpanKind.CLIENT
++      },
+       state.stepContext
+     );
+     state.inferenceContext = trace.setSpan(
+@@ -1008,7 +1071,16 @@ var OpenTelemetry = class {
+     const spanName = `execute_tool ${toolCall.toolName}`;
+     const toolSpan = this.tracer.startSpan(
+       spanName,
+-      { attributes, kind: SpanKind.INTERNAL },
++      {
++        attributes: this.getSpanAttributes({
++          attributes,
++          spanType: "tool",
++          operationId: state.operationId,
++          callId: event.callId,
++          runtimeContext: state.runtimeContext
++        }),
++        kind: SpanKind.INTERNAL
++      },
+       state.stepContext
+     );
+     const toolContext = trace.setSpan(state.stepContext, toolSpan);
+@@ -1200,7 +1272,16 @@ var OpenTelemetry = class {
+     const spanName = `embeddings ${state.modelId}`;
+     const embedSpan = this.tracer.startSpan(
+       spanName,
+-      { attributes, kind: SpanKind.CLIENT },
++      {
++        attributes: this.getSpanAttributes({
++          attributes,
++          spanType: "embedding",
++          operationId: state.operationId,
++          callId: event.callId,
++          runtimeContext: state.runtimeContext
++        }),
++        kind: SpanKind.CLIENT
++      },
+       state.rootContext
+     );
+     const embedContext = trace.setSpan(state.rootContext, embedSpan);
+@@ -1264,7 +1345,13 @@ var OpenTelemetry = class {
+     });
+     const spanName = `rerank ${event.modelId}`;
+     const rootSpan = this.tracer.startSpan(spanName, {
+-      attributes,
++      attributes: this.getSpanAttributes({
++        attributes,
++        spanType: "operation",
++        operationId: event.operationId,
++        callId: event.callId,
++        runtimeContext: void 0
++      }),
+       kind: SpanKind.CLIENT
+     });
+     const rootContext = trace.setSpan(context2.active(), rootSpan);
+@@ -1283,6 +1370,7 @@ var OpenTelemetry = class {
+       settings: { maxRetries: event.maxRetries },
+       provider: event.provider,
+       modelId: event.modelId,
++      runtimeContext: void 0,
+       baseSupplementalAttributes
+     });
+   }
+@@ -1313,7 +1401,16 @@ var OpenTelemetry = class {
+     const spanName = `rerank ${state.modelId}`;
+     const rerankSpan = this.tracer.startSpan(
+       spanName,
+-      { attributes, kind: SpanKind.CLIENT },
++      {
++        attributes: this.getSpanAttributes({
++          attributes,
++          spanType: "reranking",
++          operationId: state.operationId,
++          callId: event.callId,
++          runtimeContext: state.runtimeContext
++        }),
++        kind: SpanKind.CLIENT
++      },
+       state.rootContext
+     );
+     const rerankContext = trace.setSpan(state.rootContext, rerankSpan);
