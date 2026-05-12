@@ -99,4 +99,31 @@ describe("ChatPromptClient.compile() — array (multimodal) content", () => {
     expect(result[1].role).toBe("user");
     expect(result[1].content[0]).toEqual({ type: "input_file", file_url: "path_to_pdf" });
   });
+
+  it("applies mustache substitution to text items inside placeholder-injected array content", () => {
+    const client = new ChatPromptClient(
+      makeChatPrompt([
+        { type: ChatMessageType.ChatMessage, role: "system", content: "You are helpful." },
+        { type: ChatMessageType.Placeholder, name: "messages" },
+      ]),
+    );
+    const messages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Hello {{name}}" },
+          { type: "image_url", image_url: { url: "https://example.com/{{name}}.png" } },
+        ],
+      },
+    ];
+    const result = client.compile({ name: "Alice" }, { messages }) as any[];
+    expect(result).toHaveLength(2);
+    expect(result[1].role).toBe("user");
+    expect(result[1].content[0]).toEqual({ type: "text", text: "Hello Alice" });
+    // Non-text parts inside placeholder content are passed through untouched
+    expect(result[1].content[1]).toEqual({
+      type: "image_url",
+      image_url: { url: "https://example.com/{{name}}.png" },
+    });
+  });
 });
