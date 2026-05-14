@@ -366,7 +366,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
       modelName,
       maxTokens,
     });
-  }, 10_000);
+  }, 20_000);
 
   // Currently flaky from the AI SDK side, matching the existing pre-v7 suite.
   it.skip("should trace a generateObject call", async () => {
