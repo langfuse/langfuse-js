@@ -208,6 +208,7 @@ describe("@langfuse/vercel-ai-sdk", () => {
       callId: "call-1",
       toolCallId: "tool-call-1",
       execute: async () => {
+        await Promise.resolve();
         activeSpanId = trace.getSpan(context.active())?.spanContext().spanId;
         return "ok";
       },

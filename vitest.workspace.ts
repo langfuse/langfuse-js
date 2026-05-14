@@ -11,6 +11,14 @@ export default defineWorkspace([
       ],
       setupFiles: [new URL("./vitest.setup.ts", import.meta.url).pathname],
     },
+    resolve: {
+      alias: {
+        "@langfuse/core": new URL(
+          "./packages/core/src/index.ts",
+          import.meta.url,
+        ).pathname,
+      },
+    },
   },
   {
     test: {

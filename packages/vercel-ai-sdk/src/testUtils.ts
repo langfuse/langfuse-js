@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "async_hooks";
+
 import {
   ROOT_CONTEXT,
   context,
@@ -30,10 +32,10 @@ import type {
 } from "ai";
 
 export class TestContextManager implements ContextManager {
-  private currentContext: Context = ROOT_CONTEXT;
+  private readonly asyncLocalStorage = new AsyncLocalStorage<Context>();
 
   active(): Context {
-    return this.currentContext;
+    return this.asyncLocalStorage.getStore() ?? ROOT_CONTEXT;
   }
 
   with<A extends unknown[], F extends (...args: A) => ReturnType<F>>(
@@ -42,14 +44,9 @@ export class TestContextManager implements ContextManager {
     thisArg?: ThisParameterType<F>,
     ...args: A
   ): ReturnType<F> {
-    const previousContext = this.currentContext;
-    this.currentContext = executionContext;
-
-    try {
-      return fn.call(thisArg as ThisParameterType<F>, ...args);
-    } finally {
-      this.currentContext = previousContext;
-    }
+    return this.asyncLocalStorage.run(executionContext, () =>
+      fn.call(thisArg as ThisParameterType<F>, ...args),
+    );
   }
 
   bind<T>(executionContext: Context, target: T): T {
@@ -73,7 +70,7 @@ export class TestContextManager implements ContextManager {
   }
 
   disable(): this {
-    this.currentContext = ROOT_CONTEXT;
+    this.asyncLocalStorage.disable();
     return this;
   }
 }
