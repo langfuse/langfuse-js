@@ -203,7 +203,7 @@ export function makeOnStartEvent(
     operationId: "ai.generateText",
     provider: "mock-provider",
     modelId: "mock-model-id",
-    system: undefined,
+    instructions: undefined,
     messages: [],
     tools: undefined,
     toolChoice: undefined,
@@ -308,7 +308,7 @@ export function makeStepStartEvent(
     stepNumber: 0,
     provider: "mock-provider",
     modelId: "mock-model-id",
-    system: undefined,
+    instructions: undefined,
     messages: [],
     tools: undefined,
     toolChoice: undefined,
@@ -332,7 +332,7 @@ export function makeLanguageModelCallStartEvent(
     callId: "call-1",
     provider: "mock-provider",
     modelId: "mock-model-id",
-    system: undefined,
+    instructions: undefined,
     messages: [],
     tools: undefined,
     maxOutputTokens: 100,
@@ -359,8 +359,6 @@ export function makeLanguageModelCallEndEvent(
       inputTokens: 10,
       outputTokens: 20,
       totalTokens: 30,
-      reasoningTokens: undefined,
-      cachedInputTokens: undefined,
       inputTokenDetails: {
         noCacheTokens: undefined,
         cacheReadTokens: undefined,
@@ -407,8 +405,6 @@ export function makeStepFinishEvent(
       inputTokens: 10,
       outputTokens: 20,
       totalTokens: 30,
-      reasoningTokens: undefined,
-      cachedInputTokens: undefined,
       inputTokenDetails: {
         noCacheTokens: undefined,
         cacheReadTokens: undefined,
@@ -439,13 +435,12 @@ export function makeFinishEvent(
 ): OnFinishEvent {
   return {
     ...makeStepFinishEvent(),
+    responseMessages: [],
     steps: [],
     totalUsage: {
       inputTokens: 10,
       outputTokens: 20,
       totalTokens: 30,
-      reasoningTokens: undefined,
-      cachedInputTokens: undefined,
       inputTokenDetails: {
         noCacheTokens: undefined,
         cacheReadTokens: undefined,

@@ -51,6 +51,9 @@ function telemetry(functionId: string) {
   return {
     isEnabled: true,
     functionId,
+    includeRuntimeContext: {
+      langfuse: true,
+    },
     integrations: new LangfuseVercelAiSdkIntegration(),
   };
 }

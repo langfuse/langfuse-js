@@ -44,10 +44,15 @@ await propagateAttributes(
       },
       telemetry: {
         functionId: "chat-assistant",
+        includeRuntimeContext: {
+          langfuse: true,
+        },
       },
     }),
 );
 ```
+
+AI SDK v7 excludes `runtimeContext` from telemetry events unless each top-level key is explicitly included. If you pass Langfuse observation metadata or prompt information through `runtimeContext.langfuse`, set `telemetry.includeRuntimeContext.langfuse` to `true`. Constructor-level `langfuse` options do not require this because they are configured directly on the integration.
 
 You can also pass the integration on a single call:
 

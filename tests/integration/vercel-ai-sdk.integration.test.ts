@@ -64,6 +64,9 @@ describe("@langfuse/vercel-ai-sdk integration", () => {
             },
             telemetry: {
               functionId: "test-ai-sdk-propagation",
+              includeRuntimeContext: {
+                langfuse: true,
+              },
               integrations: new LangfuseVercelAiSdkIntegration(),
             },
           });
