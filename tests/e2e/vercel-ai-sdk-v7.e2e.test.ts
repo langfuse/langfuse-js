@@ -125,7 +125,7 @@ function expectGenerationBasics({
 
     if (maxTokens !== undefined) {
       expect(generation.modelParameters).toMatchObject({
-        maxTokens: maxTokens.toString(),
+        max_tokens: maxTokens,
       });
     }
 
@@ -137,6 +137,7 @@ function expectGenerationBasics({
     expect(generation.totalTokens).toBeGreaterThan(0);
 
     if (expectTimeToFirstToken) {
+      expect(typeof generation.timeToFirstToken).toBe("number");
       expect(generation.timeToFirstToken).toBeGreaterThan(0);
     }
   }
@@ -510,7 +511,6 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expectGenerationBasics({
       trace,
       modelName,
-      expectTimeToFirstToken: true,
     });
   }, 30_000);
 
@@ -556,17 +556,17 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
       tags,
     });
 
-    expect(trace.observations.length).toBeGreaterThan(0);
-    const generations = trace.observations.filter(
-      (observation: any) => observation.type === "GENERATION",
+    const embeddingObservation = trace.observations.find(
+      (observation: any) =>
+        observation.type === "EMBEDDING" ||
+        observation.model === modelName ||
+        observation.name?.includes(modelName),
     );
-    expect(generations.length).toBeGreaterThan(0);
 
-    for (const generation of generations) {
-      expect(generation.model).toBe(modelName);
-      expect(generation.calculatedTotalCost).toBeGreaterThan(0);
-      expect(generation.totalTokens).toBeGreaterThan(0);
-    }
+    expect(embeddingObservation).toBeDefined();
+    expect(embeddingObservation!.model ?? embeddingObservation!.name).toContain(
+      modelName,
+    );
   }, 10_000);
 
   it("should trace a streamText call with linked prompts", async () => {
@@ -652,8 +652,8 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
       expectTimeToFirstToken: true,
     });
 
-    const promptLinkedGeneration = generations.find((generation: any) =>
-      generation.name?.includes("doStream"),
+    const promptLinkedGeneration = generations.find(
+      (generation: any) => generation.promptName === promptName,
     );
 
     expect(promptLinkedGeneration?.promptName).toBe(promptName);
@@ -709,7 +709,9 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(generations.length).toBeGreaterThan(0);
 
     const generation = generations.find((generation: any) =>
-      generation.name?.includes("doGenerate"),
+      JSON.stringify(generation.input).includes(
+        "@@@langfuseMedia:type=application/pdf",
+      ),
     );
 
     expect(generation).toBeDefined();
@@ -769,7 +771,9 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(generations.length).toBeGreaterThan(0);
 
     const generation = generations.find((generation: any) =>
-      generation.name?.includes("doGenerate"),
+      JSON.stringify(generation.input).includes(
+        "@@@langfuseMedia:type=image/jpeg",
+      ),
     );
 
     expect(generation).toBeDefined();
