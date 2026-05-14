@@ -607,7 +607,11 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
           maxOutputTokens: maxTokens,
           prompt,
           runtimeContext: runtimeContext({
-            prompt: fetchedPrompt.toJSON(),
+            prompt: {
+              name: fetchedPrompt.name,
+              version: fetchedPrompt.version,
+              isFallback: fetchedPrompt.isFallback,
+            },
           }),
           telemetry: telemetry(functionId),
         });

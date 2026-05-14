@@ -6,6 +6,7 @@ import {
   base64ToBytes,
   getGlobalLogger,
 } from "@langfuse/core";
+import type { MediaContentType } from "@langfuse/core";
 import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 
 export class MediaService {
@@ -95,8 +96,8 @@ export class MediaService {
       }
     }
 
-    // Handle media from Vercel AI SDK
-    if (span.instrumentationScope.name === "ai") {
+    // Handle media from Vercel AI SDK v6 and AI SDK v7.
+    if (["ai", "gen_ai"].includes(span.instrumentationScope.name)) {
       const aiSDKMediaAttributes = ["ai.prompt.messages", "ai.prompt"];
 
       for (const mediaAttribute of aiSDKMediaAttributes) {
@@ -178,6 +179,83 @@ export class MediaService {
         } catch (err) {
           this.logger.warn(
             `Failed to handle media for AI SDK attribute ${mediaAttribute} for span ${span.spanContext().spanId}`,
+            err,
+          );
+        }
+      }
+
+      // Handle media from AI SDK v7 OpenTelemetry semantic-convention
+      // attributes emitted by @ai-sdk/otel.
+      const aiSDKV7MediaAttributes = [
+        { attribute: "gen_ai.input.messages", field: "input" },
+        { attribute: "gen_ai.output.messages", field: "output" },
+      ] as const;
+
+      for (const { attribute, field } of aiSDKV7MediaAttributes) {
+        const value = span.attributes[attribute];
+
+        if (!value || typeof value !== "string") {
+          continue;
+        }
+
+        let mediaReplacedValue = value;
+
+        try {
+          const parsed = JSON.parse(value);
+
+          if (Array.isArray(parsed)) {
+            for (const message of parsed) {
+              if (!Array.isArray(message["parts"])) {
+                continue;
+              }
+
+              for (const part of message["parts"]) {
+                const base64Content = part["content"];
+                const mediaType = part["mime_type"];
+
+                if (
+                  part["type"] !== "blob" ||
+                  typeof base64Content !== "string" ||
+                  typeof mediaType !== "string" ||
+                  base64Content.startsWith("http")
+                ) {
+                  continue;
+                }
+
+                const media = new LangfuseMedia({
+                  contentType: mediaType as MediaContentType,
+                  contentBytes: base64ToBytes(base64Content),
+                  source: "bytes",
+                });
+
+                const langfuseMediaTag = await media.getTag();
+
+                if (!langfuseMediaTag) {
+                  this.logger.warn(
+                    "Failed to create Langfuse media tag. Skipping media item.",
+                  );
+
+                  continue;
+                }
+
+                this.scheduleUpload({
+                  span,
+                  media,
+                  field,
+                });
+
+                mediaReplacedValue = mediaReplacedValue.replaceAll(
+                  base64Content,
+                  langfuseMediaTag,
+                );
+              }
+            }
+          }
+
+          span.attributes[attribute] = mediaReplacedValue;
+        } catch (err) {
+          this.logger.warn(
+            `Failed to handle media for AI SDK v7 attribute ${attribute} for span ${span.spanContext().spanId}`,
             err,
           );
         }
