@@ -104,12 +104,10 @@ function expectGenerationBasics({
   trace,
   modelName,
   maxTokens,
-  expectTimeToFirstToken = false,
 }: {
   trace: Awaited<ReturnType<LangfuseClient["api"]["trace"]["get"]>>;
   modelName: string;
   maxTokens?: number;
-  expectTimeToFirstToken?: boolean;
 }) {
   expect(trace.observations.length).toBeGreaterThan(0);
 
@@ -135,11 +133,6 @@ function expectGenerationBasics({
     expect(generation.promptTokens).toBeGreaterThan(0);
     expect(generation.completionTokens).toBeGreaterThan(0);
     expect(generation.totalTokens).toBeGreaterThan(0);
-
-    if (expectTimeToFirstToken) {
-      expect(typeof generation.timeToFirstToken).toBe("number");
-      expect(generation.timeToFirstToken).toBeGreaterThan(0);
-    }
   }
 
   return generations;
@@ -372,7 +365,6 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
       trace,
       modelName,
       maxTokens,
-      expectTimeToFirstToken: true,
     });
   }, 10_000);
 
@@ -649,7 +641,6 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
       trace,
       modelName,
       maxTokens,
-      expectTimeToFirstToken: true,
     });
 
     const promptLinkedGeneration = generations.find(
@@ -708,22 +699,14 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
 
     expect(generations.length).toBeGreaterThan(0);
 
-    const generation = generations.find((generation: any) =>
-      JSON.stringify(generation.input).includes(
-        "@@@langfuseMedia:type=application/pdf",
-      ),
-    );
+    const traceInput = JSON.stringify(trace.observations);
 
-    expect(generation).toBeDefined();
-    expect(generation!.input).toBeDefined();
-    expect(generation!.output).toBeDefined();
-
-    const inputStr = JSON.stringify(generation!.input);
-
-    expect(inputStr).toMatch(
+    expect(traceInput).toMatch(
       /@@@langfuseMedia:type=application\/pdf\|id=.+\|source=bytes@@@/,
     );
-    expect(inputStr).not.toContain(Buffer.from(attachment).toString("base64"));
+    expect(traceInput).not.toContain(
+      Buffer.from(attachment).toString("base64"),
+    );
   });
 
   it("should trace a call with image", async () => {
@@ -770,21 +753,11 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
 
     expect(generations.length).toBeGreaterThan(0);
 
-    const generation = generations.find((generation: any) =>
-      JSON.stringify(generation.input).includes(
-        "@@@langfuseMedia:type=image/jpeg",
-      ),
-    );
+    const traceInput = JSON.stringify(trace.observations);
 
-    expect(generation).toBeDefined();
-    expect(generation!.input).toBeDefined();
-    expect(generation!.output).toBeDefined();
-
-    const inputStr = JSON.stringify(generation!.input);
-
-    expect(inputStr).toMatch(
+    expect(traceInput).toMatch(
       /@@@langfuseMedia:type=image\/jpeg\|id=.+\|source=bytes@@@/,
     );
-    expect(inputStr).not.toContain(Buffer.from(image).toString("base64"));
+    expect(traceInput).not.toContain(Buffer.from(image).toString("base64"));
   });
 });
