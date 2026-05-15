@@ -52,7 +52,7 @@ await propagateAttributes(
 );
 ```
 
-AI SDK v7 excludes `runtimeContext` from telemetry events unless each top-level key is explicitly included. If you pass Langfuse observation metadata or prompt information through `runtimeContext.langfuse`, set `telemetry.includeRuntimeContext.langfuse` to `true`. Constructor-level `langfuse` options do not require this because they are configured directly on the integration.
+AI SDK v7 excludes `runtimeContext` from telemetry events unless each top-level key is explicitly included. If you pass Langfuse observation metadata or prompt information through `runtimeContext.langfuse`, set `telemetry.includeRuntimeContext.langfuse` to `true`.
 
 You can also pass the integration on a single call:
 
@@ -63,15 +63,19 @@ import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
 await generateText({
   model,
   prompt: "Summarize this article",
+  runtimeContext: {
+    langfuse: {
+      metadata: {
+        feature: "article-summary",
+      },
+    },
+  },
   telemetry: {
     functionId: "article-summary",
-    integrations: new LangfuseVercelAiSdkIntegration({
-      langfuse: {
-        metadata: {
-          feature: "article-summary",
-        },
-      },
-    }),
+    includeRuntimeContext: {
+      langfuse: true,
+    },
+    integrations: new LangfuseVercelAiSdkIntegration(),
   },
 });
 ```

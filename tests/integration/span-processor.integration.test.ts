@@ -278,6 +278,39 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         /@@@langfuseMedia:type=image\/jpeg\|id=[^|]+\|source=bytes@@@/,
       );
     });
+
+    it("should skip empty AI SDK v7 semconv blob content", async () => {
+      const messages = JSON.stringify([
+        {
+          role: "user",
+          parts: [
+            {
+              type: "blob",
+              modality: "image",
+              mime_type: "application/pdf",
+              content: "",
+            },
+          ],
+        },
+      ]);
+      const tracer = trace.getTracer("gen_ai");
+
+      const span = tracer.startSpan("ai-sdk-v7-empty-media-span", {
+        attributes: {
+          "gen_ai.input.messages": messages,
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "ai-sdk-v7-empty-media-span",
+      )?.["gen_ai.input.messages"] as string;
+
+      expect(inputValue).toBe(messages);
+      expect(inputValue).not.toContain("@@@langfuseMedia:");
+    });
   });
 
   describe("Batch processing", () => {

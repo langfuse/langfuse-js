@@ -549,16 +549,11 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     });
 
     const embeddingObservation = trace.observations.find(
-      (observation: any) =>
-        observation.type === "EMBEDDING" ||
-        observation.model === modelName ||
-        observation.name?.includes(modelName),
+      (observation: any) => observation.type === "EMBEDDING",
     );
 
     expect(embeddingObservation).toBeDefined();
-    expect(embeddingObservation!.model ?? embeddingObservation!.name).toContain(
-      modelName,
-    );
+    expect(embeddingObservation!.model).toContain(modelName);
   }, 10_000);
 
   it("should trace a streamText call with linked prompts", async () => {

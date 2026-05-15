@@ -13,16 +13,11 @@ const PROMPT_SPAN_TYPES = new Set<OpenTelemetrySpanType>([
 ]);
 
 export function resolveLangfuseContext({
-  configuredLangfuse,
   runtimeContext,
 }: {
-  configuredLangfuse?: LangfuseContext;
   runtimeContext?: Record<string, unknown>;
 }): ResolvedLangfuseContext {
-  const runtimeLangfuseContext = extractRuntimeLangfuseContext(runtimeContext);
-  const configuredContext = normalizeLangfuseContext(configuredLangfuse);
-
-  return mergeLangfuseContexts(configuredContext, runtimeLangfuseContext);
+  return extractRuntimeLangfuseContext(runtimeContext);
 }
 
 export function createLangfuseObservationAttributes(
@@ -71,27 +66,6 @@ function normalizeLangfuseContext(
     metadata: isPlainObject(value.metadata) ? value.metadata : undefined,
     prompt: normalizePrompt(value.prompt),
   };
-}
-
-function mergeLangfuseContexts(
-  ...contexts: ResolvedLangfuseContext[]
-): ResolvedLangfuseContext {
-  const result: ResolvedLangfuseContext = {};
-
-  for (const context of contexts) {
-    if (context.prompt !== undefined) {
-      result.prompt = context.prompt;
-    }
-
-    if (context.metadata !== undefined) {
-      result.metadata = {
-        ...(result.metadata ?? {}),
-        ...context.metadata,
-      };
-    }
-  }
-
-  return result;
 }
 
 function normalizePrompt(value: unknown): LangfusePrompt | undefined {

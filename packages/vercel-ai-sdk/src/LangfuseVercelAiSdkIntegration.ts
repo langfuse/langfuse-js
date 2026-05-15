@@ -40,7 +40,6 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
         tracer: options.tracer,
         enrichSpan: ({ spanType, runtimeContext }) => {
           const langfuseContext = resolveLangfuseContext({
-            configuredLangfuse: options.langfuse,
             runtimeContext,
           });
 
@@ -51,16 +50,12 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     this.delegate = new OpenTelemetry(openTelemetryOptions);
   }
 
-  executeTool<T>({
-    callId,
-    toolCallId,
-    execute,
-  }: {
+  executeTool<T>(params: {
     callId: string;
     toolCallId: string;
     execute: () => PromiseLike<T>;
   }): PromiseLike<T> {
-    return this.delegate.executeTool({ callId, toolCallId, execute });
+    return this.delegate.executeTool(params);
   }
 
   onStart(

@@ -2,6 +2,8 @@ import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import { context, trace } from "@opentelemetry/api";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { LangfuseVercelAiSdkIntegration } from "../index.js";
+
 import {
   MockTracer,
   TestContextManager,
@@ -14,8 +16,6 @@ import {
   makeToolExecutionEndEvent,
   makeToolExecutionStartEvent,
 } from "./testUtils.js";
-
-import { LangfuseVercelAiSdkIntegration } from "./index.js";
 
 describe("@langfuse/vercel-ai-sdk", () => {
   const contextManager = new TestContextManager();
@@ -57,8 +57,8 @@ describe("@langfuse/vercel-ai-sdk", () => {
 
   it("adds Langfuse prompt attributes to generated model-call spans", () => {
     const tracer = new MockTracer();
-    const integration = new LangfuseVercelAiSdkIntegration({
-      tracer,
+    const integration = new LangfuseVercelAiSdkIntegration({ tracer });
+    const runtimeContext = {
       langfuse: {
         prompt: {
           name: "assistant/default",
@@ -66,10 +66,10 @@ describe("@langfuse/vercel-ai-sdk", () => {
           isFallback: false,
         },
       },
-    });
+    };
 
-    integration.onStart!(makeOnStartEvent());
-    integration.onStepStart!(makeStepStartEvent());
+    integration.onStart!(makeOnStartEvent({ runtimeContext }));
+    integration.onStepStart!(makeStepStartEvent({ runtimeContext }));
     integration.onLanguageModelCallStart!(makeLanguageModelCallStartEvent());
 
     const rootSpan = tracer.spans[0];
@@ -96,19 +96,22 @@ describe("@langfuse/vercel-ai-sdk", () => {
 
   it("adds observation metadata without setting trace-level Langfuse attributes", () => {
     const tracer = new MockTracer();
-    const integration = new LangfuseVercelAiSdkIntegration({
-      tracer,
-      langfuse: {
-        metadata: {
-          feature: "assistant",
-          nested: {
-            requestId: "req-123",
+    const integration = new LangfuseVercelAiSdkIntegration({ tracer });
+
+    integration.onStart!(
+      makeOnStartEvent({
+        runtimeContext: {
+          langfuse: {
+            metadata: {
+              feature: "assistant",
+              nested: {
+                requestId: "req-123",
+              },
+            },
           },
         },
-      },
-    });
-
-    integration.onStart!(makeOnStartEvent());
+      }),
+    );
 
     const rootSpan = tracer.spans[0];
     expect(
@@ -137,19 +140,10 @@ describe("@langfuse/vercel-ai-sdk", () => {
 
   it("extracts per-call Langfuse context from runtimeContext", () => {
     const tracer = new MockTracer();
-    const integration = new LangfuseVercelAiSdkIntegration({
-      tracer,
-      langfuse: {
-        metadata: {
-          source: "constructor",
-          shared: "constructor",
-        },
-      },
-    });
+    const integration = new LangfuseVercelAiSdkIntegration({ tracer });
     const runtimeContext = {
       langfuse: {
         metadata: {
-          shared: "runtime",
           requestId: "req-123",
         },
         prompt: {
@@ -172,16 +166,6 @@ describe("@langfuse/vercel-ai-sdk", () => {
     integration.onLanguageModelCallStart!(makeLanguageModelCallStartEvent());
 
     const modelCallSpan = tracer.spans[2];
-    expect(
-      modelCallSpan.attributes[
-        `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.source`
-      ],
-    ).toBe("constructor");
-    expect(
-      modelCallSpan.attributes[
-        `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.shared`
-      ],
-    ).toBe("runtime");
     expect(
       modelCallSpan.attributes[
         `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.requestId`

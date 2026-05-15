@@ -18,5 +18,4 @@ export type LangfuseContext = {
 
 export type LangfuseVercelAiSdkIntegrationOptions = {
   tracer?: Tracer;
-  langfuse?: LangfuseContext;
 };
