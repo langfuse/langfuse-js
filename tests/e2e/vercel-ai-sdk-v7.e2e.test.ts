@@ -506,6 +506,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
   it("should trace a call with file attachment", async () => {
     const attachmentPath = "tests/static/bitcoin.pdf";
     const attachment = await fs.readFile(attachmentPath);
+    const attachmentBase64 = attachment.toString("base64");
 
     const [result, span] = await withTrace({
       functionId: "test-vercel-v7-file-attachment",
@@ -520,7 +521,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
                 {
                   type: "file",
                   mediaType: "application/pdf",
-                  data: attachment,
+                  data: attachmentBase64,
                 },
               ],
             },
@@ -556,14 +557,13 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(traceInput).toMatch(
       /@@@langfuseMedia:type=application\/pdf\|id=.+\|source=bytes@@@/,
     );
-    expect(traceInput).not.toContain(
-      Buffer.from(attachment).toString("base64"),
-    );
+    expect(traceInput).not.toContain(attachmentBase64);
   });
 
   it("should trace a call with image", async () => {
     const imagePath = "tests/static/puton.jpg";
     const image = await fs.readFile(imagePath);
+    const imageBase64 = image.toString("base64");
 
     const [result, span] = await withTrace({
       functionId: "test-vercel-v7-image",
@@ -575,7 +575,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
               role: "user",
               content: [
                 { type: "text", text: "Give me a summary" },
-                { type: "image", mediaType: "image/jpeg", image },
+                { type: "image", mediaType: "image/jpeg", image: imageBase64 },
               ],
             },
           ],
@@ -610,6 +610,6 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(traceInput).toMatch(
       /@@@langfuseMedia:type=image\/jpeg\|id=.+\|source=bytes@@@/,
     );
-    expect(traceInput).not.toContain(Buffer.from(image).toString("base64"));
+    expect(traceInput).not.toContain(imageBase64);
   });
 });
