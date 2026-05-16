@@ -15,8 +15,8 @@ importers:
         specifier: ^2
         version: 2.0.6(zod@3.25.76)
       '@ai-sdk/openai':
-        specifier: ^2
-        version: 2.0.20(zod@3.25.76)
+        specifier: 4.0.0-canary.59
+        version: 4.0.0-canary.59(zod@3.25.76)
       '@eslint/js':
         specifier: ^9.32.0
         version: 9.32.0
@@ -245,12 +245,6 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/openai@2.0.20':
-    resolution: {integrity: sha512-6cBQpb6Sh5pCthSb/rGhIAsVq3EfHYKtFmeYapsBpILMkWI2DiIOajpEVe9DWCQaqTjXglZdbQsxSFJoaWlNQQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4
 
   '@ai-sdk/openai@4.0.0-canary.59':
     resolution: {integrity: sha512-YRMnbkPRuozy9+BmZ+P8bjcdFh4QH6bOKDNLzVlce07OnIr09WNMAJKAX7trRS1saANFjiMx25ILa5Tgz6D1nw==}
@@ -3785,12 +3779,6 @@ snapshots:
       '@ai-sdk/provider': 4.0.0-canary.16
       '@ai-sdk/provider-utils': 5.0.0-canary.41(zod@3.25.76)
       '@vercel/oidc': 3.2.0
-      zod: 3.25.76
-
-  '@ai-sdk/openai@2.0.20(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.5(zod@3.25.76)
       zod: 3.25.76
 
   '@ai-sdk/openai@4.0.0-canary.59(zod@3.25.76)':
