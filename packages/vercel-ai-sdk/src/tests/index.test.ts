@@ -58,12 +58,10 @@ describe("@langfuse/vercel-ai-sdk", () => {
     const tracer = new MockTracer();
     const integration = new LangfuseVercelAiSdkIntegration({ tracer });
     const runtimeContext = {
-      langfuse: {
-        prompt: {
-          name: "assistant/default",
-          version: 7,
-          isFallback: false,
-        },
+      langfusePrompt: {
+        name: "assistant/default",
+        version: 7,
+        isFallback: false,
       },
     };
 
@@ -100,12 +98,13 @@ describe("@langfuse/vercel-ai-sdk", () => {
     integration.onStart!(
       makeOnStartEvent({
         runtimeContext: {
+          feature: "assistant",
+          nested: {
+            requestId: "req-123",
+          },
           langfuse: {
             metadata: {
-              feature: "assistant",
-              nested: {
-                requestId: "req-123",
-              },
+              ignored: false,
             },
           },
         },
@@ -123,6 +122,11 @@ describe("@langfuse/vercel-ai-sdk", () => {
         `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.nested`
       ],
     ).toBe(JSON.stringify({ requestId: "req-123" }));
+    expect(
+      rootSpan.attributes[
+        `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.langfuse`
+      ],
+    ).toBe(JSON.stringify({ metadata: { ignored: false } }));
     expect(rootSpan.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
       undefined,
     );
@@ -137,18 +141,14 @@ describe("@langfuse/vercel-ai-sdk", () => {
     );
   });
 
-  it("extracts per-call Langfuse context from runtimeContext", () => {
+  it("maps runtimeContext to observation metadata and prompt attributes", () => {
     const tracer = new MockTracer();
     const integration = new LangfuseVercelAiSdkIntegration({ tracer });
     const runtimeContext = {
-      langfuse: {
-        metadata: {
-          requestId: "req-123",
-        },
-        prompt: {
-          name: "runtime/prompt",
-          version: 3,
-        },
+      requestId: "req-123",
+      langfusePrompt: {
+        name: "runtime/prompt",
+        version: 3,
       },
     };
 
@@ -175,6 +175,11 @@ describe("@langfuse/vercel-ai-sdk", () => {
         LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
       ],
     ).toBe("runtime/prompt");
+    expect(
+      modelCallSpan.attributes[
+        `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.langfusePrompt`
+      ],
+    ).toBeUndefined();
   });
 
   it("runs nested tool work inside the upstream tool span context", async () => {
@@ -215,22 +220,18 @@ describe("@langfuse/vercel-ai-sdk", () => {
     expect(tracer.spans[1].events).toEqual([]);
   });
 
-  it("does not reuse runtime Langfuse context across calls", () => {
+  it("does not reuse runtime context metadata across calls", () => {
     const tracer = new MockTracer();
     const integration = new LangfuseVercelAiSdkIntegration({ tracer });
 
     integration.onStart!(
       makeOnStartEvent({
         runtimeContext: {
-          langfuse: {
-            metadata: {
-              call: "first",
-            },
-          },
+          call: "first",
         },
       }),
     );
-    integration.onEnd!(makeFinishEvent());
+    integration.onFinish!(makeFinishEvent());
 
     integration.onStart!(
       makeOnStartEvent({

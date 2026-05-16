@@ -4,7 +4,7 @@
 
 This package provides a Langfuse-owned telemetry integration for AI SDK v7 (`ai@7`) using the new callback-based telemetry system.
 
-It delegates AI SDK-compatible OpenTelemetry span creation to Vercel's `@ai-sdk/otel` package so it works with the existing Langfuse OTEL ingestion pipeline, and it adds Langfuse-specific observation attributes for prompt linking and observation metadata.
+It delegates AI SDK-compatible OpenTelemetry span creation to Vercel's `@ai-sdk/otel` package so it works with the existing Langfuse OTEL ingestion pipeline. Runtime context keys included via AI SDK telemetry are attached as Langfuse observation metadata. The only special runtime context key is `langfusePrompt`, which links Langfuse prompt name and version to model-call observations.
 
 Trace-level attributes such as user ID, session ID, tags, trace name, and trace metadata should be set with `propagateAttributes` from `@langfuse/tracing`.
 
@@ -31,28 +31,25 @@ await propagateAttributes(
       model,
       prompt: "Explain RAG in one paragraph",
       runtimeContext: {
-        langfuse: {
-          metadata: {
-            route: "support-chat",
-          },
-          prompt: {
-            name: "assistant/default",
-            version: 3,
-            isFallback: false,
-          },
+        route: "support-chat",
+        langfusePrompt: {
+          name: "assistant/default",
+          version: 3,
+          isFallback: false,
         },
       },
       telemetry: {
         functionId: "chat-assistant",
         includeRuntimeContext: {
-          langfuse: true,
+          route: true,
+          langfusePrompt: true,
         },
       },
     }),
 );
 ```
 
-AI SDK v7 excludes `runtimeContext` from telemetry events unless each top-level key is explicitly included. If you pass Langfuse observation metadata or prompt information through `runtimeContext.langfuse`, set `telemetry.includeRuntimeContext.langfuse` to `true`.
+AI SDK v7 excludes `runtimeContext` from telemetry events unless each top-level key is explicitly included. This integration maps every included runtime context key to Langfuse observation metadata, except `langfusePrompt`, which is used for prompt linking and is not added as metadata.
 
 You can also pass the integration on a single call:
 
@@ -64,16 +61,12 @@ await generateText({
   model,
   prompt: "Summarize this article",
   runtimeContext: {
-    langfuse: {
-      metadata: {
-        feature: "article-summary",
-      },
-    },
+    feature: "article-summary",
   },
   telemetry: {
     functionId: "article-summary",
     includeRuntimeContext: {
-      langfuse: true,
+      feature: true,
     },
     integrations: new LangfuseVercelAiSdkIntegration(),
   },

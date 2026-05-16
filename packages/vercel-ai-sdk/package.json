@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@ai-sdk/openai": "4.0.0-canary.59",
+    "@types/node": "^25.6.2",
     "ai": "7.0.0-canary.141"
   }
 }

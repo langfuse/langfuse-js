@@ -2,9 +2,12 @@ import type { OpenTelemetrySpanType } from "@ai-sdk/otel";
 import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import type { Attributes } from "@opentelemetry/api";
 
-import type { LangfuseContext, LangfusePrompt } from "./types.js";
+import type { LangfusePrompt } from "./types.js";
 
-export type ResolvedLangfuseContext = LangfuseContext;
+export type ResolvedRuntimeContext = {
+  metadata?: Record<string, unknown>;
+  prompt?: LangfusePrompt;
+};
 
 const PROMPT_SPAN_TYPES = new Set<OpenTelemetrySpanType>([
   "languageModel",
@@ -12,35 +15,26 @@ const PROMPT_SPAN_TYPES = new Set<OpenTelemetrySpanType>([
   "reranking",
 ]);
 
-export function resolveLangfuseContext({
+export function resolveRuntimeContext({
   runtimeContext,
 }: {
   runtimeContext?: Record<string, unknown>;
-}): ResolvedLangfuseContext {
-  const value = runtimeContext?.langfuse;
-
-  if (!isPlainObject(value)) {
-    return {};
-  }
-
-  return {
-    metadata: isPlainObject(value.metadata) ? value.metadata : undefined,
-    prompt: normalizePrompt(value.prompt),
-  };
+}): ResolvedRuntimeContext {
+  return extractRuntimeContext(runtimeContext);
 }
 
 export function createLangfuseObservationAttributes(
-  langfuse: ResolvedLangfuseContext,
+  context: ResolvedRuntimeContext,
   spanType: OpenTelemetrySpanType,
 ): Attributes {
   const attributes: Attributes = {};
 
   if (shouldAttachPrompt(spanType)) {
-    Object.assign(attributes, createLangfusePromptAttributes(langfuse.prompt));
+    Object.assign(attributes, createLangfusePromptAttributes(context.prompt));
   }
 
-  if (langfuse.metadata) {
-    for (const [key, value] of Object.entries(langfuse.metadata)) {
+  if (context.metadata) {
+    for (const [key, value] of Object.entries(context.metadata)) {
       const serialized =
         typeof value === "string" ? value : safeSerialize(value);
 
@@ -53,6 +47,22 @@ export function createLangfuseObservationAttributes(
   }
 
   return attributes;
+}
+
+function extractRuntimeContext(
+  runtimeContext: Record<string, unknown> | undefined,
+): ResolvedRuntimeContext {
+  if (!runtimeContext) {
+    return {};
+  }
+
+  const { langfusePrompt, ...metadata } = runtimeContext;
+  const prompt = normalizePrompt(langfusePrompt);
+
+  return {
+    metadata,
+    prompt,
+  };
 }
 
 function normalizePrompt(value: unknown): LangfusePrompt | undefined {

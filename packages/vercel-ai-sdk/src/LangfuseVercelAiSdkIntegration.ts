@@ -25,7 +25,7 @@ import type {
 import type { LangfuseVercelAiSdkIntegrationOptions } from "./types.js";
 import {
   createLangfuseObservationAttributes,
-  resolveLangfuseContext,
+  resolveRuntimeContext,
 } from "./utils.js";
 
 export class LangfuseVercelAiSdkIntegration implements Telemetry {
@@ -36,11 +36,11 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
       {
         tracer: options.tracer,
         enrichSpan: ({ spanType, runtimeContext }) => {
-          const langfuseContext = resolveLangfuseContext({
+          const resolvedContext = resolveRuntimeContext({
             runtimeContext,
           });
 
-          return createLangfuseObservationAttributes(langfuseContext, spanType);
+          return createLangfuseObservationAttributes(resolvedContext, spanType);
         },
       };
 
@@ -93,26 +93,26 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     this.delegate.onEmbedStart(event);
   }
 
-  onEmbedEnd(event: EmbeddingModelCallEndEvent): void {
-    this.delegate.onEmbedEnd(event);
+  onEmbedFinish(event: EmbeddingModelCallEndEvent): void {
+    this.delegate.onEmbedFinish(event);
   }
 
   onRerankStart(event: RerankingModelCallStartEvent): void {
     this.delegate.onRerankStart(event);
   }
 
-  onRerankEnd(event: RerankingModelCallEndEvent): void {
-    this.delegate.onRerankEnd(event);
+  onRerankFinish(event: RerankingModelCallEndEvent): void {
+    this.delegate.onRerankFinish(event);
   }
 
-  onEnd(
+  onFinish(
     event:
       | GenerateTextEndEvent<ToolSet>
       | GenerateObjectEndEvent<unknown>
       | EmbedEndEvent
       | RerankEndEvent,
   ): void {
-    this.delegate.onEnd(event);
+    this.delegate.onFinish(event);
   }
 
   onError(error: unknown): void {

@@ -4,10 +4,7 @@ import fs from "fs/promises";
 import { openai } from "@ai-sdk/openai";
 import { LangfuseClient } from "@langfuse/client";
 import { propagateAttributes, startActiveObservation } from "@langfuse/tracing";
-import {
-  LangfuseVercelAiSdkIntegration,
-  LangfuseContext,
-} from "@langfuse/vercel-ai-sdk";
+import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
 import { embed, generateText, streamText, tool } from "ai";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import z from "zod";
@@ -38,7 +35,12 @@ type TraceAttributes = {
 };
 
 type LangfuseRuntimeContext = {
-  langfuse?: LangfuseContext;
+  feature?: string;
+  langfusePrompt?: {
+    name: string;
+    version: number;
+    isFallback?: boolean;
+  };
 };
 
 function telemetry(functionId: string) {
@@ -46,14 +48,15 @@ function telemetry(functionId: string) {
     isEnabled: true,
     functionId,
     includeRuntimeContext: {
-      langfuse: true,
+      feature: true,
+      langfusePrompt: true,
     },
     integrations: new LangfuseVercelAiSdkIntegration(),
   };
 }
 
-function runtimeContext(langfuse?: LangfuseRuntimeContext["langfuse"]) {
-  return langfuse ? { langfuse } : undefined;
+function runtimeContext(context?: LangfuseRuntimeContext) {
+  return context;
 }
 
 async function withTrace<T>({
@@ -180,9 +183,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
           maxOutputTokens: maxTokens,
           prompt,
           runtimeContext: runtimeContext({
-            metadata: {
-              feature: "generate-text",
-            },
+            feature: "generate-text",
           }),
           telemetry: telemetry(functionId),
         }),
@@ -258,9 +259,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
             toolName: "weather",
           },
           runtimeContext: runtimeContext({
-            metadata: {
-              feature: "tool-call",
-            },
+            feature: "tool-call",
           }),
           telemetry: telemetry(functionId),
         }),
@@ -323,9 +322,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
           maxOutputTokens: maxTokens,
           prompt,
           runtimeContext: runtimeContext({
-            metadata: {
-              feature: "stream-text",
-            },
+            feature: "stream-text",
           }),
           telemetry: telemetry(functionId),
         });
@@ -458,7 +455,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
           maxOutputTokens: maxTokens,
           prompt,
           runtimeContext: runtimeContext({
-            prompt: {
+            langfusePrompt: {
               name: fetchedPrompt.name,
               version: fetchedPrompt.version,
               isFallback: fetchedPrompt.isFallback,

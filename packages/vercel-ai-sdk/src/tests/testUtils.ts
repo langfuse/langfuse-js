@@ -9,6 +9,7 @@ import {
   type Context,
   type ContextManager,
   type Exception,
+  type Link,
   type Span,
   type SpanContext,
   type SpanOptions,
@@ -87,24 +88,39 @@ export class MockTracer implements Tracer {
     return span;
   }
 
-  startActiveSpan(
+  startActiveSpan<F extends (span: Span) => unknown>(
     name: string,
-    arg1: unknown,
-    arg2?: unknown,
-    arg3?: (span: Span) => unknown,
-  ): unknown {
+    fn: F,
+  ): ReturnType<F>;
+  startActiveSpan<F extends (span: Span) => unknown>(
+    name: string,
+    options: SpanOptions,
+    fn: F,
+  ): ReturnType<F>;
+  startActiveSpan<F extends (span: Span) => unknown>(
+    name: string,
+    options: SpanOptions,
+    parentContext: Context,
+    fn: F,
+  ): ReturnType<F>;
+  startActiveSpan<F extends (span: Span) => unknown>(
+    name: string,
+    arg1: F | SpanOptions,
+    arg2?: F | Context,
+    arg3?: F,
+  ): ReturnType<F> {
     if (typeof arg1 === "function") {
       const span = this.startSpan(name);
       return context.with(trace.setSpan(context.active(), span), () =>
         arg1(span),
-      );
+      ) as ReturnType<F>;
     }
 
     if (typeof arg2 === "function") {
       const span = this.startSpan(name, arg1 as SpanOptions);
       return context.with(trace.setSpan(context.active(), span), () =>
         arg2(span),
-      );
+      ) as ReturnType<F>;
     }
 
     if (typeof arg3 === "function") {
@@ -115,8 +131,10 @@ export class MockTracer implements Tracer {
       );
       return context.with(trace.setSpan(context.active(), span), () =>
         arg3(span),
-      );
+      ) as ReturnType<F>;
     }
+
+    throw new TypeError("startActiveSpan requires a callback");
   }
 }
 
@@ -156,16 +174,24 @@ export class MockSpan implements Span {
     return this;
   }
 
-  addEvent(name: string, attributes?: Attributes): this {
+  addEvent(
+    name: string,
+    attributesOrStartTime?: Attributes | TimeInput,
+    _startTime?: TimeInput,
+  ): this {
+    const attributes = isAttributes(attributesOrStartTime)
+      ? attributesOrStartTime
+      : undefined;
+
     this.events.push({ name, attributes });
     return this;
   }
 
-  addLink(): this {
+  addLink(_link: Link): this {
     return this;
   }
 
-  addLinks(): this {
+  addLinks(_links: Link[]): this {
     return this;
   }
 
@@ -174,11 +200,11 @@ export class MockSpan implements Span {
     return this;
   }
 
-  updateName(): this {
+  updateName(_name: string): this {
     return this;
   }
 
-  end(): void {
+  end(_endTime?: TimeInput): void {
     this.ended = true;
   }
 
@@ -189,6 +215,17 @@ export class MockSpan implements Span {
   recordException(_exception: Exception, _time?: TimeInput): void {
     // No-op for tests
   }
+}
+
+function isAttributes(
+  value: Attributes | TimeInput | undefined,
+): value is Attributes {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !(value instanceof Date)
+  );
 }
 
 export function makeOnStartEvent(
@@ -367,14 +404,6 @@ export function makeLanguageModelCallEndEvent(
     },
     content: [{ type: "text", text: "Hello world" }],
     responseId: "resp-1",
-    performance: {
-      responseTimeMs: 100,
-      effectiveOutputTokensPerSecond: 100,
-      effectiveTotalTokensPerSecond: 100,
-      inputTokensPerSecond: 100,
-      outputTokensPerSecond: 100,
-      timeToFirstOutputTokenMs: 100,
-    } as const,
     ...overrides,
   };
 }
@@ -430,16 +459,6 @@ export function makeStepFinishEvent(
       messages: [],
     },
     providerMetadata: undefined,
-    performance: {
-      responseTimeMs: 100,
-      effectiveOutputTokensPerSecond: 100,
-      effectiveTotalTokensPerSecond: 100,
-      inputTokensPerSecond: 100,
-      outputTokensPerSecond: 100,
-      timeToFirstOutputTokenMs: 100,
-      stepTimeMs: 100,
-      toolExecutionMs: {},
-    } as const,
     ...overrides,
   };
 }
