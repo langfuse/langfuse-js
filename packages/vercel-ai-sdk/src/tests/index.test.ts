@@ -231,7 +231,7 @@ describe("@langfuse/vercel-ai-sdk", () => {
         },
       }),
     );
-    integration.onFinish!(makeFinishEvent());
+    integration.onEnd!(makeFinishEvent());
 
     integration.onStart!(
       makeOnStartEvent({

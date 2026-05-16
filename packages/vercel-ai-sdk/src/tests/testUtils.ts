@@ -31,6 +31,25 @@ import type {
   ToolExecutionStartEvent,
 } from "ai";
 
+function makeLanguageModelPerformance() {
+  return {
+    responseTimeMs: 42,
+    effectiveOutputTokensPerSecond: 500,
+    outputTokensPerSecond: undefined,
+    inputTokensPerSecond: undefined,
+    effectiveTotalTokensPerSecond: 750,
+    timeToFirstOutputTokenMs: undefined,
+  };
+}
+
+function makeStepPerformance() {
+  return {
+    ...makeLanguageModelPerformance(),
+    stepTimeMs: 50,
+    toolExecutionMs: {},
+  };
+}
+
 export class TestContextManager implements ContextManager {
   private readonly asyncLocalStorage = new AsyncLocalStorage<Context>();
 
@@ -404,6 +423,7 @@ export function makeLanguageModelCallEndEvent(
     },
     content: [{ type: "text", text: "Hello world" }],
     responseId: "resp-1",
+    performance: makeLanguageModelPerformance(),
     ...overrides,
   };
 }
@@ -458,6 +478,7 @@ export function makeStepFinishEvent(
       body: undefined,
       messages: [],
     },
+    performance: makeStepPerformance(),
     providerMetadata: undefined,
     ...overrides,
   };

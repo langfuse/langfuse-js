@@ -93,26 +93,26 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     this.delegate.onEmbedStart(event);
   }
 
-  onEmbedFinish(event: EmbeddingModelCallEndEvent): void {
-    this.delegate.onEmbedFinish(event);
+  onEmbedEnd(event: EmbeddingModelCallEndEvent): void {
+    this.delegate.onEmbedEnd(event);
   }
 
   onRerankStart(event: RerankingModelCallStartEvent): void {
     this.delegate.onRerankStart(event);
   }
 
-  onRerankFinish(event: RerankingModelCallEndEvent): void {
-    this.delegate.onRerankFinish(event);
+  onRerankEnd(event: RerankingModelCallEndEvent): void {
+    this.delegate.onRerankEnd(event);
   }
 
-  onFinish(
+  onEnd(
     event:
       | GenerateTextEndEvent<ToolSet>
       | GenerateObjectEndEvent<unknown>
       | EmbedEndEvent
       | RerankEndEvent,
   ): void {
-    this.delegate.onFinish(event);
+    this.delegate.onEnd(event);
   }
 
   onError(error: unknown): void {
