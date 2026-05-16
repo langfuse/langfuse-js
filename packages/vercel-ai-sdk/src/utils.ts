@@ -17,7 +17,16 @@ export function resolveLangfuseContext({
 }: {
   runtimeContext?: Record<string, unknown>;
 }): ResolvedLangfuseContext {
-  return extractRuntimeLangfuseContext(runtimeContext);
+  const value = runtimeContext?.langfuse;
+
+  if (!isPlainObject(value)) {
+    return {};
+  }
+
+  return {
+    metadata: isPlainObject(value.metadata) ? value.metadata : undefined,
+    prompt: normalizePrompt(value.prompt),
+  };
 }
 
 export function createLangfuseObservationAttributes(
@@ -34,6 +43,7 @@ export function createLangfuseObservationAttributes(
     for (const [key, value] of Object.entries(langfuse.metadata)) {
       const serialized =
         typeof value === "string" ? value : safeSerialize(value);
+
       if (serialized != null) {
         attributes[
           `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.${key}`
@@ -43,29 +53,6 @@ export function createLangfuseObservationAttributes(
   }
 
   return attributes;
-}
-
-function extractRuntimeLangfuseContext(
-  runtimeContext: Record<string, unknown> | undefined,
-): ResolvedLangfuseContext {
-  if (!runtimeContext || !isPlainObject(runtimeContext.langfuse)) {
-    return {};
-  }
-
-  return normalizeLangfuseContext(runtimeContext.langfuse);
-}
-
-function normalizeLangfuseContext(
-  value?: LangfuseContext,
-): ResolvedLangfuseContext {
-  if (!isPlainObject(value)) {
-    return {};
-  }
-
-  return {
-    metadata: isPlainObject(value.metadata) ? value.metadata : undefined,
-    prompt: normalizePrompt(value.prompt),
-  };
 }
 
 function normalizePrompt(value: unknown): LangfusePrompt | undefined {

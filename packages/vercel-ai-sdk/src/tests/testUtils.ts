@@ -21,7 +21,6 @@ import type {
   GenerateObjectStartEvent,
   LanguageModelCallEndEvent,
   LanguageModelCallStartEvent,
-  OnChunkEvent,
   OnFinishEvent,
   OnStartEvent,
   OnStepFinishEvent,
@@ -368,6 +367,14 @@ export function makeLanguageModelCallEndEvent(
     },
     content: [{ type: "text", text: "Hello world" }],
     responseId: "resp-1",
+    performance: {
+      responseTimeMs: 100,
+      effectiveOutputTokensPerSecond: 100,
+      effectiveTotalTokensPerSecond: 100,
+      inputTokensPerSecond: 100,
+      outputTokensPerSecond: 100,
+      timeToFirstOutputTokenMs: 100,
+    } as const,
     ...overrides,
   };
 }
@@ -423,6 +430,16 @@ export function makeStepFinishEvent(
       messages: [],
     },
     providerMetadata: undefined,
+    performance: {
+      responseTimeMs: 100,
+      effectiveOutputTokensPerSecond: 100,
+      effectiveTotalTokensPerSecond: 100,
+      inputTokensPerSecond: 100,
+      outputTokensPerSecond: 100,
+      timeToFirstOutputTokenMs: 100,
+      stepTimeMs: 100,
+      toolExecutionMs: {},
+    } as const,
     ...overrides,
   };
 }
@@ -492,8 +509,4 @@ export function makeToolExecutionEndEvent(
     },
     ...overrides,
   } as ToolExecutionEndEvent;
-}
-
-export function makeChunkEvent(chunk: OnChunkEvent["chunk"]): OnChunkEvent {
-  return { chunk };
 }

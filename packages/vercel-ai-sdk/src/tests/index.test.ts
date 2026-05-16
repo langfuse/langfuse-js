@@ -7,7 +7,6 @@ import { LangfuseVercelAiSdkIntegration } from "../index.js";
 import {
   MockTracer,
   TestContextManager,
-  makeChunkEvent,
   makeFinishEvent,
   makeLanguageModelCallEndEvent,
   makeLanguageModelCallStartEvent,
@@ -212,16 +211,6 @@ describe("@langfuse/vercel-ai-sdk", () => {
 
     integration.onStart!(makeOnStartEvent({ operationId: "ai.streamText" }));
     integration.onStepStart!(makeStepStartEvent());
-    integration.onChunk!(
-      makeChunkEvent({
-        type: "ai.stream.firstChunk",
-        callId: "call-1",
-        stepNumber: 0,
-        attributes: {
-          "ai.stream.msToFirstChunk": 42,
-        },
-      }),
-    );
 
     expect(tracer.spans[1].events).toEqual([]);
   });
@@ -241,7 +230,7 @@ describe("@langfuse/vercel-ai-sdk", () => {
         },
       }),
     );
-    integration.onFinish!(makeFinishEvent());
+    integration.onEnd!(makeFinishEvent());
 
     integration.onStart!(
       makeOnStartEvent({

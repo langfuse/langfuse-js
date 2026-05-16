@@ -1,21 +1,17 @@
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 
+import { openai } from "@ai-sdk/openai";
 import { LangfuseClient } from "@langfuse/client";
 import { propagateAttributes, startActiveObservation } from "@langfuse/tracing";
-import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
+import {
+  LangfuseVercelAiSdkIntegration,
+  LangfuseContext,
+} from "@langfuse/vercel-ai-sdk";
+import { embed, generateText, streamText, tool } from "ai";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import z from "zod";
 
-import { openai } from "../../packages/vercel-ai-sdk/node_modules/@ai-sdk/openai/dist/index.js";
-import {
-  embed,
-  generateObject,
-  generateText,
-  streamObject,
-  streamText,
-  tool,
-} from "../../packages/vercel-ai-sdk/node_modules/ai/dist/index.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
@@ -42,9 +38,7 @@ type TraceAttributes = {
 };
 
 type LangfuseRuntimeContext = {
-  langfuse?: ConstructorParameters<
-    typeof LangfuseVercelAiSdkIntegration
-  >[0]["langfuse"];
+  langfuse?: LangfuseContext;
 };
 
 function telemetry(functionId: string) {
@@ -367,144 +361,6 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
       maxTokens,
     });
   }, 20_000);
-
-  // Currently flaky from the AI SDK side, matching the existing pre-v7 suite.
-  it.skip("should trace a generateObject call", async () => {
-    const testParams = {
-      functionId: "test-vercel-v7-generate-object",
-      modelName: "gpt-4-turbo-2024-04-09",
-      maxTokens: 512,
-      prompt: "Generate a lasagna recipe.",
-      userId: "some-user-id",
-      sessionId: "some-session-id",
-      metadata: {
-        something: "custom",
-        someOtherThing: "other-value",
-      },
-      tags: ["vercel", "openai", "ai-sdk-v7"],
-    };
-
-    const {
-      modelName,
-      maxTokens,
-      prompt,
-      functionId,
-      userId,
-      sessionId,
-      metadata,
-      tags,
-    } = testParams;
-
-    const [result, span] = await withTrace({
-      functionId,
-      traceAttributes: { userId, sessionId, metadata, tags },
-      run: () =>
-        generateObject({
-          model: openai(modelName),
-          maxOutputTokens: maxTokens,
-          schema: z.object({
-            recipe: z.object({
-              name: z.string(),
-              ingredients: z.array(
-                z.object({
-                  name: z.string(),
-                  amount: z.string(),
-                }),
-              ),
-              steps: z.array(z.string()),
-            }),
-          }),
-          prompt,
-          telemetry: telemetry(functionId),
-        }),
-    });
-
-    expect(result.object).toBeDefined();
-
-    await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
-
-    const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
-
-    expectTraceAttributes(trace, traceId, {
-      userId,
-      sessionId,
-      metadata,
-      tags,
-    });
-    expectGenerationBasics({ trace, modelName, maxTokens });
-  }, 30_000);
-
-  it("should trace a streamObject call", async () => {
-    const testParams = {
-      functionId: "test-vercel-v7-stream-object",
-      modelName: "gpt-4o",
-      maxTokens: 512,
-      prompt: "Generate a lasagna recipe.",
-      userId: "some-user-id",
-      sessionId: "some-session-id",
-      metadata: {
-        something: "custom",
-        someOtherThing: "other-value",
-      },
-      tags: ["vercel", "openai", "ai-sdk-v7"],
-    };
-
-    const { modelName, prompt, functionId, userId, sessionId, metadata, tags } =
-      testParams;
-
-    const [currentObject, span] = await withTrace({
-      functionId,
-      traceAttributes: { userId, sessionId, metadata, tags },
-      run: async () => {
-        const { partialObjectStream } = streamObject({
-          model: openai(modelName),
-          schema: z.object({
-            recipe: z.object({
-              name: z.string(),
-              ingredients: z.array(
-                z.object({
-                  name: z.string(),
-                  amount: z.string(),
-                }),
-              ),
-              steps: z.array(z.string()),
-            }),
-          }),
-          prompt,
-          telemetry: telemetry(functionId),
-        });
-
-        let latestObject;
-        for await (const partialObject of partialObjectStream) {
-          latestObject = partialObject;
-        }
-
-        return latestObject;
-      },
-    });
-
-    expect(currentObject).toBeDefined();
-
-    await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
-
-    const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
-
-    expectTraceAttributes(trace, traceId, {
-      userId,
-      sessionId,
-      metadata,
-      tags,
-    });
-
-    expectGenerationBasics({
-      trace,
-      modelName,
-    });
-  }, 30_000);
 
   it("should trace a embed call", async () => {
     const testParams = {
