@@ -4,11 +4,6 @@ import type { Attributes } from "@opentelemetry/api";
 
 import type { LangfusePrompt } from "./types.js";
 
-export type ResolvedRuntimeContext = {
-  metadata?: Record<string, unknown>;
-  prompt?: LangfusePrompt;
-};
-
 const PROMPT_SPAN_TYPES = new Set<OpenTelemetrySpanType>([
   "languageModel",
   "embedding",

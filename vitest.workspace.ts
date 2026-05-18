@@ -3,25 +3,6 @@ import { defineWorkspace } from "vitest/config";
 export default defineWorkspace([
   {
     test: {
-      name: "vercel-ai-sdk",
-      environment: "node",
-      include: [
-        new URL("./packages/vercel-ai-sdk/src/**/*.test.ts", import.meta.url)
-          .pathname,
-      ],
-      setupFiles: [new URL("./vitest.setup.ts", import.meta.url).pathname],
-    },
-    resolve: {
-      alias: {
-        "@langfuse/core": new URL(
-          "./packages/core/src/index.ts",
-          import.meta.url,
-        ).pathname,
-      },
-    },
-  },
-  {
-    test: {
       name: "integration",
       environment: "node",
       include: ["tests/integration/**/*.test.ts"],
