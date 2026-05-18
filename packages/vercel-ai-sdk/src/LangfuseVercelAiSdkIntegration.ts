@@ -23,10 +23,7 @@ import type {
 } from "ai";
 
 import type { LangfuseVercelAiSdkIntegrationOptions } from "./types.js";
-import {
-  createLangfuseObservationAttributes,
-  resolveRuntimeContext,
-} from "./utils.js";
+import { createLangfuseObservationAttributes } from "./utils.js";
 
 export class LangfuseVercelAiSdkIntegration implements Telemetry {
   private readonly delegate: OpenTelemetry;
@@ -35,13 +32,11 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     const openTelemetryOptions: ConstructorParameters<typeof OpenTelemetry>[0] =
       {
         tracer: options.tracer,
-        enrichSpan: ({ spanType, runtimeContext }) => {
-          const resolvedContext = resolveRuntimeContext({
+        enrichSpan: ({ spanType, runtimeContext }) =>
+          createLangfuseObservationAttributes({
+            spanType,
             runtimeContext,
-          });
-
-          return createLangfuseObservationAttributes(resolvedContext, spanType);
-        },
+          }),
       };
 
     this.delegate = new OpenTelemetry(openTelemetryOptions);

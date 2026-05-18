@@ -15,26 +15,32 @@ const PROMPT_SPAN_TYPES = new Set<OpenTelemetrySpanType>([
   "reranking",
 ]);
 
-export function resolveRuntimeContext({
-  runtimeContext,
-}: {
+export function createLangfuseObservationAttributes(params: {
   runtimeContext?: Record<string, unknown>;
-}): ResolvedRuntimeContext {
-  return extractRuntimeContext(runtimeContext);
-}
-
-export function createLangfuseObservationAttributes(
-  context: ResolvedRuntimeContext,
-  spanType: OpenTelemetrySpanType,
-): Attributes {
+  spanType: OpenTelemetrySpanType;
+}): Attributes {
+  const { runtimeContext, spanType } = params;
   const attributes: Attributes = {};
 
-  if (shouldAttachPrompt(spanType)) {
-    Object.assign(attributes, createLangfusePromptAttributes(context.prompt));
+  if (!runtimeContext) {
+    return attributes;
   }
 
-  if (context.metadata) {
-    for (const [key, value] of Object.entries(context.metadata)) {
+  const { langfusePrompt, ...metadata } = runtimeContext;
+
+  // Handle prompt data
+  const prompt = normalizePrompt(langfusePrompt);
+
+  if (PROMPT_SPAN_TYPES.has(spanType) && prompt && !prompt.isFallback) {
+    attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME] =
+      prompt.name;
+    attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION] =
+      prompt.version;
+  }
+
+  // Handle metadata
+  if (metadata) {
+    for (const [key, value] of Object.entries(metadata)) {
       const serialized =
         typeof value === "string" ? value : safeSerialize(value);
 
@@ -47,22 +53,6 @@ export function createLangfuseObservationAttributes(
   }
 
   return attributes;
-}
-
-function extractRuntimeContext(
-  runtimeContext: Record<string, unknown> | undefined,
-): ResolvedRuntimeContext {
-  if (!runtimeContext) {
-    return {};
-  }
-
-  const { langfusePrompt, ...metadata } = runtimeContext;
-  const prompt = normalizePrompt(langfusePrompt);
-
-  return {
-    metadata,
-    prompt,
-  };
 }
 
 function normalizePrompt(value: unknown): LangfusePrompt | undefined {
@@ -80,21 +70,6 @@ function normalizePrompt(value: unknown): LangfusePrompt | undefined {
     isFallback:
       typeof value.isFallback === "boolean" ? value.isFallback : false,
   };
-}
-
-function createLangfusePromptAttributes(prompt?: LangfusePrompt): Attributes {
-  if (!prompt || prompt.isFallback) {
-    return {};
-  }
-
-  return {
-    [LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME]: prompt.name,
-    [LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION]: prompt.version,
-  };
-}
-
-function shouldAttachPrompt(spanType: OpenTelemetrySpanType): boolean {
-  return PROMPT_SPAN_TYPES.has(spanType);
 }
 
 function isPlainObject(value: unknown): value is Record<string, any> {
