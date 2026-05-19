@@ -6,6 +6,8 @@ import type {
   EmbeddingModelCallStartEvent,
   GenerateObjectEndEvent,
   GenerateObjectStartEvent,
+  GenerateObjectStepEndEvent,
+  GenerateObjectStepStartEvent,
   GenerateTextEndEvent,
   GenerateTextStartEvent,
   GenerateTextStepEndEvent,
@@ -82,6 +84,16 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
 
   onStepFinish(event: GenerateTextStepEndEvent<ToolSet>): void {
     this.delegate.onStepFinish(event);
+  }
+
+  /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
+  onObjectStepStart(event: GenerateObjectStepStartEvent): void {
+    this.delegate.onObjectStepStart(event);
+  }
+
+  /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
+  onObjectStepFinish(event: GenerateObjectStepEndEvent): void {
+    this.delegate.onObjectStepFinish(event);
   }
 
   onEmbedStart(event: EmbeddingModelCallStartEvent): void {
