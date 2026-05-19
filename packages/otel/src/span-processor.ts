@@ -489,11 +489,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         : undefined;
     const parentExpectedExportedAtStart =
       parentState?.expectedExportedAtStart === true;
-
-    // Local parent state takes precedence over the upstream baggage claim:
-    // only suppress when no local parent is tracked and the claim matches.
-    const suppressedByParentClaim =
-      parentState === undefined && propagatedClaim === traceId;
+    const suppressedByParentClaim = propagatedClaim === traceId;
 
     traceState.spans.set(spanId, {
       expectedExportedAtStart,
