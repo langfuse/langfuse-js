@@ -33,6 +33,8 @@ export default defineConfig({
         "./packages/client/src/index.ts",
         import.meta.url,
       ).pathname,
+      "@langfuse/core": new URL("./packages/core/src/index.ts", import.meta.url)
+        .pathname,
       "@langfuse/tracing": new URL(
         "./packages/tracing/src/index.ts",
         import.meta.url,
@@ -45,6 +47,10 @@ export default defineConfig({
       ).pathname,
       "@langfuse/openai": new URL(
         "./packages/openai/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@langfuse/vercel-ai-sdk": new URL(
+        "./packages/vercel-ai-sdk/src/index.ts",
         import.meta.url,
       ).pathname,
     },

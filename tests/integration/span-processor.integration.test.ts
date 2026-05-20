@@ -222,6 +222,95 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       );
       expect(mediaMatches).toHaveLength(2);
     });
+
+    it("should replace AI SDK v7 semconv blob content with media tags", async () => {
+      const pdfBase64 = Buffer.from("synthetic pdf").toString("base64");
+      const imageBase64 = Buffer.from("synthetic image").toString("base64");
+      const tracer = trace.getTracer("gen_ai");
+
+      const span = tracer.startSpan("ai-sdk-v7-media-span", {
+        attributes: {
+          "gen_ai.input.messages": JSON.stringify([
+            {
+              role: "user",
+              parts: [
+                { type: "text", content: "Summarize these files" },
+                {
+                  type: "blob",
+                  modality: "image",
+                  mime_type: "application/pdf",
+                  content: pdfBase64,
+                },
+              ],
+            },
+          ]),
+          "gen_ai.output.messages": JSON.stringify([
+            {
+              role: "assistant",
+              parts: [
+                {
+                  type: "blob",
+                  modality: "image",
+                  mime_type: "image/jpeg",
+                  content: imageBase64,
+                },
+              ],
+            },
+          ]),
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const attributes = testEnv.mockExporter.getSpanAttributes(
+        "ai-sdk-v7-media-span",
+      );
+      const inputValue = attributes?.["gen_ai.input.messages"] as string;
+      const outputValue = attributes?.["gen_ai.output.messages"] as string;
+
+      expect(inputValue).not.toContain(pdfBase64);
+      expect(outputValue).not.toContain(imageBase64);
+      expect(inputValue).toMatch(
+        /@@@langfuseMedia:type=application\/pdf\|id=[^|]+\|source=bytes@@@/,
+      );
+      expect(outputValue).toMatch(
+        /@@@langfuseMedia:type=image\/jpeg\|id=[^|]+\|source=bytes@@@/,
+      );
+    });
+
+    it("should skip empty AI SDK v7 semconv blob content", async () => {
+      const messages = JSON.stringify([
+        {
+          role: "user",
+          parts: [
+            {
+              type: "blob",
+              modality: "image",
+              mime_type: "application/pdf",
+              content: "",
+            },
+          ],
+        },
+      ]);
+      const tracer = trace.getTracer("gen_ai");
+
+      const span = tracer.startSpan("ai-sdk-v7-empty-media-span", {
+        attributes: {
+          "gen_ai.input.messages": messages,
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "ai-sdk-v7-empty-media-span",
+      )?.["gen_ai.input.messages"] as string;
+
+      expect(inputValue).toBe(messages);
+      expect(inputValue).not.toContain("@@@langfuseMedia:");
+    });
   });
 
   describe("Batch processing", () => {
