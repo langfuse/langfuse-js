@@ -8,6 +8,7 @@ import {
 import { DatasetManager } from "./dataset/index.js";
 import { ExperimentManager } from "./experiment/ExperimentManager.js";
 import { MediaManager } from "./media/index.js";
+import { MetricsManager } from "./metrics/index.js";
 import { PromptManager } from "./prompt/index.js";
 import { ScoreManager } from "./score/index.js";
 
@@ -58,6 +59,7 @@ export interface LangfuseClientParams {
  * - Prompt management and retrieval
  * - Dataset operations
  * - Score creation and management
+ * - Metrics queries
  * - Media upload and handling
  * - Direct API access for advanced use cases
  *
@@ -101,6 +103,11 @@ export class LangfuseClient {
    * Manager for score creation and batch processing.
    */
   public score: ScoreManager;
+
+  /**
+   * Manager for Metrics API queries.
+   */
+  public metrics: MetricsManager;
 
   /**
    * Manager for media upload and reference resolution.
@@ -295,6 +302,7 @@ export class LangfuseClient {
     this.prompt = new PromptManager({ apiClient: this.api });
     this.dataset = new DatasetManager({ langfuseClient: this });
     this.score = new ScoreManager({ apiClient: this.api });
+    this.metrics = new MetricsManager({ apiClient: this.api });
     this.media = new MediaManager({ apiClient: this.api });
     this.experiment = new ExperimentManager({ langfuseClient: this });
 
