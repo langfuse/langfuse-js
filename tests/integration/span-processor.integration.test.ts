@@ -600,8 +600,9 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
       await waitForSpanExport(testEnv.mockExporter, 1);
 
-      // Should have called the function twice
-      expect(callCount).toBe(2);
+      // Called once for app-root start-time classification and once for
+      // export-time filtering on each span.
+      expect(callCount).toBe(4);
 
       // Only the normal span should be exported (error span filtered out due to exception)
       assertions.expectSpanCount(1);

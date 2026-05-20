@@ -148,16 +148,6 @@ export interface LangfuseSpanProcessorParams {
   exportMode?: "immediate" | "batched";
 }
 
-type AppRootSpanState = {
-  expectedExportedAtStart: boolean;
-  ended: boolean;
-};
-
-type AppRootTraceState = {
-  activeCount: number;
-  spans: Map<string, AppRootSpanState>;
-};
-
 /**
  * OpenTelemetry span processor for sending spans to Langfuse.
  *
@@ -206,7 +196,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
   private mediaService: MediaService;
-  private appRootTraces: Map<string, AppRootTraceState> = new Map();
+  private spanExportExpectationById: Map<string, boolean> = new Map();
 
   /**
    * Creates a new LangfuseSpanProcessor instance.
@@ -370,6 +360,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onEnd(span: ReadableSpan): void {
+    this.spanExportExpectationById.delete(span.spanContext().spanId);
+
     const processEndedSpanPromise = this.processEndedSpan(span).catch((err) => {
       this.logger.error(err);
     });
@@ -415,113 +407,79 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
   private async processEndedSpan(span: ReadableSpan) {
     try {
-      try {
-        if (this.shouldExportSpan({ otelSpan: span }) === false) {
-          this.logger.debug("Dropped span due to shouldExportSpan filter.", {
-            spanName: span.name,
-            instrumentationScope: span.instrumentationScope.name,
-          });
-
-          return;
-        }
-      } catch (err) {
-        this.logger.error(
-          "shouldExportSpan failed with error. Dropping span.",
-          {
-            spanName: span.name,
-            instrumentationScope: span.instrumentationScope.name,
-          },
-          err,
-        );
+      if (this.shouldExportSpan({ otelSpan: span }) === false) {
+        this.logger.debug("Dropped span due to shouldExportSpan filter.", {
+          spanName: span.name,
+          instrumentationScope: span.instrumentationScope.name,
+        });
 
         return;
       }
+    } catch (err) {
+      this.logger.error(
+        "shouldExportSpan failed with error. Dropping span.",
+        {
+          spanName: span.name,
+          instrumentationScope: span.instrumentationScope.name,
+        },
+        err,
+      );
 
-      await this.applyMaskInPlace(span);
-      await this.mediaService.process(span);
-
-      if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
-        this.logger.debug(
-          `Processed span:\n${JSON.stringify(
-            {
-              name: span.name,
-              traceId: span.spanContext().traceId,
-              spanId: span.spanContext().spanId,
-              parentSpanId: span.parentSpanContext?.spanId ?? null,
-              attributes: span.attributes,
-              startTime: new Date(hrTimeToMilliseconds(span.startTime)),
-              endTime: new Date(hrTimeToMilliseconds(span.endTime)),
-              durationMs: hrTimeToMilliseconds(span.duration),
-              kind: span.kind,
-              status: span.status,
-              resource: span.resource.attributes,
-              instrumentationScope: span.instrumentationScope,
-            },
-            null,
-            2,
-          )}`,
-        );
-      }
-
-      this.processor.onEnd(span);
-    } finally {
-      this.cleanupAppRootState(span);
+      return;
     }
+
+    await this.applyMaskInPlace(span);
+    await this.mediaService.process(span);
+
+    if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
+      this.logger.debug(
+        `Processed span:\n${JSON.stringify(
+          {
+            name: span.name,
+            traceId: span.spanContext().traceId,
+            spanId: span.spanContext().spanId,
+            parentSpanId: span.parentSpanContext?.spanId ?? null,
+            attributes: span.attributes,
+            startTime: new Date(hrTimeToMilliseconds(span.startTime)),
+            endTime: new Date(hrTimeToMilliseconds(span.endTime)),
+            durationMs: hrTimeToMilliseconds(span.duration),
+            kind: span.kind,
+            status: span.status,
+            resource: span.resource.attributes,
+            instrumentationScope: span.instrumentationScope,
+          },
+          null,
+          2,
+        )}`,
+      );
+    }
+
+    this.processor.onEnd(span);
   }
 
   private markAppRootCandidate(span: Span, parentContext: Context): void {
-    const traceId = span.spanContext().traceId.toLowerCase();
+    const traceId = span.spanContext().traceId;
     const spanId = span.spanContext().spanId;
     const parentSpanId = span.parentSpanContext?.spanId;
 
     const expectedExportedAtStart = this.isExpectedExportedAtStart(span);
     const propagatedClaim = getLangfuseTraceIdFromBaggage(parentContext);
 
-    let traceState = this.appRootTraces.get(traceId);
-    if (!traceState) {
-      traceState = { activeCount: 0, spans: new Map() };
-      this.appRootTraces.set(traceId, traceState);
-    }
-
-    const parentState =
+    const isParentExpectedExported =
       parentSpanId !== undefined
-        ? traceState.spans.get(parentSpanId)
-        : undefined;
-    const parentExpectedExportedAtStart =
-      parentState?.expectedExportedAtStart === true;
+        ? this.spanExportExpectationById.get(parentSpanId) === true
+        : false;
     const suppressedByParentClaim = propagatedClaim === traceId;
 
-    traceState.spans.set(spanId, {
-      expectedExportedAtStart,
-      ended: false,
-    });
-    traceState.activeCount += 1;
+    this.spanExportExpectationById.set(spanId, expectedExportedAtStart);
 
     const markAppRoot =
       expectedExportedAtStart &&
-      !parentExpectedExportedAtStart &&
+      !isParentExpectedExported &&
       !suppressedByParentClaim;
 
     if (markAppRoot) {
       span.setAttribute(LangfuseOtelSpanAttributes.IS_APP_ROOT, true);
-    }
-  }
-
-  private cleanupAppRootState(span: ReadableSpan): void {
-    const traceId = span.spanContext().traceId.toLowerCase();
-    const spanId = span.spanContext().spanId;
-
-    const traceState = this.appRootTraces.get(traceId);
-    if (!traceState) return;
-
-    const spanState = traceState.spans.get(spanId);
-    if (spanState && !spanState.ended) {
-      spanState.ended = true;
-      traceState.activeCount -= 1;
-    }
-
-    if (traceState.activeCount <= 0) {
-      this.appRootTraces.delete(traceId);
     }
   }
 
@@ -546,6 +504,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       return false;
     }
   }
+
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,

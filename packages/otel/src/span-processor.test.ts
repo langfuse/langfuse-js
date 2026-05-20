@@ -263,7 +263,7 @@ describe("LangfuseSpanProcessor app-root marking", () => {
     expect(child.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(true);
   });
 
-  it("releases local trace state after all active spans end", async () => {
+  it("releases local span state after all tracked spans end", async () => {
     const parent = createTestSpan({
       traceId: TRACE_ID,
       instrumentationScopeName: LANGFUSE_TRACER_NAME,
@@ -281,10 +281,38 @@ describe("LangfuseSpanProcessor app-root marking", () => {
     processor.onEnd(parent);
     await processor.forceFlush();
 
-    const internalTraces = (
-      processor as unknown as { appRootTraces: Map<string, unknown> }
-    ).appRootTraces;
-    expect(internalTraces.has(TRACE_ID)).toBe(false);
+    const internalSpans = (
+      processor as unknown as {
+        spanExportExpectationById: Map<string, unknown>;
+      }
+    ).spanExportExpectationById;
+    expect(internalSpans.size).toBe(0);
+  });
+
+  it("marks a child started after its parent ended as an app root", async () => {
+    const parent = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: LANGFUSE_TRACER_NAME,
+    });
+    processor.onStart(parent, ROOT_CONTEXT);
+
+    expect(parent.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(
+      true,
+    );
+
+    processor.onEnd(parent);
+
+    const child = createTestSpan({
+      traceId: TRACE_ID,
+      parentSpanId: parent.spanContext().spanId,
+      instrumentationScopeName: LANGFUSE_TRACER_NAME,
+    });
+    processor.onStart(child, contextWithBaggageClaim(TRACE_ID));
+
+    expect(child.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(true);
+
+    processor.onEnd(child);
+    await processor.forceFlush();
   });
 
   it("retains state for never-ended spans (documented best-effort gap)", () => {
@@ -294,10 +322,12 @@ describe("LangfuseSpanProcessor app-root marking", () => {
     });
     processor.onStart(parent, ROOT_CONTEXT);
 
-    const internalTraces = (
-      processor as unknown as { appRootTraces: Map<string, unknown> }
-    ).appRootTraces;
-    expect(internalTraces.has(TRACE_ID)).toBe(true);
+    const internalSpans = (
+      processor as unknown as {
+        spanExportExpectationById: Map<string, unknown>;
+      }
+    ).spanExportExpectationById;
+    expect(internalSpans.has(parent.spanContext().spanId)).toBe(true);
   });
 
   it("keeps the start-time marker even when the end-time filter rejects the span", async () => {
