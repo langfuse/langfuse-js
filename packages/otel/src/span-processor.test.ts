@@ -2,6 +2,7 @@ import {
   LANGFUSE_TRACER_NAME,
   LANGFUSE_TRACE_ID_BAGGAGE_KEY,
   LangfuseOtelSpanAttributes,
+  getPropagatedAttributesFromContext,
 } from "@langfuse/core";
 import { propagation, ROOT_CONTEXT, type Context } from "@opentelemetry/api";
 import { ExportResultCode } from "@opentelemetry/core";
@@ -367,11 +368,7 @@ describe("LangfuseSpanProcessor app-root marking", () => {
 });
 
 describe("propagation: internal app-root baggage", () => {
-  it("does not surface the internal trace-id baggage as user metadata", async () => {
-    const { getPropagatedAttributesFromContext } = await import(
-      "@langfuse/core"
-    );
-
+  it("does not surface the internal trace-id baggage as user metadata", () => {
     const ctx = contextWithBaggageClaim(TRACE_ID);
     const propagated = getPropagatedAttributesFromContext(ctx);
 
