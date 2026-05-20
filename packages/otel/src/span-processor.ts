@@ -49,6 +49,10 @@ export type MaskFunction = (params: { data: any }) => any | Promise<any>;
 /**
  * Function type for determining whether a span should be exported to Langfuse.
  * If provided, this is treated as a full override of the default filtering behavior.
+ * Langfuse may call this predicate both when a span starts for app-root classification
+ * and when the span ends for export filtering. Prefer side-effect-free predicates; the
+ * start-time call sees only attributes available at span creation, and end-time fields
+ * such as duration may not be populated yet.
  *
  * @param params - Object containing the span to evaluate
  * @param params.otelSpan - The OpenTelemetry span to evaluate

@@ -221,6 +221,16 @@ describe("LangfuseSpanProcessor app-root marking", () => {
     ).toBeUndefined();
   });
 
+  it("marks known GenAI instrumentation scopes before gen_ai attributes are set", () => {
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: "opentelemetry.instrumentation.openai",
+    });
+    processor.onStart(span, ROOT_CONTEXT);
+
+    expect(span.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(true);
+  });
+
   it("suppresses local marking when matching baggage claim exists and no local parent", () => {
     const span = createTestSpan({
       traceId: TRACE_ID,
@@ -244,7 +254,7 @@ describe("LangfuseSpanProcessor app-root marking", () => {
     expect(span.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(true);
   });
 
-  it("prefers local parent state over upstream baggage claim", () => {
+  it("suppresses local children when matching baggage claim exists", () => {
     const parent = createTestSpan({
       traceId: TRACE_ID,
       instrumentationScopeName: "unknown.instrumentation",
@@ -258,9 +268,9 @@ describe("LangfuseSpanProcessor app-root marking", () => {
     });
     processor.onStart(child, contextWithBaggageClaim(TRACE_ID));
 
-    // Local parent is filtered, so the child still surfaces as an app root
-    // even though an upstream baggage claim exists for the same trace.
-    expect(child.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(true);
+    expect(
+      child.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT],
+    ).toBeUndefined();
   });
 
   it("releases local span state after all tracked spans end", async () => {
@@ -307,7 +317,7 @@ describe("LangfuseSpanProcessor app-root marking", () => {
       parentSpanId: parent.spanContext().spanId,
       instrumentationScopeName: LANGFUSE_TRACER_NAME,
     });
-    processor.onStart(child, contextWithBaggageClaim(TRACE_ID));
+    processor.onStart(child, ROOT_CONTEXT);
 
     expect(child.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(true);
 
