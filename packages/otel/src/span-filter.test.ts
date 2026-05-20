@@ -64,9 +64,29 @@ describe("span-filter", () => {
     expect(isDefaultExportSpan(span)).toBe(true);
   });
 
+  it.each([
+    "opentelemetry.instrumentation.openai",
+    "opentelemetry.instrumentation.openai_v2",
+    "opentelemetry.instrumentation.aws_bedrock",
+    "opentelemetry.instrumentation.bedrock",
+    "opentelemetry.instrumentation.vertex_ai",
+    "opentelemetry.instrumentation.vertexai",
+    "opentelemetry.instrumentation.gemini",
+    "opentelemetry.instrumentation.google_genai",
+    "opentelemetry.instrumentation.google_generativeai",
+  ])(
+    "matches late-attribute GenAI instrumentation scope %s",
+    (instrumentationScopeName) => {
+      const span = createTestSpan({ instrumentationScopeName });
+
+      expect(isKnownLLMInstrumentor(span)).toBe(true);
+      expect(isDefaultExportSpan(span)).toBe(true);
+    },
+  );
+
   it("does not match prefix boundary false positives", () => {
     const span = createTestSpan({
-      instrumentationScopeName: "openinference.instrumentation.agno2.agent",
+      instrumentationScopeName: "openinference2.instrumentation.agno.agent",
     });
 
     expect(isKnownLLMInstrumentor(span)).toBe(false);
