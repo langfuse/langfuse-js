@@ -432,6 +432,23 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       return;
     }
 
+    if (
+      span.instrumentationScope.name === "ai" &&
+      !(
+        LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME in
+        span.attributes
+      )
+    ) {
+      const ms =
+        span.attributes["ai.response.msToFirstChunk"] ??
+        span.attributes["ai.stream.msToFirstChunk"];
+      if (typeof ms === "number") {
+        span.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME
+        ] = JSON.stringify(new Date(hrTimeToMilliseconds(span.startTime) + ms));
+      }
+    }
+
     await this.applyMaskInPlace(span);
     await this.mediaService.process(span);
 
