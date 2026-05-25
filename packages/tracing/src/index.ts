@@ -1,4 +1,8 @@
-import { getGlobalLogger, LangfuseOtelSpanAttributes } from "@langfuse/core";
+import {
+  getGlobalLogger,
+  LangfuseOtelSpanAttributes,
+  setLangfuseTraceIdInBaggage,
+} from "@langfuse/core";
 import {
   trace,
   context,
@@ -778,100 +782,110 @@ export function startActiveObservation<
     createParentContext(observationOptions?.parentSpanContext) ??
       context.active(),
     (span) => {
-      try {
-        let observation: LangfuseObservation;
+      // Establish the trace-bound app-root claim for descendants. The span's
+      // own onStart has already run against the unmodified parent context, so
+      // this cannot cause self-suppression.
+      const claimContext = setLangfuseTraceIdInBaggage(
+        context.active(),
+        span.spanContext().traceId,
+      );
 
-        switch (asType) {
-          case "generation":
-            observation = new LangfuseGeneration({
-              otelSpan: span,
-            });
-            break;
+      return context.with(claimContext, () => {
+        try {
+          let observation: LangfuseObservation;
 
-          case "embedding":
-            observation = new LangfuseEmbedding({
-              otelSpan: span,
-            });
-            break;
+          switch (asType) {
+            case "generation":
+              observation = new LangfuseGeneration({
+                otelSpan: span,
+              });
+              break;
 
-          case "agent":
-            observation = new LangfuseAgent({
-              otelSpan: span,
-            });
-            break;
+            case "embedding":
+              observation = new LangfuseEmbedding({
+                otelSpan: span,
+              });
+              break;
 
-          case "tool":
-            observation = new LangfuseTool({
-              otelSpan: span,
-            });
-            break;
+            case "agent":
+              observation = new LangfuseAgent({
+                otelSpan: span,
+              });
+              break;
 
-          case "chain":
-            observation = new LangfuseChain({
-              otelSpan: span,
-            });
-            break;
+            case "tool":
+              observation = new LangfuseTool({
+                otelSpan: span,
+              });
+              break;
 
-          case "retriever":
-            observation = new LangfuseRetriever({
-              otelSpan: span,
-            });
-            break;
+            case "chain":
+              observation = new LangfuseChain({
+                otelSpan: span,
+              });
+              break;
 
-          case "evaluator":
-            observation = new LangfuseEvaluator({
-              otelSpan: span,
-            });
-            break;
+            case "retriever":
+              observation = new LangfuseRetriever({
+                otelSpan: span,
+              });
+              break;
 
-          case "guardrail":
-            observation = new LangfuseGuardrail({
-              otelSpan: span,
-            });
-            break;
+            case "evaluator":
+              observation = new LangfuseEvaluator({
+                otelSpan: span,
+              });
+              break;
 
-          case "event": {
-            const timestamp = observationOptions?.startTime ?? new Date();
-            observation = new LangfuseEvent({
-              otelSpan: span,
-              timestamp,
-            });
-            break;
+            case "guardrail":
+              observation = new LangfuseGuardrail({
+                otelSpan: span,
+              });
+              break;
+
+            case "event": {
+              const timestamp = observationOptions?.startTime ?? new Date();
+              observation = new LangfuseEvent({
+                otelSpan: span,
+                timestamp,
+              });
+              break;
+            }
+            case "span":
+            default:
+              observation = new LangfuseSpan({
+                otelSpan: span,
+              });
           }
-          case "span":
-          default:
-            observation = new LangfuseSpan({
-              otelSpan: span,
-            });
-        }
 
-        const result = fn(observation as Parameters<F>[0]);
+          const result = fn(observation as Parameters<F>[0]);
 
-        if (result instanceof Promise) {
-          return wrapPromise(
-            result,
-            span,
-            observationOptions?.endOnExit,
-          ) as ReturnType<F>;
-        } else {
+          if (result instanceof Promise) {
+            return wrapPromise(
+              result,
+              span,
+              observationOptions?.endOnExit,
+            ) as ReturnType<F>;
+          } else {
+            if (observationOptions?.endOnExit !== false) {
+              span.end();
+            }
+
+            return result as ReturnType<F>;
+          }
+        } catch (err) {
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: err instanceof Error ? err.message : "Unknown error",
+          });
+
           if (observationOptions?.endOnExit !== false) {
             span.end();
           }
 
-          return result as ReturnType<F>;
+          throw err;
         }
-      } catch (err) {
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-
-        if (observationOptions?.endOnExit !== false) {
-          span.end();
-        }
-
-        throw err;
-      }
+      });
     },
   );
 }
@@ -1449,8 +1463,14 @@ export function observe<T extends (...args: any[]) => any>(
       },
     );
 
-    // Set the observation span as active in the context
-    const activeContext = trace.setSpan(context.active(), observation.otelSpan);
+    // Set the observation span as active in the context, and carry the
+    // app-root claim for descendants. The observation was already started by
+    // startObservation above, so its onStart ran against the unmodified
+    // parent context and cannot self-suppress.
+    const activeContext = setLangfuseTraceIdInBaggage(
+      trace.setSpan(context.active(), observation.otelSpan),
+      observation.otelSpan.spanContext().traceId,
+    );
 
     try {
       const result = context.with(activeContext, () => fn.apply(this, args));
