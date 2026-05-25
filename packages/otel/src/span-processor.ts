@@ -7,6 +7,7 @@ import {
   LangfuseOtelSpanAttributes,
   getEnv,
   base64Encode,
+  getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
@@ -48,6 +49,10 @@ export type MaskFunction = (params: { data: any }) => any | Promise<any>;
 /**
  * Function type for determining whether a span should be exported to Langfuse.
  * If provided, this is treated as a full override of the default filtering behavior.
+ * Langfuse may call this predicate both when a span starts for app-root classification
+ * and when the span ends for export filtering. Prefer side-effect-free predicates; the
+ * start-time call sees only attributes available at span creation, and end-time fields
+ * such as duration may not be populated yet.
  *
  * @param params - Object containing the span to evaluate
  * @param params.otelSpan - The OpenTelemetry span to evaluate
@@ -195,6 +200,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
   private mediaService: MediaService;
+  private spanExportExpectationById: Map<string, boolean> = new Map();
 
   /**
    * Creates a new LangfuseSpanProcessor instance.
@@ -329,6 +335,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       ...getPropagatedAttributesFromContext(parentContext),
     });
 
+    try {
+      this.markAppRootCandidate(span, parentContext);
+    } catch (err) {
+      this.logger.debug(
+        "App-root start-time check failed. Span will not be marked as app root.",
+        { spanName: span.name },
+        err,
+      );
+    }
+
     return this.processor.onStart(span, parentContext);
   }
 
@@ -348,6 +364,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onEnd(span: ReadableSpan): void {
+    this.spanExportExpectationById.delete(span.spanContext().spanId);
+
     const processEndedSpanPromise = this.processEndedSpan(span).catch((err) => {
       this.logger.error(err);
     });
@@ -442,6 +460,55 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
     this.processor.onEnd(span);
   }
+
+  private markAppRootCandidate(span: Span, parentContext: Context): void {
+    const traceId = span.spanContext().traceId;
+    const spanId = span.spanContext().spanId;
+    const parentSpanId = span.parentSpanContext?.spanId;
+
+    const expectedExportedAtStart = this.isExpectedExportedAtStart(span);
+    const propagatedClaim = getLangfuseTraceIdFromBaggage(parentContext);
+
+    const isParentExpectedExported =
+      parentSpanId !== undefined
+        ? this.spanExportExpectationById.get(parentSpanId) === true
+        : false;
+    const suppressedByParentClaim = propagatedClaim === traceId;
+
+    this.spanExportExpectationById.set(spanId, expectedExportedAtStart);
+
+    const markAppRoot =
+      expectedExportedAtStart &&
+      !isParentExpectedExported &&
+      !suppressedByParentClaim;
+
+    if (markAppRoot) {
+      span.setAttribute(LangfuseOtelSpanAttributes.IS_APP_ROOT, true);
+    }
+  }
+
+  private isExpectedExportedAtStart(span: Span): boolean {
+    // Span (from sdk-trace-base) already implements ReadableSpan, so the cast
+    // is safe and avoids depending on private OTel APIs.
+    const readable = span as unknown as ReadableSpan;
+
+    try {
+      return this.shouldExportSpan({ otelSpan: readable }) === true;
+    } catch (err) {
+      this.logger.debug(
+        "shouldExportSpan threw during app-root start-time check. " +
+          "Span will not be marked as app root.",
+        {
+          spanName: span.name,
+          instrumentationScope: readable.instrumentationScope.name,
+        },
+        err,
+      );
+
+      return false;
+    }
+  }
+
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
