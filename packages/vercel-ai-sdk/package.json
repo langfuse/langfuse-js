@@ -29,9 +29,6 @@
     "url": "https://github.com/langfuse/langfuse-js.git",
     "directory": "packages/vercel-ai-sdk"
   },
-  "engines": {
-    "node": ">=20"
-  },
   "files": [
     "dist"
   ],
@@ -40,12 +37,6 @@
     "@langfuse/core": "workspace:^"
   },
   "peerDependencies": {
-    "@opentelemetry/api": "^1.9.0",
-    "ai": ">=7.0.0-beta.111 <8"
-  },
-  "devDependencies": {
-    "@ai-sdk/openai": "4.0.0-canary.59",
-    "@types/node": "^25.6.2",
-    "ai": "7.0.0-canary.141"
+    "ai": ">=7.0.0-canary.142 <8"
   }
 }
