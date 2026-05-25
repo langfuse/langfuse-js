@@ -74,6 +74,56 @@ const LANGFUSE_BAGGAGE_PREFIX = "langfuse_";
 const LANGFUSE_BAGGAGE_TAGS_SEPARATOR = ",";
 
 /**
+ * Baggage key used by the SDK to claim that an upstream Langfuse-controlled
+ * scope already exists for a given trace id. Downstream processors read this
+ * to suppress duplicate app-root markers across services.
+ *
+ * @internal
+ */
+export const LANGFUSE_TRACE_ID_BAGGAGE_KEY = "langfuse_trace_id";
+
+/**
+ * Reads the Langfuse trace-id app-root claim from the baggage attached to a
+ * context. Returns the lowercased trace id, or undefined if no claim exists.
+ *
+ * @internal
+ */
+export function getLangfuseTraceIdFromBaggage(
+  context: Context,
+): string | undefined {
+  const baggage = propagation.getBaggage(context);
+  const entry = baggage?.getEntry(LANGFUSE_TRACE_ID_BAGGAGE_KEY);
+
+  if (!entry?.value) return undefined;
+
+  return entry.value.toLowerCase();
+}
+
+/**
+ * Returns a context that carries the Langfuse trace-id app-root claim in
+ * baggage. If the context already carries the same claim, the original
+ * context is returned unchanged so we don't churn baggage instances.
+ *
+ * @internal
+ */
+export function setLangfuseTraceIdInBaggage(
+  context: Context,
+  traceId: string,
+): Context {
+  const normalized = traceId.toLowerCase();
+
+  if (getLangfuseTraceIdFromBaggage(context) === normalized) return context;
+
+  const baggage =
+    propagation.getBaggage(context) ?? propagation.createBaggage();
+  const updated = baggage.setEntry(LANGFUSE_TRACE_ID_BAGGAGE_KEY, {
+    value: normalized,
+  });
+
+  return propagation.setBaggage(context, updated);
+}
+
+/**
  * Parameters for propagateAttributes function.
  *
  * @public
@@ -406,6 +456,8 @@ export function getPropagatedAttributesFromContext(
 
   if (baggage) {
     baggage.getAllEntries().forEach(([baggageKey, baggageEntry]) => {
+      if (baggageKey === LANGFUSE_TRACE_ID_BAGGAGE_KEY) return;
+
       if (baggageKey.startsWith(LANGFUSE_BAGGAGE_PREFIX)) {
         const spanKey = getSpanKeyFromBaggageKey(baggageKey);
 
