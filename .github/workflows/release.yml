@@ -17,9 +17,9 @@ on:
       prerelease_type:
         description: "Pre-release type (used when version is prepatch/preminor/premajor)"
         type: choice
-        default: ""
+        default: "none"
         options:
-          - ""
+          - none
           - alpha
           - beta
           - rc
@@ -46,13 +46,39 @@ jobs:
     runs-on: ubuntu-latest
     environment: protected branches
     steps:
-      - name: Verify branch
+      - name: Verify release ref
         run: |
-          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            echo "❌ Error: Releases can only be triggered from main branch"
+          if [ "${GITHUB_REF_TYPE}" != "branch" ]; then
+            echo "❌ Error: Releases can only be triggered from branches"
             echo "Current ref: ${GITHUB_REF}"
             exit 1
           fi
+
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "✅ Official and pre-release releases are allowed from main"
+            exit 0
+          fi
+
+          case "${INPUTS_VERSION}" in
+            prepatch|preminor|premajor)
+              ;;
+            *)
+              echo "❌ Error: Official releases can only be triggered from main branch"
+              echo "Current branch: ${GITHUB_REF_NAME}"
+              echo "Requested version bump: ${INPUTS_VERSION}"
+              exit 1
+              ;;
+          esac
+
+          if [ -z "${INPUTS_PRERELEASE_TYPE}" ] || [ "${INPUTS_PRERELEASE_TYPE}" = "none" ]; then
+            echo "❌ Error: Branch releases must specify prerelease_type as alpha, beta, or rc"
+            exit 1
+          fi
+
+          echo "✅ Pre-release branch release allowed from ${GITHUB_REF_NAME}"
+        env:
+          INPUTS_VERSION: ${{ inputs.version }}
+          INPUTS_PRERELEASE_TYPE: ${{ inputs.prerelease_type }}
       - name: Confirm major release
         if: ${{ inputs.version == 'major' || inputs.version == 'premajor' }}
         run: |
@@ -110,7 +136,7 @@ jobs:
 
           if [ "$version_type" = "prepatch" ] || [ "$version_type" = "preminor" ] || [ "$version_type" = "premajor" ]; then
             prerelease_type="${INPUTS_PRERELEASE_TYPE}"
-            if [ -z "$prerelease_type" ]; then
+            if [ -z "$prerelease_type" ] || [ "$prerelease_type" = "none" ]; then
               echo "❌ Error: prerelease_type must be specified when version is prepatch/preminor/premajor"
               exit 1
             fi
