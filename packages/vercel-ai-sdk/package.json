@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/vercel-ai-sdk",
-  "version": "5.4.0-beta.0",
+  "version": "5.4.0-beta.1",
   "description": "Langfuse integration for Vercel AI SDK v7",
   "type": "module",
   "sideEffects": false,
