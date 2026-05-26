@@ -33,10 +33,10 @@
     "dist"
   ],
   "dependencies": {
-    "@ai-sdk/otel": "1.0.0-canary.87",
+    "@ai-sdk/otel": "1.0.0-canary.98",
     "@langfuse/core": "workspace:^"
   },
   "peerDependencies": {
-    "ai": ">=7.0.0-canary.142 <8"
+    "ai": ">=7.0.0-canary.152 <8"
   }
 }
