@@ -28,6 +28,7 @@ import { ScoreConfigs } from "./api/resources/scoreConfigs/client/Client.js";
 import { Scores } from "./api/resources/scores/client/Client.js";
 import { Sessions } from "./api/resources/sessions/client/Client.js";
 import { Trace } from "./api/resources/trace/client/Client.js";
+import { Unstable } from "./api/resources/unstable/client/Client.js";
 
 export declare namespace LangfuseAPIClient {
   export interface Options {
@@ -98,6 +99,7 @@ export class LangfuseAPIClient {
   protected _scores: Scores | undefined;
   protected _sessions: Sessions | undefined;
   protected _trace: Trace | undefined;
+  protected _unstable: Unstable | undefined;
 
   constructor(_options: LangfuseAPIClient.Options) {
     this._options = {
@@ -209,5 +211,9 @@ export class LangfuseAPIClient {
 
   public get trace(): Trace {
     return (this._trace ??= new Trace(this._options));
+  }
+
+  public get unstable(): Unstable {
+    return (this._unstable ??= new Unstable(this._options));
   }
 }
