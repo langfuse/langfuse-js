@@ -11,8 +11,8 @@
  * - `up_to_date` — all available data has been exported; next export is scheduled for the future
  *
  * **ETL usage**: poll this endpoint and check for `up_to_date` status. Compare `lastSyncAt` against your
- * ETL bookmark to determine if new data is available. Note that exports run with a 30-minute lag buffer,
- * so `lastSyncAt` will always be at least 30 minutes behind real-time.
+ * ETL bookmark to determine if new data is available. Note that exports run with a 20-minute lag buffer,
+ * so `lastSyncAt` will always be at least 20 minutes behind real-time.
  */
 export type BlobStorageSyncStatus =
   | "idle"

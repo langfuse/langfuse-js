@@ -76,9 +76,10 @@ export class Observations {
    * - `io` - input, output
    * - `metadata` - metadata (truncated to 200 chars by default, use `expandMetadata` to get full values)
    * - `model` - providedModelName, internalModelId, modelParameters
-   * - `usage` - usageDetails, costDetails, totalCost
+   * - `usage` - usageDetails, costDetails, totalCost, usagePricingTierName
    * - `prompt` - promptId, promptName, promptVersion
    * - `metrics` - latency, timeToFirstToken
+   * - `trace_context` - tags, release, traceName
    *
    * If not specified, `core` and `basic` field groups are returned.
    *

@@ -20,6 +20,9 @@ export interface BlobStorageIntegrationResponse {
   exportMode: LangfuseAPI.BlobStorageExportMode;
   exportStartDate: string | null;
   compressed: boolean;
+  exportSource: LangfuseAPI.BlobStorageExportSource;
+  /** Field groups included in each exported row for `OBSERVATIONS_V2` / `LEGACY_TRACES_AND_ENRICHED_OBSERVATIONS` sources. Always `null` when exportSource is `LEGACY_TRACES_OBSERVATIONS` (the field does not apply to that source; any legacy DB value is hidden from the public surface). */
+  exportFieldGroups: LangfuseAPI.BlobStorageExportFieldGroup[] | null;
   nextSyncAt: string | null;
   lastSyncAt: string | null;
   lastError: string | null;
