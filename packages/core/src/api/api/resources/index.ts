@@ -45,6 +45,7 @@ export * as sessions from "./sessions/index.js";
 export * from "./sessions/types/index.js";
 export * as trace from "./trace/index.js";
 export * from "./trace/types/index.js";
+export * as unstable from "./unstable/index.js";
 export * as utils from "./utils/index.js";
 export * from "./commons/errors/index.js";
 export * from "./health/errors/index.js";
