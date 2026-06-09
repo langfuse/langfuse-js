@@ -25,7 +25,7 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Documentation
 
-- [Docs](https://langfuse-docs-git-add-js-sdk-v4-docs-langfuse.vercel.app/docs/observability/sdk/typescript/overview)
+- [Docs](https://langfuse.com/docs/observability/sdk/typescript/overview)
 - [Reference](https://langfuse-js-git-main-langfuse.vercel.app/)
 
 ## Development
