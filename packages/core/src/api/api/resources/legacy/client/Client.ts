@@ -6,6 +6,7 @@ import * as core from "../../../../core/index.js";
 import { MetricsV1 } from "../resources/metricsV1/client/Client.js";
 import { ObservationsV1 } from "../resources/observationsV1/client/Client.js";
 import { ScoreV1 } from "../resources/scoreV1/client/Client.js";
+import { ScoresV2 } from "../resources/scoresV2/client/Client.js";
 
 export declare namespace Legacy {
   export interface Options {
@@ -33,6 +34,7 @@ export class Legacy {
   protected _metricsV1: MetricsV1 | undefined;
   protected _observationsV1: ObservationsV1 | undefined;
   protected _scoreV1: ScoreV1 | undefined;
+  protected _scoresV2: ScoresV2 | undefined;
 
   constructor(_options: Legacy.Options) {
     this._options = _options;
@@ -48,5 +50,9 @@ export class Legacy {
 
   public get scoreV1(): ScoreV1 {
     return (this._scoreV1 ??= new ScoreV1(this._options));
+  }
+
+  public get scoresV2(): ScoresV2 {
+    return (this._scoresV2 ??= new ScoresV2(this._options));
   }
 }

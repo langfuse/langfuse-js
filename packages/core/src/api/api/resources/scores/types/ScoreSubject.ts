@@ -7,34 +7,34 @@ import * as LangfuseAPI from "../../../index.js";
 /**
  * A reference to the entity this score is attached to. Discriminated by "kind" — one of trace, observation, session, or experiment.
  */
-export type ScoreSubjectV3 =
+export type ScoreSubject =
   /**
    * Subject is a trace-level score. */
-  | LangfuseAPI.ScoreSubjectV3.Trace
+  | LangfuseAPI.ScoreSubject.Trace
   /**
    * Subject is an observation-level score scoped to a trace. */
-  | LangfuseAPI.ScoreSubjectV3.Observation
+  | LangfuseAPI.ScoreSubject.Observation
   /**
    * Subject is a session-level score. */
-  | LangfuseAPI.ScoreSubjectV3.Session
+  | LangfuseAPI.ScoreSubject.Session
   /**
    * Subject is a dataset run (experiment) score. */
-  | LangfuseAPI.ScoreSubjectV3.Experiment;
+  | LangfuseAPI.ScoreSubject.Experiment;
 
-export namespace ScoreSubjectV3 {
-  export interface Trace extends LangfuseAPI.ScoreSubjectTraceV3 {
+export namespace ScoreSubject {
+  export interface Trace extends LangfuseAPI.ScoreSubjectTrace {
     kind: "trace";
   }
 
-  export interface Observation extends LangfuseAPI.ScoreSubjectObservationV3 {
+  export interface Observation extends LangfuseAPI.ScoreSubjectObservation {
     kind: "observation";
   }
 
-  export interface Session extends LangfuseAPI.ScoreSubjectSessionV3 {
+  export interface Session extends LangfuseAPI.ScoreSubjectSession {
     kind: "session";
   }
 
-  export interface Experiment extends LangfuseAPI.ScoreSubjectExperimentV3 {
+  export interface Experiment extends LangfuseAPI.ScoreSubjectExperiment {
     kind: "experiment";
   }
 }

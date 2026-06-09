@@ -25,7 +25,6 @@ import { PromptVersion } from "./api/resources/promptVersion/client/Client.js";
 import { Prompts } from "./api/resources/prompts/client/Client.js";
 import { Scim } from "./api/resources/scim/client/Client.js";
 import { ScoreConfigs } from "./api/resources/scoreConfigs/client/Client.js";
-import { ScoresV3 } from "./api/resources/scoresV3/client/Client.js";
 import { Scores } from "./api/resources/scores/client/Client.js";
 import { Sessions } from "./api/resources/sessions/client/Client.js";
 import { Trace } from "./api/resources/trace/client/Client.js";
@@ -97,7 +96,6 @@ export class LangfuseAPIClient {
   protected _prompts: Prompts | undefined;
   protected _scim: Scim | undefined;
   protected _scoreConfigs: ScoreConfigs | undefined;
-  protected _scoresV3: ScoresV3 | undefined;
   protected _scores: Scores | undefined;
   protected _sessions: Sessions | undefined;
   protected _trace: Trace | undefined;
@@ -201,10 +199,6 @@ export class LangfuseAPIClient {
 
   public get scoreConfigs(): ScoreConfigs {
     return (this._scoreConfigs ??= new ScoreConfigs(this._options));
-  }
-
-  public get scoresV3(): ScoresV3 {
-    return (this._scoresV3 ??= new ScoresV3(this._options));
   }
 
   public get scores(): Scores {
