@@ -11,39 +11,11 @@ import * as LangfuseAPI from "../../../../../index.js";
  * - reference an existing evaluator family by `evaluator.name` and `evaluator.scope`
  * - choose `target=observation` or `target=experiment`
  * - if `target=experiment` and you want a dataset filter, call `GET /api/public/v2/datasets` first and use dataset `id` values in `filter[].value`
- * - fetch or inspect the evaluator first, then provide a complete variable mapping for every evaluator variable listed in `variables`
+ * - for `llm_as_judge`, fetch or inspect the evaluator first and provide a complete variable mapping for every evaluator variable
+ * - for `code`, do not send variables or mappings; Langfuse stores the fixed code runtime mapping automatically
  * - optionally narrow execution with `filter`
  * - set `enabled=true` only when you want live execution immediately
  */
-export interface CreateEvaluationRuleRequest {
-  /** Human-readable deployment name. */
-  name: string;
-  /**
-   * Evaluator family to use.
-   *
-   * Use `name` and `scope` from the evaluator endpoints.
-   * Langfuse resolves that family to its latest version before saving the rule.
-   */
-  evaluator: LangfuseAPI.unstable.EvaluationRuleEvaluatorReference;
-  /** Target object type to evaluate. */
-  target: LangfuseAPI.unstable.EvaluationRuleTarget;
-  /** Whether the deployment should be active immediately after creation. */
-  enabled: boolean;
-  /** Optional sampling fraction. Defaults to `1`. */
-  sampling?: number;
-  /**
-   * Optional filter list.
-   *
-   * Omit or pass an empty list to evaluate all matching targets for the selected `target`.
-   * Each filter object must use a column that is valid for that `target`.
-   * For `target=experiment`, `column=datasetId` expects dataset `id` values from `GET /api/public/v2/datasets`, not dataset names.
-   */
-  filter?: LangfuseAPI.unstable.EvaluationRuleFilter[];
-  /**
-   * Required variable mappings.
-   *
-   * Every evaluator variable must appear exactly once.
-   * Build this list from the evaluator `variables` array returned by the evaluator endpoints.
-   */
-  mapping: LangfuseAPI.unstable.EvaluationRuleMapping[];
-}
+export type CreateEvaluationRuleRequest =
+  | LangfuseAPI.unstable.CreateLlmAsJudgeEvaluationRuleRequest
+  | LangfuseAPI.unstable.CreateCodeEvaluationRuleRequest;

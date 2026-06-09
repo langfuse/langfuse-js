@@ -9,19 +9,20 @@ import * as LangfuseAPI from "../../../../../index.js";
  *
  * If the same `name` already exists in your project, Langfuse creates the next version and returns it.
  * Existing evaluation rules in the same project are then moved to that new latest version automatically.
+ * If `type` is omitted, Langfuse defaults it to `llm_as_judge` for backwards compatibility.
  */
-export interface CreateEvaluatorRequest {
-  /** Evaluator name within the authenticated project. */
-  name: string;
-  /** Prompt template used by the evaluator. */
-  prompt: string;
-  /**
-   * Structured output schema the evaluator must return.
-   *
-   * Always send `dataType`.
-   * Do not send `version`; it is an internal storage detail and not part of the public request contract.
-   */
-  outputDefinition: LangfuseAPI.unstable.EvaluatorOutputDefinition;
-  /** Optional explicit model configuration. Omit or set to `null` to use the project default evaluation model. */
-  modelConfig?: LangfuseAPI.unstable.EvaluatorModelConfig | null;
+export type CreateEvaluatorRequest =
+  | LangfuseAPI.unstable.CreateEvaluatorRequest.LlmAsJudge
+  | LangfuseAPI.unstable.CreateEvaluatorRequest.Code;
+
+export namespace CreateEvaluatorRequest {
+  export interface LlmAsJudge
+    extends LangfuseAPI.unstable.CreateLlmAsJudgeEvaluatorRequest {
+    type: "llm_as_judge";
+  }
+
+  export interface Code
+    extends LangfuseAPI.unstable.CreateCodeEvaluatorRequest {
+    type: "code";
+  }
 }

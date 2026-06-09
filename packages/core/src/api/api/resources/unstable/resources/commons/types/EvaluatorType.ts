@@ -5,9 +5,10 @@
 /**
  * The evaluator engine type.
  *
- * The unstable public API currently supports only LLM-as-a-judge evaluators.
+ * The unstable public API supports LLM-as-a-judge and code evaluators.
  */
-export type EvaluatorType = "llm_as_judge";
+export type EvaluatorType = "llm_as_judge" | "code";
 export const EvaluatorType = {
   LlmAsJudge: "llm_as_judge",
+  Code: "code",
 } as const;
