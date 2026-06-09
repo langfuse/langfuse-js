@@ -7,56 +7,29 @@ import * as LangfuseAPI from "../../../../../index.js";
 /**
  * One evaluator that can be used for scoring.
  *
- * An evaluator describes **how** to score data:
- * - prompt
- * - extracted prompt variables
- * - output schema
- * - optional explicit model configuration
+ * An evaluator describes **how** to score data.
  *
  * It does not define **which** live objects are evaluated. That is the job of `evaluation-rules`.
  *
  * For agent clients, the most important fields are:
- * - `variables`: use these exact names when building the evaluation-rule `mapping` array
- * - `outputDefinition`: tells you the expected score type and the evaluator's response instructions
- * - `modelConfig`: tells you whether the evaluator uses the project default model (`null`) or an explicit provider/model
+ * - `type`: determines which evaluator fields are present
+ * - `variables`: for LLM evaluators, use these exact names when building the evaluation-rule `mapping` array. LLM evaluators require every variable to be mapped. Code evaluators always expose the fixed runtime payload fields and Langfuse maps them automatically.
  *
  * Versioning behavior:
  * - `GET /evaluators` returns the latest version of each available evaluator.
  * - `GET /evaluators/{id}` can return an older version.
  * - Evaluation rules always run against the latest version for the selected evaluator name within the same source (`project` or `managed`).
  */
-export interface Evaluator {
-  /** Identifier of this evaluator. */
-  id: string;
-  /** Evaluator name. */
-  name: string;
-  /** Version number of this evaluator. */
-  version: number;
-  /** Where this evaluator comes from: your project or Langfuse-managed defaults. */
-  scope: LangfuseAPI.unstable.EvaluatorScope;
-  /** Evaluator engine type. Currently always `llm_as_judge`. */
-  type: LangfuseAPI.unstable.EvaluatorType;
-  /** Prompt template used during evaluation. */
-  prompt: string;
-  /**
-   * Variables extracted from the evaluator prompt.
-   *
-   * Every variable in this list must be mapped exactly once when creating an evaluation rule.
-   */
-  variables: string[];
-  /**
-   * Structured output schema returned by this evaluator.
-   *
-   * Responses always include `dataType` and omit the internal output-definition `version`.
-   * Use `dataType` to decide how future scores should be interpreted.
-   */
-  outputDefinition: LangfuseAPI.unstable.PublicEvaluatorOutputDefinition;
-  /** Explicit model configuration, or `null` when the project default evaluation model is used. */
-  modelConfig: LangfuseAPI.unstable.EvaluatorModelConfig | null;
-  /** Number of evaluation rules in the project that currently use this evaluator version. */
-  evaluationRuleCount: number;
-  /** Timestamp when this evaluator was created. */
-  createdAt: string;
-  /** Timestamp when this evaluator was last updated. */
-  updatedAt: string;
+export type Evaluator =
+  | LangfuseAPI.unstable.Evaluator.LlmAsJudge
+  | LangfuseAPI.unstable.Evaluator.Code;
+
+export namespace Evaluator {
+  export interface LlmAsJudge extends LangfuseAPI.unstable.LlmAsJudgeEvaluator {
+    type: "llm_as_judge";
+  }
+
+  export interface Code extends LangfuseAPI.unstable.CodeEvaluator {
+    type: "code";
+  }
 }

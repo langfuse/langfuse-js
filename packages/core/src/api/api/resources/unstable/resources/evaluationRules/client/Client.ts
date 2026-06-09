@@ -73,8 +73,9 @@ export class EvaluationRules {
    * - `evaluator.name` + `evaluator.scope` must identify an existing evaluator family returned by the evaluator endpoints
    * - Langfuse resolves that family to its latest version before saving the evaluation rule
    * - for `target=experiment`, use dataset `id` values from `GET /api/public/v2/datasets` when filtering by `datasetId`
-   * - every evaluator prompt variable must be mapped exactly once
-   * - `expected_output` and `experiment_item_metadata` mappings are only valid for `target=experiment`
+   * - for `llm_as_judge` evaluators, every evaluator prompt variable must be mapped exactly once
+   * - for `code` evaluators, Langfuse uses the fixed code runtime mapping; omit `mapping` in create and update requests
+   * - for user-provided `llm_as_judge` mappings, `expected_output` and `experiment_item_metadata` are only valid for `target=experiment`
    * - if `enabled=true`, Langfuse validates that the referenced evaluator can currently run
    * - at most 50 evaluation rules can be effectively active in one project at the same time
    *
@@ -91,9 +92,9 @@ export class EvaluationRules {
    * Recovery guidance:
    * - `400 invalid_filter_value`: fix the filter `column` or `value` using `details.column`, `details.invalidValues`, and `details.allowedValues`
    * - `400 invalid_filter_value` with `details.column=datasetId`: call `GET /api/public/v2/datasets`, then retry with dataset `id` values from that response
-   * - `400 missing_variable_mapping`: fetch the evaluator again and make sure every variable in `variables` appears exactly once in `mapping`
+   * - `400 missing_variable_mapping`: for `llm_as_judge` evaluators, fetch the evaluator again and make sure every variable in `variables` appears exactly once in `mapping`
    * - `400 duplicate_variable_mapping`: remove repeated mappings for the same variable
-   * - `400 invalid_variable_mapping`: switch to a valid `source` for the selected `target`, or fix the variable name
+   * - `400 invalid_variable_mapping`: for `llm_as_judge`, switch to a valid `source` for the selected `target`, or fix the variable name
    * - `400 invalid_json_path`: remove or correct the `jsonPath`
    * - `422 evaluator_preflight_failed`: the selected evaluator cannot run with the resolved model configuration. Fix the evaluator/default model setup, then retry the create request.
    *
@@ -120,7 +121,8 @@ export class EvaluationRules {
    *         name: "answer-correctness-live",
    *         evaluator: {
    *             name: "answer-correctness",
-   *             scope: "project"
+   *             scope: "project",
+   *             type: "llm_as_judge"
    *         },
    *         target: "observation",
    *         enabled: true,
@@ -142,10 +144,30 @@ export class EvaluationRules {
    *
    * @example
    *     await client.unstable.evaluationRules.create({
+   *         name: "toxicity-code-live",
+   *         evaluator: {
+   *             name: "toxicity-detector",
+   *             scope: "project",
+   *             type: "code"
+   *         },
+   *         target: "observation",
+   *         enabled: true,
+   *         sampling: 1,
+   *         filter: [{
+   *                 type: "stringOptions",
+   *                 column: "type",
+   *                 operator: "any of",
+   *                 value: ["GENERATION"]
+   *             }]
+   *     })
+   *
+   * @example
+   *     await client.unstable.evaluationRules.create({
    *         name: "experiment-expected-output-match",
    *         evaluator: {
    *             name: "expected-output-match",
-   *             scope: "project"
+   *             scope: "project",
+   *             type: "llm_as_judge"
    *         },
    *         target: "experiment",
    *         enabled: true,
@@ -664,18 +686,19 @@ export class EvaluationRules {
    * - switch to another evaluator
    * - adjust sampling
    * - change filters
-   * - update variable mappings
+   * - update LLM-as-judge variable mappings
    *
    * Important behavior:
    * - provide only the fields you want to change
    * - if you provide `evaluator`, Langfuse resolves that evaluator family to its latest version before saving
-   * - changing `target`, `filter`, or `mapping` must still produce a valid target-specific configuration
-   * - if you change `target`, also send a compatible `filter` and `mapping` in the same request unless the existing ones are still valid for the new target
+   * - changing `target`, `filter`, or an LLM-as-judge `mapping` must still produce a valid target-specific configuration
+   * - if you change `target` for an LLM-as-judge rule, also send a compatible `filter` and `mapping` in the same request unless the existing ones are still valid for the new target
+   * - for `code` evaluator rules, omit `mapping`; Langfuse stores the fixed code runtime mapping automatically
    * - if the resulting config is enabled, Langfuse re-validates that the selected evaluator can run
    * - if the update would move a non-active evaluation rule into the active state and the project already has 50 active evaluation rules, the API returns `409`
    *
    * Recovery guidance:
-   * - if the update fails with `missing_variable_mapping` or `invalid_variable_mapping` after changing `evaluator` or `target`, resend the request with a complete new `mapping`
+   * - if an LLM-as-judge update fails with `missing_variable_mapping` or `invalid_variable_mapping` after changing `evaluator` or `target`, resend the request with a complete new `mapping`
    * - if the update fails with `invalid_filter_value` after changing `target`, resend the request with a target-compatible `filter`
    *
    * @param {string} evaluationRuleId - Evaluation rule identifier.

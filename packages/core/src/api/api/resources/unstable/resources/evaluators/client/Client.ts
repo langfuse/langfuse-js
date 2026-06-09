@@ -63,7 +63,9 @@ export class Evaluators {
   /**
    * Create an evaluator in the authenticated project.
    *
-   * Use evaluators to define **how** Langfuse should score data: the prompt, the expected structured output, and the optional model configuration.
+   * Use evaluators to define **how** Langfuse should score data.
+   * LLM-as-a-judge evaluators define a prompt, expected structured output, and optional model configuration.
+   * Code evaluators define source code and a runtime language.
    *
    * Naming behavior:
    * - If this is a new evaluator name in your project, Langfuse creates version `1`.
@@ -76,10 +78,15 @@ export class Evaluators {
    * 3. Read the returned `outputDefinition.dataType` so the client knows whether future scores will be numeric, boolean, or categorical.
    * 4. Create one or more evaluation rules that reference the returned evaluator family using `name` and `scope`.
    *
+   * Code evaluator validation:
+   * - At creation, Langfuse only validates the request shape
+   * - The `sourceCode` itself is not executed here. It is first run (preflight-tested against a sample observation) when you link the evaluator to an evaluation rule, so runtime errors in the code surface at evaluation-rule creation, not at evaluator creation.
+   *
    * Recovery guidance:
    * - `422` with `code=evaluator_preflight_failed`: the evaluator cannot run with the resolved model configuration. Add a valid explicit `modelConfig`, or configure the project's default evaluation model, then retry the same request.
    * - `400` with `code=invalid_body`: the request shape is malformed. Use the structured `details.issues` array to fix the specific fields and retry.
-   * - `400` with `code=invalid_body` on `outputDefinition`: send `dataType`, `reasoning.description`, and `score.description`. Do not send `version`; it is not part of the public request shape.
+   * - `400` with `code=invalid_body` on `outputDefinition`: for `type=llm_as_judge`, send `dataType`, `reasoning.description`, and `score.description`. Do not send `version`; it is not part of the public request shape.
+   * - If `type` is omitted, Langfuse treats the request as `type=llm_as_judge` for backwards compatibility. New clients should send `type` explicitly.
    *
    * Unstable API note:
    * - This surface may evolve while the underlying evaluation data model is being redesigned.
@@ -103,6 +110,7 @@ export class Evaluators {
    *
    * @example
    *     await client.unstable.evaluators.create({
+   *         type: "llm_as_judge",
    *         name: "answer-correctness",
    *         prompt: "You are grading an answer.\n\nInput:\n{{input}}\n\nOutput:\n{{output}}\n\nReturn a score between 0 and 1.\n",
    *         outputDefinition: {
@@ -119,6 +127,22 @@ export class Evaluators {
    *             provider: "openai",
    *             model: "gpt-4.1-mini"
    *         }
+   *     })
+   *
+   * @example
+   *     await client.unstable.evaluators.create({
+   *         type: "code",
+   *         name: "exact-match",
+   *         sourceCode: "function evaluate(ctx: EvaluationContext): EvaluationResult {\n  const input = ctx.observation.input;\n  const matchesOutput =\n    input !== undefined && ctx.observation.output === input;\n\n  return {\n    scores: [\n      {\n        name: \"Exact match\",\n        value: matchesOutput,\n        dataType: \"BOOLEAN\",\n        comment: matchesOutput\n          ? \"Output exactly matches the input.\"\n          : \"Output does not match the input.\",\n      },\n    ],\n  };\n}\n",
+   *         sourceCodeLanguage: "TYPESCRIPT"
+   *     })
+   *
+   * @example
+   *     await client.unstable.evaluators.create({
+   *         type: "code",
+   *         name: "exact-match",
+   *         sourceCode: "def evaluate(ctx: EvaluationContext) -> EvaluationResult:\n    \"\"\"Evaluates one observation and returns one or more Langfuse scores.\"\"\"\n    input = ctx.observation.input\n    matches_output = input is not None and ctx.observation.output == input\n\n    return EvaluationResult(\n        scores=[\n            Score(\n                name=\"Exact match\",\n                value=matches_output,\n                data_type=\"BOOLEAN\",\n                comment=(\n                    \"Output exactly matches the input.\"\n                    if matches_output\n                    else \"Output does not match the input.\"\n                ),\n            )\n        ]\n    )\n",
+   *         sourceCodeLanguage: "PYTHON"
    *     })
    */
   public create(
