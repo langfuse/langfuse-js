@@ -5,6 +5,6 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export interface GetScoresResponse {
-  data: LangfuseAPI.GetScoresResponseData[];
-  meta: LangfuseAPI.utils.MetaResponse;
+  data: LangfuseAPI.ScoreV3[];
+  meta: LangfuseAPI.GetScoresMeta;
 }

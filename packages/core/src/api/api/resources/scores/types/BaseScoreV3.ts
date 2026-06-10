@@ -25,5 +25,5 @@ export interface BaseScoreV3 {
   /** The annotation queue this score belongs to, if any. Present when "annotation" is included in the fields parameter. */
   queueId?: string | null;
   /** The entity this score is attached to (trace, observation, session, or experiment). Present when "subject" is included in the fields parameter. */
-  subject?: LangfuseAPI.ScoreSubjectV3;
+  subject?: LangfuseAPI.ScoreSubject;
 }
