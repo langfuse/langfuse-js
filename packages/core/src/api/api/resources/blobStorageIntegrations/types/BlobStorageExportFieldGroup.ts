@@ -3,7 +3,7 @@
  */
 
 /**
- * Field group for the OBSERVATIONS_V2 and LEGACY_TRACES_AND_ENRICHED_OBSERVATIONS export.
+ * Field group selecting which observation columns are included in the export. Applies to all export sources; groups without a counterpart in the legacy data model (e.g. `trace_context`) are omitted from the legacy observations export.
  */
 export type BlobStorageExportFieldGroup =
   | "core"

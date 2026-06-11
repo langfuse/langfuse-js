@@ -11,7 +11,7 @@ export interface GetScoresV3Request {
   limit?: number;
   /** URL-safe base64 (base64url) cursor for pagination. Use the cursor from the previous response to get the next page. Absent on the final page. */
   cursor?: string;
-  /** Comma-separated field groups to include. Allowed: core, details, subject, annotation. Defaults to "core". Unknown names return HTTP 400. */
+  /** Comma-separated field groups to include in addition to the always-returned core fields. Allowed: details, subject, annotation — see the endpoint description for the fields each group adds. Unknown names return HTTP 400. */
   fields?: string;
   /** Comma-separated list of score IDs to filter by (OR within, AND across filters). */
   id?: string;
