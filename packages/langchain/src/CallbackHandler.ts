@@ -638,6 +638,8 @@ export class CallbackHandler extends BaseCallbackHandler {
         }
       }
 
+      const costDetails = this.extractCostDetails(lastResponse);
+
       const extractedOutput =
         "message" in lastResponse
           ? this.extractChatMessageContent(
@@ -656,6 +658,7 @@ export class CallbackHandler extends BaseCallbackHandler {
               ? this.completionStartTimes[runId]
               : undefined,
           usageDetails: usageDetails,
+          ...(costDetails !== undefined ? { costDetails } : {}),
         },
       });
 
@@ -906,6 +909,32 @@ export class CallbackHandler extends BaseCallbackHandler {
       return usageMetadata;
     } catch (err) {
       this.logger.debug(`Error extracting usage metadata: ${err}`);
+
+      return;
+    }
+  }
+
+  private extractCostDetails(
+    generation: Generation,
+  ): Record<string, number> | undefined {
+    try {
+      const message =
+        "message" in generation &&
+        (generation["message"] instanceof AIMessage ||
+          generation["message"] instanceof AIMessageChunk)
+          ? generation["message"]
+          : undefined;
+
+      // OpenAI-compatible providers (e.g. OpenRouter) report the monetary
+      // cost of a generation in the raw usage payload, which LangChain
+      // surfaces on `response_metadata.usage`.
+      const cost = message?.response_metadata?.["usage"]?.["cost"];
+
+      return typeof cost === "number" && Number.isFinite(cost)
+        ? { total: cost }
+        : undefined;
+    } catch (err) {
+      this.logger.debug(`Error extracting cost details: ${err}`);
 
       return;
     }
