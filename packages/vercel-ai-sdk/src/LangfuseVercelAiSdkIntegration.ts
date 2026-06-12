@@ -8,6 +8,7 @@ import type {
   GenerateObjectStartEvent,
   GenerateObjectStepEndEvent,
   GenerateObjectStepStartEvent,
+  GenerateTextAbortEvent,
   GenerateTextEndEvent,
   GenerateTextStartEvent,
   GenerateTextStepEndEvent,
@@ -52,6 +53,13 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     return this.delegate.executeTool(params);
   }
 
+  executeLanguageModelCall<T>(params: {
+    callId: string;
+    execute: () => PromiseLike<T>;
+  }): PromiseLike<T> {
+    return this.delegate.executeLanguageModelCall(params);
+  }
+
   onStart(
     event:
       | GenerateTextStartEvent
@@ -82,8 +90,8 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     this.delegate.onToolExecutionEnd(event);
   }
 
-  onStepFinish(event: GenerateTextStepEndEvent<ToolSet>): void {
-    this.delegate.onStepFinish(event);
+  onStepEnd(event: GenerateTextStepEndEvent<ToolSet>): void {
+    this.delegate.onStepEnd(event);
   }
 
   /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
@@ -92,8 +100,8 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
   }
 
   /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
-  onObjectStepFinish(event: GenerateObjectStepEndEvent): void {
-    this.delegate.onObjectStepFinish(event);
+  onObjectStepEnd(event: GenerateObjectStepEndEvent): void {
+    this.delegate.onObjectStepEnd(event);
   }
 
   onEmbedStart(event: EmbeddingModelCallStartEvent): void {
@@ -120,6 +128,10 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
       | RerankEndEvent,
   ): void {
     this.delegate.onEnd(event);
+  }
+
+  onAbort(event: GenerateTextAbortEvent<ToolSet>): void {
+    this.delegate.onAbort(event);
   }
 
   onError(error: unknown): void {
