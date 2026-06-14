@@ -68,6 +68,40 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       );
     });
 
+    it("should apply mask function to object metadata", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) => {
+            if (typeof data === "string") {
+              return data.replace(/secret/g, "***");
+            }
+            return data;
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("masked-metadata-span", {
+        metadata: { apiKey: "secret-123", note: "no secret here" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "masked-metadata-span",
+        "langfuse.observation.metadata.apiKey",
+        "***-123",
+      );
+      assertions.expectSpanAttribute(
+        "masked-metadata-span",
+        "langfuse.observation.metadata.note",
+        "no *** here",
+      );
+    });
+
     it("should apply async mask function to span attributes", async () => {
       await teardownTestEnvironment(testEnv);
 

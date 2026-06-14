@@ -520,10 +520,15 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     ];
 
     for (const maskCandidate of maskCandidates) {
-      if (maskCandidate in span.attributes) {
-        span.attributes[maskCandidate] = await this.applyMask(
-          span.attributes[maskCandidate],
-        );
+      // Metadata is flattened into `${candidate}.${key}` attributes, so an
+      // exact-key check never masks object metadata. Scan by prefix (mirroring
+      // MediaService) to also cover the flattened keys.
+      const maskRelevantAttributeKeys = Object.keys(span.attributes).filter(
+        (attributeName) => attributeName.startsWith(maskCandidate),
+      );
+
+      for (const key of maskRelevantAttributeKeys) {
+        span.attributes[key] = await this.applyMask(span.attributes[key]);
       }
     }
   }
