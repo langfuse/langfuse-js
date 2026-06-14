@@ -131,13 +131,13 @@ function _flattenAndSerializeMetadata(
 
   if (typeof metadata !== "object" || Array.isArray(metadata)) {
     const serialized = _serialize(metadata);
-    if (serialized) {
+    if (serialized !== undefined) {
       metadataAttributes[prefix] = serialized;
     }
   } else {
     for (const [key, value] of Object.entries(metadata)) {
       const serialized = typeof value === "string" ? value : _serialize(value);
-      if (serialized) {
+      if (serialized !== undefined) {
         metadataAttributes[`${prefix}.${key}`] = serialized;
       }
     }
