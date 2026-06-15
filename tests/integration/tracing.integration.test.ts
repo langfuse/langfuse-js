@@ -2620,6 +2620,23 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanWithName("vector-retrieval");
     });
 
+    it("should set active observation type without requiring update", async () => {
+      const result = startActiveObservation(
+        "vector-retrieval-without-update",
+        () => "retrieved",
+        { asType: "retriever" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toBe("retrieved");
+      assertions.expectSpanAttribute(
+        "vector-retrieval-without-update",
+        LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+        "retriever",
+      );
+    });
+
     it("should execute function with active evaluator context", async () => {
       const result = await startActiveObservation(
         "response-evaluator",
