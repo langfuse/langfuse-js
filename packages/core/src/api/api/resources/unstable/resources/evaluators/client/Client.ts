@@ -634,6 +634,183 @@ export class Evaluators {
     }
   }
 
+  /**
+   * Delete an evaluator.
+   *
+   * Important behavior:
+   * - This deletes the evaluator including all of its stored versions; `evaluatorId` may reference any version.
+   * - The API returns `409` while evaluation rules still reference the evaluator. Delete those evaluation rules first.
+   * - Langfuse-managed evaluators (`scope=managed`) cannot be deleted; the API returns `403`.
+   * - Scores already produced by the evaluator are not deleted.
+   *
+   * @param {string} evaluatorId - Evaluator identifier returned by the evaluator endpoints.
+   * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.ConflictError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.evaluators.delete("evaluatorId")
+   */
+  public delete(
+    evaluatorId: string,
+    requestOptions?: Evaluators.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteEvaluatorResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__delete(evaluatorId, requestOptions),
+    );
+  }
+
+  private async __delete(
+    evaluatorId: string,
+    requestOptions?: Evaluators.RequestOptions,
+  ): Promise<
+    core.WithRawResponse<LangfuseAPI.unstable.DeleteEvaluatorResponse>
+  > {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/unstable/evaluators/${encodeURIComponent(evaluatorId)}`,
+      ),
+      method: "DELETE",
+      headers: _headers,
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.DeleteEvaluatorResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 409:
+          throw new LangfuseAPI.unstable.ConflictError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/unstable/evaluators/{evaluatorId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
   protected async _getAuthorizationHeader(): Promise<string | undefined> {
     const username = await core.Supplier.get(this._options.username);
     const password = await core.Supplier.get(this._options.password);
