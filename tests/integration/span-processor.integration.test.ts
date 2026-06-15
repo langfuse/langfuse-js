@@ -222,6 +222,30 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       );
       expect(mediaMatches).toHaveLength(2);
     });
+
+    it("should replace data URIs that include a media-type parameter", async () => {
+      // RFC 2397 allows parameters (e.g. ;charset=utf-8) before ;base64
+      const dataUri = "data:text/plain;charset=utf-8;base64,SGVsbG8gd29ybGQ=";
+
+      const span = startObservation("param-media-span", {
+        input: { file: dataUri },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "param-media-span",
+      )?.["langfuse.observation.input"] as string;
+      expect(inputValue).toBeDefined();
+
+      // Should not contain the original data URI
+      expect(inputValue).not.toContain(dataUri);
+      // Should contain a Langfuse media tag
+      expect(inputValue).toMatch(
+        /@@@langfuseMedia:type=[^|]+\|id=[^|]+\|source=[^@]+@@@/,
+      );
+    });
   });
 
   describe("Batch processing", () => {

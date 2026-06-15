@@ -50,9 +50,11 @@ export class MediaService {
           continue;
         }
 
-        // Find media base64 data URI
+        // Find media base64 data URI. The media type may carry parameters
+        // (e.g. `;charset=utf-8`) before `;base64`, so match any non-comma run
+        // up to `;base64,` rather than stopping at the first `;`.
         let mediaReplacedValue = value;
-        const regex = /data:[^;]+;base64,[A-Za-z0-9+/]+=*/g;
+        const regex = /data:[^,]*;base64,[A-Za-z0-9+/]+=*/g;
         const foundMedia = [...new Set(value.match(regex) ?? [])];
 
         if (foundMedia.length === 0) continue;
