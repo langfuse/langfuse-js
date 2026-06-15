@@ -85,10 +85,7 @@ export type LangfuseObservation =
 type LangfuseObservationParams = {
   otelSpan: Span;
   type: LangfuseObservationType;
-  attributes?:
-    | LangfuseSpanAttributes
-    | LangfuseGenerationAttributes
-    | LangfuseEventAttributes;
+  attributes?: LangfuseObservationAttributes;
 };
 
 /**
@@ -155,11 +152,9 @@ abstract class LangfuseBaseObservation {
     this.traceId = params.otelSpan.spanContext().traceId;
     this.type = params.type;
 
-    if (params.attributes) {
-      this.otelSpan.setAttributes(
-        createObservationAttributes(params.type, params.attributes),
-      );
-    }
+    this.otelSpan.setAttributes(
+      createObservationAttributes(params.type, params.attributes ?? {}),
+    );
   }
 
   /** Gets the Langfuse OpenTelemetry tracer instance */
