@@ -1,9 +1,11 @@
 import {
   LangfuseAPIClient,
+  LangfuseMedia,
   ParsedMediaReference,
   MediaContentType,
   getGlobalLogger,
   bytesToBase64,
+  uploadMedia,
 } from "@langfuse/core";
 
 /**
@@ -170,6 +172,21 @@ export class MediaManager {
     };
 
     return traverse(obj, 0);
+  }
+
+  /**
+   * Uploads a media object to Langfuse without associating it with a trace.
+   *
+   * Used when attaching media to dataset items, where the media is not tied to a
+   * trace or observation. Requests a presigned upload URL, uploads the content
+   * with retries, and reports completion. If the media has already been
+   * uploaded, this resolves without re-uploading.
+   *
+   * @param media - The media to upload
+   * @throws {Error} If the media content is incomplete or the upload fails
+   */
+  public async uploadMedia(media: LangfuseMedia): Promise<void> {
+    await uploadMedia({ apiClient: this.apiClient, media });
   }
 
   /**

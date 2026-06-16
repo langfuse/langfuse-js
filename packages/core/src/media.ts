@@ -247,3 +247,146 @@ export class LangfuseMedia {
     return this.base64DataUri;
   }
 }
+
+/**
+ * Parameters for constructing a {@link LangfuseMediaReference}.
+ *
+ * @public
+ */
+export type LangfuseMediaReferenceParams = {
+  /** The unique Langfuse identifier of the media record */
+  mediaId: string;
+  /** The MIME type of the media record */
+  contentType: string;
+  /** The signed download URL of the media record */
+  url: string;
+  /** The expiry date and time (ISO 8601) of the signed download URL */
+  urlExpiry?: string;
+  /** The size of the media record in bytes */
+  contentLength?: number;
+  /**
+   * The original `@@@langfuseMedia:…@@@` reference string. Used to losslessly
+   * round-trip a resolved reference back through the API / tracing when an item
+   * fetched with `resolveMediaReferences: true` is re-used.
+   */
+  referenceString: string;
+};
+
+/**
+ * A resolved reference to a media record stored in Langfuse.
+ *
+ * Returned when fetching dataset items with `resolveMediaReferences: true`. It
+ * holds the media metadata and a signed download URL, and exposes helpers to
+ * fetch the content in the formats commonly expected by LLM providers.
+ *
+ * The signed `url` is short-lived. Fetch the content promptly, or re-fetch the
+ * dataset item if {@link LangfuseMediaReference.urlIsExpired} returns true.
+ *
+ * @example Feeding media to a provider
+ * ```typescript
+ * const dataset = await langfuse.dataset.get("visual-qa", {
+ *   resolveMediaReferences: true,
+ * });
+ *
+ * for (const item of dataset.items) {
+ *   const image = item.input.image as LangfuseMediaReference;
+ *
+ *   // OpenAI: { type: "input_image", image_url: await image.fetchDataUri() }
+ *   // Anthropic: { source: { type: "base64", media_type: image.contentType, data: await image.fetchBase64() } }
+ *   // Vercel AI SDK: { type: "image", image: await image.fetchBytes(), mediaType: image.contentType }
+ * }
+ * ```
+ *
+ * @public
+ */
+export class LangfuseMediaReference implements LangfuseMediaReferenceParams {
+  readonly mediaId!: string;
+  readonly contentType!: string;
+  readonly url!: string;
+  readonly urlExpiry?: string;
+  readonly contentLength?: number;
+  readonly referenceString!: string;
+
+  constructor(params: LangfuseMediaReferenceParams) {
+    Object.assign(this, params);
+  }
+
+  /**
+   * Serializes to the original `@@@langfuseMedia:…@@@` reference string.
+   *
+   * This makes resolved references round-trip losslessly through anything that
+   * serializes with `JSON.stringify` — the dataset item API, experiment/trace
+   * span attributes — so a re-used item links back to its media instead of
+   * persisting a JSON object with a soon-to-expire signed URL.
+   */
+  toJSON(): string {
+    return this.referenceString;
+  }
+
+  /**
+   * Returns whether the signed download URL is expired or near expiry.
+   *
+   * @param thresholdSeconds - Treat the URL as expired this many seconds before
+   *   its actual expiry to account for clock skew and download time (default: 60).
+   * @returns true if the URL is expired or within the threshold of expiry. If
+   *   the expiry is unknown or unparseable, returns false.
+   */
+  urlIsExpired(thresholdSeconds = 60): boolean {
+    if (!this.urlExpiry) {
+      return false;
+    }
+
+    const expiryMs = Date.parse(this.urlExpiry);
+    if (Number.isNaN(expiryMs)) {
+      return false;
+    }
+
+    return expiryMs - Date.now() <= thresholdSeconds * 1000;
+  }
+
+  /**
+   * Fetches the media content from the signed URL over the network.
+   *
+   * Useful for local evaluators / image libraries, manual base64 conversion, or
+   * the Vercel AI SDK (`{ type: "image", image: await media.fetchBytes() }`).
+   *
+   * @returns The media content as raw bytes
+   * @throws {Error} If the download fails
+   */
+  async fetchBytes(): Promise<Uint8Array> {
+    const response = await fetch(this.url, { method: "GET", headers: {} });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch media ${this.mediaId}: HTTP ${response.status}`,
+      );
+    }
+
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  /**
+   * Fetches the media over the network and returns raw base64 (no data URI prefix).
+   *
+   * Useful for Anthropic (`{ source: { type: "base64", media_type: media.contentType, data: await media.fetchBase64() } }`)
+   * or LangChain (`{ type: "image", base64: await media.fetchBase64(), mime_type: media.contentType }`).
+   *
+   * @returns The media content as a base64 string
+   * @throws {Error} If the download fails
+   */
+  async fetchBase64(): Promise<string> {
+    return bytesToBase64(await this.fetchBytes());
+  }
+
+  /**
+   * Fetches the media over the network and returns a `data:<contentType>;base64,...` URI.
+   *
+   * Useful for OpenAI (`{ type: "input_image", image_url: await media.fetchDataUri() }`).
+   *
+   * @returns The media content as a base64 data URI
+   * @throws {Error} If the download fails
+   */
+  async fetchDataUri(): Promise<string> {
+    return `data:${this.contentType};base64,${await this.fetchBase64()}`;
+  }
+}

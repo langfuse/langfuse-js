@@ -219,9 +219,16 @@ export class LangfuseClient {
    */
   public getDatasetItem: typeof LangfuseAPIClient.prototype.datasetItems.get;
   /**
-   * @deprecated Use api.datasetItems.create instead
+   * @deprecated Use dataset.createItem instead.
+   *
+   * Note: this now routes through {@link DatasetManager.createItem} so that
+   * `LangfuseMedia` in the item is uploaded. Its signature therefore differs
+   * from the old `api.datasetItems.create` passthrough — it returns a plain
+   * `Promise<DatasetItem>` (no `.withRawResponse()`) and does not accept a
+   * second `requestOptions` argument. If you need `requestOptions` or the raw
+   * response, call `api.datasetItems.create` directly (it does not upload media).
    */
-  public createDatasetItem: typeof LangfuseAPIClient.prototype.datasetItems.create;
+  public createDatasetItem: typeof DatasetManager.prototype.createItem;
   /**
    * @deprecated Use api.media.get instead
    */
@@ -302,7 +309,7 @@ export class LangfuseClient {
     this.getPrompt = this.prompt.get.bind(this.prompt); // keep correct this context for cache access
     this.createPrompt = this.prompt.create.bind(this.prompt);
     this.updatePrompt = this.prompt.update.bind(this.prompt);
-    this.getDataset = this.dataset.get;
+    this.getDataset = this.dataset.get.bind(this.dataset);
     this.fetchTrace = this.api.trace.get;
     this.fetchTraces = this.api.trace.list;
     this.fetchObservation = this.api.legacy.observationsV1.get;
@@ -312,7 +319,7 @@ export class LangfuseClient {
     this.getDatasetRuns = this.api.datasets.getRuns;
     this.createDataset = this.api.datasets.create;
     this.getDatasetItem = this.api.datasetItems.get;
-    this.createDatasetItem = this.api.datasetItems.create;
+    this.createDatasetItem = this.dataset.createItem.bind(this.dataset);
     this.fetchMedia = this.api.media.get;
     this.resolveMediaReferences = this.media.resolveReferences;
   }
