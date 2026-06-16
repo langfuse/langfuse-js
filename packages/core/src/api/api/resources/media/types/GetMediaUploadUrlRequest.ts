@@ -5,15 +5,15 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export interface GetMediaUploadUrlRequest {
-  /** The trace ID associated with the media record */
-  traceId: string;
-  /** The observation ID associated with the media record. If the media record is associated directly with a trace, this will be null. */
+  /** The trace ID associated with the media record. If null, the media record is not associated with a trace, e.g. when uploading media for dataset items. */
+  traceId?: string;
+  /** The observation ID associated with the media record. If provided, traceId must be provided as well. If the media record is associated directly with a trace, this will be null. */
   observationId?: string;
   contentType: LangfuseAPI.MediaContentType;
   /** The size of the media record in bytes */
   contentLength: number;
   /** The SHA-256 hash of the media record */
   sha256Hash: string;
-  /** The trace / observation field the media record is associated with. This can be one of `input`, `output`, `metadata` */
-  field: string;
+  /** The trace / observation field the media record is associated with. This can be one of `input`, `output`, `metadata`. Required if traceId is provided, ignored otherwise. */
+  field?: string;
 }

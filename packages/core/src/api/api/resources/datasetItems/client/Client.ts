@@ -346,6 +346,7 @@ export class DatasetItems {
       sourceTraceId,
       sourceObservationId,
       version,
+      includeMediaReferences,
       page,
       limit,
     } = request;
@@ -367,6 +368,11 @@ export class DatasetItems {
 
     if (version != null) {
       _queryParams["version"] = version;
+    }
+
+    if (includeMediaReferences != null) {
+      _queryParams["includeMediaReferences"] =
+        includeMediaReferences.toString();
     }
 
     if (page != null) {
