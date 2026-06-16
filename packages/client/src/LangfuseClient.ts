@@ -310,18 +310,22 @@ export class LangfuseClient {
     this.createPrompt = this.prompt.create.bind(this.prompt);
     this.updatePrompt = this.prompt.update.bind(this.prompt);
     this.getDataset = this.dataset.get.bind(this.dataset);
-    this.fetchTrace = this.api.trace.get;
-    this.fetchTraces = this.api.trace.list;
-    this.fetchObservation = this.api.legacy.observationsV1.get;
-    this.fetchObservations = this.api.observations.getMany;
-    this.fetchSessions = this.api.sessions.get;
-    this.getDatasetRun = this.api.datasets.getRun;
-    this.getDatasetRuns = this.api.datasets.getRuns;
-    this.createDataset = this.api.datasets.create;
-    this.getDatasetItem = this.api.datasetItems.get;
+    this.fetchTrace = this.api.trace.get.bind(this.api.trace);
+    this.fetchTraces = this.api.trace.list.bind(this.api.trace);
+    this.fetchObservation = this.api.legacy.observationsV1.get.bind(
+      this.api.legacy.observationsV1,
+    );
+    this.fetchObservations = this.api.observations.getMany.bind(
+      this.api.observations,
+    );
+    this.fetchSessions = this.api.sessions.get.bind(this.api.sessions);
+    this.getDatasetRun = this.api.datasets.getRun.bind(this.api.datasets);
+    this.getDatasetRuns = this.api.datasets.getRuns.bind(this.api.datasets);
+    this.createDataset = this.api.datasets.create.bind(this.api.datasets);
+    this.getDatasetItem = this.api.datasetItems.get.bind(this.api.datasetItems);
     this.createDatasetItem = this.dataset.createItem.bind(this.dataset);
-    this.fetchMedia = this.api.media.get;
-    this.resolveMediaReferences = this.media.resolveReferences;
+    this.fetchMedia = this.api.media.get.bind(this.api.media);
+    this.resolveMediaReferences = this.media.resolveReferences.bind(this.media);
   }
 
   /**
