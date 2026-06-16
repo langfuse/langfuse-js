@@ -33,6 +33,10 @@ export default defineConfig({
         "./packages/client/src/index.ts",
         import.meta.url,
       ).pathname,
+      "@langfuse/browser": new URL(
+        "./packages/browser/src/index.ts",
+        import.meta.url,
+      ).pathname,
       "@langfuse/tracing": new URL(
         "./packages/tracing/src/index.ts",
         import.meta.url,
