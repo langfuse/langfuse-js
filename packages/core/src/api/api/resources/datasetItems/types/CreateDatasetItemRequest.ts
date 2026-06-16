@@ -11,7 +11,7 @@ export interface CreateDatasetItemRequest {
   metadata?: unknown;
   sourceTraceId?: string;
   sourceObservationId?: string;
-  /** Dataset items are upserted on their id. Id needs to be unique (project-level) and cannot be reused across datasets. */
+  /** Dataset items are upserted on their id. Id needs to be unique (project-level), cannot be reused across datasets, and must be at most 255 characters. */
   id?: string;
   /** Defaults to ACTIVE for newly created items */
   status?: LangfuseAPI.DatasetStatus;

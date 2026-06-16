@@ -61,6 +61,9 @@ export class Scores {
   }
 
   /**
+   * **Deprecated.** Use `GET /api/public/v3/scores` instead. This endpoint
+   * is no longer available on Langfuse v4 and later.
+   *
    * Get a list of scores (supports both trace and session scores)
    *
    * @param {LangfuseAPI.GetScoresRequest} request
@@ -301,6 +304,9 @@ export class Scores {
   }
 
   /**
+   * **Deprecated.** Use `GET /api/public/v3/scores` with the `id` filter
+   * instead. This endpoint is no longer available on Langfuse v4 and later.
+   *
    * Get a score (supports both trace and session scores)
    *
    * @param {string} scoreId - The unique langfuse identifier of a score
