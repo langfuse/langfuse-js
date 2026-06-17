@@ -29,11 +29,12 @@ function isPlainObject(value: object): boolean {
 
 /**
  * Maps a {@link DatasetItem} media-reference field enum value to the
- * corresponding key on the dataset item.
+ * corresponding key on the dataset item. The enum values match the item keys,
+ * but this lookup is kept as the allowlist that guards against unknown fields.
  */
 const MEDIA_REFERENCE_FIELD_TO_ITEM_KEY = {
   input: "input",
-  expected_output: "expectedOutput",
+  expectedOutput: "expectedOutput",
   metadata: "metadata",
 } as const;
 

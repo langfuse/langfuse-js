@@ -4,10 +4,10 @@
 
 export type DatasetItemMediaReferenceField =
   | "input"
-  | "expected_output"
+  | "expectedOutput"
   | "metadata";
 export const DatasetItemMediaReferenceField = {
   Input: "input",
-  ExpectedOutput: "expected_output",
+  ExpectedOutput: "expectedOutput",
   Metadata: "metadata",
 } as const;

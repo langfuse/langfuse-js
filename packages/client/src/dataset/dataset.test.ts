@@ -208,12 +208,12 @@ describe("DatasetManager.get resolveMediaReferences", () => {
     expect(input.question).toBe("q");
   });
 
-  it("hydrates expected_output field and nested json paths", async () => {
+  it("hydrates expectedOutput field and nested json paths", async () => {
     const item = makeItem({
       expectedOutput: { a: { b: "@@@langfuseMedia:...@@@" } },
       mediaReferences: [
         {
-          field: "expected_output",
+          field: "expectedOutput",
           referenceString: "@@@langfuseMedia:...@@@",
           jsonPath: "$['a']['b']",
           media: mediaPayload,
