@@ -60,9 +60,12 @@ function setAtJsonPath(
     resultType: "all",
     wrap: true,
     eval: false,
-  }) as Array<{ parent: unknown; parentProperty: string | number | null }>;
+  }) as
+    | Array<{ parent: unknown; parentProperty: string | number | null }>
+    | undefined;
 
-  if (matches.length === 0) {
+  // jsonpath-plus returns undefined (not []) when `root` is null/undefined.
+  if (!matches || matches.length === 0) {
     return root;
   }
 

@@ -1,4 +1,8 @@
-import { LangfuseMedia, LangfuseMediaReference } from "@langfuse/core";
+import {
+  LangfuseMedia,
+  LangfuseMediaReference,
+  getGlobalLogger,
+} from "@langfuse/core";
 import { describe, expect, it, vi } from "vitest";
 
 import { DatasetManager } from "./index.js";
@@ -271,6 +275,32 @@ describe("DatasetManager.get resolveMediaReferences", () => {
 
     const input = dataset.items[0].input as Record<string, unknown>;
     expect(input.image).toBe("@@@langfuseMedia:...@@@");
+  });
+
+  it("does not warn or throw when the referenced field value is null", async () => {
+    // Server inconsistency: a reference is emitted but the field is null.
+    // jsonpath-plus returns undefined (not []) for null roots, so guard it.
+    const item = makeItem({
+      input: null,
+      mediaReferences: [
+        {
+          field: "input",
+          referenceString: "@@@langfuseMedia:...@@@",
+          jsonPath: "$['image']",
+          media: mediaPayload,
+        },
+      ],
+    });
+    const { manager } = managerReturning(item);
+    const warn = vi
+      .spyOn(getGlobalLogger(), "warn")
+      .mockImplementation(() => {});
+
+    const dataset = await manager.get("ds", { resolveMediaReferences: true });
+
+    expect(dataset.items[0].input).toBeNull();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("skips hydration for an unrecognised field without writing to 'undefined'", async () => {
