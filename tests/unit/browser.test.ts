@@ -64,8 +64,7 @@ describe("LangfuseBrowser", () => {
       Authorization: "Bearer pk-lf-test",
       "X-Langfuse-Public-Key": "pk-lf-test",
       "X-Langfuse-Sdk-Name": "javascript",
-      "X-Langfuse-Sdk-Variant": "langfuse-browser",
-      "X-Langfuse-Sdk-Integration": "DEFAULT",
+      "X-Langfuse-Sdk-Integration": "browser",
     });
 
     const payload = JSON.parse(init?.body as string);
