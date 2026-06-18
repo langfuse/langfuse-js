@@ -127,6 +127,36 @@ describe("LangfuseBrowser", () => {
     expect(payload.batch[0].body.id).toBe(result.id);
   });
 
+  it("preserves an explicitly provided empty score id", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const request = JSON.parse(init?.body as string);
+        const eventId = request.batch[0].id;
+
+        return createJsonResponse({
+          successes: [{ id: eventId, status: 201 }],
+          errors: [],
+        });
+      },
+    );
+    const langfuse = new LangfuseBrowser({
+      publicKey: "pk-lf-test",
+      fetch: fetchMock,
+    });
+
+    const result = await langfuse.score({
+      id: "",
+      traceId: "trace-id",
+      name: "user_feedback",
+      value: 0,
+    });
+
+    expect(result).toEqual({ id: "" });
+
+    const payload = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
+    expect(payload.batch[0].body.id).toBe("");
+  });
+
   it("rejects when ingestion returns item errors", async () => {
     const fetchMock = vi.fn(async () =>
       createJsonResponse({
@@ -204,17 +234,47 @@ describe("LangfuseBrowser", () => {
       fetch: fetchMock,
       additionalHeaders: {
         Authorization: "Bearer wrong-key",
+        authorization: "Bearer lower-case-wrong-key",
         "X-Langfuse-Public-Key": "wrong-key",
+        "x-langfuse-public-key": "lower-case-wrong-key",
+        "x-langfuse-sdk-name": "wrong-sdk-name",
         "X-Custom-Header": "custom",
       },
     });
 
     await langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 });
 
-    expect(fetchMock.mock.calls[0][1]?.headers).toMatchObject({
-      Authorization: "Bearer pk-lf-test",
-      "X-Langfuse-Public-Key": "pk-lf-test",
-      "X-Custom-Header": "custom",
+    const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
+    expect(headers.get("authorization")).toBe("Bearer pk-lf-test");
+    expect(headers.get("x-langfuse-public-key")).toBe("pk-lf-test");
+    expect(headers.get("x-langfuse-sdk-name")).toBe("javascript");
+    expect(headers.get("x-custom-header")).toBe("custom");
+  });
+
+  it("does not rebind a custom fetch implementation", async () => {
+    const fetchMock = vi.fn(function (
+      this: unknown,
+      _input: RequestInfo | URL,
+      init?: RequestInit,
+    ) {
+      expect(this).toBeUndefined();
+      const request = JSON.parse(init?.body as string);
+      const eventId = request.batch[0].id;
+
+      return Promise.resolve(
+        createJsonResponse({
+          successes: [{ id: eventId, status: 201 }],
+          errors: [],
+        }),
+      );
     });
+    const langfuse = new LangfuseBrowser({
+      publicKey: "pk-lf-test",
+      fetch: fetchMock,
+    });
+
+    await langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

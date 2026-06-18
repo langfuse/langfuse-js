@@ -4,6 +4,15 @@ const DEFAULT_BASE_URL = "https://cloud.langfuse.com";
 const SDK_NAME = "javascript";
 const SDK_VARIANT = "langfuse-browser";
 const SDK_INTEGRATION = "DEFAULT";
+const RESERVED_ADDITIONAL_HEADER_NAMES = new Set([
+  "authorization",
+  "content-type",
+  "x-langfuse-public-key",
+  "x-langfuse-sdk-name",
+  "x-langfuse-sdk-version",
+  "x-langfuse-sdk-variant",
+  "x-langfuse-sdk-integration",
+]);
 
 type FetchLike = typeof fetch;
 
@@ -138,8 +147,8 @@ export class LangfuseBrowser {
     this.publicKey = options.publicKey;
     this.baseUrl = removeTrailingSlash(options.baseUrl ?? DEFAULT_BASE_URL);
     this.environment = options.environment;
-    this.additionalHeaders = options.additionalHeaders;
-    this.fetch = fetchImplementation.bind(globalThis);
+    this.additionalHeaders = filterAdditionalHeaders(options.additionalHeaders);
+    this.fetch = options.fetch ?? fetchImplementation.bind(globalThis);
   }
 
   /**
@@ -150,7 +159,7 @@ export class LangfuseBrowser {
   public async score(
     body: LangfuseBrowserScoreBody,
   ): Promise<LangfuseBrowserScoreResult> {
-    const scoreId = body.id || generateUUID();
+    const scoreId = body.id ?? generateUUID();
     const event = this.createScoreEvent(scoreId, body);
     const response = await this.postIngestionBatch([event]);
 
@@ -195,30 +204,34 @@ export class LangfuseBrowser {
   ): Promise<LangfuseIngestionResponse> {
     let response: Response;
     try {
-      response = await this.fetch(`${this.baseUrl}/api/public/ingestion`, {
-        method: "POST",
-        headers: {
-          ...this.additionalHeaders,
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.publicKey}`,
-          "X-Langfuse-Public-Key": this.publicKey,
-          "X-Langfuse-Sdk-Name": SDK_NAME,
-          "X-Langfuse-Sdk-Version": packageJson.version,
-          "X-Langfuse-Sdk-Variant": SDK_VARIANT,
-          "X-Langfuse-Sdk-Integration": SDK_INTEGRATION,
-        },
-        body: JSON.stringify({
-          batch,
-          metadata: {
-            batch_size: batch.length,
-            sdk_name: SDK_NAME,
-            sdk_version: packageJson.version,
-            sdk_variant: SDK_VARIANT,
-            sdk_integration: SDK_INTEGRATION,
-            public_key: this.publicKey,
+      const fetchImplementation = this.fetch;
+      response = await fetchImplementation(
+        `${this.baseUrl}/api/public/ingestion`,
+        {
+          method: "POST",
+          headers: {
+            ...this.additionalHeaders,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.publicKey}`,
+            "X-Langfuse-Public-Key": this.publicKey,
+            "X-Langfuse-Sdk-Name": SDK_NAME,
+            "X-Langfuse-Sdk-Version": packageJson.version,
+            "X-Langfuse-Sdk-Variant": SDK_VARIANT,
+            "X-Langfuse-Sdk-Integration": SDK_INTEGRATION,
           },
-        }),
-      });
+          body: JSON.stringify({
+            batch,
+            metadata: {
+              batch_size: batch.length,
+              sdk_name: SDK_NAME,
+              sdk_version: packageJson.version,
+              sdk_variant: SDK_VARIANT,
+              sdk_integration: SDK_INTEGRATION,
+              public_key: this.publicKey,
+            },
+          }),
+        },
+      );
     } catch (error) {
       throw new LangfuseBrowserError("Failed to send score to Langfuse.", {
         originalError: error,
@@ -280,8 +293,27 @@ function isIngestionResponse(
   );
 }
 
+function filterAdditionalHeaders(
+  headers?: Record<string, string>,
+): Record<string, string> | undefined {
+  if (!headers) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(headers).filter(
+      ([name]) => !RESERVED_ADDITIONAL_HEADER_NAMES.has(name.toLowerCase()),
+    ),
+  );
+}
+
 function removeTrailingSlash(url: string): string {
-  return url.replace(/\/+$/, "");
+  let end = url.length;
+  while (end > 0 && url.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+
+  return end === url.length ? url : url.slice(0, end);
 }
 
 function generateUUID(): string {
