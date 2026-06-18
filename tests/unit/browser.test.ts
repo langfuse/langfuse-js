@@ -73,8 +73,7 @@ describe("LangfuseBrowser", () => {
       metadata: {
         batch_size: 1,
         sdk_name: "javascript",
-        sdk_variant: "langfuse-browser",
-        sdk_integration: "DEFAULT",
+        sdk_integration: "browser",
         public_key: "pk-lf-test",
       },
     });
