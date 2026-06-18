@@ -1,7 +1,18 @@
-import packageJson from "../package.json" with { type: "json" };
+import {
+  generateUUID,
+  LANGFUSE_SDK_NAME,
+  LANGFUSE_SDK_VERSION,
+  ScoreDataType as CoreScoreDataType,
+  type IngestionError,
+  type IngestionEvent,
+  type IngestionRequest,
+  type IngestionResponse,
+  type IngestionSuccess,
+  type ScoreBody,
+  type ScoreDataType,
+} from "@langfuse/core";
 
 const DEFAULT_BASE_URL = "https://cloud.langfuse.com";
-const SDK_NAME = "javascript";
 const SDK_VARIANT = "langfuse-browser";
 const SDK_INTEGRATION = "DEFAULT";
 const RESERVED_ADDITIONAL_HEADER_NAMES = new Set([
@@ -16,20 +27,8 @@ const RESERVED_ADDITIONAL_HEADER_NAMES = new Set([
 
 type FetchLike = typeof fetch;
 
-export type LangfuseScoreDataType =
-  | "NUMERIC"
-  | "BOOLEAN"
-  | "CATEGORICAL"
-  | "CORRECTION"
-  | "TEXT";
-
-export const LangfuseScoreDataType = {
-  Numeric: "NUMERIC",
-  Boolean: "BOOLEAN",
-  Categorical: "CATEGORICAL",
-  Correction: "CORRECTION",
-  Text: "TEXT",
-} as const;
+export type LangfuseScoreDataType = ScoreDataType;
+export const LangfuseScoreDataType = CoreScoreDataType;
 
 export interface LangfuseBrowserOptions {
   /**
@@ -57,47 +56,20 @@ export interface LangfuseBrowserOptions {
   fetch?: FetchLike;
 }
 
-export interface LangfuseBrowserScoreBody {
-  id?: string;
-  traceId?: string;
-  sessionId?: string;
-  observationId?: string;
-  datasetRunId?: string;
-  name: string;
-  environment?: string;
-  queueId?: string;
-  value: number | string;
-  comment?: string;
-  metadata?: unknown;
-  dataType?: LangfuseScoreDataType;
-  configId?: string;
-}
+export type LangfuseBrowserScoreBody = ScoreBody;
 
 export interface LangfuseBrowserScoreResult {
   id: string;
 }
 
-export interface LangfuseIngestionError {
-  id: string;
-  status: number;
-  message?: string;
-  error?: unknown;
-}
+export type LangfuseIngestionError = IngestionError;
+export type LangfuseIngestionSuccess = IngestionSuccess;
+export type LangfuseIngestionResponse = IngestionResponse;
 
-export interface LangfuseIngestionSuccess {
-  id: string;
-  status: number;
-}
-
-export interface LangfuseIngestionResponse {
-  successes: LangfuseIngestionSuccess[];
-  errors: LangfuseIngestionError[];
-}
-
-type LangfuseScoreCreateEvent = {
-  id: string;
-  type: "score-create";
-  timestamp: string;
+type LangfuseScoreCreateEvent = Extract<
+  IngestionEvent,
+  { type: "score-create" }
+> & {
   body: LangfuseBrowserScoreBody & { id: string };
 };
 
@@ -159,7 +131,7 @@ export class LangfuseBrowser {
   public async score(
     body: LangfuseBrowserScoreBody,
   ): Promise<LangfuseBrowserScoreResult> {
-    const scoreId = body.id ?? generateUUID();
+    const scoreId = body.id ?? generateUUID(globalThis);
     const event = this.createScoreEvent(scoreId, body);
     const response = await this.postIngestionBatch([event]);
 
@@ -188,7 +160,7 @@ export class LangfuseBrowser {
     body: LangfuseBrowserScoreBody,
   ): LangfuseScoreCreateEvent {
     return {
-      id: generateUUID(),
+      id: generateUUID(globalThis),
       type: "score-create",
       timestamp: new Date().toISOString(),
       body: {
@@ -205,6 +177,17 @@ export class LangfuseBrowser {
     let response: Response;
     try {
       const fetchImplementation = this.fetch;
+      const request: IngestionRequest = {
+        batch,
+        metadata: {
+          batch_size: batch.length,
+          sdk_name: LANGFUSE_SDK_NAME,
+          sdk_version: LANGFUSE_SDK_VERSION,
+          sdk_variant: SDK_VARIANT,
+          sdk_integration: SDK_INTEGRATION,
+          public_key: this.publicKey,
+        },
+      };
       response = await fetchImplementation(
         `${this.baseUrl}/api/public/ingestion`,
         {
@@ -214,22 +197,12 @@ export class LangfuseBrowser {
             "Content-Type": "application/json",
             Authorization: `Bearer ${this.publicKey}`,
             "X-Langfuse-Public-Key": this.publicKey,
-            "X-Langfuse-Sdk-Name": SDK_NAME,
-            "X-Langfuse-Sdk-Version": packageJson.version,
+            "X-Langfuse-Sdk-Name": LANGFUSE_SDK_NAME,
+            "X-Langfuse-Sdk-Version": LANGFUSE_SDK_VERSION,
             "X-Langfuse-Sdk-Variant": SDK_VARIANT,
             "X-Langfuse-Sdk-Integration": SDK_INTEGRATION,
           },
-          body: JSON.stringify({
-            batch,
-            metadata: {
-              batch_size: batch.length,
-              sdk_name: SDK_NAME,
-              sdk_version: packageJson.version,
-              sdk_variant: SDK_VARIANT,
-              sdk_integration: SDK_INTEGRATION,
-              public_key: this.publicKey,
-            },
-          }),
+          body: JSON.stringify(request),
         },
       );
     } catch (error) {
@@ -314,27 +287,4 @@ function removeTrailingSlash(url: string): string {
   }
 
   return end === url.length ? url : url.slice(0, end);
-}
-
-function generateUUID(): string {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
-  }
-
-  let timestamp = new Date().getTime();
-  let performanceTimestamp =
-    globalThis.performance?.now && globalThis.performance.now() * 1000;
-
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
-    let random = Math.random() * 16;
-    if (timestamp > 0) {
-      random = (timestamp + random) % 16 | 0;
-      timestamp = Math.floor(timestamp / 16);
-    } else {
-      random = ((performanceTimestamp ?? 0) + random) % 16 | 0;
-      performanceTimestamp = Math.floor((performanceTimestamp ?? 0) / 16);
-    }
-
-    return (char === "x" ? random : (random & 0x3) | 0x8).toString(16);
-  });
 }

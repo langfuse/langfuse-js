@@ -29,6 +29,9 @@
     "url": "https://github.com/langfuse/langfuse-js.git",
     "directory": "packages/browser"
   },
+  "dependencies": {
+    "@langfuse/core": "workspace:^"
+  },
   "files": [
     "dist"
   ]
