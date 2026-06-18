@@ -90,6 +90,10 @@ export default defineWorkspace([
     },
     resolve: {
       alias: {
+        "@langfuse/browser": new URL(
+          "./packages/browser/dist/index.mjs",
+          import.meta.url,
+        ).pathname,
         "@langfuse/client": new URL(
           "./packages/client/dist/index.mjs",
           import.meta.url,
