@@ -70,13 +70,15 @@
     "turbo": "^2.8.13",
     "typedoc": "^0.28.9",
     "typescript": "^5.3.0",
-    "vitest": "^3.2.4",
+    "vitest": "^3.2.6",
     "zod": "^3.25.76"
   },
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
   },
   "resolutions": {
+    "@grpc/proto-loader@0.8.1>protobufjs": "7.6.4",
+    "@opentelemetry/otlp-transformer@0.205.0>protobufjs": "7.6.4",
     "ml-spectra-processing": "14.14.0"
   },
   "packageManager": "pnpm@10.33.0"
