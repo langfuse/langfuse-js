@@ -12,7 +12,7 @@ type LangfuseFetch = typeof fetch;
 export type LangfuseScoreDataType = ScoreDataType;
 export const LangfuseScoreDataType = CoreScoreDataType;
 
-export interface LangfuseBrowserOptions {
+export interface LangfuseBrowserClientOptions {
   /**
    * Langfuse public key obtained from the project settings.
    */

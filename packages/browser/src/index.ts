@@ -8,7 +8,7 @@ import {
 
 import { LangfuseBrowserError } from "./errors.js";
 import type {
-  LangfuseBrowserOptions,
+  LangfuseBrowserClientOptions,
   LangfuseBrowserScoreBody,
   LangfuseBrowserScoreResult,
   LangfuseIngestionResponse,
@@ -31,14 +31,14 @@ type LangfuseScoreCreateEvent = Extract<
   body: LangfuseBrowserScoreBody & { id: string };
 };
 
-export class LangfuseBrowser {
+export class LangfuseBrowserClient {
   private readonly publicKey: string;
   private readonly baseUrl: string;
   private readonly environment?: string;
   private readonly additionalHeaders?: Record<string, string>;
   private readonly fetch: typeof fetch;
 
-  constructor(options: LangfuseBrowserOptions) {
+  constructor(options: LangfuseBrowserClientOptions) {
     if (!options.publicKey) {
       throw new LangfuseBrowserError("Langfuse publicKey is required.");
     }

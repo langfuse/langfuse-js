@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  LangfuseBrowser,
+  LangfuseBrowserClient,
   LangfuseBrowserError,
   LangfuseScoreDataType,
 } from "@langfuse/browser";
@@ -13,7 +13,7 @@ const createJsonResponse = (body: unknown, init?: ResponseInit) =>
     ...init,
   });
 
-describe("LangfuseBrowser", () => {
+describe("LangfuseBrowserClient", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-16T12:00:00.000Z"));
@@ -35,7 +35,7 @@ describe("LangfuseBrowser", () => {
         });
       },
     );
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       baseUrl: "https://cloud.langfuse.com/",
       environment: "production",
@@ -108,7 +108,7 @@ describe("LangfuseBrowser", () => {
         });
       },
     );
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       fetch: fetchMock,
     });
@@ -137,7 +137,7 @@ describe("LangfuseBrowser", () => {
         });
       },
     );
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       fetch: fetchMock,
     });
@@ -169,7 +169,7 @@ describe("LangfuseBrowser", () => {
         ],
       }),
     );
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       fetch: fetchMock,
     });
@@ -195,7 +195,7 @@ describe("LangfuseBrowser", () => {
         { status: 401 },
       ),
     );
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       fetch: fetchMock,
     });
@@ -218,7 +218,7 @@ describe("LangfuseBrowser", () => {
           headers: { "Content-Type": "text/html" },
         }),
     );
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       fetch: fetchMock,
     });
@@ -235,7 +235,7 @@ describe("LangfuseBrowser", () => {
 
   it("requires a public key", () => {
     expect(
-      () => new LangfuseBrowser({ publicKey: "", fetch: vi.fn() }),
+      () => new LangfuseBrowserClient({ publicKey: "", fetch: vi.fn() }),
     ).toThrow(LangfuseBrowserError);
   });
 
@@ -251,7 +251,7 @@ describe("LangfuseBrowser", () => {
         });
       },
     );
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       fetch: fetchMock,
       additionalHeaders: {
@@ -290,7 +290,7 @@ describe("LangfuseBrowser", () => {
         }),
       );
     });
-    const langfuse = new LangfuseBrowser({
+    const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
       fetch: fetchMock,
     });

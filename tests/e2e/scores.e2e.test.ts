@@ -1,4 +1,7 @@
-import { LangfuseBrowser, LangfuseScoreDataType } from "@langfuse/browser";
+import {
+  LangfuseBrowserClient,
+  LangfuseScoreDataType,
+} from "@langfuse/browser";
 import { LangfuseClient } from "@langfuse/client";
 import { getEnv, resetGlobalLogger } from "@langfuse/core";
 import { startObservation } from "@langfuse/tracing";
@@ -26,13 +29,13 @@ function createLangfuseClient(): LangfuseClient {
   return new LangfuseClient();
 }
 
-function createLangfuseBrowser(): LangfuseBrowser {
+function createLangfuseBrowser(): LangfuseBrowserClient {
   const publicKey = getEnv("LANGFUSE_PUBLIC_KEY");
   if (!publicKey) {
     throw new Error("LANGFUSE_PUBLIC_KEY must be set for browser E2E tests");
   }
 
-  return new LangfuseBrowser({
+  return new LangfuseBrowserClient({
     publicKey,
     baseUrl:
       getEnv("LANGFUSE_BASE_URL") ??

@@ -5,9 +5,9 @@
 Browser SDK for sending Langfuse scores from public-key environments.
 
 ```ts
-import { LangfuseBrowser } from "@langfuse/browser";
+import { LangfuseBrowserClient } from "@langfuse/browser";
 
-const langfuse = new LangfuseBrowser({
+const langfuse = new LangfuseBrowserClient({
   publicKey: "pk-lf-...",
   baseUrl: "https://cloud.langfuse.com",
 });
