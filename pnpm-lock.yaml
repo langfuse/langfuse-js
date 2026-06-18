@@ -128,6 +128,15 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  packages/browser:
+    dependencies:
+      '@langfuse/core':
+        specifier: workspace:^
+        version: link:../core
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.0
+
   packages/client:
     dependencies:
       '@langfuse/core':

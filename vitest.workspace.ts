@@ -3,6 +3,45 @@ import { defineWorkspace } from "vitest/config";
 export default defineWorkspace([
   {
     test: {
+      name: "unit",
+      environment: "happy-dom",
+      include: ["tests/unit/**/*.test.ts"],
+    },
+    resolve: {
+      alias: {
+        "@langfuse/browser": new URL(
+          "./packages/browser/src/index.ts",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/client": new URL(
+          "./packages/client/src/index.ts",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/tracing": new URL(
+          "./packages/tracing/src/index.ts",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/otel": new URL(
+          "./packages/otel/src/index.ts",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/langchain": new URL(
+          "./packages/langchain/src/index.ts",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/openai": new URL(
+          "./packages/openai/src/index.ts",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/core": new URL(
+          "./packages/core/src/index.ts",
+          import.meta.url,
+        ).pathname,
+      },
+    },
+  },
+  {
+    test: {
       name: "integration",
       environment: "node",
       include: ["tests/integration/**/*.test.ts"],
@@ -10,6 +49,10 @@ export default defineWorkspace([
     },
     resolve: {
       alias: {
+        "@langfuse/browser": new URL(
+          "./packages/browser/dist/index.mjs",
+          import.meta.url,
+        ).pathname,
         "@langfuse/client": new URL(
           "./packages/client/dist/index.mjs",
           import.meta.url,
@@ -47,6 +90,10 @@ export default defineWorkspace([
     },
     resolve: {
       alias: {
+        "@langfuse/browser": new URL(
+          "./packages/browser/dist/index.mjs",
+          import.meta.url,
+        ).pathname,
         "@langfuse/client": new URL(
           "./packages/client/dist/index.mjs",
           import.meta.url,
