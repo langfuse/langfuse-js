@@ -22,8 +22,7 @@ import {
 } from "./utils.js";
 
 const DEFAULT_BASE_URL = "https://cloud.langfuse.com";
-const SDK_VARIANT = "langfuse-browser";
-const SDK_INTEGRATION = "DEFAULT";
+const SDK_INTEGRATION = "browser";
 
 type LangfuseScoreCreateEvent = Extract<
   IngestionEvent,
@@ -118,7 +117,6 @@ export class LangfuseBrowser {
           batch_size: batch.length,
           sdk_name: LANGFUSE_SDK_NAME,
           sdk_version: LANGFUSE_SDK_VERSION,
-          sdk_variant: SDK_VARIANT,
           sdk_integration: SDK_INTEGRATION,
           public_key: this.publicKey,
         },
@@ -134,7 +132,6 @@ export class LangfuseBrowser {
             "X-Langfuse-Public-Key": this.publicKey,
             "X-Langfuse-Sdk-Name": LANGFUSE_SDK_NAME,
             "X-Langfuse-Sdk-Version": LANGFUSE_SDK_VERSION,
-            "X-Langfuse-Sdk-Variant": SDK_VARIANT,
             "X-Langfuse-Sdk-Integration": SDK_INTEGRATION,
           },
           body: JSON.stringify(request),
