@@ -328,6 +328,7 @@ describe("Langfuse Datasets E2E", () => {
         expect.arrayContaining([
           expect.objectContaining({
             traceId: generation.traceId,
+            observationId: generation.id,
           }),
         ]),
       );

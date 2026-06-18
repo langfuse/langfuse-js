@@ -20,6 +20,9 @@ export interface BlobStorageIntegrationResponse {
   exportMode: LangfuseAPI.BlobStorageExportMode;
   exportStartDate: string | null;
   compressed: boolean;
+  exportSource: LangfuseAPI.BlobStorageExportSource;
+  /** Field groups included in each exported observation row. An empty list is treated as all groups during export. */
+  exportFieldGroups: LangfuseAPI.BlobStorageExportFieldGroup[] | null;
   nextSyncAt: string | null;
   lastSyncAt: string | null;
   lastError: string | null;

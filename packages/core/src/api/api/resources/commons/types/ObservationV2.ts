@@ -65,6 +65,8 @@ export interface ObservationV2 {
   costDetails?: Record<string, number>;
   /** The total cost of the observation in USD */
   totalCost?: number | null;
+  /** The name of the pricing tier applied to this observation's usage costs */
+  usagePricingTierName?: string | null;
   /** The prompt ID associated with the observation */
   promptId?: string | null;
   /** The prompt name associated with the observation */
@@ -75,6 +77,18 @@ export interface ObservationV2 {
   latency?: number | null;
   /** The time to first token in seconds */
   timeToFirstToken?: number | null;
-  /** The matched model ID */
-  modelId?: string | null;
+  /** The matched model ID. Null when the `model` field group is not requested. */
+  modelId: string | null;
+  /** The input token price (USD per unit) from the matched model, serialized as a decimal string (e.g. "0.0001"). Null when the `model` field group is not requested. */
+  inputPrice: string | null;
+  /** The output token price (USD per unit) from the matched model, serialized as a decimal string (e.g. "0.0001"). Null when the `model` field group is not requested. */
+  outputPrice: string | null;
+  /** The total token price (USD per unit) from the matched model, serialized as a decimal string (e.g. "0.0001"). Null when the `model` field group is not requested. */
+  totalPrice: string | null;
+  /** The name of the parent trace */
+  traceName?: string | null;
+  /** Tags from the parent trace (denormalized onto the observation) */
+  tags?: string[] | null;
+  /** The release version of the parent trace */
+  release?: string | null;
 }

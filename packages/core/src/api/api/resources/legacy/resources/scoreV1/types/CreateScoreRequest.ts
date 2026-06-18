@@ -71,6 +71,17 @@ import * as LangfuseAPI from "../../../../../index.js";
  *         dataType: LangfuseAPI.ScoreDataType.Text,
  *         traceId: "cdef-1234-5678-90ab"
  *     }
+ *
+ * @example
+ *     {
+ *         name: "accuracy",
+ *         value: 0.9,
+ *         dataType: LangfuseAPI.ScoreDataType.Numeric,
+ *         configId: "9203-4567-89ab-cdef",
+ *         traceId: "cdef-1234-5678-90ab",
+ *         source: LangfuseAPI.legacy.CreateScoreSource.Annotation,
+ *         queueId: "aq-1234-5678-90ab-cdef"
+ *     }
  */
 export interface CreateScoreRequest {
   id?: string;
@@ -91,4 +102,6 @@ export interface CreateScoreRequest {
   dataType?: LangfuseAPI.ScoreDataType;
   /** Reference a score config on a score. The unique langfuse identifier of a score config. When passing this field, the dataType and stringValue fields are automatically populated. */
   configId?: string;
+  /** The source of the score. Defaults to API. Set to ANNOTATION to prefill scores (e.g. from an LLM) for a human reviewer to verify in an annotation queue. When source is ANNOTATION, a configId is required unless dataType is CORRECTION. EVAL is reserved for internal evaluator outputs and is not accepted on this endpoint. */
+  source?: LangfuseAPI.legacy.CreateScoreSource;
 }

@@ -1,4 +1,4 @@
-![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+<img width="2400" height="600" alt="hero-b" src="https://github.com/user-attachments/assets/0d06e77e-6f4a-4ae3-8aee-7d3463a6f98c" />
 
 # langfuse-js
 
@@ -26,7 +26,7 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Documentation
 
-- [Docs](https://langfuse-docs-git-add-js-sdk-v4-docs-langfuse.vercel.app/docs/observability/sdk/typescript/overview)
+- [Docs](https://langfuse.com/docs/observability/sdk/typescript/overview)
 - [Reference](https://langfuse-js-git-main-langfuse.vercel.app/)
 
 ## Development

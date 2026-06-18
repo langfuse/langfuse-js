@@ -11,7 +11,7 @@ import * as LangfuseAPI from "../../../../index.js";
 export interface GetScoresRequest {
   /** Page number, starts at 1. */
   page?: number;
-  /** Limit of items per page. If you encounter api issues due to too large page sizes, try to reduce the limit. */
+  /** Limit of items per page. Maximum 100. Defaults to 50. Requests with a limit greater than 100 return HTTP 400. If you encounter api issues due to too large page sizes, try to reduce the limit. */
   limit?: number;
   /** Retrieve only scores with this userId associated to the trace. */
   userId?: string;

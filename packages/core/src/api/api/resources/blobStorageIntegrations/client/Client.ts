@@ -202,13 +202,15 @@ export class BlobStorageIntegrations {
    *         accessKeyId: undefined,
    *         secretAccessKey: undefined,
    *         prefix: undefined,
-   *         exportFrequency: "hourly",
+   *         exportFrequency: "every_20_minutes",
    *         enabled: true,
    *         forcePathStyle: true,
    *         fileType: "JSON",
    *         exportMode: "FULL_HISTORY",
    *         exportStartDate: undefined,
-   *         compressed: undefined
+   *         compressed: undefined,
+   *         exportSource: undefined,
+   *         exportFieldGroups: undefined
    *     })
    */
   public upsertBlobStorageIntegration(
