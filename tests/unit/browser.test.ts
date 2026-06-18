@@ -4,7 +4,7 @@ import {
   LangfuseBrowser,
   LangfuseBrowserError,
   LangfuseScoreDataType,
-} from "./index.js";
+} from "@langfuse/browser";
 
 const createJsonResponse = (body: unknown, init?: ResponseInit) =>
   new Response(JSON.stringify(body), {
@@ -190,7 +190,7 @@ describe("LangfuseBrowser", () => {
     });
   });
 
-  it("rejects non-2xx responses", async () => {
+  it("rejects non-2xx JSON responses", async () => {
     const fetchMock = vi.fn(async () =>
       createJsonResponse(
         { error: "Unauthorized", message: "Invalid public key" },
@@ -206,8 +206,32 @@ describe("LangfuseBrowser", () => {
       langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 }),
     ).rejects.toMatchObject({
       name: "LangfuseBrowserError",
+      message: "Langfuse ingestion request failed with status 401.",
       status: 401,
       response: { error: "Unauthorized", message: "Invalid public key" },
+    });
+  });
+
+  it("rejects non-2xx non-JSON responses with the HTTP status", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response("<html>Unauthorized</html>", {
+          status: 401,
+          headers: { "Content-Type": "text/html" },
+        }),
+    );
+    const langfuse = new LangfuseBrowser({
+      publicKey: "pk-lf-test",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 }),
+    ).rejects.toMatchObject({
+      name: "LangfuseBrowserError",
+      message: "Langfuse ingestion request failed with status 401.",
+      status: 401,
+      response: "<html>Unauthorized</html>",
     });
   });
 

@@ -2,69 +2,28 @@ import {
   generateUUID,
   LANGFUSE_SDK_NAME,
   LANGFUSE_SDK_VERSION,
-  ScoreDataType as CoreScoreDataType,
-  type IngestionError,
   type IngestionEvent,
   type IngestionRequest,
-  type IngestionResponse,
-  type IngestionSuccess,
-  type ScoreBody,
-  type ScoreDataType,
 } from "@langfuse/core";
+
+import { LangfuseBrowserError } from "./errors.js";
+import type {
+  LangfuseBrowserOptions,
+  LangfuseBrowserScoreBody,
+  LangfuseBrowserScoreResult,
+  LangfuseIngestionResponse,
+} from "./types.js";
+import {
+  filterAdditionalHeaders,
+  isIngestionResponse,
+  parseErrorResponseBody,
+  parseJsonResponse,
+  removeTrailingSlash,
+} from "./utils.js";
 
 const DEFAULT_BASE_URL = "https://cloud.langfuse.com";
 const SDK_VARIANT = "langfuse-browser";
 const SDK_INTEGRATION = "DEFAULT";
-const RESERVED_ADDITIONAL_HEADER_NAMES = new Set([
-  "authorization",
-  "content-type",
-  "x-langfuse-public-key",
-  "x-langfuse-sdk-name",
-  "x-langfuse-sdk-version",
-  "x-langfuse-sdk-variant",
-  "x-langfuse-sdk-integration",
-]);
-
-type FetchLike = typeof fetch;
-
-export type LangfuseScoreDataType = ScoreDataType;
-export const LangfuseScoreDataType = CoreScoreDataType;
-
-export interface LangfuseBrowserOptions {
-  /**
-   * Langfuse public key obtained from the project settings.
-   */
-  publicKey: string;
-  /**
-   * Langfuse host.
-   *
-   * @defaultValue "https://cloud.langfuse.com"
-   */
-  baseUrl?: string;
-  /**
-   * Environment attached to scores when not provided on the score body.
-   */
-  environment?: string;
-  /**
-   * Additional HTTP headers sent with ingestion requests. SDK auth and
-   * telemetry headers take precedence over these values.
-   */
-  additionalHeaders?: Record<string, string>;
-  /**
-   * Custom fetch implementation. Useful for tests and non-standard runtimes.
-   */
-  fetch?: FetchLike;
-}
-
-export type LangfuseBrowserScoreBody = ScoreBody;
-
-export interface LangfuseBrowserScoreResult {
-  id: string;
-}
-
-export type LangfuseIngestionError = IngestionError;
-export type LangfuseIngestionSuccess = IngestionSuccess;
-export type LangfuseIngestionResponse = IngestionResponse;
 
 type LangfuseScoreCreateEvent = Extract<
   IngestionEvent,
@@ -73,36 +32,12 @@ type LangfuseScoreCreateEvent = Extract<
   body: LangfuseBrowserScoreBody & { id: string };
 };
 
-export class LangfuseBrowserError extends Error {
-  public readonly status?: number;
-  public readonly response?: unknown;
-  public readonly errors?: LangfuseIngestionError[];
-  public readonly originalError?: unknown;
-
-  constructor(
-    message: string,
-    options: {
-      status?: number;
-      response?: unknown;
-      errors?: LangfuseIngestionError[];
-      originalError?: unknown;
-    } = {},
-  ) {
-    super(message);
-    this.name = "LangfuseBrowserError";
-    this.status = options.status;
-    this.response = options.response;
-    this.errors = options.errors;
-    this.originalError = options.originalError;
-  }
-}
-
 export class LangfuseBrowser {
   private readonly publicKey: string;
   private readonly baseUrl: string;
   private readonly environment?: string;
   private readonly additionalHeaders?: Record<string, string>;
-  private readonly fetch: FetchLike;
+  private readonly fetch: typeof fetch;
 
   constructor(options: LangfuseBrowserOptions) {
     if (!options.publicKey) {
@@ -211,17 +146,18 @@ export class LangfuseBrowser {
       });
     }
 
-    const json = await parseJsonResponse(response);
     if (!response.ok) {
+      const responseBody = await parseErrorResponseBody(response);
       throw new LangfuseBrowserError(
         `Langfuse ingestion request failed with status ${response.status}.`,
         {
           status: response.status,
-          response: json,
+          response: responseBody,
         },
       );
     }
 
+    const json = await parseJsonResponse(response);
     if (!isIngestionResponse(json)) {
       throw new LangfuseBrowserError(
         "Langfuse ingestion response had an unexpected shape.",
@@ -233,58 +169,5 @@ export class LangfuseBrowser {
   }
 }
 
-async function parseJsonResponse(response: Response): Promise<unknown> {
-  const text = await response.text();
-  if (!text) {
-    return undefined;
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new LangfuseBrowserError(
-      "Langfuse ingestion response was not valid JSON.",
-      {
-        status: response.status,
-        response: text,
-        originalError: error,
-      },
-    );
-  }
-}
-
-function isIngestionResponse(
-  value: unknown,
-): value is LangfuseIngestionResponse {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "successes" in value &&
-    "errors" in value &&
-    Array.isArray((value as LangfuseIngestionResponse).successes) &&
-    Array.isArray((value as LangfuseIngestionResponse).errors)
-  );
-}
-
-function filterAdditionalHeaders(
-  headers?: Record<string, string>,
-): Record<string, string> | undefined {
-  if (!headers) {
-    return undefined;
-  }
-
-  return Object.fromEntries(
-    Object.entries(headers).filter(
-      ([name]) => !RESERVED_ADDITIONAL_HEADER_NAMES.has(name.toLowerCase()),
-    ),
-  );
-}
-
-function removeTrailingSlash(url: string): string {
-  let end = url.length;
-  while (end > 0 && url.charCodeAt(end - 1) === 47) {
-    end -= 1;
-  }
-
-  return end === url.length ? url : url.slice(0, end);
-}
+export * from "./types.js";
+export { LangfuseBrowserError } from "./errors.js";
