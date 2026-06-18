@@ -8,6 +8,14 @@ It delegates AI SDK-compatible OpenTelemetry span creation to Vercel's `@ai-sdk/
 
 Trace-level attributes such as user ID, session ID, tags, trace name, and trace metadata should be set with `propagateAttributes` from `@langfuse/tracing`.
 
+## Compatibility
+
+This integration targets the AI SDK v7 beta line. Install it together with `ai@beta`; the package depends on the matching `@ai-sdk/otel` beta integration internally.
+
+```sh
+pnpm add @langfuse/vercel-ai-sdk@beta ai@beta
+```
+
 ## Usage
 
 ```ts

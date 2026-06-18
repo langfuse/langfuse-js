@@ -226,6 +226,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
     it("should replace AI SDK v7 semconv blob content with media tags", async () => {
       const pdfBase64 = Buffer.from("synthetic pdf").toString("base64");
       const imageBase64 = Buffer.from("synthetic image").toString("base64");
+      const imageDataUri = `data:image/jpeg;base64,${imageBase64}`;
       const tracer = trace.getTracer("gen_ai");
 
       const span = tracer.startSpan("ai-sdk-v7-media-span", {
@@ -252,7 +253,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
                   type: "blob",
                   modality: "image",
                   mime_type: "image/jpeg",
-                  content: imageBase64,
+                  content: imageDataUri,
                 },
               ],
             },
@@ -270,6 +271,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       const outputValue = attributes?.["gen_ai.output.messages"] as string;
 
       expect(inputValue).not.toContain(pdfBase64);
+      expect(outputValue).not.toContain(imageDataUri);
       expect(outputValue).not.toContain(imageBase64);
       expect(inputValue).toMatch(
         /@@@langfuseMedia:type=application\/pdf\|id=[^|]+\|source=bytes@@@/,

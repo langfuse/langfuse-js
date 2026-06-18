@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/vercel-ai-sdk",
-  "version": "5.4.0-beta.1",
+  "version": "5.5.0-beta.2",
   "description": "Langfuse integration for Vercel AI SDK v7",
   "type": "module",
   "sideEffects": false,
@@ -29,14 +29,18 @@
     "url": "https://github.com/langfuse/langfuse-js.git",
     "directory": "packages/vercel-ai-sdk"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@ai-sdk/otel": "1.0.0-canary.117",
+    "@ai-sdk/otel": "1.0.0-beta.125",
     "@langfuse/core": "workspace:^"
   },
   "peerDependencies": {
-    "ai": ">=7.0.0-canary.171 <8"
+    "@opentelemetry/api": "^1.9.0",
+    "ai": ">=7.0.0-beta.179 <8"
   }
 }

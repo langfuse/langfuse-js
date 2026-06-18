@@ -190,23 +190,30 @@ export class MediaService {
               }
 
               for (const part of message["parts"]) {
-                const base64Content = part["content"];
+                const content = part["content"];
                 const mediaType = part["mime_type"];
 
                 if (
                   part["type"] !== "blob" ||
-                  typeof base64Content !== "string" ||
-                  !base64Content ||
+                  typeof content !== "string" ||
+                  !content ||
                   typeof mediaType !== "string" ||
-                  base64Content.startsWith("http")
+                  content.startsWith("http")
                 ) {
+                  continue;
+                }
+
+                const normalizedContent = normalizeBase64Content(content);
+
+                if (!normalizedContent) {
                   continue;
                 }
 
                 mediaReplacedValue = await this.replaceBytesMedia({
                   span,
                   mediaReplacedValue,
-                  base64Content,
+                  base64Content: normalizedContent.base64Content,
+                  contentToReplace: content,
                   contentType: mediaType,
                   field,
                 });
@@ -229,6 +236,7 @@ export class MediaService {
     span: ReadableSpan;
     mediaReplacedValue: string;
     base64Content: string;
+    contentToReplace?: string;
     contentType: string;
     field: string;
   }): Promise<string> {
@@ -255,7 +263,7 @@ export class MediaService {
     });
 
     return params.mediaReplacedValue.replaceAll(
-      params.base64Content,
+      params.contentToReplace ?? params.base64Content,
       langfuseMediaTag,
     );
   }
@@ -428,4 +436,26 @@ export class MediaService {
       }
     }
   }
+}
+
+function normalizeBase64Content(
+  content: string,
+): { base64Content: string } | undefined {
+  if (!content.startsWith("data:")) {
+    return { base64Content: content };
+  }
+
+  const base64Start = content.indexOf(";base64,");
+
+  if (base64Start === -1) {
+    return;
+  }
+
+  const base64Content = content.slice(base64Start + ";base64,".length);
+
+  if (!base64Content) {
+    return;
+  }
+
+  return { base64Content };
 }
