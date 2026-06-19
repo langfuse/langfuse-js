@@ -5,6 +5,7 @@ import {
   CreateDatasetItemRequest,
   LangfuseMedia,
   LangfuseMediaReference,
+  generateUUID,
   getGlobalLogger,
 } from "@langfuse/core";
 import { Span } from "@opentelemetry/api";
@@ -472,115 +473,119 @@ export class DatasetManager {
    * @public
    */
   async createItem(request: CreateDatasetItemRequest): Promise<DatasetItem> {
-    // Shared across all three fields so the same media (by ID) is uploaded once,
+    // Media uploads must reference the (dataset, item) they belong to, and the
+    // item need not exist yet — so settle the item id up front and reuse it for
+    // the create call below.
+    const datasetItemId = request.id ?? generateUUID();
+    const datasetId = (
+      await this.langfuseClient.api.datasets.get(request.datasetName)
+    ).id;
+
+    // Shared across all three fields so the same media (by id) is uploaded once,
     // even when fields are processed concurrently.
     const uploads = new Map<string, Promise<void>>();
 
+    // Upload a media (deduped by id across all fields) and return the reference
+    // string to embed in its place.
+    const uploadItemMedia = async (
+      media: LangfuseMedia,
+      field: string,
+    ): Promise<string> => {
+      const [referenceString, mediaId] = await Promise.all([
+        media.getTag(),
+        media.getId(),
+      ]);
+      if (!referenceString || !mediaId) {
+        throw new Error(
+          "Cannot create dataset item with invalid LangfuseMedia.",
+        );
+      }
+
+      let upload = uploads.get(mediaId);
+      if (!upload) {
+        upload = this.langfuseClient.media.uploadMedia(media, {
+          datasetId,
+          datasetItemId,
+          field,
+        });
+        uploads.set(mediaId, upload);
+      }
+      await upload;
+
+      return referenceString;
+    };
+
+    // Recursively replace LangfuseMedia with reference strings (uploading in
+    // parallel), returning a new value — the input is not mutated. Only arrays
+    // and plain objects are traversed; non-plain objects (Date, Map, class
+    // instances) are left intact for the API client to serialize. Cyclic
+    // references and depth beyond MAX_MEDIA_TRAVERSAL_DEPTH are left untouched.
+    const processField = async (
+      data: unknown,
+      field: string,
+      level = 1,
+      ancestors: Set<unknown> = new Set(),
+    ): Promise<unknown> => {
+      if (data instanceof LangfuseMedia) {
+        return uploadItemMedia(data, field);
+      }
+
+      // An already-resolved reference (from get(resolveMediaReferences: true)):
+      // emit its reference string so a re-used item links back to its media
+      // instead of persisting a JSON object with a soon-to-expire signed URL.
+      if (data instanceof LangfuseMediaReference) {
+        return data.referenceString;
+      }
+
+      const isArray = Array.isArray(data);
+      if (
+        data === null ||
+        typeof data !== "object" ||
+        (!isArray && !isPlainObject(data))
+      ) {
+        return data;
+      }
+
+      if (ancestors.has(data)) {
+        return data;
+      }
+
+      if (level > MAX_MEDIA_TRAVERSAL_DEPTH) {
+        getGlobalLogger().warn(
+          `Dataset item media traversal exceeded ${MAX_MEDIA_TRAVERSAL_DEPTH} levels; any LangfuseMedia nested deeper will not be uploaded.`,
+        );
+        return data;
+      }
+
+      const nextAncestors = new Set(ancestors).add(data);
+      const process = (value: unknown): Promise<unknown> =>
+        processField(value, field, level + 1, nextAncestors);
+
+      if (isArray) {
+        return Promise.all(data.map(process));
+      }
+
+      const entries = await Promise.all(
+        Object.entries(data).map(
+          async ([key, value]) => [key, await process(value)] as const,
+        ),
+      );
+      return Object.fromEntries(entries);
+    };
+
     const [input, expectedOutput, metadata] = await Promise.all([
-      this.processItemMedia(request.input, uploads),
-      this.processItemMedia(request.expectedOutput, uploads),
-      this.processItemMedia(request.metadata, uploads),
+      processField(request.input, "input"),
+      processField(request.expectedOutput, "expectedOutput"),
+      processField(request.metadata, "metadata"),
     ]);
 
     return await this.langfuseClient.api.datasetItems.create({
       ...request,
+      id: datasetItemId,
       input,
       expectedOutput,
       metadata,
     });
-  }
-
-  /**
-   * Recursively replaces {@link LangfuseMedia} instances within a dataset item
-   * value with media reference strings, uploading the media in parallel.
-   *
-   * Returns a new value; the input is not mutated. Cyclic references and depth
-   * beyond {@link MAX_MEDIA_TRAVERSAL_DEPTH} are left untouched.
-   *
-   * @internal
-   */
-  private async processItemMedia(
-    data: unknown,
-    uploads: Map<string, Promise<void>>,
-    level = 1,
-    ancestors: Set<unknown> = new Set(),
-  ): Promise<unknown> {
-    if (data instanceof LangfuseMedia) {
-      return this.uploadItemMedia(data, uploads);
-    }
-
-    // An already-resolved reference (from get(resolveMediaReferences: true)):
-    // emit its reference string so a re-used item links back to its media
-    // instead of persisting a JSON object with a soon-to-expire signed URL.
-    if (data instanceof LangfuseMediaReference) {
-      return data.referenceString;
-    }
-
-    // Only arrays and plain objects are traversed. Primitives and non-plain
-    // objects (Date, Map, other class instances with custom serialization) are
-    // returned untouched so the API client serializes them as before.
-    const isArray = Array.isArray(data);
-    if (
-      data === null ||
-      typeof data !== "object" ||
-      (!isArray && !isPlainObject(data))
-    ) {
-      return data;
-    }
-
-    if (ancestors.has(data)) {
-      return data;
-    }
-
-    if (level > MAX_MEDIA_TRAVERSAL_DEPTH) {
-      getGlobalLogger().warn(
-        `Dataset item media traversal exceeded ${MAX_MEDIA_TRAVERSAL_DEPTH} levels; any LangfuseMedia nested deeper will not be uploaded.`,
-      );
-      return data;
-    }
-
-    const nextAncestors = new Set(ancestors).add(data);
-    const process = (value: unknown): Promise<unknown> =>
-      this.processItemMedia(value, uploads, level + 1, nextAncestors);
-
-    if (isArray) {
-      return Promise.all(data.map(process));
-    }
-
-    const entries = await Promise.all(
-      Object.entries(data).map(
-        async ([key, value]) => [key, await process(value)] as const,
-      ),
-    );
-    return Object.fromEntries(entries);
-  }
-
-  /**
-   * Uploads a single {@link LangfuseMedia} and returns its reference string for
-   * embedding in the dataset item. Concurrent calls for the same media ID share
-   * a single upload via the {@link uploads} cache.
-   *
-   * @internal
-   */
-  private async uploadItemMedia(
-    media: LangfuseMedia,
-    uploads: Map<string, Promise<void>>,
-  ): Promise<string> {
-    const [referenceString, mediaId] = await Promise.all([
-      media.getTag(),
-      media.getId(),
-    ]);
-
-    if (!referenceString || !mediaId) {
-      throw new Error("Cannot create dataset item with invalid LangfuseMedia.");
-    }
-
-    const upload =
-      uploads.get(mediaId) ?? this.langfuseClient.media.uploadMedia(media);
-    uploads.set(mediaId, upload);
-    await upload;
-
-    return referenceString;
   }
 
   /**

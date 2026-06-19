@@ -20,8 +20,15 @@ export type UploadMediaParams = {
   /** The observation the media belongs to, if any. */
   observationId?: string;
   /**
-   * The trace / observation field the media is associated with (`input`,
-   * `output`, or `metadata`). Ignored when {@link traceId} is omitted.
+   * The dataset the media belongs to. Set together with {@link datasetItemId}
+   * for dataset item media (instead of a trace context).
+   */
+  datasetId?: string;
+  /** The dataset item the media belongs to (need not exist yet). */
+  datasetItemId?: string;
+  /**
+   * The item field the media is associated with — `input`/`output`/`metadata`
+   * for a trace, or `input`/`expectedOutput`/`metadata` for a dataset item.
    */
   field?: string;
   /** Logger to use. Defaults to the global logger. */
@@ -53,6 +60,8 @@ export async function uploadMedia(params: UploadMediaParams): Promise<void> {
     media,
     traceId,
     observationId,
+    datasetId,
+    datasetItemId,
     field,
     maxRetries = 3,
     baseDelay = 1000,
@@ -74,6 +83,8 @@ export async function uploadMedia(params: UploadMediaParams): Promise<void> {
     contentLength: media.contentLength,
     traceId,
     observationId,
+    datasetId,
+    datasetItemId,
     field,
     contentType: media._contentType,
     sha256Hash: contentSha256Hash,

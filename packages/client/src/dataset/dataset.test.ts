@@ -38,10 +38,11 @@ describe("DatasetManager.createItem media processing", () => {
     const referenceString = await media.getTag();
 
     const create = vi.fn().mockResolvedValue({ id: "created" });
+    const datasetsGet = vi.fn().mockResolvedValue({ id: "ds-id" });
     const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
-        api: { datasetItems: { create } },
+        api: { datasets: { get: datasetsGet }, datasetItems: { create } },
         media: { uploadMedia },
       } as never,
     });
@@ -50,9 +51,20 @@ describe("DatasetManager.createItem media processing", () => {
     const result = await manager.createItem({ datasetName: "ds", input });
 
     expect(result).toEqual({ id: "created" });
+
+    // Media is uploaded against the (dataset, generated item, field) context.
     expect(uploadMedia).toHaveBeenCalledTimes(1);
-    expect(uploadMedia).toHaveBeenCalledWith(media);
-    expect(create).toHaveBeenCalledWith({
+    expect(uploadMedia).toHaveBeenCalledWith(media, {
+      datasetId: "ds-id",
+      datasetItemId: expect.any(String),
+      field: "input",
+    });
+
+    const createArg = create.mock.calls[0][0];
+    expect(typeof createArg.id).toBe("string");
+    // The item id is settled up front and reused for the media upload context.
+    expect(uploadMedia.mock.calls[0][1].datasetItemId).toBe(createArg.id);
+    expect(createArg).toMatchObject({
       datasetName: "ds",
       input: { image: referenceString, question: "q" },
       expectedOutput: undefined,
@@ -67,10 +79,11 @@ describe("DatasetManager.createItem media processing", () => {
     const referenceString = await media.getTag();
 
     const create = vi.fn().mockResolvedValue({ id: "created" });
+    const datasetsGet = vi.fn().mockResolvedValue({ id: "ds-id" });
     const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
-        api: { datasetItems: { create } },
+        api: { datasets: { get: datasetsGet }, datasetItems: { create } },
         media: { uploadMedia },
       } as never,
     });
@@ -82,9 +95,10 @@ describe("DatasetManager.createItem media processing", () => {
       metadata: { nested: [media] },
     });
 
-    // same media id -> uploaded once
+    // same media id -> uploaded once, dataset id resolved once
     expect(uploadMedia).toHaveBeenCalledTimes(1);
-    expect(create).toHaveBeenCalledWith({
+    expect(datasetsGet).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0][0]).toMatchObject({
       datasetName: "ds",
       input: { a: referenceString },
       expectedOutput: referenceString,
@@ -100,7 +114,10 @@ describe("DatasetManager.createItem media processing", () => {
 
     const manager = new DatasetManager({
       langfuseClient: {
-        api: { datasetItems: { create: vi.fn() } },
+        api: {
+          datasets: { get: vi.fn().mockResolvedValue({ id: "ds-id" }) },
+          datasetItems: { create: vi.fn() },
+        },
         media: { uploadMedia: vi.fn() },
       } as never,
     });
@@ -115,7 +132,10 @@ describe("DatasetManager.createItem media processing", () => {
     const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
-        api: { datasetItems: { create } },
+        api: {
+          datasets: { get: vi.fn().mockResolvedValue({ id: "ds-id" }) },
+          datasetItems: { create },
+        },
         media: { uploadMedia },
       } as never,
     });
@@ -142,7 +162,10 @@ describe("DatasetManager.createItem media processing", () => {
     const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
-        api: { datasetItems: { create } },
+        api: {
+          datasets: { get: vi.fn().mockResolvedValue({ id: "ds-id" }) },
+          datasetItems: { create },
+        },
         media: { uploadMedia },
       } as never,
     });

@@ -29,6 +29,8 @@ describe("LangfuseClient deprecated dataset aliases", () => {
     const client = makeClient();
     const create = vi.fn().mockResolvedValue({ id: "created" });
     client.api.datasetItems.create = create;
+    // createItem resolves the dataset id up front (for the media upload context).
+    client.api.datasets.get = vi.fn().mockResolvedValue({ id: "ds-id" });
 
     const result = await client.createDatasetItem({
       datasetName: "ds",
