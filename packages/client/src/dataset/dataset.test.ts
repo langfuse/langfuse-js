@@ -159,13 +159,11 @@ describe("DatasetManager.createItem media processing", () => {
 
   it("preserves non-plain objects (e.g. Date) instead of rebuilding them", async () => {
     const create = vi.fn().mockResolvedValue({ id: "created" });
+    const datasetsGet = vi.fn().mockResolvedValue({ id: "ds-id" });
     const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
-        api: {
-          datasets: { get: vi.fn().mockResolvedValue({ id: "ds-id" }) },
-          datasetItems: { create },
-        },
+        api: { datasets: { get: datasetsGet }, datasetItems: { create } },
         media: { uploadMedia },
       } as never,
     });
@@ -177,6 +175,8 @@ describe("DatasetManager.createItem media processing", () => {
     });
 
     expect(uploadMedia).not.toHaveBeenCalled();
+    // No media -> the dataset id is never resolved (no extra request).
+    expect(datasetsGet).not.toHaveBeenCalled();
     const sentInput = create.mock.calls[0][0].input;
     // Same Date instance, not rebuilt into {} via Object.entries.
     expect(sentInput.when).toBe(when);
