@@ -36,6 +36,7 @@ function createTestSpan(opts: {
   instrumentationScopeName?: string;
   name?: string;
   initialAttributes?: Record<string, unknown>;
+  startTime?: [number, number];
 }): TestSpan {
   const attributes: Record<string, unknown> = {
     ...(opts.initialAttributes ?? {}),
@@ -68,7 +69,7 @@ function createTestSpan(opts: {
     },
     // Stubbed ReadableSpan surface used by the export pipeline.
     duration: [0, 0],
-    startTime: [0, 0],
+    startTime: opts.startTime ?? [0, 0],
     endTime: [0, 0],
     kind: 0,
     status: { code: 0 },
@@ -364,6 +365,92 @@ describe("LangfuseSpanProcessor app-root marking", () => {
 
     // V1 does not repair: the marker remains, but the span will not be exported.
     expect(span.attributes[LangfuseOtelSpanAttributes.IS_APP_ROOT]).toBe(true);
+  });
+});
+
+describe("Vercel AI SDK TTFT bridge", () => {
+  let processor: LangfuseSpanProcessor;
+
+  beforeEach(() => {
+    spanIdCounter = 0;
+    processor = new LangfuseSpanProcessor({
+      exporter: noopExporter,
+      shouldExportSpan: () => true,
+    });
+  });
+
+  const TTFT_ATTR =
+    LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME;
+
+  it("sets completion_start_time from ai.response.msToFirstChunk (streamText)", async () => {
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: "ai",
+      initialAttributes: { "ai.response.msToFirstChunk": 250 },
+      startTime: [1, 0], // 1000ms since epoch
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    expect(span.attributes[TTFT_ATTR]).toBe(JSON.stringify(new Date(1250)));
+  });
+
+  it("sets completion_start_time from ai.stream.msToFirstChunk (streamObject)", async () => {
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: "ai",
+      initialAttributes: { "ai.stream.msToFirstChunk": 400 },
+      startTime: [2, 0],
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    expect(span.attributes[TTFT_ATTR]).toBe(JSON.stringify(new Date(2400)));
+  });
+
+  it("does nothing when neither msToFirstChunk attribute is present", async () => {
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: "ai",
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    expect(span.attributes[TTFT_ATTR]).toBeUndefined();
+  });
+
+  it("does nothing for spans outside the ai instrumentation scope", async () => {
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: "unknown.instrumentation",
+      initialAttributes: { "ai.response.msToFirstChunk": 250 },
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    expect(span.attributes[TTFT_ATTR]).toBeUndefined();
+  });
+
+  it("does not overwrite a pre-existing completion_start_time", async () => {
+    const userSetValue = JSON.stringify(new Date(9999));
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: "ai",
+      initialAttributes: {
+        "ai.response.msToFirstChunk": 250,
+        [TTFT_ATTR]: userSetValue,
+      },
+      startTime: [1, 0],
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    expect(span.attributes[TTFT_ATTR]).toBe(userSetValue);
   });
 });
 
