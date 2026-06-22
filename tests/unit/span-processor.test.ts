@@ -13,7 +13,7 @@ import type {
 } from "@opentelemetry/sdk-trace-base";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { LangfuseSpanProcessor } from "./span-processor.js";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
 
 const noopExporter: SpanExporter = {
   export: (_spans, cb) => cb({ code: ExportResultCode.SUCCESS }),
