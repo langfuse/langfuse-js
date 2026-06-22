@@ -40,9 +40,9 @@ describe("LangfuseMediaReference", () => {
     );
   });
 
-  describe("urlIsExpired", () => {
+  describe("isUrlExpired", () => {
     it("returns false when no expiry is set", () => {
-      expect(new LangfuseMediaReference(baseParams).urlIsExpired()).toBe(false);
+      expect(new LangfuseMediaReference(baseParams).isUrlExpired()).toBe(false);
     });
 
     it("returns true when past expiry (incl. threshold)", () => {
@@ -54,8 +54,8 @@ describe("LangfuseMediaReference", () => {
         urlExpiry: "2026-06-16T12:00:30.000Z", // 30s ahead, within 60s threshold
       });
 
-      expect(ref.urlIsExpired()).toBe(true);
-      expect(ref.urlIsExpired(10)).toBe(false);
+      expect(ref.isUrlExpired()).toBe(true);
+      expect(ref.isUrlExpired(10)).toBe(false);
     });
 
     it("returns false for a far-future, non-expired URL", () => {
@@ -67,7 +67,7 @@ describe("LangfuseMediaReference", () => {
         urlExpiry: "2026-06-16T13:00:00.000Z",
       });
 
-      expect(ref.urlIsExpired()).toBe(false);
+      expect(ref.isUrlExpired()).toBe(false);
     });
   });
 

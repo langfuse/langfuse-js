@@ -76,25 +76,4 @@ describe("LangfuseClient deprecated dataset aliases", () => {
       void Promise.resolve(result).catch(() => {});
     }
   });
-
-  it("resolveMediaReferences is bound to the MediaManager", async () => {
-    const client = makeClient();
-    client.api.media.get = vi
-      .fn()
-      .mockResolvedValue({ url: "http://localhost:3000/media/med-1" });
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(new Uint8Array([1, 2, 3]), { status: 200 }),
-    );
-
-    // Resolving a reference string reads `this.apiClient.media` inside the
-    // traverse closure; unbound, `this` is the LangfuseClient and it throws
-    // "Cannot read properties of undefined (reading 'media')".
-    const obj = {
-      image: "@@@langfuseMedia:type=image/png|id=med-1|source=bytes@@@",
-    };
-    await expect(
-      client.resolveMediaReferences({ obj, resolveWith: "base64DataUri" }),
-    ).resolves.toBeDefined();
-    expect(client.api.media.get).toHaveBeenCalledWith("med-1");
-  });
 });

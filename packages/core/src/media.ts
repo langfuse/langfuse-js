@@ -266,8 +266,8 @@ export type LangfuseMediaReferenceParams = {
   contentLength?: number;
   /**
    * The original `@@@langfuseMedia:…@@@` reference string. Used to losslessly
-   * round-trip a resolved reference back through the API / tracing when an item
-   * fetched with `resolveMediaReferences: true` is re-used.
+   * round-trip a resolved reference back through the API / tracing when a
+   * fetched dataset item is re-used.
    */
   referenceString: string;
 };
@@ -275,18 +275,17 @@ export type LangfuseMediaReferenceParams = {
 /**
  * A resolved reference to a media record stored in Langfuse.
  *
- * Returned when fetching dataset items with `resolveMediaReferences: true`. It
- * holds the media metadata and a signed download URL, and exposes helpers to
- * fetch the content in the formats commonly expected by LLM providers.
+ * Returned in place of media reference strings when fetching dataset items via
+ * `langfuse.dataset.get`. It holds the media metadata and a signed download
+ * URL, and exposes helpers to fetch the content in the formats commonly
+ * expected by LLM providers.
  *
  * The signed `url` is short-lived. Fetch the content promptly, or re-fetch the
- * dataset item if {@link LangfuseMediaReference.urlIsExpired} returns true.
+ * dataset item if {@link LangfuseMediaReference.isUrlExpired} returns true.
  *
  * @example Feeding media to a provider
  * ```typescript
- * const dataset = await langfuse.dataset.get("visual-qa", {
- *   resolveMediaReferences: true,
- * });
+ * const dataset = await langfuse.dataset.get("visual-qa");
  *
  * for (const item of dataset.items) {
  *   const image = item.input.image as LangfuseMediaReference;
@@ -331,7 +330,7 @@ export class LangfuseMediaReference implements LangfuseMediaReferenceParams {
    * @returns true if the URL is expired or within the threshold of expiry. If
    *   the expiry is unknown or unparseable, returns false.
    */
-  urlIsExpired(thresholdSeconds = 60): boolean {
+  isUrlExpired(thresholdSeconds = 60): boolean {
     if (!this.urlExpiry) {
       return false;
     }

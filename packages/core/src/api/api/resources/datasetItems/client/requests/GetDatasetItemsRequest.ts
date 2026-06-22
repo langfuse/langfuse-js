@@ -16,8 +16,6 @@ export interface GetDatasetItemsRequest {
    * If not provided, returns the latest version. Requires datasetName to be specified.
    */
   version?: string;
-  /** If true, resolve Langfuse media references in input, expectedOutput, and metadata to signed download URLs and include them as mediaReferences. Defaults to false. */
-  includeMediaReferences?: boolean;
   /** page number, starts at 1 */
   page?: number;
   /** limit of items per page */

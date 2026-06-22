@@ -54,8 +54,10 @@ describe("Langfuse Datasets Multimodal E2E", () => {
   });
 
   it("stores LangfuseMedia as reference strings (raw, unresolved)", async () => {
-    const dataset = await langfuse.dataset.get(datasetName);
-    const item = dataset.items.find((i) => i.id === itemId);
+    // The low-level list endpoint returns the raw stored form (dataset.get
+    // always resolves references).
+    const { data } = await langfuse.api.datasetItems.list({ datasetName });
+    const item = data.find((i) => i.id === itemId);
 
     expect(item).toBeDefined();
     const input = item!.input as Record<string, unknown>;
@@ -78,9 +80,7 @@ describe("Langfuse Datasets Multimodal E2E", () => {
   });
 
   it("resolves references to LangfuseMediaReference and fetches the bytes", async () => {
-    const dataset = await langfuse.dataset.get(datasetName, {
-      resolveMediaReferences: true,
-    });
+    const dataset = await langfuse.dataset.get(datasetName);
     const item = dataset.items.find((i) => i.id === itemId);
     expect(item).toBeDefined();
 
@@ -120,9 +120,7 @@ describe("Langfuse Datasets Multimodal E2E", () => {
   });
 
   it("round-trips a resolved item back through dataset.createItem without losing the media link", async () => {
-    const resolved = await langfuse.dataset.get(datasetName, {
-      resolveMediaReferences: true,
-    });
+    const resolved = await langfuse.dataset.get(datasetName);
     const sourceItem = resolved.items.find((i) => i.id === itemId);
     expect(sourceItem).toBeDefined();
     const sourceCandidate = (sourceItem!.input as Record<string, unknown>)
@@ -142,17 +140,18 @@ describe("Langfuse Datasets Multimodal E2E", () => {
 
     await waitForServerIngestion(2000);
 
-    // Stored as a reference string, not a JSON object with an expiring URL.
-    const copyRaw = await langfuse.dataset.get(copyDatasetName);
-    const copyRawItem = copyRaw.items.find((i) => i.id === copyItemId);
+    // Stored as a reference string, not a JSON object with an expiring URL
+    // (checked via the raw list endpoint).
+    const { data: copyRaw } = await langfuse.api.datasetItems.list({
+      datasetName: copyDatasetName,
+    });
+    const copyRawItem = copyRaw.find((i) => i.id === copyItemId);
     expect((copyRawItem!.input as Record<string, unknown>).candidate).toMatch(
       /^@@@langfuseMedia:.*@@@$/,
     );
 
     // Re-resolves to the same media — the link survived the round-trip.
-    const copyResolved = await langfuse.dataset.get(copyDatasetName, {
-      resolveMediaReferences: true,
-    });
+    const copyResolved = await langfuse.dataset.get(copyDatasetName);
     const copyItem = copyResolved.items.find((i) => i.id === copyItemId);
     const copyCandidate = (copyItem!.input as Record<string, unknown>)
       .candidate as LangfuseMediaReference;

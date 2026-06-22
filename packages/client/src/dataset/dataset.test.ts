@@ -184,7 +184,7 @@ describe("DatasetManager.createItem media processing", () => {
   });
 });
 
-describe("DatasetManager.get resolveMediaReferences", () => {
+describe("DatasetManager.get media resolution", () => {
   function managerReturning(item: Record<string, unknown>) {
     const list = vi
       .fn()
@@ -222,13 +222,10 @@ describe("DatasetManager.get resolveMediaReferences", () => {
         },
       ],
     });
-    const { manager, list } = managerReturning(item);
+    const { manager } = managerReturning(item);
 
-    const dataset = await manager.get("ds", { resolveMediaReferences: true });
+    const dataset = await manager.get("ds");
 
-    expect(list).toHaveBeenCalledWith(
-      expect.objectContaining({ includeMediaReferences: true }),
-    );
     const input = dataset.items[0].input as Record<string, unknown>;
     expect(input.image).toBeInstanceOf(LangfuseMediaReference);
     expect((input.image as LangfuseMediaReference).mediaId).toBe("med-1");
@@ -249,35 +246,12 @@ describe("DatasetManager.get resolveMediaReferences", () => {
     });
     const { manager } = managerReturning(item);
 
-    const dataset = await manager.get("ds", { resolveMediaReferences: true });
+    const dataset = await manager.get("ds");
 
     const expectedOutput = dataset.items[0].expectedOutput as {
       a: { b: unknown };
     };
     expect(expectedOutput.a.b).toBeInstanceOf(LangfuseMediaReference);
-  });
-
-  it("does not request or hydrate references when option is off", async () => {
-    const item = makeItem({
-      input: { image: "@@@langfuseMedia:...@@@" },
-      mediaReferences: [
-        {
-          field: "input",
-          referenceString: "@@@langfuseMedia:...@@@",
-          jsonPath: "$['image']",
-          media: mediaPayload,
-        },
-      ],
-    });
-    const { manager, list } = managerReturning(item);
-
-    const dataset = await manager.get("ds");
-
-    expect(list).toHaveBeenCalledWith(
-      expect.not.objectContaining({ includeMediaReferences: true }),
-    );
-    const input = dataset.items[0].input as Record<string, unknown>;
-    expect(input.image).toBe("@@@langfuseMedia:...@@@");
   });
 
   it("leaves the field unchanged when media is null", async () => {
@@ -294,7 +268,7 @@ describe("DatasetManager.get resolveMediaReferences", () => {
     });
     const { manager } = managerReturning(item);
 
-    const dataset = await manager.get("ds", { resolveMediaReferences: true });
+    const dataset = await manager.get("ds");
 
     const input = dataset.items[0].input as Record<string, unknown>;
     expect(input.image).toBe("@@@langfuseMedia:...@@@");
@@ -319,7 +293,7 @@ describe("DatasetManager.get resolveMediaReferences", () => {
       .spyOn(getGlobalLogger(), "warn")
       .mockImplementation(() => {});
 
-    const dataset = await manager.get("ds", { resolveMediaReferences: true });
+    const dataset = await manager.get("ds");
 
     expect(dataset.items[0].input).toBeNull();
     expect(warn).not.toHaveBeenCalled();
@@ -340,7 +314,7 @@ describe("DatasetManager.get resolveMediaReferences", () => {
     });
     const { manager } = managerReturning(item);
 
-    const dataset = await manager.get("ds", { resolveMediaReferences: true });
+    const dataset = await manager.get("ds");
 
     const returnedItem = dataset.items[0] as unknown as Record<string, unknown>;
     const input = returnedItem.input as Record<string, unknown>;

@@ -376,12 +376,6 @@ export class DatasetManager {
        * If not provided, returns the latest version.
        */
       version?: string;
-      /**
-       * If true, resolve Langfuse media reference strings in each item's
-       * `input`, `expectedOutput`, and `metadata` to {@link LangfuseMediaReference}
-       * objects with signed download URLs. Defaults to false.
-       */
-      resolveMediaReferences?: boolean;
     },
   ): Promise<FetchedDataset> {
     const dataset = await this.langfuseClient.api.datasets.get(name);
@@ -395,16 +389,9 @@ export class DatasetManager {
         limit: options?.fetchItemsPageSize ?? 50,
         page,
         ...(options?.version && { version: options.version }),
-        ...(options?.resolveMediaReferences && {
-          includeMediaReferences: true,
-        }),
       });
 
-      items.push(
-        ...(options?.resolveMediaReferences
-          ? itemsResponse.data.map(hydrateDatasetItemMediaReferences)
-          : itemsResponse.data),
-      );
+      items.push(...itemsResponse.data.map(hydrateDatasetItemMediaReferences));
 
       if (itemsResponse.meta.totalPages <= page) {
         break;
