@@ -480,10 +480,13 @@ export class DatasetManager {
         metadata?: any;
       },
     ): Promise<DatasetRunItem> => {
+      const { traceId, spanId } = obj.otelSpan.spanContext();
+
       return await this.langfuseClient.api.datasetRunItems.create({
         runName,
         datasetItemId: item.id,
-        traceId: obj.otelSpan.spanContext().traceId,
+        traceId,
+        observationId: spanId,
         runDescription: runArgs?.description,
         metadata: runArgs?.metadata,
       });

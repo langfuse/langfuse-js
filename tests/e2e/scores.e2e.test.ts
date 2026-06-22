@@ -1,5 +1,9 @@
+import {
+  LangfuseBrowserClient,
+  LangfuseScoreDataType,
+} from "@langfuse/browser";
 import { LangfuseClient } from "@langfuse/client";
-import { resetGlobalLogger } from "@langfuse/core";
+import { getEnv, resetGlobalLogger } from "@langfuse/core";
 import { startObservation } from "@langfuse/tracing";
 import { trace } from "@opentelemetry/api";
 import { nanoid } from "nanoid";
@@ -23,6 +27,21 @@ import {
 
 function createLangfuseClient(): LangfuseClient {
   return new LangfuseClient();
+}
+
+function createLangfuseBrowser(): LangfuseBrowserClient {
+  const publicKey = getEnv("LANGFUSE_PUBLIC_KEY");
+  if (!publicKey) {
+    throw new Error("LANGFUSE_PUBLIC_KEY must be set for browser E2E tests");
+  }
+
+  return new LangfuseBrowserClient({
+    publicKey,
+    baseUrl:
+      getEnv("LANGFUSE_BASE_URL") ??
+      getEnv("LANGFUSE_BASEURL") ??
+      "http://localhost:3000",
+  });
 }
 
 describe("LangfuseClient Score E2E Tests", () => {
@@ -71,6 +90,36 @@ describe("LangfuseClient Score E2E Tests", () => {
       expect(retrievedScore.name).toBe(scoreName);
       expect(retrievedScore.value).toBe(0.85);
       expect(retrievedScore.comment).toBe("E2E flow validation");
+    });
+
+    it("should create a browser score and fetch it from the API", async () => {
+      const browser = createLangfuseBrowser();
+      const scoreId = nanoid();
+      const traceId = nanoid();
+      const scoreName = `browser-score-${Date.now()}`;
+
+      await expect(
+        browser.score({
+          id: scoreId,
+          traceId,
+          name: scoreName,
+          value: 0.97,
+          dataType: LangfuseScoreDataType.Numeric,
+          comment: "Browser score E2E validation",
+          metadata: { testType: "browser-score" },
+        }),
+      ).resolves.toEqual({ id: scoreId });
+
+      await waitForServerIngestion(1000);
+
+      const retrievedScore = await assertions.api.scores.getById(scoreId);
+      expect(retrievedScore.id).toBe(scoreId);
+      expect(retrievedScore.traceId).toBe(traceId);
+      expect(retrievedScore.name).toBe(scoreName);
+      expect(retrievedScore.value).toBe(0.97);
+      expect(retrievedScore.dataType).toBe("NUMERIC");
+      expect(retrievedScore.comment).toBe("Browser score E2E validation");
+      expect(retrievedScore.metadata).toEqual({ testType: "browser-score" });
     });
 
     it("should handle multiple score types in batch", async () => {
