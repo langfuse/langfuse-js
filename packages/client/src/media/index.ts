@@ -1,11 +1,9 @@
 import {
   LangfuseAPIClient,
-  LangfuseMedia,
   ParsedMediaReference,
   MediaContentType,
   getGlobalLogger,
   bytesToBase64,
-  uploadMedia,
 } from "@langfuse/core";
 
 /**
@@ -172,31 +170,6 @@ export class MediaManager {
     };
 
     return traverse(obj, 0);
-  }
-
-  /**
-   * Uploads media attached to a dataset item.
-   *
-   * The media is associated with the given dataset item (which need not exist
-   * yet) rather than a trace. Requests a presigned upload URL, uploads the
-   * content with retries, and reports completion. If the media has already been
-   * uploaded, this resolves without re-uploading.
-   *
-   * @param media - The media to upload
-   * @param context - The dataset item the media belongs to
-   * @throws {Error} If the media content is incomplete or the upload fails
-   */
-  public async uploadMedia(
-    media: LangfuseMedia,
-    context: { datasetId: string; datasetItemId: string; field: string },
-  ): Promise<void> {
-    await uploadMedia({
-      apiClient: this.apiClient,
-      media,
-      datasetId: context.datasetId,
-      datasetItemId: context.datasetItemId,
-      field: context.field,
-    });
   }
 
   /**

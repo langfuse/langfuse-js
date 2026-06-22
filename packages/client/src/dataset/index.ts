@@ -7,6 +7,7 @@ import {
   LangfuseMediaReference,
   generateUUID,
   getGlobalLogger,
+  uploadMedia,
 } from "@langfuse/core";
 import { Span } from "@opentelemetry/api";
 
@@ -441,7 +442,9 @@ export class DatasetManager {
       ).id;
       await Promise.all(
         [...toUpload.values()].map(({ media, field }) =>
-          this.langfuseClient.media.uploadMedia(media, {
+          uploadMedia({
+            apiClient: this.langfuseClient.api,
+            media,
             datasetId,
             datasetItemId,
             field,

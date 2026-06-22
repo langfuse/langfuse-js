@@ -3,8 +3,15 @@ import {
   LangfuseMedia,
   LangfuseMediaReference,
   getGlobalLogger,
+  uploadMedia,
 } from "@langfuse/core";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// createItem uploads media via the core uploadMedia helper; mock just that.
+vi.mock("@langfuse/core", async (importActual) => ({
+  ...(await importActual<typeof import("@langfuse/core")>()),
+  uploadMedia: vi.fn().mockResolvedValue(undefined),
+}));
 
 function makeMedia(bytes: number[] = [1, 2, 3, 4]): LangfuseMedia {
   return new LangfuseMedia({
@@ -32,17 +39,19 @@ function makeItem(overrides: Record<string, unknown> = {}) {
 }
 
 describe("DatasetManager.createItem media processing", () => {
+  beforeEach(() => {
+    vi.mocked(uploadMedia).mockClear();
+  });
+
   it("uploads media and replaces it with a reference string", async () => {
     const media = makeMedia();
     const referenceString = await media.getTag();
 
     const create = vi.fn().mockResolvedValue({ id: "created" });
     const datasetsGet = vi.fn().mockResolvedValue({ id: "ds-id" });
-    const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
         api: { datasets: { get: datasetsGet }, datasetItems: { create } },
-        media: { uploadMedia },
       } as never,
     });
 
@@ -53,16 +62,15 @@ describe("DatasetManager.createItem media processing", () => {
 
     // Media is uploaded against the (dataset, generated item, field) context.
     expect(uploadMedia).toHaveBeenCalledTimes(1);
-    expect(uploadMedia).toHaveBeenCalledWith(media, {
-      datasetId: "ds-id",
-      datasetItemId: expect.any(String),
-      field: "input",
-    });
+    const uploadArg = vi.mocked(uploadMedia).mock.calls[0][0];
+    expect(uploadArg.media).toBe(media);
+    expect(uploadArg.datasetId).toBe("ds-id");
+    expect(uploadArg.field).toBe("input");
 
     const createArg = create.mock.calls[0][0];
     expect(typeof createArg.id).toBe("string");
     // The item id is settled up front and reused for the media upload context.
-    expect(uploadMedia.mock.calls[0][1].datasetItemId).toBe(createArg.id);
+    expect(uploadArg.datasetItemId).toBe(createArg.id);
     expect(createArg).toMatchObject({
       datasetName: "ds",
       input: { image: referenceString, question: "q" },
@@ -79,11 +87,9 @@ describe("DatasetManager.createItem media processing", () => {
 
     const create = vi.fn().mockResolvedValue({ id: "created" });
     const datasetsGet = vi.fn().mockResolvedValue({ id: "ds-id" });
-    const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
         api: { datasets: { get: datasetsGet }, datasetItems: { create } },
-        media: { uploadMedia },
       } as never,
     });
 
@@ -117,7 +123,6 @@ describe("DatasetManager.createItem media processing", () => {
           datasets: { get: vi.fn().mockResolvedValue({ id: "ds-id" }) },
           datasetItems: { create: vi.fn() },
         },
-        media: { uploadMedia: vi.fn() },
       } as never,
     });
 
@@ -128,14 +133,12 @@ describe("DatasetManager.createItem media processing", () => {
 
   it("round-trips a resolved LangfuseMediaReference back to its reference string", async () => {
     const create = vi.fn().mockResolvedValue({ id: "created" });
-    const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
         api: {
           datasets: { get: vi.fn().mockResolvedValue({ id: "ds-id" }) },
           datasetItems: { create },
         },
-        media: { uploadMedia },
       } as never,
     });
 
@@ -159,11 +162,9 @@ describe("DatasetManager.createItem media processing", () => {
   it("preserves non-plain objects (e.g. Date) instead of rebuilding them", async () => {
     const create = vi.fn().mockResolvedValue({ id: "created" });
     const datasetsGet = vi.fn().mockResolvedValue({ id: "ds-id" });
-    const uploadMedia = vi.fn().mockResolvedValue(undefined);
     const manager = new DatasetManager({
       langfuseClient: {
         api: { datasets: { get: datasetsGet }, datasetItems: { create } },
-        media: { uploadMedia },
       } as never,
     });
 
