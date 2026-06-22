@@ -1,11 +1,10 @@
+import { DatasetManager } from "@langfuse/client";
 import {
   LangfuseMedia,
   LangfuseMediaReference,
   getGlobalLogger,
 } from "@langfuse/core";
 import { describe, expect, it, vi } from "vitest";
-
-import { DatasetManager } from "./index.js";
 
 function makeMedia(bytes: number[] = [1, 2, 3, 4]): LangfuseMedia {
   return new LangfuseMedia({

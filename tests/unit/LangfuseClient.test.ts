@@ -1,6 +1,5 @@
+import { LangfuseClient } from "@langfuse/client";
 import { describe, expect, it, vi } from "vitest";
-
-import { LangfuseClient } from "./LangfuseClient.js";
 
 describe("LangfuseClient deprecated dataset aliases", () => {
   function makeClient(): LangfuseClient {
