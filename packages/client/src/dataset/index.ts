@@ -9,10 +9,11 @@ import {
   getGlobalLogger,
 } from "@langfuse/core";
 import { Span } from "@opentelemetry/api";
-import { JSONPath, type JSONPathOptions } from "jsonpath-plus";
 
 import { ExperimentResult, ExperimentParams } from "../experiment/types.js";
 import { LangfuseClient } from "../LangfuseClient.js";
+
+import { setValueAtPath } from "./jsonPath.js";
 
 /** Maximum recursion depth when walking dataset item values for media. */
 const MAX_MEDIA_TRAVERSAL_DEPTH = 20;
@@ -38,51 +39,6 @@ const MEDIA_REFERENCE_FIELD_TO_ITEM_KEY = {
   expectedOutput: "expectedOutput",
   metadata: "metadata",
 } as const;
-
-/**
- * Replaces the value(s) at `jsonPath` within `root` with `replacement`.
- *
- * Mutates `root` in place for nested paths and returns it. When the path
- * targets the root itself (`$`), `replacement` is returned instead. If the path
- * matches nothing, `root` is returned unchanged.
- *
- * Uses `jsonpath-plus` with script evaluation disabled — the Langfuse API only
- * emits concrete member paths (e.g. `$['image']`), never filter expressions, so
- * no scripting engine is required (safe under strict CSP / edge runtimes).
- */
-function setAtJsonPath(
-  root: unknown,
-  jsonPath: string,
-  replacement: unknown,
-): unknown {
-  const matches = JSONPath({
-    path: jsonPath,
-    json: root as JSONPathOptions["json"],
-    resultType: "all",
-    wrap: true,
-    eval: false,
-  }) as
-    | Array<{ parent: unknown; parentProperty: string | number | null }>
-    | undefined;
-
-  // jsonpath-plus returns undefined (not []) when `root` is null/undefined.
-  if (!matches || matches.length === 0) {
-    return root;
-  }
-
-  let newRoot = root;
-  for (const match of matches) {
-    if (match.parent == null || match.parentProperty == null) {
-      // The path matched the root value itself.
-      newRoot = replacement;
-    } else {
-      (match.parent as Record<string | number, unknown>)[match.parentProperty] =
-        replacement;
-    }
-  }
-
-  return newRoot;
-}
 
 /**
  * Replaces Langfuse media reference strings in a dataset item's `input`,
@@ -120,7 +76,7 @@ function hydrateDatasetItemMediaReferences(item: DatasetItem): DatasetItem {
 
     const itemRecord = item as unknown as Record<string, unknown>;
     try {
-      itemRecord[itemKey] = setAtJsonPath(
+      itemRecord[itemKey] = setValueAtPath(
         itemRecord[itemKey],
         mediaReference.jsonPath,
         replacement,

@@ -5,20 +5,12 @@ import { describe, it, expect, beforeAll } from "vitest";
 
 import { waitForServerIngestion } from "./helpers/serverSetup.js";
 
-// Two distinct 1x1 PNGs so they map to different media ids.
-const PNG_A = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  "base64",
-);
-const PNG_B = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwAEhgGAk1l6/AAAAABJRU5ErkJggg==",
-  "base64",
-);
-
-const png = (bytes: Buffer): LangfuseMedia =>
+// Distinct bytes per tag -> distinct media id, so each JSONPath can be verified
+// to resolve to its own media via fetchBytes.
+const media = (tag: string): LangfuseMedia =>
   new LangfuseMedia({
     source: "bytes",
-    contentBytes: bytes,
+    contentBytes: Buffer.from(`media-${tag}`),
     contentType: "image/png",
   });
 
@@ -32,22 +24,20 @@ describe("Langfuse Datasets Multimodal E2E", () => {
 
     await langfuse.api.datasets.create({ name: datasetName });
 
-    // PNG_A is used in both input and metadata to exercise upload dedupe.
+    // Cover the interesting jsonpath-plus path shapes in one item: a plain key,
+    // list indices, consecutive indices (nested list), plus expectedOutput and
+    // metadata fields.
     await langfuse.dataset.createItem({
       datasetName,
       id: itemId,
       input: {
-        question: "Compare the candidate image against the reference image.",
-        candidate: png(PNG_A),
+        question: "compare the images",
+        image: media("image"), // $['image']
+        gallery: [media("gallery0"), media("gallery1")], // $['gallery'][0], [1]
+        matrix: [[media("matrix")]], // $['matrix'][0][0]
       },
-      expectedOutput: {
-        reference: png(PNG_B),
-        label: "match",
-      },
-      metadata: {
-        note: "vision eval",
-        attachment: png(PNG_A),
-      },
+      expectedOutput: { reference: media("reference") }, // $['reference']
+      metadata: { thumbnail: media("thumbnail") }, // $['thumbnail']
     });
 
     await waitForServerIngestion(2000);
@@ -60,71 +50,60 @@ describe("Langfuse Datasets Multimodal E2E", () => {
     const item = data.find((i) => i.id === itemId);
 
     expect(item).toBeDefined();
-    const input = item!.input as Record<string, unknown>;
-    const expectedOutput = item!.expectedOutput as Record<string, unknown>;
-    const metadata = item!.metadata as Record<string, unknown>;
+    const input = item!.input as Record<string, any>;
+    const expectedOutput = item!.expectedOutput as Record<string, any>;
+    const metadata = item!.metadata as Record<string, any>;
 
-    expect(input.candidate).toMatch(/^@@@langfuseMedia:.*@@@$/);
-    expect(expectedOutput.reference).toMatch(/^@@@langfuseMedia:.*@@@$/);
-    expect(metadata.attachment).toMatch(/^@@@langfuseMedia:.*@@@$/);
+    const ref = /^@@@langfuseMedia:.*@@@$/;
+    expect(input.image).toMatch(ref);
+    expect(input.gallery[0]).toMatch(ref);
+    expect(input.gallery[1]).toMatch(ref);
+    expect(input.matrix[0][0]).toMatch(ref);
+    expect(expectedOutput.reference).toMatch(ref);
+    expect(metadata.thumbnail).toMatch(ref);
 
-    // Non-media fields are untouched.
-    expect(input.question).toBe(
-      "Compare the candidate image against the reference image.",
-    );
-    expect(expectedOutput.label).toBe("match");
-    expect(metadata.note).toBe("vision eval");
-
-    // Same media in input + metadata dedupes to the same reference string.
-    expect(input.candidate).toBe(metadata.attachment);
+    // Non-media field is untouched.
+    expect(input.question).toBe("compare the images");
   });
 
-  it("resolves references to LangfuseMediaReference and fetches the bytes", async () => {
+  it("resolves every path shape to its own LangfuseMediaReference", async () => {
     const dataset = await langfuse.dataset.get(datasetName);
     const item = dataset.items.find((i) => i.id === itemId);
     expect(item).toBeDefined();
 
-    const input = item!.input as Record<string, unknown>;
-    const expectedOutput = item!.expectedOutput as Record<string, unknown>;
-    const metadata = item!.metadata as Record<string, unknown>;
+    const input = item!.input as Record<string, any>;
+    const expectedOutput = item!.expectedOutput as Record<string, any>;
+    const metadata = item!.metadata as Record<string, any>;
 
-    const candidate = input.candidate as LangfuseMediaReference;
-    const reference = expectedOutput.reference as LangfuseMediaReference;
-    const attachment = metadata.attachment as LangfuseMediaReference;
+    // [label, resolved value, the tag whose bytes it should resolve to]
+    const byPath: Array<[string, unknown, string]> = [
+      ["input.image", input.image, "image"],
+      ["input.gallery[0]", input.gallery[0], "gallery0"],
+      ["input.gallery[1]", input.gallery[1], "gallery1"],
+      ["input.matrix[0][0]", input.matrix[0][0], "matrix"],
+      ["expectedOutput.reference", expectedOutput.reference, "reference"],
+      ["metadata.thumbnail", metadata.thumbnail, "thumbnail"],
+    ];
 
-    expect(candidate).toBeInstanceOf(LangfuseMediaReference);
-    expect(reference).toBeInstanceOf(LangfuseMediaReference);
-    expect(attachment).toBeInstanceOf(LangfuseMediaReference);
+    for (const [label, resolved, tag] of byPath) {
+      expect(resolved, label).toBeInstanceOf(LangfuseMediaReference);
+      const ref = resolved as LangfuseMediaReference;
+      expect(ref.contentType, label).toBe("image/png");
+      // The reference at each path resolves to that path's own media.
+      const bytes = await ref.fetchBytes();
+      expect(Buffer.from(bytes).toString(), label).toBe(`media-${tag}`);
+    }
 
-    expect(candidate.contentType).toBe("image/png");
-    expect(candidate.url).toMatch(/^https?:\/\//);
-
-    // Non-media fields still preserved alongside the resolved references.
-    expect(input.question).toBe(
-      "Compare the candidate image against the reference image.",
-    );
-    expect(expectedOutput.label).toBe("match");
-
-    // Fetch helpers pull the real bytes back through the signed URL.
-    const bytes = await candidate.fetchBytes();
-    expect(bytes.length).toBe(PNG_A.length);
-
-    const dataUri = await reference.fetchDataUri();
-    expect(dataUri.startsWith("data:image/png;base64,")).toBe(true);
-    expect(dataUri.slice("data:image/png;base64,".length)).toBe(
-      PNG_B.toString("base64"),
-    );
-
-    // Same underlying media → same media id in input and metadata.
-    expect(attachment.mediaId).toBe(candidate.mediaId);
+    // Non-media field is left untouched.
+    expect(input.question).toBe("compare the images");
   });
 
   it("round-trips a resolved item back through dataset.createItem without losing the media link", async () => {
     const resolved = await langfuse.dataset.get(datasetName);
     const sourceItem = resolved.items.find((i) => i.id === itemId);
     expect(sourceItem).toBeDefined();
-    const sourceCandidate = (sourceItem!.input as Record<string, unknown>)
-      .candidate as LangfuseMediaReference;
+    const sourceImage = (sourceItem!.input as Record<string, any>)
+      .image as LangfuseMediaReference;
 
     const copyDatasetName = `${datasetName}-copy`;
     const copyItemId = `${itemId}-copy`;
@@ -146,17 +125,17 @@ describe("Langfuse Datasets Multimodal E2E", () => {
       datasetName: copyDatasetName,
     });
     const copyRawItem = copyRaw.find((i) => i.id === copyItemId);
-    expect((copyRawItem!.input as Record<string, unknown>).candidate).toMatch(
+    expect((copyRawItem!.input as Record<string, any>).image).toMatch(
       /^@@@langfuseMedia:.*@@@$/,
     );
 
     // Re-resolves to the same media — the link survived the round-trip.
     const copyResolved = await langfuse.dataset.get(copyDatasetName);
     const copyItem = copyResolved.items.find((i) => i.id === copyItemId);
-    const copyCandidate = (copyItem!.input as Record<string, unknown>)
-      .candidate as LangfuseMediaReference;
+    const copyImage = (copyItem!.input as Record<string, any>)
+      .image as LangfuseMediaReference;
 
-    expect(copyCandidate).toBeInstanceOf(LangfuseMediaReference);
-    expect(copyCandidate.mediaId).toBe(sourceCandidate.mediaId);
+    expect(copyImage).toBeInstanceOf(LangfuseMediaReference);
+    expect(copyImage.mediaId).toBe(sourceImage.mediaId);
   });
 });

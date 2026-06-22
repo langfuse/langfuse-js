@@ -273,9 +273,10 @@ describe("DatasetManager.get media resolution", () => {
     expect(input.image).toBe("@@@langfuseMedia:...@@@");
   });
 
-  it("does not warn or throw when the referenced field value is null", async () => {
-    // Server inconsistency: a reference is emitted but the field is null.
-    // jsonpath-plus returns undefined (not []) for null roots, so guard it.
+  it("leaves the field unchanged (and warns) when the value can't be navigated", async () => {
+    // Server inconsistency: a reference is emitted but the field is null. The
+    // setter throws navigating into null; the caller catches it, warns, and
+    // leaves the field as-is rather than crashing.
     const item = makeItem({
       input: null,
       mediaReferences: [
@@ -295,7 +296,7 @@ describe("DatasetManager.get media resolution", () => {
     const dataset = await manager.get("ds");
 
     expect(dataset.items[0].input).toBeNull();
-    expect(warn).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
 
