@@ -11,6 +11,6 @@ export interface DatasetItemMediaReference {
   referenceString: string;
   /** JSONPath of the string holding the reference within the field, e.g. `$['image']` */
   jsonPath: string;
-  /** The resolved media record. Null if the referenced media does not exist or has not been uploaded successfully. */
-  media: LangfuseAPI.DatasetItemMediaReferenceMedia | null;
+  /** The resolved media record. */
+  media: LangfuseAPI.DatasetItemMediaReferenceMedia;
 }

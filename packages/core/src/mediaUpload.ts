@@ -30,7 +30,7 @@ export type UploadMediaParams = {
    * The item field the media is associated with — `input`/`output`/`metadata`
    * for a trace, or `input`/`expectedOutput`/`metadata` for a dataset item.
    */
-  field?: string;
+  field: string;
   /** Logger to use. Defaults to the global logger. */
   logger?: Logger;
   /** Maximum number of upload retries on transient failures. Defaults to 3. */

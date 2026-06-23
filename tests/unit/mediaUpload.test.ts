@@ -37,7 +37,12 @@ describe("uploadMedia", () => {
     const { media, apiClient } = await setup(200);
 
     await expect(
-      uploadMedia({ apiClient: apiClient as never, media, maxRetries: 0 }),
+      uploadMedia({
+        apiClient: apiClient as never,
+        media,
+        field: "input",
+        maxRetries: 0,
+      }),
     ).resolves.toBeUndefined();
     expect(apiClient.media.patch).toHaveBeenCalledOnce();
   });
@@ -46,7 +51,12 @@ describe("uploadMedia", () => {
     const { media, apiClient } = await setup(500);
 
     await expect(
-      uploadMedia({ apiClient: apiClient as never, media, maxRetries: 0 }),
+      uploadMedia({
+        apiClient: apiClient as never,
+        media,
+        field: "input",
+        maxRetries: 0,
+      }),
     ).rejects.toThrow(/HTTP 500/);
     // The failure is still reported to the server before throwing.
     expect(apiClient.media.patch).toHaveBeenCalledOnce();
@@ -60,7 +70,12 @@ describe("uploadMedia", () => {
     });
 
     await expect(
-      uploadMedia({ apiClient: apiClient as never, media, maxRetries: 0 }),
+      uploadMedia({
+        apiClient: apiClient as never,
+        media,
+        field: "input",
+        maxRetries: 0,
+      }),
     ).resolves.toBeUndefined();
     expect(fetch).not.toHaveBeenCalled();
     expect(apiClient.media.patch).not.toHaveBeenCalled();
