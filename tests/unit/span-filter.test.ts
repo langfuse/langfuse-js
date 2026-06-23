@@ -7,7 +7,7 @@ import {
   isGenAISpan,
   isKnownLLMInstrumentor,
   isLangfuseSpan,
-} from "./span-filter.js";
+} from "@langfuse/otel";
 
 function createTestSpan(params?: {
   instrumentationScopeName?: string;

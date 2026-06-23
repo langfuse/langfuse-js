@@ -7,3 +7,10 @@ export * from "./experiment/ExperimentManager.js";
 export * from "./experiment/RunnerContext.js";
 export * from "./experiment/adapters.js";
 export * from "./experiment/types.js";
+
+export {
+  LangfuseMedia,
+  LangfuseMediaReference,
+  type LangfuseMediaParams,
+  type LangfuseMediaReferenceParams,
+} from "@langfuse/core";
