@@ -324,8 +324,10 @@ export class Media {
    *
    * @example
    *     await client.media.getUploadUrl({
-   *         traceId: "traceId",
+   *         traceId: undefined,
    *         observationId: undefined,
+   *         datasetId: undefined,
+   *         datasetItemId: undefined,
    *         contentType: "image/png",
    *         contentLength: 1,
    *         sha256Hash: "sha256Hash",
