@@ -4,16 +4,23 @@
 
 import * as LangfuseAPI from "../../../index.js";
 
+/**
+ * Request a presigned media upload URL. Provide exactly one context: a trace (traceId, optionally observationId) or a dataset item (datasetId + datasetItemId). field is required and must match the chosen context.
+ */
 export interface GetMediaUploadUrlRequest {
-  /** The trace ID associated with the media record */
-  traceId: string;
+  /** The trace the media is associated with. Null for dataset item media uploads. */
+  traceId?: string;
   /** The observation ID associated with the media record. If the media record is associated directly with a trace, this will be null. */
   observationId?: string;
+  /** The dataset the media belongs to. Null for trace/observation media uploads. */
+  datasetId?: string;
+  /** The dataset item the media is associated with (need not exist yet). Null for trace/observation media uploads. */
+  datasetItemId?: string;
   contentType: LangfuseAPI.MediaContentType;
   /** The size of the media record in bytes */
   contentLength: number;
   /** The SHA-256 hash of the media record */
   sha256Hash: string;
-  /** The trace / observation field the media record is associated with. This can be one of `input`, `output`, `metadata` */
+  /** The item field the media is in: `input`/`output`/`metadata` (trace) or `input`/`expectedOutput`/`metadata` (dataset item). */
   field: string;
 }

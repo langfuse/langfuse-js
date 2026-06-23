@@ -21,4 +21,6 @@ export interface DatasetItem {
   datasetName: string;
   createdAt: string;
   updatedAt: string;
+  /** Resolved Langfuse media references found in input, expectedOutput, and metadata. */
+  mediaReferences: LangfuseAPI.DatasetItemMediaReference[];
 }
