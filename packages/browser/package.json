@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/browser",
-  "version": "5.5.3",
+  "version": "5.6.0",
   "description": "Langfuse browser SDK for public-key score ingestion",
   "type": "module",
   "sideEffects": false,
