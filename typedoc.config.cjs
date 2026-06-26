@@ -2,6 +2,7 @@
 module.exports = {
   entryPoints: [
     "./packages/core",
+    "./packages/browser",
     "./packages/client",
     "./packages/langchain",
     "./packages/openai",

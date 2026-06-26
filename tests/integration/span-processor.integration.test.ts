@@ -27,6 +27,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
   });
 
   afterEach(async () => {
+    delete process.env.LANGFUSE_MEDIA_UPLOAD_ENABLED;
     await teardownTestEnvironment(testEnv);
     vi.restoreAllMocks();
     resetGlobalLogger();
@@ -223,83 +224,22 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       expect(mediaMatches).toHaveLength(2);
     });
 
-    it("should replace AI SDK v7 semconv blob content with media tags", async () => {
-      const pdfBase64 = Buffer.from("synthetic pdf").toString("base64");
-      const imageBase64 = Buffer.from("synthetic image").toString("base64");
-      const imageDataUri = `data:image/jpeg;base64,${imageBase64}`;
-      const tracer = trace.getTracer("gen_ai");
+    it("should keep base64 data URIs unchanged when media upload is disabled by processor option", async () => {
+      await teardownTestEnvironment(testEnv);
 
-      const span = tracer.startSpan("ai-sdk-v7-media-span", {
-        attributes: {
-          "gen_ai.input.messages": JSON.stringify([
-            {
-              role: "user",
-              parts: [
-                { type: "text", content: "Summarize these files" },
-                {
-                  type: "blob",
-                  modality: "image",
-                  mime_type: "application/pdf",
-                  content: pdfBase64,
-                },
-              ],
-            },
-          ]),
-          "gen_ai.output.messages": JSON.stringify([
-            {
-              role: "assistant",
-              parts: [
-                {
-                  type: "blob",
-                  modality: "image",
-                  mime_type: "image/jpeg",
-                  content: imageDataUri,
-                },
-              ],
-            },
-          ]),
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mediaUploadEnabled: false,
         },
       });
-      span.end();
+      assertions = new SpanAssertions(testEnv.mockExporter);
 
-      await waitForSpanExport(testEnv.mockExporter, 1);
+      const base64Image =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
-      const attributes = testEnv.mockExporter.getSpanAttributes(
-        "ai-sdk-v7-media-span",
-      );
-      const inputValue = attributes?.["gen_ai.input.messages"] as string;
-      const outputValue = attributes?.["gen_ai.output.messages"] as string;
-
-      expect(inputValue).not.toContain(pdfBase64);
-      expect(outputValue).not.toContain(imageDataUri);
-      expect(outputValue).not.toContain(imageBase64);
-      expect(inputValue).toMatch(
-        /@@@langfuseMedia:type=application\/pdf\|id=[^|]+\|source=bytes@@@/,
-      );
-      expect(outputValue).toMatch(
-        /@@@langfuseMedia:type=image\/jpeg\|id=[^|]+\|source=bytes@@@/,
-      );
-    });
-
-    it("should skip empty AI SDK v7 semconv blob content", async () => {
-      const messages = JSON.stringify([
-        {
-          role: "user",
-          parts: [
-            {
-              type: "blob",
-              modality: "image",
-              mime_type: "application/pdf",
-              content: "",
-            },
-          ],
-        },
-      ]);
-      const tracer = trace.getTracer("gen_ai");
-
-      const span = tracer.startSpan("ai-sdk-v7-empty-media-span", {
-        attributes: {
-          "gen_ai.input.messages": messages,
+      const span = startObservation("media-disabled-option-span", {
+        input: {
+          image: base64Image,
         },
       });
       span.end();
@@ -307,11 +247,36 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       await waitForSpanExport(testEnv.mockExporter, 1);
 
       const inputValue = testEnv.mockExporter.getSpanAttributes(
-        "ai-sdk-v7-empty-media-span",
-      )?.["gen_ai.input.messages"] as string;
+        "media-disabled-option-span",
+      )?.["langfuse.observation.input"] as string;
+      expect(inputValue).toContain(base64Image);
+      expect(inputValue).not.toMatch(/@@@langfuseMedia:/);
+    });
 
-      expect(inputValue).toBe(messages);
-      expect(inputValue).not.toContain("@@@langfuseMedia:");
+    it("should keep base64 data URIs unchanged when media upload is disabled by environment variable", async () => {
+      process.env.LANGFUSE_MEDIA_UPLOAD_ENABLED = "false";
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment();
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const base64Image =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+      const span = startObservation("media-disabled-env-span", {
+        input: {
+          image: base64Image,
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "media-disabled-env-span",
+      )?.["langfuse.observation.input"] as string;
+      expect(inputValue).toContain(base64Image);
+      expect(inputValue).not.toMatch(/@@@langfuseMedia:/);
     });
   });
 

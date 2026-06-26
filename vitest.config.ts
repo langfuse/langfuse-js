@@ -35,6 +35,10 @@ export default defineConfig({
       ).pathname,
       "@langfuse/core": new URL("./packages/core/src/index.ts", import.meta.url)
         .pathname,
+      "@langfuse/browser": new URL(
+        "./packages/browser/src/index.ts",
+        import.meta.url,
+      ).pathname,
       "@langfuse/tracing": new URL(
         "./packages/tracing/src/index.ts",
         import.meta.url,

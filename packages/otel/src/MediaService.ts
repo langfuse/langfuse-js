@@ -5,6 +5,7 @@ import {
   Logger,
   base64ToBytes,
   getGlobalLogger,
+  uploadMedia,
 } from "@langfuse/core";
 import type { MediaContentType } from "@langfuse/core";
 import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
@@ -303,137 +304,16 @@ export class MediaService {
     field: string;
   }): Promise<void> {
     try {
-      const contentSha256Hash = await media.getSha256Hash();
-
-      if (
-        !media.contentLength ||
-        !media._contentType ||
-        !contentSha256Hash ||
-        !media._contentBytes
-      ) {
-        return;
-      }
-
-      const { uploadUrl, mediaId } = await this.apiClient.media.getUploadUrl({
-        contentLength: media.contentLength,
+      await uploadMedia({
+        apiClient: this.apiClient,
+        media,
         traceId,
         observationId,
         field,
-        contentType: media._contentType,
-        sha256Hash: contentSha256Hash,
+        logger: this.logger,
       });
-
-      if (!uploadUrl) {
-        this.logger.debug(
-          `Media status: Media with ID ${mediaId} already uploaded. Skipping duplicate upload.`,
-        );
-
-        return;
-      }
-
-      const clientSideMediaId = await media.getId();
-      if (clientSideMediaId !== mediaId) {
-        this.logger.error(
-          `Media integrity error: Media ID mismatch between SDK (${clientSideMediaId}) and Server (${mediaId}). Upload cancelled. Please check media ID generation logic.`,
-        );
-
-        return;
-      }
-
-      this.logger.debug(`Uploading media ${mediaId}...`);
-
-      const startTime = Date.now();
-
-      const uploadResponse = await this.uploadWithBackoff({
-        uploadUrl,
-        contentBytes: media._contentBytes,
-        contentType: media._contentType,
-        contentSha256Hash: contentSha256Hash,
-        maxRetries: 3,
-        baseDelay: 1000,
-      });
-
-      if (!uploadResponse) {
-        throw Error("Media upload process failed");
-      }
-
-      await this.apiClient.media.patch(mediaId, {
-        uploadedAt: new Date().toISOString(),
-        uploadHttpStatus: uploadResponse.status,
-        uploadHttpError: await uploadResponse.text(),
-        uploadTimeMs: Date.now() - startTime,
-      });
-
-      this.logger.debug(`Media upload status reported for ${mediaId}`);
     } catch (err) {
       this.logger.error(`Error processing media item: ${err}`);
-    }
-  }
-
-  private async uploadWithBackoff(params: {
-    uploadUrl: string;
-    contentType: string;
-    contentSha256Hash: string;
-    contentBytes: Uint8Array;
-    maxRetries: number;
-    baseDelay: number;
-  }) {
-    const {
-      uploadUrl,
-      contentType,
-      contentSha256Hash,
-      contentBytes,
-      maxRetries,
-      baseDelay,
-    } = params;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        let parsedHostname: string;
-
-        try {
-          parsedHostname = new URL(uploadUrl).hostname;
-        } catch {
-          parsedHostname = "";
-        }
-
-        const isSelfHostedGcsBucket =
-          parsedHostname === "storage.googleapis.com" ||
-          parsedHostname.endsWith(".storage.googleapis.com");
-
-        const headers: Record<string, string> = isSelfHostedGcsBucket
-          ? { "Content-Type": contentType }
-          : {
-              "Content-Type": contentType,
-              "x-amz-checksum-sha256": contentSha256Hash,
-              "x-ms-blob-type": "BlockBlob",
-            };
-
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "PUT",
-          body: contentBytes,
-          headers,
-        });
-
-        if (
-          attempt < maxRetries &&
-          uploadResponse.status !== 200 &&
-          uploadResponse.status !== 201
-        ) {
-          throw new Error(`Upload failed with status ${uploadResponse.status}`);
-        }
-
-        return uploadResponse;
-      } catch (e) {
-        if (attempt === maxRetries) {
-          throw e;
-        }
-
-        const delay = baseDelay * Math.pow(2, attempt);
-        const jitter = Math.random() * 1000;
-
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-      }
     }
   }
 }

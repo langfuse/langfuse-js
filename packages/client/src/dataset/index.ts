@@ -1,8 +1,97 @@
-import { Dataset, DatasetRunItem, DatasetItem } from "@langfuse/core";
+import {
+  Dataset,
+  DatasetRunItem,
+  DatasetItem,
+  CreateDatasetItemRequest,
+  LangfuseMedia,
+  LangfuseMediaReference,
+  generateUUID,
+  getGlobalLogger,
+  uploadMedia,
+} from "@langfuse/core";
 import { Span } from "@opentelemetry/api";
 
 import { ExperimentResult, ExperimentParams } from "../experiment/types.js";
 import { LangfuseClient } from "../LangfuseClient.js";
+
+import { setValueAtPath } from "./jsonPath.js";
+
+/** Maximum recursion depth when walking dataset item values for media. */
+const MAX_MEDIA_TRAVERSAL_DEPTH = 20;
+
+/**
+ * Whether a value is a plain object (literal / `Object.create(null)`), as
+ * opposed to a class instance such as `Date`, `Map`, or `LangfuseMedia`. Only
+ * plain objects and arrays are traversed for media; everything else is left
+ * intact so the API client serializes it as before (e.g. `Date` -> ISO string).
+ */
+function isPlainObject(value: object): boolean {
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * Maps a {@link DatasetItem} media-reference field enum value to the
+ * corresponding key on the dataset item. The enum values match the item keys,
+ * but this lookup is kept as the allowlist that guards against unknown fields.
+ */
+const MEDIA_REFERENCE_FIELD_TO_ITEM_KEY = {
+  input: "input",
+  expectedOutput: "expectedOutput",
+  metadata: "metadata",
+} as const;
+
+/**
+ * Replaces Langfuse media reference strings in a dataset item's `input`,
+ * `expectedOutput`, and `metadata` with {@link LangfuseMediaReference} objects,
+ * based on the `mediaReferences` returned by the API. Mutates and returns the
+ * item.
+ */
+function hydrateDatasetItemMediaReferences(item: DatasetItem): DatasetItem {
+  const mediaReferences = item.mediaReferences ?? [];
+
+  for (const mediaReference of mediaReferences) {
+    const media = mediaReference.media;
+    if (!media) {
+      continue;
+    }
+
+    // Guard against an unknown field value (e.g. a server-side enum variant
+    // added before the SDK is updated) so we never write to a "undefined" key.
+    const itemKey = MEDIA_REFERENCE_FIELD_TO_ITEM_KEY[mediaReference.field];
+    if (!itemKey) {
+      getGlobalLogger().warn(
+        `Unrecognised media reference field "${mediaReference.field}", skipping hydration.`,
+      );
+      continue;
+    }
+
+    const replacement = new LangfuseMediaReference({
+      mediaId: media.mediaId,
+      contentType: media.contentType,
+      url: media.url,
+      urlExpiry: media.urlExpiry,
+      contentLength: media.contentLength,
+      referenceString: mediaReference.referenceString,
+    });
+
+    const itemRecord = item as unknown as Record<string, unknown>;
+    try {
+      itemRecord[itemKey] = setValueAtPath(
+        itemRecord[itemKey],
+        mediaReference.jsonPath,
+        replacement,
+      );
+    } catch (error) {
+      getGlobalLogger().warn(
+        `Failed to hydrate dataset media reference at JSONPath ${mediaReference.jsonPath}`,
+        error,
+      );
+    }
+  }
+
+  return item;
+}
 
 /**
  * Function type for running experiments on Langfuse datasets.
@@ -259,7 +348,7 @@ export class DatasetManager {
         ...(options?.version && { version: options.version }),
       });
 
-      items.push(...itemsResponse.data);
+      items.push(...itemsResponse.data.map(hydrateDatasetItemMediaReferences));
 
       if (itemsResponse.meta.totalPages <= page) {
         break;
@@ -289,6 +378,88 @@ export class DatasetManager {
     };
 
     return returnDataset;
+  }
+
+  /**
+   * Creates (or upserts) a dataset item, handling media upload.
+   *
+   * Any {@link LangfuseMedia} found in `input`, `expectedOutput`, or `metadata`
+   * (including nested in objects and arrays) is uploaded to Langfuse and
+   * replaced with a media reference string before the item is created. The same
+   * media is uploaded at most once per call.
+   *
+   * @param request - The dataset item to create
+   * @returns The created dataset item
+   *
+   * @example Creating an item with media
+   * ```typescript
+   * await langfuse.dataset.createItem({
+   *   datasetName: "vision-eval",
+   *   input: {
+   *     question: "Compare the candidate image against the reference image.",
+   *     candidate: new LangfuseMedia({
+   *       source: "bytes",
+   *       contentBytes: candidateBytes,
+   *       contentType: "image/png",
+   *     }),
+   *   },
+   *   expectedOutput: {
+   *     reference: new LangfuseMedia({
+   *       source: "bytes",
+   *       contentBytes: referenceBytes,
+   *       contentType: "image/png",
+   *     }),
+   *     label: "match",
+   *   },
+   * });
+   * ```
+   *
+   * @public
+   */
+  async createItem(request: CreateDatasetItemRequest): Promise<DatasetItem> {
+    // The item need not exist yet; settle its id up front so media uploads can
+    // reference it and the create call below reuses it.
+    const datasetItemId = request.id ?? generateUUID();
+
+    // Walk each field, swapping media for its reference string and collecting
+    // the media (deduped by id) to upload afterwards.
+    const toUpload = new Map<string, { media: LangfuseMedia; field: string }>();
+    const [input, expectedOutput, metadata] = await Promise.all([
+      replaceDatasetItemMedia(request.input, "input", toUpload),
+      replaceDatasetItemMedia(
+        request.expectedOutput,
+        "expectedOutput",
+        toUpload,
+      ),
+      replaceDatasetItemMedia(request.metadata, "metadata", toUpload),
+    ]);
+
+    // Resolve the dataset id (an extra request) only when there is media to
+    // upload, and upload before creating so the backend can link the references.
+    if (toUpload.size > 0) {
+      const datasetId = (
+        await this.langfuseClient.api.datasets.get(request.datasetName)
+      ).id;
+      await Promise.all(
+        [...toUpload.values()].map(({ media, field }) =>
+          uploadMedia({
+            apiClient: this.langfuseClient.api,
+            media,
+            datasetId,
+            datasetItemId,
+            field,
+          }),
+        ),
+      );
+    }
+
+    return await this.langfuseClient.api.datasetItems.create({
+      ...request,
+      id: datasetItemId,
+      input,
+      expectedOutput,
+      metadata,
+    });
   }
 
   /**
@@ -323,4 +494,78 @@ export class DatasetManager {
 
     return linkFunction;
   }
+}
+
+/**
+ * Recursively replaces each {@link LangfuseMedia} in a dataset item field with
+ * its reference string, collecting the media (deduped by id, first field wins)
+ * into `collected` for the caller to upload afterwards. The reference string is
+ * derived from content, so no upload happens here.
+ *
+ * Returns a new value; the input is not mutated. An already-resolved
+ * {@link LangfuseMediaReference} is replaced with its reference string. Only
+ * arrays and plain objects are traversed; non-plain objects (Date, Map, class
+ * instances) are left intact so the API client serializes them as before.
+ * Cyclic references and depth beyond {@link MAX_MEDIA_TRAVERSAL_DEPTH} are left
+ * untouched.
+ */
+async function replaceDatasetItemMedia(
+  data: unknown,
+  field: string,
+  collected: Map<string, { media: LangfuseMedia; field: string }>,
+  level = 1,
+  ancestors: Set<unknown> = new Set(),
+): Promise<unknown> {
+  if (data instanceof LangfuseMedia) {
+    const [referenceString, mediaId] = await Promise.all([
+      data.getTag(),
+      data.getId(),
+    ]);
+    if (!referenceString || !mediaId) {
+      throw new Error("Cannot create dataset item with invalid LangfuseMedia.");
+    }
+    if (!collected.has(mediaId)) {
+      collected.set(mediaId, { media: data, field });
+    }
+    return referenceString;
+  }
+
+  if (data instanceof LangfuseMediaReference) {
+    return data.referenceString;
+  }
+
+  const isArray = Array.isArray(data);
+  if (
+    data === null ||
+    typeof data !== "object" ||
+    (!isArray && !isPlainObject(data))
+  ) {
+    return data;
+  }
+
+  if (ancestors.has(data)) {
+    return data;
+  }
+
+  if (level > MAX_MEDIA_TRAVERSAL_DEPTH) {
+    getGlobalLogger().warn(
+      `Dataset item media traversal exceeded ${MAX_MEDIA_TRAVERSAL_DEPTH} levels; any LangfuseMedia nested deeper will not be uploaded.`,
+    );
+    return data;
+  }
+
+  const nextAncestors = new Set(ancestors).add(data);
+  const recurse = (value: unknown): Promise<unknown> =>
+    replaceDatasetItemMedia(value, field, collected, level + 1, nextAncestors);
+
+  if (isArray) {
+    return Promise.all(data.map(recurse));
+  }
+
+  const entries = await Promise.all(
+    Object.entries(data).map(
+      async ([key, value]) => [key, await recurse(value)] as const,
+    ),
+  );
+  return Object.fromEntries(entries);
 }
