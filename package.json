@@ -1,6 +1,6 @@
 {
   "name": "langfuse-js",
-  "version": "5.7.0",
+  "version": "5.9.0",
   "description": "Langfuse JavaScript / TypeScript SDK",
   "author": "Langfuse",
   "license": "MIT",
@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^2",
-    "@ai-sdk/openai": "^2",
+    "@ai-sdk/openai": "4.0.0",
     "@eslint/js": "^9.32.0",
     "@langchain/core": "^1.1.24",
     "@langchain/langgraph": "^1.1.4",
@@ -53,7 +53,7 @@
     "@types/mustache": "^4.2.6",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.39.0",
-    "ai": "^5",
+    "ai": "7.0.2",
     "autoevals": "^0.0.131",
     "dotenv": "^17.2.0",
     "eslint": "^9.32.0",

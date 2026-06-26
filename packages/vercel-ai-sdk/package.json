@@ -1,7 +1,7 @@
 {
-  "name": "@langfuse/core",
+  "name": "@langfuse/vercel-ai-sdk",
   "version": "5.9.0",
-  "description": "Core functions and utilities for Langfuse packages",
+  "description": "Langfuse integration for Vercel AI SDK v7",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.cjs",
@@ -9,14 +9,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
@@ -32,15 +27,20 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/langfuse/langfuse-js.git",
-    "directory": "packages/core"
+    "directory": "packages/vercel-ai-sdk"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "files": [
     "dist"
   ],
-  "peerDependencies": {
-    "@opentelemetry/api": "^1.9.0"
+  "dependencies": {
+    "@ai-sdk/otel": "1.0.2",
+    "@langfuse/core": "workspace:^"
   },
-  "devDependencies": {
-    "@types/node": "^24.1.0"
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "ai": ">=7.0.0 <8"
   }
 }
