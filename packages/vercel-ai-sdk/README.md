@@ -10,10 +10,10 @@ Trace-level attributes such as user ID, session ID, tags, trace name, and trace 
 
 ## Compatibility
 
-This integration targets the AI SDK v7 beta line. Install it together with `ai@beta`; the package depends on the matching `@ai-sdk/otel` beta integration internally.
+This integration targets AI SDK v7 GA. Install it together with `ai@^7`; the package depends on the matching `@ai-sdk/otel` integration internally.
 
 ```sh
-pnpm add @langfuse/vercel-ai-sdk@beta ai@beta
+pnpm add @langfuse/vercel-ai-sdk ai
 ```
 
 ## Usage
