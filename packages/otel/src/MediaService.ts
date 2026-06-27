@@ -5,7 +5,9 @@ import {
   Logger,
   base64ToBytes,
   getGlobalLogger,
+  uploadMedia,
 } from "@langfuse/core";
+import type { MediaContentType } from "@langfuse/core";
 import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 
 export class MediaService {
@@ -95,8 +97,8 @@ export class MediaService {
       }
     }
 
-    // Handle media from Vercel AI SDK
-    if (span.instrumentationScope.name === "ai") {
+    // Handle media from Vercel AI SDK v6 and AI SDK v7.
+    if (["ai", "gen_ai"].includes(span.instrumentationScope.name)) {
       const aiSDKMediaAttributes = ["ai.prompt.messages", "ai.prompt"];
 
       for (const mediaAttribute of aiSDKMediaAttributes) {
@@ -120,54 +122,34 @@ export class MediaService {
                 for (const part of contentParts) {
                   if (part["type"] === "file") {
                     let base64Content: string | null = null;
+                    const mediaType = part["mediaType"];
                     // FilePart
                     if (
-                      part["data"] != null &&
-                      part["mediaType"] != null &&
-                      typeof part["data"] !== "object" && // skip URL instances
-                      !String(part["data"]).startsWith("http") // skip URL strings
+                      typeof part["data"] === "string" &&
+                      !part["data"].startsWith("http") // skip URL strings
                     ) {
                       base64Content = part["data"];
                     }
 
                     //ImagePart
                     if (
-                      part["image"] != null &&
-                      part["mediaType"] != null &&
+                      typeof part["image"] === "string" &&
                       !part["image"].startsWith("http") // skip URLs
                     ) {
                       base64Content = part["image"];
                     }
 
-                    if (!base64Content) continue;
-
-                    const media = new LangfuseMedia({
-                      contentType: part["mediaType"],
-                      contentBytes: base64ToBytes(base64Content),
-                      source: "bytes",
-                    });
-
-                    const langfuseMediaTag = await media.getTag();
-
-                    if (!langfuseMediaTag) {
-                      this.logger.warn(
-                        "Failed to create Langfuse media tag. Skipping media item.",
-                      );
-
+                    if (!base64Content || typeof mediaType !== "string") {
                       continue;
                     }
 
-                    this.scheduleUpload({
+                    mediaReplacedValue = await this.replaceBytesMedia({
                       span,
-                      media,
+                      mediaReplacedValue,
+                      base64Content,
+                      contentType: mediaType,
                       field: "input",
                     });
-
-                    // Replace original attribute with media escaped attribute
-                    mediaReplacedValue = mediaReplacedValue.replaceAll(
-                      base64Content,
-                      langfuseMediaTag,
-                    );
                   }
                 }
               }
@@ -182,7 +164,109 @@ export class MediaService {
           );
         }
       }
+
+      // Handle media from AI SDK v7 OpenTelemetry semantic-convention
+      // attributes emitted by @ai-sdk/otel.
+      const aiSDKV7MediaAttributes = [
+        { attribute: "gen_ai.input.messages", field: "input" },
+        { attribute: "gen_ai.output.messages", field: "output" },
+      ] as const;
+
+      for (const { attribute, field } of aiSDKV7MediaAttributes) {
+        const value = span.attributes[attribute];
+
+        if (!value || typeof value !== "string") {
+          continue;
+        }
+
+        let mediaReplacedValue = value;
+
+        try {
+          const parsed = JSON.parse(value);
+
+          if (Array.isArray(parsed)) {
+            for (const message of parsed) {
+              if (!Array.isArray(message["parts"])) {
+                continue;
+              }
+
+              for (const part of message["parts"]) {
+                const content = part["content"];
+                const mediaType = part["mime_type"];
+
+                if (
+                  part["type"] !== "blob" ||
+                  typeof content !== "string" ||
+                  !content ||
+                  typeof mediaType !== "string" ||
+                  content.startsWith("http")
+                ) {
+                  continue;
+                }
+
+                const normalizedContent = normalizeBase64Content(content);
+
+                if (!normalizedContent) {
+                  continue;
+                }
+
+                mediaReplacedValue = await this.replaceBytesMedia({
+                  span,
+                  mediaReplacedValue,
+                  base64Content: normalizedContent.base64Content,
+                  contentToReplace: content,
+                  contentType: mediaType,
+                  field,
+                });
+              }
+            }
+          }
+
+          span.attributes[attribute] = mediaReplacedValue;
+        } catch (err) {
+          this.logger.warn(
+            `Failed to handle media for AI SDK v7 attribute ${attribute} for span ${span.spanContext().spanId}`,
+            err,
+          );
+        }
+      }
     }
+  }
+
+  private async replaceBytesMedia(params: {
+    span: ReadableSpan;
+    mediaReplacedValue: string;
+    base64Content: string;
+    contentToReplace?: string;
+    contentType: string;
+    field: string;
+  }): Promise<string> {
+    const media = new LangfuseMedia({
+      contentType: params.contentType as MediaContentType,
+      contentBytes: base64ToBytes(params.base64Content),
+      source: "bytes",
+    });
+
+    const langfuseMediaTag = await media.getTag();
+
+    if (!langfuseMediaTag) {
+      this.logger.warn(
+        "Failed to create Langfuse media tag. Skipping media item.",
+      );
+
+      return params.mediaReplacedValue;
+    }
+
+    this.scheduleUpload({
+      span: params.span,
+      media,
+      field: params.field,
+    });
+
+    return params.mediaReplacedValue.replaceAll(
+      params.contentToReplace ?? params.base64Content,
+      langfuseMediaTag,
+    );
   }
 
   private scheduleUpload(params: {
@@ -220,137 +304,38 @@ export class MediaService {
     field: string;
   }): Promise<void> {
     try {
-      const contentSha256Hash = await media.getSha256Hash();
-
-      if (
-        !media.contentLength ||
-        !media._contentType ||
-        !contentSha256Hash ||
-        !media._contentBytes
-      ) {
-        return;
-      }
-
-      const { uploadUrl, mediaId } = await this.apiClient.media.getUploadUrl({
-        contentLength: media.contentLength,
+      await uploadMedia({
+        apiClient: this.apiClient,
+        media,
         traceId,
         observationId,
         field,
-        contentType: media._contentType,
-        sha256Hash: contentSha256Hash,
+        logger: this.logger,
       });
-
-      if (!uploadUrl) {
-        this.logger.debug(
-          `Media status: Media with ID ${mediaId} already uploaded. Skipping duplicate upload.`,
-        );
-
-        return;
-      }
-
-      const clientSideMediaId = await media.getId();
-      if (clientSideMediaId !== mediaId) {
-        this.logger.error(
-          `Media integrity error: Media ID mismatch between SDK (${clientSideMediaId}) and Server (${mediaId}). Upload cancelled. Please check media ID generation logic.`,
-        );
-
-        return;
-      }
-
-      this.logger.debug(`Uploading media ${mediaId}...`);
-
-      const startTime = Date.now();
-
-      const uploadResponse = await this.uploadWithBackoff({
-        uploadUrl,
-        contentBytes: media._contentBytes,
-        contentType: media._contentType,
-        contentSha256Hash: contentSha256Hash,
-        maxRetries: 3,
-        baseDelay: 1000,
-      });
-
-      if (!uploadResponse) {
-        throw Error("Media upload process failed");
-      }
-
-      await this.apiClient.media.patch(mediaId, {
-        uploadedAt: new Date().toISOString(),
-        uploadHttpStatus: uploadResponse.status,
-        uploadHttpError: await uploadResponse.text(),
-        uploadTimeMs: Date.now() - startTime,
-      });
-
-      this.logger.debug(`Media upload status reported for ${mediaId}`);
     } catch (err) {
       this.logger.error(`Error processing media item: ${err}`);
     }
   }
+}
 
-  private async uploadWithBackoff(params: {
-    uploadUrl: string;
-    contentType: string;
-    contentSha256Hash: string;
-    contentBytes: Uint8Array;
-    maxRetries: number;
-    baseDelay: number;
-  }) {
-    const {
-      uploadUrl,
-      contentType,
-      contentSha256Hash,
-      contentBytes,
-      maxRetries,
-      baseDelay,
-    } = params;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        let parsedHostname: string;
-
-        try {
-          parsedHostname = new URL(uploadUrl).hostname;
-        } catch {
-          parsedHostname = "";
-        }
-
-        const isSelfHostedGcsBucket =
-          parsedHostname === "storage.googleapis.com" ||
-          parsedHostname.endsWith(".storage.googleapis.com");
-
-        const headers: Record<string, string> = isSelfHostedGcsBucket
-          ? { "Content-Type": contentType }
-          : {
-              "Content-Type": contentType,
-              "x-amz-checksum-sha256": contentSha256Hash,
-              "x-ms-blob-type": "BlockBlob",
-            };
-
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "PUT",
-          body: contentBytes,
-          headers,
-        });
-
-        if (
-          attempt < maxRetries &&
-          uploadResponse.status !== 200 &&
-          uploadResponse.status !== 201
-        ) {
-          throw new Error(`Upload failed with status ${uploadResponse.status}`);
-        }
-
-        return uploadResponse;
-      } catch (e) {
-        if (attempt === maxRetries) {
-          throw e;
-        }
-
-        const delay = baseDelay * Math.pow(2, attempt);
-        const jitter = Math.random() * 1000;
-
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-      }
-    }
+function normalizeBase64Content(
+  content: string,
+): { base64Content: string } | undefined {
+  if (!content.startsWith("data:")) {
+    return { base64Content: content };
   }
+
+  const base64Start = content.indexOf(";base64,");
+
+  if (base64Start === -1) {
+    return;
+  }
+
+  const base64Content = content.slice(base64Start + ";base64,".length);
+
+  if (!base64Content) {
+    return;
+  }
+
+  return { base64Content };
 }

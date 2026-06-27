@@ -1,4 +1,5 @@
 export * from "./EvaluatorType.js";
+export * from "./CodeEvaluatorSourceCodeLanguage.js";
 export * from "./EvaluatorScope.js";
 export * from "./EvaluationRuleTarget.js";
 export * from "./EvaluationRuleStatus.js";

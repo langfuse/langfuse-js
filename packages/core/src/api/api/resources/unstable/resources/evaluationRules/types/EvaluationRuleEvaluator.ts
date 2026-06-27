@@ -8,7 +8,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  * Resolved evaluator currently used by the evaluation rule.
  *
  * `id` is the exact active evaluator version.
- * `name` and `scope` identify the evaluator family conceptually.
+ * `name`, `scope`, and `type` identify the evaluator family conceptually.
  */
 export interface EvaluationRuleEvaluator {
   /** Identifier of the exact evaluator version currently used by the rule. */
@@ -17,4 +17,6 @@ export interface EvaluationRuleEvaluator {
   name: string;
   /** Whether the evaluator family is project-owned or Langfuse-managed. */
   scope: LangfuseAPI.unstable.EvaluatorScope;
+  /** Evaluator engine type. */
+  type: LangfuseAPI.unstable.EvaluatorType;
 }

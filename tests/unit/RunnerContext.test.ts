@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { LangfuseClient } from "../LangfuseClient.js";
+import type { LangfuseClient } from "@langfuse/client";
 
-import { RegressionError, RunnerContext } from "./RunnerContext.js";
-import type { ExperimentResult } from "./types.js";
+import { RegressionError, RunnerContext } from "@langfuse/client";
+import type { ExperimentResult } from "@langfuse/client";
 
 function createResult(): ExperimentResult {
   return {

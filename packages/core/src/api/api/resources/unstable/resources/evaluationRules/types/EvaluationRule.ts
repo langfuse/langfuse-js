@@ -26,7 +26,8 @@ import * as LangfuseAPI from "../../../../../index.js";
  *         evaluator: {
  *             id: "evaltmpl_123",
  *             name: "answer-correctness",
- *             scope: LangfuseAPI.unstable.EvaluatorScope.Project
+ *             scope: LangfuseAPI.unstable.EvaluatorScope.Project,
+ *             type: LangfuseAPI.unstable.EvaluatorType.LlmAsJudge
  *         },
  *         target: LangfuseAPI.unstable.EvaluationRuleTarget.Observation,
  *         enabled: true,
@@ -84,7 +85,7 @@ export interface EvaluationRule {
   sampling: number;
   /** List of filter conditions used to decide whether a target should be evaluated. */
   filter: LangfuseAPI.unstable.EvaluationRuleFilter[];
-  /** Variable mappings used to populate the evaluator prompt from the live target object. */
+  /** Variable mappings used to populate evaluator runtime variables from the live target object. */
   mapping: LangfuseAPI.unstable.EvaluationRuleMapping[];
   /** Timestamp when the evaluation rule was created. */
   createdAt: string;

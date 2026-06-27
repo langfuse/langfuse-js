@@ -1,0 +1,41 @@
+{
+  "name": "@langfuse/browser",
+  "version": "5.9.0",
+  "description": "Langfuse browser SDK for public-key score ingestion",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "cd ../.. && vitest run --project=unit tests/unit/browser.test.ts",
+    "test:watch": "cd ../.. && vitest --project=unit tests/unit/browser.test.ts",
+    "format": "prettier --write \"src/**/*.ts\" \"../../tests/unit/browser.test.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"../../tests/unit/browser.test.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "author": "Langfuse",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/langfuse/langfuse-js.git",
+    "directory": "packages/browser"
+  },
+  "dependencies": {
+    "@langfuse/core": "workspace:^"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.9.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

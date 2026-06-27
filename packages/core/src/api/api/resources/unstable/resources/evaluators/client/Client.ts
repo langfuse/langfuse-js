@@ -63,7 +63,9 @@ export class Evaluators {
   /**
    * Create an evaluator in the authenticated project.
    *
-   * Use evaluators to define **how** Langfuse should score data: the prompt, the expected structured output, and the optional model configuration.
+   * Use evaluators to define **how** Langfuse should score data.
+   * LLM-as-a-judge evaluators define a prompt, expected structured output, and optional model configuration.
+   * Code evaluators define source code and a runtime language.
    *
    * Naming behavior:
    * - If this is a new evaluator name in your project, Langfuse creates version `1`.
@@ -76,10 +78,15 @@ export class Evaluators {
    * 3. Read the returned `outputDefinition.dataType` so the client knows whether future scores will be numeric, boolean, or categorical.
    * 4. Create one or more evaluation rules that reference the returned evaluator family using `name` and `scope`.
    *
+   * Code evaluator validation:
+   * - At creation, Langfuse only validates the request shape
+   * - The `sourceCode` itself is not executed here. It is first run (preflight-tested against a sample observation) when you link the evaluator to an evaluation rule, so runtime errors in the code surface at evaluation-rule creation, not at evaluator creation.
+   *
    * Recovery guidance:
    * - `422` with `code=evaluator_preflight_failed`: the evaluator cannot run with the resolved model configuration. Add a valid explicit `modelConfig`, or configure the project's default evaluation model, then retry the same request.
    * - `400` with `code=invalid_body`: the request shape is malformed. Use the structured `details.issues` array to fix the specific fields and retry.
-   * - `400` with `code=invalid_body` on `outputDefinition`: send `dataType`, `reasoning.description`, and `score.description`. Do not send `version`; it is not part of the public request shape.
+   * - `400` with `code=invalid_body` on `outputDefinition`: for `type=llm_as_judge`, send `dataType`, `reasoning.description`, and `score.description`. Do not send `version`; it is not part of the public request shape.
+   * - If `type` is omitted, Langfuse treats the request as `type=llm_as_judge` for backwards compatibility. New clients should send `type` explicitly.
    *
    * Unstable API note:
    * - This surface may evolve while the underlying evaluation data model is being redesigned.
@@ -103,6 +110,7 @@ export class Evaluators {
    *
    * @example
    *     await client.unstable.evaluators.create({
+   *         type: "llm_as_judge",
    *         name: "answer-correctness",
    *         prompt: "You are grading an answer.\n\nInput:\n{{input}}\n\nOutput:\n{{output}}\n\nReturn a score between 0 and 1.\n",
    *         outputDefinition: {
@@ -119,6 +127,22 @@ export class Evaluators {
    *             provider: "openai",
    *             model: "gpt-4.1-mini"
    *         }
+   *     })
+   *
+   * @example
+   *     await client.unstable.evaluators.create({
+   *         type: "code",
+   *         name: "exact-match",
+   *         sourceCode: "function evaluate(ctx: EvaluationContext): EvaluationResult {\n  const input = ctx.observation.input;\n  const matchesOutput =\n    input !== undefined && ctx.observation.output === input;\n\n  return {\n    scores: [\n      {\n        name: \"Exact match\",\n        value: matchesOutput,\n        dataType: \"BOOLEAN\",\n        comment: matchesOutput\n          ? \"Output exactly matches the input.\"\n          : \"Output does not match the input.\",\n      },\n    ],\n  };\n}\n",
+   *         sourceCodeLanguage: "TYPESCRIPT"
+   *     })
+   *
+   * @example
+   *     await client.unstable.evaluators.create({
+   *         type: "code",
+   *         name: "exact-match",
+   *         sourceCode: "def evaluate(ctx: EvaluationContext) -> EvaluationResult:\n    \"\"\"Evaluates one observation and returns one or more Langfuse scores.\"\"\"\n    input = ctx.observation.input\n    matches_output = input is not None and ctx.observation.output == input\n\n    return EvaluationResult(\n        scores=[\n            Score(\n                name=\"Exact match\",\n                value=matches_output,\n                data_type=\"BOOLEAN\",\n                comment=(\n                    \"Output exactly matches the input.\"\n                    if matches_output\n                    else \"Output does not match the input.\"\n                ),\n            )\n        ]\n    )\n",
+   *         sourceCodeLanguage: "PYTHON"
    *     })
    */
   public create(
@@ -601,6 +625,183 @@ export class Evaluators {
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
           "Timeout exceeded when calling GET /api/public/unstable/evaluators/{evaluatorId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Delete an evaluator.
+   *
+   * Important behavior:
+   * - This deletes the evaluator including all of its stored versions; `evaluatorId` may reference any version.
+   * - The API returns `409` while evaluation rules still reference the evaluator. Delete those evaluation rules first.
+   * - Langfuse-managed evaluators (`scope=managed`) cannot be deleted; the API returns `403`.
+   * - Scores already produced by the evaluator are not deleted.
+   *
+   * @param {string} evaluatorId - Evaluator identifier returned by the evaluator endpoints.
+   * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.ConflictError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.evaluators.delete("evaluatorId")
+   */
+  public delete(
+    evaluatorId: string,
+    requestOptions?: Evaluators.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteEvaluatorResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__delete(evaluatorId, requestOptions),
+    );
+  }
+
+  private async __delete(
+    evaluatorId: string,
+    requestOptions?: Evaluators.RequestOptions,
+  ): Promise<
+    core.WithRawResponse<LangfuseAPI.unstable.DeleteEvaluatorResponse>
+  > {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/unstable/evaluators/${encodeURIComponent(evaluatorId)}`,
+      ),
+      method: "DELETE",
+      headers: _headers,
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.DeleteEvaluatorResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 409:
+          throw new LangfuseAPI.unstable.ConflictError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/unstable/evaluators/{evaluatorId}.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
