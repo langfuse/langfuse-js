@@ -931,7 +931,9 @@ export class CallbackHandler extends BaseCallbackHandler {
     } else if (message.getType() === "generic") {
       response = {
         content: message.content,
-        role: "human",
+        // ChatMessage (getType() === "generic") carries a custom role; preserve
+        // it instead of hardcoding "human" (regression introduced in #680).
+        role: (message as any).role ?? "human",
       };
     } else if (message.getType() === "ai") {
       response = { content: message.content, role: "assistant" };
