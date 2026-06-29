@@ -154,8 +154,11 @@ export type RunExperimentOnDataset = (
  * @since 4.0.0
  */
 export type FetchedDataset = Dataset & {
-  /** Dataset items with additional linking functionality */
-  items: (DatasetItem & { link: LinkDatasetItemFunction })[];
+  /** Dataset items with linking functionality. @deprecated Use `runExperiment()` instead. */
+  items: (DatasetItem & {
+    /** @deprecated Use `runExperiment()` instead. */
+    link: LinkDatasetItemFunction;
+  })[];
   /** ISO 8601 timestamp (RFC 3339, Section 5.6) in UTC (e.g., "2026-01-21T14:35:42Z").
    * If provided, returns state of dataset at this timestamp.
    * If not provided, returns the latest version.
@@ -168,51 +171,9 @@ export type FetchedDataset = Dataset & {
 /**
  * Function type for linking dataset items to OpenTelemetry spans.
  *
- * This function creates a connection between a dataset item and a trace/observation,
- * enabling tracking of which dataset items were used in which experiments or runs.
- * This is essential for creating dataset runs and tracking experiment lineage.
- *
- * @param obj - Object containing the OpenTelemetry span to link to
- * @param obj.otelSpan - The OpenTelemetry span from a Langfuse observation
- * @param runName - Name of the experiment run for grouping related items
- * @param runArgs - Optional configuration for the dataset run
- * @param runArgs.description - Description of the experiment run
- * @param runArgs.metadata - Additional metadata to attach to the run
- * @returns Promise that resolves to the created dataset run item
- *
- * @example Basic linking
- * ```typescript
- * const dataset = await langfuse.dataset.get("my-dataset");
- * const span = startObservation("my-task", { input: "test" });
- * span.update({ output: "result" });
- * span.end();
- *
- * // Link the dataset item to this execution
- * await dataset.items[0].link(
- *   { otelSpan: span.otelSpan },
- *   "experiment-run-1"
- * );
- * ```
- *
- * @example Linking with metadata
- * ```typescript
- * await dataset.items[0].link(
- *   { otelSpan: span.otelSpan },
- *   "model-comparison-v2",
- *   {
- *     description: "Comparing GPT-4 vs Claude performance",
- *     metadata: {
- *       modelVersion: "gpt-4-1106-preview",
- *       temperature: 0.7,
- *       timestamp: new Date().toISOString()
- *     }
- *   }
- * );
- * ```
- *
- * @see {@link https://langfuse.com/docs/datasets} Langfuse datasets documentation
+ * @deprecated Use `langfuse.experiment.run()` instead for running experiments on datasets.
+ * @see {@link https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk#experiment-runner-sdk} Experiment SDK documentation
  * @public
- * @since 4.0.0
  */
 export type LinkDatasetItemFunction = (
   obj: { otelSpan: Span },
@@ -464,9 +425,7 @@ export class DatasetManager {
 
   /**
    * Creates a link function for a specific dataset item.
-   *
-   * @param item - The dataset item to create a link function for
-   * @returns A function that can link the item to OpenTelemetry spans
+   * @deprecated Use `langfuse.experiment.run()` instead.
    * @internal
    */
   private createDatasetItemLinkFunction(
@@ -480,6 +439,9 @@ export class DatasetManager {
         metadata?: any;
       },
     ): Promise<DatasetRunItem> => {
+      getGlobalLogger().warn(
+        "dataset.items[].link() is deprecated. Use langfuse.experiment.run() instead.",
+      );
       const { traceId, spanId } = obj.otelSpan.spanContext();
 
       return await this.langfuseClient.api.datasetRunItems.create({
