@@ -3,8 +3,6 @@ import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import type { Document } from "@langchain/core/documents";
 import type { Serialized } from "@langchain/core/load/serializable";
 import {
-  AIMessage,
-  AIMessageChunk,
   BaseMessage,
   type UsageMetadata,
   type BaseMessageFields,
@@ -896,14 +894,13 @@ export class CallbackHandler extends BaseCallbackHandler {
     generation: Generation,
   ): UsageMetadata | undefined {
     try {
-      const usageMetadata =
-        "message" in generation &&
-        (generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk)
-          ? generation["message"].usage_metadata
-          : undefined;
-
-      return usageMetadata;
+      // Use duck-typing instead of `instanceof AIMessage / AIMessageChunk`.
+      // When the application and @langfuse/langchain resolve different copies
+      // of @langchain/core (pnpm/bun workspaces, nested deps), the message is
+      // an instance of the *other* copy's class, so `instanceof` returns false
+      // and usage details (output, reasoning, cached tokens) are silently
+      // dropped. Reading `usage_metadata` directly is realm-independent (#13075).
+      return (generation as any)?.["message"]?.usage_metadata;
     } catch (err) {
       this.logger.debug(`Error extracting usage metadata: ${err}`);
 
@@ -913,11 +910,8 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   private extractModelNameFromMetadata(generation: any): string | undefined {
     try {
-      return "message" in generation &&
-        (generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk)
-        ? generation["message"].response_metadata.model_name
-        : undefined;
+      // Duck-typing, see extractUsageMetadata for the rationale.
+      return generation?.["message"]?.response_metadata?.model_name;
     } catch {}
   }
 
