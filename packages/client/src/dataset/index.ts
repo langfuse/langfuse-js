@@ -137,9 +137,6 @@ export type RunExperimentOnDataset = (
  * // Work with individual items
  * for (const item of dataset.items) {
  *   console.log(item.input, item.expectedOutput);
- *
- *   // Link item to a trace
- *   await item.link(myObservation, "experiment-run-1");
  * }
  *
  * // Run experiments on the entire dataset
@@ -154,7 +151,7 @@ export type RunExperimentOnDataset = (
  * @since 4.0.0
  */
 export type FetchedDataset = Dataset & {
-  /** Dataset items with linking functionality. @deprecated Use `runExperiment()` instead. */
+  /** Dataset items fetched from this dataset. */
   items: (DatasetItem & {
     /** @deprecated Use `runExperiment()` instead. */
     link: LinkDatasetItemFunction;
@@ -171,8 +168,8 @@ export type FetchedDataset = Dataset & {
 /**
  * Function type for linking dataset items to OpenTelemetry spans.
  *
- * @deprecated Use `langfuse.experiment.run()` instead for running experiments on datasets.
- * @see {@link https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk#experiment-runner-sdk} Experiment SDK documentation
+ * @deprecated Use `runExperiment()` instead.
+ * @see {@link https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk#experiment-runner-sdk}
  * @public
  */
 export type LinkDatasetItemFunction = (
@@ -237,9 +234,6 @@ export class DatasetManager {
    * for (const item of dataset.items) {
    *   console.log("Question:", item.input);
    *   console.log("Expected Answer:", item.expectedOutput);
-   *
-   *   // Each item has a link function for connecting to traces
-   *   // await item.link(span, "experiment-name");
    * }
    * ```
    *
@@ -425,7 +419,7 @@ export class DatasetManager {
 
   /**
    * Creates a link function for a specific dataset item.
-   * @deprecated Use `langfuse.experiment.run()` instead.
+   * @deprecated Use `runExperiment()` instead.
    * @internal
    */
   private createDatasetItemLinkFunction(
@@ -439,9 +433,6 @@ export class DatasetManager {
         metadata?: any;
       },
     ): Promise<DatasetRunItem> => {
-      getGlobalLogger().warn(
-        "dataset.items[].link() is deprecated. Use langfuse.experiment.run() instead.",
-      );
       const { traceId, spanId } = obj.otelSpan.spanContext();
 
       return await this.langfuseClient.api.datasetRunItems.create({
