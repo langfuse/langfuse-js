@@ -120,6 +120,16 @@ export interface LangfuseSpanProcessorParams {
   shouldExportSpan?: ShouldExportSpan;
 
   /**
+   * Whether media detection and upload should be attempted by the processor.
+   * Can also be set via LANGFUSE_MEDIA_UPLOAD_ENABLED environment variable.
+   *
+   * Set to `false` to keep base64 media payloads unchanged on exported spans.
+   *
+   * @defaultValue true
+   */
+  mediaUploadEnabled?: boolean;
+
+  /**
    * Environment identifier for the traces. Can also be set via LANGFUSE_TRACING_ENVIRONMENT environment variable.
    */
   environment?: string;
@@ -197,6 +207,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private release?: string;
   private mask?: MaskFunction;
   private shouldExportSpan: ShouldExportSpan;
+  private mediaUploadEnabled: boolean;
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
   private mediaService: MediaService;
@@ -257,6 +268,12 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     const authHeaderValue = base64Encode(`${publicKey}:${secretKey}`);
     const timeoutSeconds =
       params?.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
+    const envMediaUploadEnabled = getEnv("LANGFUSE_MEDIA_UPLOAD_ENABLED");
+    const mediaUploadEnabled =
+      params?.mediaUploadEnabled ??
+      (envMediaUploadEnabled
+        ? !["false", "0"].includes(envMediaUploadEnabled.toLowerCase())
+        : true);
 
     const exporter =
       params?.exporter ??
@@ -291,6 +308,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     this.shouldExportSpan =
       params?.shouldExportSpan ??
       (({ otelSpan }) => isDefaultExportSpan(otelSpan));
+    this.mediaUploadEnabled = mediaUploadEnabled;
     this.apiClient = new LangfuseAPIClient({
       baseUrl: this.baseUrl,
       username: this.publicKey,
@@ -312,6 +330,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       timeoutSeconds,
       flushAt,
       flushIntervalSeconds,
+      mediaUploadEnabled,
     });
   }
 
@@ -433,7 +452,10 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     }
 
     await this.applyMaskInPlace(span);
-    await this.mediaService.process(span);
+
+    if (this.mediaUploadEnabled) {
+      await this.mediaService.process(span);
+    }
 
     if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
       this.logger.debug(

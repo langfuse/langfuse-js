@@ -73,6 +73,10 @@ export default defineWorkspace([
           "./packages/openai/dist/index.mjs",
           import.meta.url,
         ).pathname,
+        "@langfuse/vercel-ai-sdk": new URL(
+          "./packages/vercel-ai-sdk/dist/index.mjs",
+          import.meta.url,
+        ).pathname,
         "@langfuse/core": new URL(
           "./packages/core/dist/index.mjs",
           import.meta.url,
@@ -112,6 +116,10 @@ export default defineWorkspace([
         ).pathname,
         "@langfuse/openai": new URL(
           "./packages/openai/dist/index.mjs",
+          import.meta.url,
+        ).pathname,
+        "@langfuse/vercel-ai-sdk": new URL(
+          "./packages/vercel-ai-sdk/dist/index.mjs",
           import.meta.url,
         ).pathname,
         "@langfuse/core": new URL(

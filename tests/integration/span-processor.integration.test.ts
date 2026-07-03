@@ -27,6 +27,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
   });
 
   afterEach(async () => {
+    delete process.env.LANGFUSE_MEDIA_UPLOAD_ENABLED;
     await teardownTestEnvironment(testEnv);
     vi.restoreAllMocks();
     resetGlobalLogger();
@@ -221,6 +222,61 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         /@@@langfuseMedia:type=[^|]+\|id=[^|]+\|source=[^@]+@@@/g,
       );
       expect(mediaMatches).toHaveLength(2);
+    });
+
+    it("should keep base64 data URIs unchanged when media upload is disabled by processor option", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mediaUploadEnabled: false,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const base64Image =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+      const span = startObservation("media-disabled-option-span", {
+        input: {
+          image: base64Image,
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "media-disabled-option-span",
+      )?.["langfuse.observation.input"] as string;
+      expect(inputValue).toContain(base64Image);
+      expect(inputValue).not.toMatch(/@@@langfuseMedia:/);
+    });
+
+    it("should keep base64 data URIs unchanged when media upload is disabled by environment variable", async () => {
+      process.env.LANGFUSE_MEDIA_UPLOAD_ENABLED = "false";
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment();
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const base64Image =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+      const span = startObservation("media-disabled-env-span", {
+        input: {
+          image: base64Image,
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "media-disabled-env-span",
+      )?.["langfuse.observation.input"] as string;
+      expect(inputValue).toContain(base64Image);
+      expect(inputValue).not.toMatch(/@@@langfuseMedia:/);
     });
   });
 
