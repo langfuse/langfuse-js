@@ -27,7 +27,7 @@ export interface CreateBlobStorageIntegrationRequest {
   forcePathStyle: boolean;
   fileType: LangfuseAPI.BlobStorageIntegrationFileType;
   exportMode: LangfuseAPI.BlobStorageExportMode;
-  /** Custom start date for exports (required when exportMode is FROM_CUSTOM_DATE) */
+  /** Custom start date for exports (required when exportMode is FROM_CUSTOM_DATE). Must not be in the future (27 h tolerance for timezone differences). */
   exportStartDate?: string;
   /** Enable gzip compression for exported files (.csv.gz, .json.gz, .jsonl.gz). Defaults to true. */
   compressed?: boolean;
