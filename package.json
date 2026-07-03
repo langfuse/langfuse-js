@@ -80,7 +80,6 @@
   },
   "resolutions": {
     "@grpc/proto-loader@0.8.1>protobufjs": "7.6.4",
-    "@opentelemetry/otlp-transformer@0.205.0>protobufjs": "7.6.4",
     "ml-spectra-processing": "14.14.0"
   },
   "packageManager": "pnpm@10.33.0"
