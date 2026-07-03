@@ -3,6 +3,7 @@
  */
 
 import * as core from "../../../../core/index.js";
+import { DashboardWidgets } from "../resources/dashboardWidgets/client/Client.js";
 import { EvaluationRules } from "../resources/evaluationRules/client/Client.js";
 import { Evaluators } from "../resources/evaluators/client/Client.js";
 
@@ -29,11 +30,16 @@ export declare namespace Unstable {
 
 export class Unstable {
   protected readonly _options: Unstable.Options;
+  protected _dashboardWidgets: DashboardWidgets | undefined;
   protected _evaluationRules: EvaluationRules | undefined;
   protected _evaluators: Evaluators | undefined;
 
   constructor(_options: Unstable.Options) {
     this._options = _options;
+  }
+
+  public get dashboardWidgets(): DashboardWidgets {
+    return (this._dashboardWidgets ??= new DashboardWidgets(this._options));
   }
 
   public get evaluationRules(): EvaluationRules {

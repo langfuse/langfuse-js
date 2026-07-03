@@ -16,7 +16,7 @@ export interface BlobStorageIntegrationResponse {
   exportFrequency: LangfuseAPI.BlobStorageExportFrequency;
   enabled: boolean;
   forcePathStyle: boolean;
-  fileType: LangfuseAPI.BlobStorageIntegrationFileType;
+  fileType: LangfuseAPI.BlobStorageIntegrationFileTypeResponse;
   exportMode: LangfuseAPI.BlobStorageExportMode;
   exportStartDate: string | null;
   compressed: boolean;
