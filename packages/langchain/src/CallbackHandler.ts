@@ -36,11 +36,13 @@ export type LlmMessage = {
   role: string;
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
+  tool_call_id?: string;
 };
 
 export type AnonymousLlmMessage = {
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
+  tool_call_id?: string;
 };
 
 type ConstructorParams = {
@@ -331,6 +333,16 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.deregisterLangfusePrompt(parentRunId);
     }
 
+    const tools = (invocationParams as Record<string, unknown> | undefined)
+      ?.tools;
+    let inputMessages = messages;
+    if (Array.isArray(tools) && tools.length > 0) {
+      inputMessages = [
+        ...messages,
+        ...tools.map((t) => ({ role: "tool", content: t }) as LlmMessage),
+      ];
+    }
+
     this.startAndRegisterOtelSpan({
       type: "generation",
       runId,
@@ -339,7 +351,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       tags,
       runName,
       attributes: {
-        input: messages,
+        input: inputMessages,
         model: extractedModelName,
         modelParameters: modelParameters,
         prompt: registeredPrompt,
@@ -962,7 +974,15 @@ export class CallbackHandler extends BaseCallbackHandler {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "tool",
+        tool_call_id:
+          "tool_call_id" in message
+            ? (
+                message as BaseMessage & {
+                  tool_call_id?: string;
+                }
+              ).tool_call_id
+            : undefined,
       };
     } else if (!message.name) {
       response = { content: message.content };

@@ -1,3 +1,4 @@
+import { HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -61,6 +62,92 @@ describe("LangChain callback handler integration tests", () => {
     assertions.expectSpanAttribute(
       "calculator",
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+      "The result is: 100",
+    );
+  });
+
+  it("should include invocation_params tools as {role:'tool'} messages in the generation input", async () => {
+    const handler = new CallbackHandler();
+
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "get_current_weather",
+          description: "Get the current weather in a given location",
+          parameters: { type: "object", properties: {} },
+        },
+      },
+    ];
+
+    const runId = "run-id-tools-test";
+
+    await handler.handleGenerationStart(
+      { id: ["test", "FakeLLM"] } as any,
+      [{ role: "user", content: "What's the weather?" }],
+      runId,
+      undefined,
+      { invocation_params: { tools } },
+    );
+    await handler.handleLLMEnd(
+      { generations: [[{ text: "ok" }]], llmOutput: {} } as any,
+      runId,
+    );
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanCount(1);
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"role":"tool"',
+    );
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      "get_current_weather",
+    );
+  });
+
+  it("should serialize ToolMessage with role 'tool' and tool_call_id in the generation input", async () => {
+    const handler = new CallbackHandler();
+
+    const toolMessage = new ToolMessage({
+      content: "The result is: 100",
+      tool_call_id: "call_abc123",
+      name: "calculator",
+    });
+
+    const runId = "run-id-tool-message-test";
+
+    await handler.handleChatModelStart(
+      { id: ["test", "FakeLLM"] } as any,
+      [[new HumanMessage("What is 25*4?"), toolMessage]],
+      runId,
+      undefined,
+      { invocation_params: {} },
+    );
+    await handler.handleLLMEnd(
+      { generations: [[{ text: "ok" }]], llmOutput: {} } as any,
+      runId,
+    );
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanCount(1);
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"role":"tool"',
+    );
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"tool_call_id":"call_abc123"',
+    );
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       "The result is: 100",
     );
   });
