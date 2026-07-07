@@ -109,6 +109,56 @@ describe("LangChain callback handler integration tests", () => {
     );
   });
 
+  it("should normalize flat Responses API tools into canonical {function:{...}} shape in the generation input", async () => {
+    const handler = new CallbackHandler();
+
+    // Flat shape as emitted by the OpenAI Responses API (gpt-5.x via ChatOpenAI)
+    const tools = [
+      {
+        type: "function",
+        name: "get_current_weather",
+        description: "Get the current weather in a given location",
+        parameters: { type: "object", properties: {} },
+        strict: true,
+      },
+    ];
+
+    const runId = "run-id-tools-flat-test";
+
+    await handler.handleGenerationStart(
+      { id: ["test", "FakeLLM"] } as any,
+      [{ role: "user", content: "What's the weather?" }],
+      runId,
+      undefined,
+      { invocation_params: { tools } },
+    );
+    await handler.handleLLMEnd(
+      { generations: [[{ text: "ok" }]], llmOutput: {} } as any,
+      runId,
+    );
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanCount(1);
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"role":"tool"',
+    );
+    // The flat tool must be wrapped under a `function` object key
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"function":{"name":"get_current_weather"',
+    );
+    // The top-level `name` field must NOT be present (it moved under `function`)
+    assertions.expectSpanAttributeContains(
+      "FakeLLM",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"strict":true',
+    );
+  });
+
   it("should serialize ToolMessage with role 'tool' and tool_call_id in the generation input", async () => {
     const handler = new CallbackHandler();
 
