@@ -83,7 +83,7 @@ export class LangfuseSkillCache {
     );
 
     for (const key of this._cache.keys()) {
-      if (key.startsWith(skillName)) {
+      if (key.startsWith(skillName + "-")) {
         this._cache.delete(key);
       }
     }
