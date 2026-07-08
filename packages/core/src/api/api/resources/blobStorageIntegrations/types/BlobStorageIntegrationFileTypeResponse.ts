@@ -3,7 +3,7 @@
  */
 
 /**
- * File type reported for an existing integration. Includes `PARQUET`, which a project may enable through the Langfuse UI but cannot yet be set via this API (the request `fileType` omits it).
+ * File type reported for an existing integration.
  */
 export type BlobStorageIntegrationFileTypeResponse =
   | "JSON"
