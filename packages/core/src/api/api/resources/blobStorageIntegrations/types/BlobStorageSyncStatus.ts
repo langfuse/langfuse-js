@@ -6,8 +6,9 @@
  * Sync status of the blob storage integration:
  * - `disabled` — integration is not enabled
  * - `error` — last export failed (see `lastError` for details)
- * - `idle` — enabled but has never exported yet
+ * - `running` — an export job is currently being processed
  * - `queued` — next export is overdue (`nextSyncAt` is in the past) and waiting to be picked up by the worker
+ * - `idle` — enabled but has never exported yet and no export is queued
  * - `up_to_date` — all available data has been exported; next export is scheduled for the future
  *
  * **ETL usage**: poll this endpoint and check for `up_to_date` status. Compare `lastSyncAt` against your
@@ -16,12 +17,14 @@
  */
 export type BlobStorageSyncStatus =
   | "idle"
+  | "running"
   | "queued"
   | "up_to_date"
   | "disabled"
   | "error";
 export const BlobStorageSyncStatus = {
   Idle: "idle",
+  Running: "running",
   Queued: "queued",
   UpToDate: "up_to_date",
   Disabled: "disabled",

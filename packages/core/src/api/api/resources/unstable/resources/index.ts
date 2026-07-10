@@ -1,5 +1,7 @@
 export * as commons from "./commons/index.js";
 export * from "./commons/types/index.js";
+export * as dashboardWidgets from "./dashboardWidgets/index.js";
+export * from "./dashboardWidgets/types/index.js";
 export * as errors from "./errors/index.js";
 export * from "./errors/types/index.js";
 export * as evaluationRules from "./evaluationRules/index.js";
