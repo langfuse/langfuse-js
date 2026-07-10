@@ -26,7 +26,9 @@ type CorrelatedKey =
   | "metadata"
   | "version"
   | "tags"
-  | "traceName";
+  | "traceName"
+  | "promptName"
+  | "promptVersion";
 
 const experimentKeys = [
   "experimentId",
@@ -57,6 +59,8 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   version: createContextKey("langfuse_version"),
   tags: createContextKey("langfuse_tags"),
   traceName: createContextKey("langfuse_trace_name"),
+  promptName: createContextKey("langfuse_prompt_name"),
+  promptVersion: createContextKey("langfuse_prompt_version"),
 
   // Experiments
   experimentId: createContextKey("langfuse_experiment_id"),
@@ -124,6 +128,24 @@ export function setLangfuseTraceIdInBaggage(
 }
 
 /**
+ * Prompt-like input accepted by {@link propagateAttributes}.
+ *
+ * Satisfied by prompt clients returned from Langfuse prompt management
+ * (e.g. `langfuse.prompt.get(...)`) as well as plain objects exposing
+ * `name` and `version`.
+ *
+ * @public
+ */
+export type PropagatedPromptInput = {
+  /** Name of the prompt. Must be a non-empty string. */
+  name: string;
+  /** Version of the prompt. Must be an integer; digit-only strings (e.g. "5") are coerced. */
+  version: number | string;
+  /** Whether this is a fallback prompt. Fallback prompts are never linked. */
+  isFallback?: boolean;
+};
+
+/**
  * Parameters for propagateAttributes function.
  *
  * @public
@@ -167,6 +189,22 @@ export interface PropagateAttributesParams {
    * Must be a string ≤200 characters.
    */
   traceName?: string;
+
+  /**
+   * Langfuse prompt to link to observations created within this context.
+   *
+   * Accepts a prompt client returned by `langfuse.prompt.get(...)` or any plain
+   * object exposing `name` (non-empty string) and `version` (integer) — e.g.
+   * `{ name: "my-prompt", version: 3 }`. This is the recommended way to link
+   * prompts to generations emitted by auto-instrumentation libraries (e.g.
+   * OpenInference, other OTel instrumentations) where you don't create the
+   * generation via the Langfuse SDK yourself.
+   *
+   * The prompt link is only applied to generation-type observations by the
+   * Langfuse backend. Fallback prompts are never linked. An explicit `prompt`
+   * set directly on an observation takes precedence over the propagated one.
+   */
+  prompt?: PropagatedPromptInput;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -233,6 +271,27 @@ export interface PropagateAttributesParams {
  *     const gen = startObservation('completion', {}, { asType: 'generation' });
  *     // This span also inherits all attributes
  *     gen.end();
+ *   });
+ * });
+ * ```
+ *
+ * @example
+ * Prompt linking with auto-instrumented libraries:
+ *
+ * ```typescript
+ * import { LangfuseClient } from '@langfuse/client';
+ * import { propagateAttributes } from '@langfuse/tracing';
+ *
+ * const langfuse = new LangfuseClient();
+ * const prompt = await langfuse.prompt.get('my-prompt');
+ *
+ * await propagateAttributes({ prompt }, async () => {
+ *   // Generations emitted by auto-instrumentation (OpenInference,
+ *   // other OTel instrumentations, ...) within this context are
+ *   // linked to the prompt version.
+ *   const completion = await openai.chat.completions.create({
+ *     model: 'gpt-4o',
+ *     messages: [{ role: 'user', content: prompt.compile({ topic: 'chickens' }) }],
  *   });
  * });
  * ```
@@ -309,6 +368,7 @@ export function propagateAttributes<
     version,
     tags,
     traceName,
+    prompt,
     _internalExperiment,
   } = params;
 
@@ -426,6 +486,28 @@ export function propagateAttributes<
     }
   }
 
+  // Validate and set prompt
+  if (prompt) {
+    const propagatedPrompt = extractPropagatedPrompt(prompt);
+
+    if (propagatedPrompt) {
+      context = setPropagatedAttribute({
+        key: "promptName",
+        value: propagatedPrompt.name,
+        context,
+        span,
+        asBaggage,
+      });
+      context = setPropagatedAttribute({
+        key: "promptVersion",
+        value: propagatedPrompt.version,
+        context,
+        span,
+        asBaggage,
+      });
+    }
+  }
+
   // Handle experiment attributes
   if (_internalExperiment) {
     for (const [key, value] of Object.entries(_internalExperiment)) {
@@ -446,10 +528,56 @@ export function propagateAttributes<
   return otelContextApi.with(context, fn);
 }
 
+/**
+ * Extracts and validates `{ name, version }` from a prompt-like value.
+ *
+ * Accepts a prompt client or any plain object exposing `name` and `version`.
+ * Returns null (with a log) if the value is invalid or a fallback prompt.
+ *
+ * @internal
+ */
+function extractPropagatedPrompt(
+  prompt: PropagatedPromptInput,
+): { name: string; version: number } | null {
+  const logger = getGlobalLogger();
+  const { name, version: rawVersion, isFallback } = prompt;
+
+  if (isFallback) {
+    logger.debug(
+      "Propagated prompt is a fallback prompt. Skipping prompt linking.",
+    );
+
+    return null;
+  }
+
+  if (typeof name !== "string" || name.length === 0) {
+    logger.warn(
+      "Propagated 'prompt' has no valid 'name' (non-empty string required). Dropping prompt link.",
+    );
+
+    return null;
+  }
+
+  const version =
+    typeof rawVersion === "string" && /^\d+$/.test(rawVersion)
+      ? Number(rawVersion)
+      : rawVersion;
+
+  if (typeof version !== "number" || !Number.isInteger(version)) {
+    logger.warn(
+      "Propagated 'prompt' has no valid 'version' (integer required). Dropping prompt link.",
+    );
+
+    return null;
+  }
+
+  return { name, version };
+}
+
 export function getPropagatedAttributesFromContext(
   context: Context,
-): Record<string, string | string[]> {
-  const propagatedAttributes: Record<string, string | string[]> = {};
+): Record<string, string | string[] | number> {
+  const propagatedAttributes: Record<string, string | string[] | number> = {};
 
   // Handle baggage
   const baggage = propagation.getBaggage(context);
@@ -462,6 +590,17 @@ export function getPropagatedAttributesFromContext(
         const spanKey = getSpanKeyFromBaggageKey(baggageKey);
 
         if (spanKey) {
+          // Prompt version is an integer span attribute; restore it from its
+          // string representation in baggage
+          if (
+            spanKey === LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION &&
+            /^\d+$/.test(baggageEntry.value)
+          ) {
+            propagatedAttributes[spanKey] = Number(baggageEntry.value);
+
+            return;
+          }
+
           const isMergedTags =
             baggageKey == getBaggageKeyForPropagatedKey("tags");
 
@@ -509,6 +648,22 @@ export function getPropagatedAttributesFromContext(
     propagatedAttributes[spanKey] = tags;
   }
 
+  const promptName = context.getValue(LangfuseOtelContextKeys["promptName"]);
+  if (promptName && typeof promptName === "string") {
+    const spanKey = getSpanKeyForPropagatedKey("promptName");
+
+    propagatedAttributes[spanKey] = promptName;
+  }
+
+  const promptVersion = context.getValue(
+    LangfuseOtelContextKeys["promptVersion"],
+  );
+  if (typeof promptVersion === "number") {
+    const spanKey = getSpanKeyForPropagatedKey("promptVersion");
+
+    propagatedAttributes[spanKey] = promptVersion;
+  }
+
   const metadata = context.getValue(LangfuseOtelContextKeys["metadata"]);
   if (metadata && typeof metadata === "object" && metadata !== null) {
     for (const [k, v] of Object.entries(metadata)) {
@@ -548,8 +703,18 @@ type SetPropagatedAttributeParams = {
   asBaggage: boolean;
 } & (
   | {
-      key: "userId" | "sessionId" | "version" | "traceName" | ExperimentKey;
+      key:
+        | "userId"
+        | "sessionId"
+        | "version"
+        | "traceName"
+        | "promptName"
+        | ExperimentKey;
       value: string;
+    }
+  | {
+      key: "promptVersion";
+      value: number;
     }
   | {
       key: "metadata";
@@ -614,7 +779,9 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
         value: mergedTags.join(LANGFUSE_BAGGAGE_TAGS_SEPARATOR),
       });
     } else {
-      baggage = baggage.setEntry(baggageKey, { value });
+      // Baggage values must be strings; integer values (prompt version) are
+      // restored to numbers when reading the baggage back
+      baggage = baggage.setEntry(baggageKey, { value: String(value) });
     }
 
     context = propagation.setBaggage(context, baggage);
@@ -696,6 +863,10 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
     case "tags":
       return LangfuseOtelSpanAttributes.TRACE_TAGS;
+    case "promptName":
+      return LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME;
+    case "promptVersion":
+      return LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION;
     case "experimentId":
       return LangfuseOtelSpanAttributes.EXPERIMENT_ID;
     case "experimentName":
@@ -734,6 +905,10 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
     case "tags":
       return `${LANGFUSE_BAGGAGE_PREFIX}tags`;
+    case "promptName":
+      return `${LANGFUSE_BAGGAGE_PREFIX}prompt_name`;
+    case "promptVersion":
+      return `${LANGFUSE_BAGGAGE_PREFIX}prompt_version`;
     case "experimentId":
       return `${LANGFUSE_BAGGAGE_PREFIX}experiment_id`;
     case "experimentName":
@@ -779,6 +954,10 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
       return getSpanKeyForPropagatedKey("traceName");
     case "tags":
       return getSpanKeyForPropagatedKey("tags");
+    case "prompt_name":
+      return getSpanKeyForPropagatedKey("promptName");
+    case "prompt_version":
+      return getSpanKeyForPropagatedKey("promptVersion");
     case "experiment_id":
       return getSpanKeyForPropagatedKey("experimentId");
     case "experiment_name":
