@@ -6,6 +6,7 @@
  * to all child spans within the context.
  */
 
+import { TextPromptClient } from "@langfuse/client";
 import {
   LangfuseOtelContextKeys,
   LangfuseOtelSpanAttributes,
@@ -1499,6 +1500,471 @@ describe("propagateAttributes", () => {
     });
   });
 
+  describe("Prompt Propagation", () => {
+    const makePromptClient = (params?: {
+      name?: string;
+      version?: number;
+      isFallback?: boolean;
+    }) =>
+      new TextPromptClient(
+        {
+          name: params?.name ?? "test-prompt",
+          version: params?.version ?? 3,
+          prompt: "Make me laugh",
+          type: "text",
+          labels: [],
+          config: {},
+          tags: [],
+        },
+        params?.isFallback ?? false,
+      );
+
+    it("should propagate prompt client name and version to child spans", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+      const prompt = makePromptClient({ name: "test-prompt", version: 3 });
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ prompt }, () => {
+          const child1 = startObservation("child-1");
+          child1.end();
+
+          const child2 = startObservation(
+            "child-2",
+            {},
+            { asType: "generation" },
+          );
+          child2.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+
+      for (const name of ["child-1", "child-2"]) {
+        const child = spans.find((s) => s.name === name);
+
+        expect(
+          child?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+        ).toBe("test-prompt");
+        expect(
+          child?.attributes[
+            LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+          ],
+        ).toBe(3);
+      }
+    });
+
+    it("should support plain object prompt input", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { prompt: { name: "object-prompt", version: 7 } },
+          () => {
+            const child = startObservation("child");
+            child.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBe("object-prompt");
+      expect(
+        child?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(7);
+    });
+
+    it("should coerce digit-only string version to integer", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { prompt: { name: "prompt", version: "5" } },
+          () => {
+            const child = startObservation("child");
+            child.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(5);
+    });
+
+    it("should not link fallback prompts", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+      const prompt = makePromptClient({ isFallback: true });
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ prompt }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBeUndefined();
+      expect(
+        child?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBeUndefined();
+    });
+
+    it("should drop prompt link when name is invalid", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ prompt: { name: "", version: 3 } }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBeUndefined();
+      expect(
+        child?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBeUndefined();
+    });
+
+    it("should drop prompt link when version is invalid", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { prompt: { name: "prompt", version: "not-a-number" } },
+          () => {
+            const child1 = startObservation("child-1");
+            child1.end();
+          },
+        );
+
+        propagateAttributes(
+          { prompt: { name: "prompt", version: 1.5 } },
+          () => {
+            const child2 = startObservation("child-2");
+            child2.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+
+      for (const name of ["child-1", "child-2"]) {
+        const child = spans.find((s) => s.name === name);
+
+        expect(
+          child?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+        ).toBeUndefined();
+        expect(
+          child?.attributes[
+            LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+          ],
+        ).toBeUndefined();
+      }
+    });
+
+    it("should let an explicit observation prompt win over the propagated one", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+      const propagatedPrompt = makePromptClient({
+        name: "propagated-prompt",
+        version: 3,
+      });
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ prompt: propagatedPrompt }, () => {
+          const generation = startObservation(
+            "generation",
+            {
+              prompt: {
+                name: "explicit-prompt",
+                version: 10,
+                isFallback: false,
+              },
+            },
+            { asType: "generation" },
+          );
+          generation.end();
+
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const generation = spans.find((s) => s.name === "generation");
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        generation?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
+        ],
+      ).toBe("explicit-prompt");
+      expect(
+        generation?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(10);
+
+      // Sibling without explicit prompt still gets the propagated one
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBe("propagated-prompt");
+      expect(
+        child?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(3);
+    });
+
+    it("should let creation-time prompt attributes win over the propagated one", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+      const propagatedPrompt = makePromptClient({
+        name: "propagated-prompt",
+        version: 3,
+      });
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ prompt: propagatedPrompt }, () => {
+          // Simulates third-party instrumentations that pass attributes at
+          // span creation time (before the span processor's onStart)
+          const rawSpan = tracer.startSpan("raw-span", {
+            attributes: {
+              [LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME]:
+                "explicit-prompt",
+              [LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION]: 10,
+            },
+          });
+          rawSpan.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const rawSpan = spans.find((s) => s.name === "raw-span");
+
+      expect(
+        rawSpan?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBe("explicit-prompt");
+      expect(
+        rawSpan?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(10);
+    });
+
+    it("should shadow outer prompt in nested contexts and restore on exit", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { prompt: { name: "outer-prompt", version: 1 } },
+          () => {
+            const spanOuter1 = startObservation("span-outer-1");
+            spanOuter1.end();
+
+            propagateAttributes(
+              { prompt: { name: "inner-prompt", version: 2 } },
+              () => {
+                const spanInner = startObservation("span-inner");
+                spanInner.end();
+              },
+            );
+
+            // Back to outer context
+            const spanOuter2 = startObservation("span-outer-2");
+            spanOuter2.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 4);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const spanOuter1 = spans.find((s) => s.name === "span-outer-1");
+      const spanInner = spans.find((s) => s.name === "span-inner");
+      const spanOuter2 = spans.find((s) => s.name === "span-outer-2");
+
+      expect(
+        spanOuter1?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
+        ],
+      ).toBe("outer-prompt");
+      expect(
+        spanOuter1?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(1);
+
+      expect(
+        spanInner?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
+        ],
+      ).toBe("inner-prompt");
+      expect(
+        spanInner?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(2);
+
+      expect(
+        spanOuter2?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
+        ],
+      ).toBe("outer-prompt");
+      expect(
+        spanOuter2?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(1);
+    });
+
+    it("should compose with other propagated attributes", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { userId: "user_123", sessionId: "session_abc" },
+          () => {
+            propagateAttributes(
+              { prompt: { name: "test-prompt", version: 3 } },
+              () => {
+                const spanInner = startObservation("span-inner");
+                spanInner.end();
+              },
+            );
+
+            // After inner context exits, prompt is gone but outer attrs remain
+            const spanOuter = startObservation("span-outer");
+            spanOuter.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const spanInner = spans.find((s) => s.name === "span-inner");
+      const spanOuter = spans.find((s) => s.name === "span-outer");
+
+      expect(
+        spanInner?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID],
+      ).toBe("user_123");
+      expect(
+        spanInner?.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID],
+      ).toBe("session_abc");
+      expect(
+        spanInner?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
+        ],
+      ).toBe("test-prompt");
+      expect(
+        spanInner?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(3);
+
+      expect(
+        spanOuter?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID],
+      ).toBe("user_123");
+      expect(
+        spanOuter?.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID],
+      ).toBe("session_abc");
+      expect(
+        spanOuter?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
+        ],
+      ).toBeUndefined();
+      expect(
+        spanOuter?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBeUndefined();
+    });
+
+    it("should propagate prompt in baggage mode", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes(
+          { prompt: { name: "test-prompt", version: 3 }, asBaggage: true },
+          () => {
+            const currentContext = otelContext.active();
+            const baggage = propagation.getBaggage(currentContext);
+
+            expect(baggage).toBeDefined();
+            const entries = Array.from(baggage!.getAllEntries());
+            const nameEntry = entries.find(
+              ([key]) => key === "langfuse_prompt_name",
+            );
+            const versionEntry = entries.find(
+              ([key]) => key === "langfuse_prompt_version",
+            );
+
+            expect(nameEntry?.[1].value).toBe("test-prompt");
+            // Baggage values are strings
+            expect(versionEntry?.[1].value).toBe("3");
+
+            const child = startObservation("child");
+            child.end();
+          },
+        );
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const child = spans.find((s) => s.name === "child");
+
+      expect(
+        child?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBe("test-prompt");
+      // Version is restored to an integer when reading back from baggage
+      expect(
+        child?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+        ],
+      ).toBe(3);
+    });
+  });
+
   describe("getPropagatedAttributesFromContext", () => {
     it("should read userId from context", () => {
       const context = ROOT_CONTEXT.setValue(
@@ -1562,6 +2028,39 @@ describe("propagateAttributes", () => {
       expect(
         attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
       ).toBe("value2");
+    });
+
+    it("should read prompt from context", () => {
+      const context = ROOT_CONTEXT.setValue(
+        LangfuseOtelContextKeys["promptName"],
+        "context-prompt",
+      ).setValue(LangfuseOtelContextKeys["promptVersion"], 4);
+      const attributes = getPropagatedAttributesFromContext(context);
+
+      expect(
+        attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBe("context-prompt");
+      expect(
+        attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION],
+      ).toBe(4);
+    });
+
+    it("should restore integer prompt version from baggage", () => {
+      let baggage = propagation.createBaggage();
+      baggage = baggage.setEntry("langfuse_prompt_name", {
+        value: "baggage-prompt",
+      });
+      baggage = baggage.setEntry("langfuse_prompt_version", { value: "12" });
+
+      const context = propagation.setBaggage(ROOT_CONTEXT, baggage);
+      const attributes = getPropagatedAttributesFromContext(context);
+
+      expect(
+        attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME],
+      ).toBe("baggage-prompt");
+      expect(
+        attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION],
+      ).toBe(12);
     });
 
     it("should read attributes from baggage", () => {

@@ -70,6 +70,7 @@ export {
 export {
   propagateAttributes,
   type PropagateAttributesParams,
+  type PropagatedPromptInput,
 } from "@langfuse/core";
 
 export { LangfuseOtelSpanAttributes } from "@langfuse/core";

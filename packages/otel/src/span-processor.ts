@@ -347,11 +347,27 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onStart(span: Span, parentContext: Context): void {
+    const propagatedAttributes =
+      getPropagatedAttributesFromContext(parentContext);
+
+    // An explicit prompt set at span creation takes precedence over a propagated one
+    if (
+      span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME] !=
+      null
+    ) {
+      delete propagatedAttributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME
+      ];
+      delete propagatedAttributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+      ];
+    }
+
     // Set propagated attributes, environment and release attributes
     span.setAttributes({
       [LangfuseOtelSpanAttributes.ENVIRONMENT]: this.environment,
       [LangfuseOtelSpanAttributes.RELEASE]: this.release,
-      ...getPropagatedAttributesFromContext(parentContext),
+      ...propagatedAttributes,
     });
 
     try {
