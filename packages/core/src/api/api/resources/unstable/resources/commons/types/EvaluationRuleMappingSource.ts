@@ -8,13 +8,14 @@
  * Use these values when mapping evaluator prompt variables to live data.
  *
  * Target-specific rules:
- * - `target=observation` supports `input`, `output`, and `metadata`
- * - `target=experiment` supports `input`, `output`, `metadata`, `expected_output`, and `experiment_item_metadata`
+ * - `target=observation` supports `input`, `output`, `metadata`, and `tool_calls`
+ * - `target=experiment` supports `input`, `output`, `metadata`, `tool_calls`, `expected_output`, and `experiment_item_metadata`
  *
  * Source semantics:
  * - `input`: the observation or experiment input payload
  * - `output`: the observation or experiment output payload
  * - `metadata`: the metadata object for the target. Combine with `jsonPath` when you need one nested field instead of the whole object.
+ * - `tool_calls`: the tool calls recorded on the observation, as an array of `{id, name, arguments, type, index}` objects in the order the model emitted them. Combine with `jsonPath` (for example `$[*].name`) to select parts of each call.
  * - `expected_output`: the experiment item's expected output. Only valid for `target=experiment`.
  * - `experiment_item_metadata`: the experiment item's metadata object. Only valid for `target=experiment`.
  */
@@ -22,12 +23,14 @@ export type EvaluationRuleMappingSource =
   | "input"
   | "output"
   | "metadata"
+  | "tool_calls"
   | "expected_output"
   | "experiment_item_metadata";
 export const EvaluationRuleMappingSource = {
   Input: "input",
   Output: "output",
   Metadata: "metadata",
+  ToolCalls: "tool_calls",
   ExpectedOutput: "expected_output",
   ExperimentItemMetadata: "experiment_item_metadata",
 } as const;
