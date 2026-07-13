@@ -389,17 +389,15 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this.logger.debug(`Chain end with ID: ${runId}`);
 
-      let finalOutput = this.extractChainOutput(outputs);
-      if (
-        typeof outputs === "object" &&
-        "output" in outputs &&
-        (typeof outputs["output"] === "string" ||
-          this.isStringPromptValue(outputs["output"]) ||
-          (Array.isArray(outputs["output"]) &&
-            outputs["output"].every((value: unknown) => isBaseMessage(value))))
-      ) {
-        finalOutput = this.extractChainOutput(outputs["output"]);
-      }
+      const output = outputs["output"];
+      const shouldUnwrapOutput =
+        typeof output === "string" ||
+        this.isStringPromptValue(output) ||
+        (Array.isArray(output) &&
+          output.every((value: unknown) => isBaseMessage(value)));
+      const finalOutput = this.extractChainOutput(
+        shouldUnwrapOutput ? output : outputs,
+      );
 
       this.handleOtelSpanEnd({
         runId,
@@ -955,6 +953,8 @@ export class CallbackHandler extends BaseCallbackHandler {
       value?: unknown;
     };
 
+    // lc_id is used intentionally because consumers can load multiple compatible
+    // @langchain/core versions, making instanceof checks unreliable across them.
     return (
       Array.isArray(promptValue.lc_id) &&
       promptValue.lc_id.at(-1) === "StringPromptValue" &&
