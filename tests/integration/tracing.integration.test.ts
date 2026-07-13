@@ -313,6 +313,32 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           "v1.0.0",
         );
       });
+
+      it("should use the observation environment over the span processor environment", async () => {
+        await teardownTestEnvironment(testEnv);
+
+        testEnv = await setupTestEnvironment({
+          spanProcessorConfig: {
+            environment: "default",
+          },
+        });
+        assertions = new SpanAssertions(testEnv.mockExporter);
+
+        const generation = startObservation(
+          "runtime-env-generation",
+          { environment: "runtime-env" },
+          { asType: "generation" },
+        );
+        generation.end();
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        assertions.expectSpanAttribute(
+          "runtime-env-generation",
+          LangfuseOtelSpanAttributes.ENVIRONMENT,
+          "runtime-env",
+        );
+      });
     });
 
     describe("Span processor configuration", () => {
