@@ -12,6 +12,8 @@
 > npm install @langfuse/otel @langfuse/tracing
 > ```
 >
+> For AI SDK v7 (`ai@7`), use [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) instead.
+>
 > Docs: https://langfuse.com/integrations/frameworks/vercel-ai-sdk — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
 
 This is the JS/TS client for the Langfuse Vercel AI SDK integration. This integration is currently in beta and functionality and interfaces may change.

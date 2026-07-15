@@ -2,6 +2,11 @@
   "name": "langfuse-core",
   "version": "3.38.20",
   "description": "LEGACY shared core for the Langfuse v3 SDK (maintenance mode). Do not install directly. Current SDK: @langfuse/tracing, @langfuse/otel, @langfuse/client",
+  "keywords": [
+    "langfuse",
+    "legacy",
+    "deprecated"
+  ],
   "homepage": "https://langfuse.com/docs/observability/sdk/overview",
   "engines": {
     "node": ">=18"

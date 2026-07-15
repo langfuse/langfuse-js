@@ -32,12 +32,12 @@ function emitV3DeprecationWarning(): void {
   if (deprecationWarningEmitted) {
     return;
   }
-  deprecationWarningEmitted = true;
 
-  const hasProcess = typeof process !== "undefined";
-  if (hasProcess && process.env?.LANGFUSE_SUPPRESS_DEPRECATION_WARNING) {
+  if (utils.getEnv("LANGFUSE_SUPPRESS_DEPRECATION_WARNING")) {
     return;
   }
+
+  deprecationWarningEmitted = true;
 
   const message =
     "The 'langfuse' package is the legacy Langfuse v3 SDK and only receives critical bug fixes. " +
@@ -46,7 +46,7 @@ function emitV3DeprecationWarning(): void {
     "Migration guide for existing projects: https://langfuse.com/docs/observability/sdk/upgrade-path. " +
     "Set LANGFUSE_SUPPRESS_DEPRECATION_WARNING=1 to silence this warning.";
 
-  if (hasProcess && typeof process.emitWarning === "function") {
+  if (typeof process !== "undefined" && typeof process.emitWarning === "function") {
     process.emitWarning(message, { type: "DeprecationWarning", code: "LANGFUSE_V3_SDK" });
   } else if (typeof console !== "undefined") {
     console.warn(`DeprecationWarning: ${message}`);

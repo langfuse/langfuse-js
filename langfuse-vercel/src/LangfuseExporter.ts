@@ -13,7 +13,8 @@ type LangfuseExporterParams = {
 /**
  * @deprecated `langfuse-vercel` is the legacy Langfuse v3 integration for the Vercel AI SDK and only
  * receives critical bug fixes. Use the AI SDK's `experimental_telemetry` together with
- * `LangfuseSpanProcessor` from `@langfuse/otel` instead (`npm install @langfuse/otel @langfuse/tracing`).
+ * `LangfuseSpanProcessor` from `@langfuse/otel` instead (`npm install @langfuse/otel @langfuse/tracing`);
+ * for AI SDK v7 (`ai@7`), use `@langfuse/vercel-ai-sdk`.
  * Docs: https://langfuse.com/integrations/frameworks/vercel-ai-sdk —
  * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
  */

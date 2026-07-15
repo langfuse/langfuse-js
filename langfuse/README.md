@@ -12,14 +12,14 @@
 npm install @langfuse/tracing @langfuse/otel @langfuse/client
 ```
 
-| Current package                                                                    | Use for                                                           | Replaces (v3)                        |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------ |
-| [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing)             | OpenTelemetry-based tracing (`observe`, `startActiveObservation`) | `langfuse.trace()` / `.generation()` |
-| [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel)                   | `LangfuseSpanProcessor` to export OTel spans to Langfuse          | event ingestion in `langfuse`        |
-| [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client)               | Prompts, datasets, scores, and other Langfuse API access          | `langfuse.getPrompt()`, `api.*`      |
-| [`@langfuse/openai`](https://www.npmjs.com/package/@langfuse/openai)               | OpenAI SDK auto-instrumentation                                   | `observeOpenAI` from `langfuse`      |
-| [`@langfuse/langchain`](https://www.npmjs.com/package/@langfuse/langchain)         | LangChain callback handler                                        | `langfuse-langchain`                 |
-| [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) | Vercel AI SDK integration (with `experimental_telemetry`)         | `langfuse-vercel`                    |
+| Current package                                                                    | Use for                                                                               | Replaces (v3)                        |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------ |
+| [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing)             | OpenTelemetry-based tracing (`observe`, `startActiveObservation`)                     | `langfuse.trace()` / `.generation()` |
+| [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel)                   | `LangfuseSpanProcessor` to export OTel spans to Langfuse                              | event ingestion in `langfuse`        |
+| [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client)               | Prompts, datasets, scores, and other Langfuse API access                              | `langfuse.getPrompt()`, `api.*`      |
+| [`@langfuse/openai`](https://www.npmjs.com/package/@langfuse/openai)               | OpenAI SDK auto-instrumentation                                                       | `observeOpenAI` from `langfuse`      |
+| [`@langfuse/langchain`](https://www.npmjs.com/package/@langfuse/langchain)         | LangChain callback handler                                                            | `langfuse-langchain`                 |
+| [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) | Vercel AI SDK v7 integration (AI SDK ≤6: `experimental_telemetry` + `@langfuse/otel`) | `langfuse-vercel`                    |
 
 - **Docs (current SDK):** https://langfuse.com/docs/observability/sdk/overview
 - **Migration guides:** https://langfuse.com/docs/observability/sdk/upgrade-path
