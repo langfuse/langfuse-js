@@ -1,0 +1,3 @@
+{
+  "ignoreCommand": "echo 'Skipping Vercel build: legacy v3 branch, the docs site is built from main' && exit 0"
+}
