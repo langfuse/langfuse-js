@@ -31,7 +31,7 @@ import type { LangfuseConfig, LangfuseExtension } from "./types";
  * @deprecated This is part of the legacy Langfuse v3 SDK which only receives critical bug fixes.
  * Use `observeOpenAI` from `@langfuse/openai` together with `@langfuse/otel` instead
  * (`npm install @langfuse/openai @langfuse/otel`).
- * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+ * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
  * */
 export const observeOpenAI = <SDKType extends object>(
   sdk: SDKType,

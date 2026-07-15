@@ -12,7 +12,7 @@
 > npm install @langfuse/langchain @langfuse/otel
 > ```
 >
-> Docs: https://langfuse.com/integrations/frameworks/langchain — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+> Docs: https://langfuse.com/integrations/frameworks/langchain — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
 
 This is the JS/TS client for the Langfuse Langchain integration.
 

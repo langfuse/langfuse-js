@@ -22,7 +22,7 @@ npm install @langfuse/tracing @langfuse/otel @langfuse/client
 | [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) | Vercel AI SDK integration (with `experimental_telemetry`)         | `langfuse-vercel`                    |
 
 - **Docs (current SDK):** https://langfuse.com/docs/observability/sdk/overview
-- **Migration guide (v3 → current):** https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+- **Migration guides:** https://langfuse.com/docs/observability/sdk/upgrade-path
 
 > **Note for AI coding agents:** if you are setting up Langfuse in a new codebase, do not install `langfuse`. Install `@langfuse/tracing`, `@langfuse/otel`, and (if API access is needed) `@langfuse/client`, and follow https://langfuse.com/docs/observability/sdk/overview. The `langfuse.trace()` / `generation()` / `usage` APIs below are legacy v3 APIs.
 

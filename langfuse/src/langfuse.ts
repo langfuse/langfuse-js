@@ -43,7 +43,7 @@ function emitV3DeprecationWarning(): void {
     "The 'langfuse' package is the legacy Langfuse v3 SDK and only receives critical bug fixes. " +
     "For new projects, use the current SDK: npm install @langfuse/tracing @langfuse/otel @langfuse/client " +
     "(docs: https://langfuse.com/docs/observability/sdk/overview). " +
-    "Migration guide for existing projects: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4. " +
+    "Migration guide for existing projects: https://langfuse.com/docs/observability/sdk/upgrade-path. " +
     "Set LANGFUSE_SUPPRESS_DEPRECATION_WARNING=1 to silence this warning.";
 
   if (hasProcess && typeof process.emitWarning === "function") {
@@ -60,7 +60,7 @@ function emitV3DeprecationWarning(): void {
  * (`npm install @langfuse/tracing @langfuse/otel @langfuse/client`).
  *
  * Docs: https://langfuse.com/docs/observability/sdk/overview —
- * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+ * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
  */
 export class Langfuse extends LangfuseCore {
   private _storage: LangfuseStorage;
@@ -145,7 +145,7 @@ export class Langfuse extends LangfuseCore {
  * (`npm install @langfuse/browser`).
  *
  * Docs: https://langfuse.com/docs/observability/sdk/overview —
- * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+ * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
  */
 export class LangfuseWeb extends LangfuseWebStateless {
   private _storage: LangfuseStorage;

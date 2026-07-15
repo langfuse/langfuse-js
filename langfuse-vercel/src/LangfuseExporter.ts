@@ -15,7 +15,7 @@ type LangfuseExporterParams = {
  * receives critical bug fixes. Use the AI SDK's `experimental_telemetry` together with
  * `LangfuseSpanProcessor` from `@langfuse/otel` instead (`npm install @langfuse/otel @langfuse/tracing`).
  * Docs: https://langfuse.com/integrations/frameworks/vercel-ai-sdk —
- * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+ * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
  */
 export class LangfuseExporter implements SpanExporter {
   static langfuse: Langfuse | null = null; // Singleton instance

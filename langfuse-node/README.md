@@ -12,7 +12,7 @@
 > npm install @langfuse/tracing @langfuse/otel @langfuse/client
 > ```
 >
-> Docs: https://langfuse.com/docs/observability/sdk/overview — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+> Docs: https://langfuse.com/docs/observability/sdk/overview — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
 
 This is the Node.js client for Langfuse.
 
