@@ -1,6 +1,17 @@
 {
   "name": "langfuse",
   "version": "3.38.20",
+  "description": "LEGACY Langfuse v3 SDK (maintenance mode). For new projects use the current Langfuse JS/TS SDK: npm install @langfuse/tracing @langfuse/otel @langfuse/client. Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4",
+  "keywords": [
+    "llm",
+    "observability",
+    "tracing",
+    "openai",
+    "legacy",
+    "deprecated",
+    "langfuse"
+  ],
+  "homepage": "https://langfuse.com/docs/observability/sdk/overview",
   "engines": {
     "node": ">=18"
   },
@@ -34,7 +45,7 @@
   },
   "files": [
     "lib",
-    "Readme.md"
+    "README.md"
   ],
   "dependencies": {
     "langfuse-core": "^3.38.20"

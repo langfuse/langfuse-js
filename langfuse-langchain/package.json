@@ -1,6 +1,8 @@
 {
   "name": "langfuse-langchain",
   "version": "3.38.20",
+  "description": "LEGACY Langfuse v3 integration for LangChain (maintenance mode). For new projects use the current CallbackHandler from @langfuse/langchain: npm install @langfuse/langchain @langfuse/otel",
+  "homepage": "https://langfuse.com/docs/observability/sdk/overview",
   "engines": {
     "node": ">=18"
   },
@@ -35,7 +37,7 @@
   },
   "files": [
     "lib",
-    "Readme.md"
+    "README.md"
   ],
   "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed",
   "dependencies": {

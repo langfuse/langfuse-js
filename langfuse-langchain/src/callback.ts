@@ -54,6 +54,12 @@ type ConstructorParams = (RootParams | KeyParams) & {
   updateRoot?: boolean;
 };
 
+/**
+ * @deprecated `langfuse-langchain` is the legacy Langfuse v3 integration for LangChain and only receives
+ * critical bug fixes. Use the `CallbackHandler` from `@langfuse/langchain` together with `@langfuse/otel`
+ * instead (`npm install @langfuse/langchain @langfuse/otel`).
+ * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
+ */
 export class CallbackHandler extends BaseCallbackHandler {
   name = "CallbackHandler";
   langfuse: Langfuse;

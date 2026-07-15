@@ -1,6 +1,8 @@
 {
   "name": "langfuse-node",
   "version": "3.38.20",
+  "description": "LEGACY Langfuse v3 SDK for Node.js < 18 (maintenance mode). For new projects use the current Langfuse JS/TS SDK: npm install @langfuse/tracing @langfuse/otel @langfuse/client",
+  "homepage": "https://langfuse.com/docs/observability/sdk/overview",
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
@@ -42,7 +44,7 @@
   },
   "files": [
     "lib",
-    "Readme.md"
+    "README.md"
   ],
   "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed"
 }

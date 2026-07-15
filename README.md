@@ -8,10 +8,19 @@
 [![Discord](https://img.shields.io/discord/1111061815649124414?style=flat-square&logo=Discord&logoColor=white&label=Discord&color=%23434EE4)](https://discord.gg/7NXusRtqYU)
 [![YC W23](https://img.shields.io/badge/Y%20Combinator-W23-orange?style=flat-square)](https://www.ycombinator.com/companies/langfuse)
 
-> [!IMPORTANT]
-> **This SDK is deprecated.** The Langfuse TypeScript SDK was completely rewritten and released as v4 in August 2025. Please refer to the [TypeScript SDK documentation](https://langfuse.com/docs/observability/sdk/typescript/overview) for migration instructions.
+> [!WARNING]
+>
+> **This branch contains the legacy Langfuse v3 SDK** (`langfuse`, `langfuse-node`, `langfuse-langchain`, `langfuse-vercel`). It is in maintenance mode and only receives critical bug fixes. **Do not use these packages for new projects.**
+>
+> The current Langfuse JS/TS SDK lives in the scoped `@langfuse/*` packages (developed on the [`main` branch](https://github.com/langfuse/langfuse-js/tree/main)):
+>
+> ```bash
+> npm install @langfuse/tracing @langfuse/otel @langfuse/client
+> ```
+>
+> Docs: https://langfuse.com/docs/observability/sdk/overview — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4
 
-Modular mono repo for the Langfuse JS/TS client libraries.
+Modular mono repo for the **legacy v3** Langfuse JS/TS client libraries.
 
 ## Packages
 
