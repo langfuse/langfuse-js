@@ -18,20 +18,30 @@ import { ScoreManager } from "./score/index.js";
  */
 export interface LangfuseClientParams {
   /**
-   * Public API key for authentication with Langfuse.
-   * Can also be provided via LANGFUSE_PUBLIC_KEY environment variable.
+   * Public API key for authentication with Langfuse (`pk-lf-...`).
+   * Falls back to the `LANGFUSE_PUBLIC_KEY` environment variable.
    */
   publicKey?: string;
 
   /**
-   * Secret API key for authentication with Langfuse.
-   * Can also be provided via LANGFUSE_SECRET_KEY environment variable.
+   * Secret API key for authentication with Langfuse (`sk-lf-...`).
+   * Falls back to the `LANGFUSE_SECRET_KEY` environment variable.
    */
   secretKey?: string;
 
   /**
-   * Base URL of the Langfuse instance to connect to.
-   * Can also be provided via LANGFUSE_BASE_URL environment variable.
+   * Base URL of the Langfuse instance to connect to, e.g.
+   * `https://cloud.langfuse.com` (EU), `https://us.cloud.langfuse.com` (US),
+   * or your self-hosted URL.
+   *
+   * Resolution order:
+   * 1. This parameter
+   * 2. `LANGFUSE_BASE_URL` environment variable (canonical spelling, identical
+   *    to the Python SDK's `LANGFUSE_BASE_URL`)
+   * 3. `LANGFUSE_BASEURL` environment variable (legacy JS v2/v3 spelling
+   *    without the second underscore — still accepted, but prefer
+   *    `LANGFUSE_BASE_URL`)
+   * 4. Default: `https://cloud.langfuse.com`
    *
    * @defaultValue "https://cloud.langfuse.com"
    */
@@ -54,19 +64,29 @@ export interface LangfuseClientParams {
 /**
  * Main client for interacting with the Langfuse API.
  *
- * The LangfuseClient provides access to all Langfuse functionality including:
- * - Prompt management and retrieval
- * - Dataset operations
- * - Score creation and management
- * - Media upload and handling
- * - Direct API access for advanced use cases
+ * The LangfuseClient provides access to all non-tracing Langfuse
+ * functionality:
+ * - Prompt management (`langfuse.prompt`) — fetch, cache, compile, and version prompts
+ * - Datasets (`langfuse.dataset`) — manage test datasets and link items to runs
+ * - Experiments (`langfuse.experiment`) — run tasks + evaluators over datasets
+ * - Scores (`langfuse.score`) — create evaluation/feedback scores for traces and observations
+ * - Media (`langfuse.media`) — upload media and resolve media references
+ * - Direct API access (`langfuse.api`) — the full generated Langfuse REST API client
+ *
+ * Tracing/observability is intentionally NOT part of this client. To trace
+ * your application, use `@langfuse/tracing` (instrumentation) together with
+ * the `LangfuseSpanProcessor` from `@langfuse/otel` (export).
+ *
+ * Configuration is read from constructor params first, then from environment
+ * variables: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`
+ * (legacy alias: `LANGFUSE_BASEURL`), `LANGFUSE_TIMEOUT`.
  *
  * @example
  * ```typescript
  * // Initialize with explicit credentials
  * const langfuse = new LangfuseClient({
- *   publicKey: "pk_...",
- *   secretKey: "sk_...",
+ *   publicKey: "pk-lf-...",
+ *   secretKey: "sk-lf-...",
  *   baseUrl: "https://cloud.langfuse.com"
  * });
  *
@@ -77,6 +97,11 @@ export interface LangfuseClientParams {
  * const prompt = await langfuse.prompt.get("my-prompt");
  * const compiledPrompt = prompt.compile({ variable: "value" });
  * ```
+ *
+ * @see https://langfuse.com/docs/prompt-management/get-started
+ * @see https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk
+ * @see https://langfuse.com/docs/evaluation/evaluation-methods/scores-via-sdk
+ * @see https://langfuse.com/docs/observability/sdk/overview for tracing setup
  *
  * @public
  */
@@ -329,28 +354,42 @@ export class LangfuseClient {
   }
 
   /**
-   * Flushes any pending score events to the Langfuse API.
+   * Flushes pending score events to the Langfuse API.
    *
-   * This method ensures all queued scores are sent immediately rather than
-   * waiting for the automatic flush interval or batch size threshold.
+   * Scores created via `langfuse.score.create(...)` are queued and sent in
+   * batches; awaiting this method sends everything still queued immediately.
+   *
+   * **Important**: this flushes scores only — it does NOT flush tracing
+   * spans. Spans are exported by the `LangfuseSpanProcessor` from
+   * `@langfuse/otel`; in serverless environments await its `forceFlush()`
+   * separately before the process is frozen or terminated. Queued scores are
+   * lost if the process exits before this promise resolves.
    *
    * @returns Promise that resolves when all pending scores have been sent
    *
    * @example
    * ```typescript
-   * langfuse.score.create({ name: "quality", value: 0.8 });
-   * await langfuse.flush(); // Ensures the score is sent immediately
+   * langfuse.score.create({ traceId, name: "quality", value: 0.8 });
+   * await langfuse.flush(); // scores
+   * await langfuseSpanProcessor.forceFlush(); // tracing spans (separate!)
    * ```
+   *
+   * @see https://langfuse.com/docs/observability/sdk/instrumentation
    */
   public async flush() {
     return this.score.flush();
   }
 
   /**
-   * Gracefully shuts down the client by flushing all pending data.
+   * Gracefully shuts down the client by flushing all pending score events.
    *
-   * This method should be called before your application exits to ensure
-   * all data is sent to Langfuse.
+   * Call this once before a long-running process exits so queued scores are
+   * not lost. In serverless environments, prefer {@link LangfuseClient.flush}
+   * per invocation since the same instance may serve later requests.
+   *
+   * Like {@link LangfuseClient.flush}, this does NOT flush tracing spans —
+   * call `shutdown()` (or `forceFlush()`) on the `LangfuseSpanProcessor` from
+   * `@langfuse/otel` for those.
    *
    * @returns Promise that resolves when shutdown is complete
    *

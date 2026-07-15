@@ -2,7 +2,7 @@
 
 # @langfuse/vercel-ai-sdk
 
-This package provides a Langfuse-owned telemetry integration for AI SDK v7 (`ai@7`) using the new callback-based telemetry system.
+[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & observability for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **Langfuse telemetry integration for Vercel AI SDK v7** (`ai@7`) using the callback-based telemetry system — every `generateText` / `streamText` / `generateObject` / `embed` call is traced as Langfuse observations. Span export requires the `LangfuseSpanProcessor` from [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel); prompt management, datasets/experiments, and evals/scores live in [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client). For AI SDK ≤ 6, this package is not needed — use `experimental_telemetry: { isEnabled: true }` instead (see the [integration guide](https://langfuse.com/integrations/frameworks/vercel-ai-sdk)).
 
 It delegates AI SDK-compatible OpenTelemetry span creation to Vercel's `@ai-sdk/otel` package so it works with the existing Langfuse OTEL ingestion pipeline. Runtime context keys included via AI SDK telemetry are attached as Langfuse observation metadata. The only special runtime context key is `langfusePrompt`, which links Langfuse prompt name and version to model-call observations.
 
@@ -13,8 +13,40 @@ Trace-level attributes such as user ID, session ID, tags, trace name, and trace 
 This integration targets AI SDK v7 GA. Install it together with `ai@^7`; the package depends on the matching `@ai-sdk/otel` integration internally.
 
 ```sh
-pnpm add @langfuse/vercel-ai-sdk ai
+pnpm add @langfuse/vercel-ai-sdk @langfuse/otel ai
 ```
+
+## Environment variables
+
+```bash
+LANGFUSE_PUBLIC_KEY="pk-lf-..."
+LANGFUSE_SECRET_KEY="sk-lf-..."
+LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
+```
+
+`LANGFUSE_BASE_URL` is the canonical spelling (identical to the Python SDK). The legacy JS v2/v3 spelling `LANGFUSE_BASEURL` is still accepted as a fallback.
+
+## Setup
+
+Register the `LangfuseSpanProcessor` and the integration once at application startup (in Next.js: [`instrumentation.ts`](https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation)):
+
+```ts
+// instrumentation.ts
+import { registerTelemetry } from "ai";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
+import { NodeSDK } from "@opentelemetry/sdk-node";
+
+const sdk = new NodeSDK({
+  spanProcessors: [new LangfuseSpanProcessor()],
+});
+
+sdk.start();
+
+registerTelemetry(new LangfuseVercelAiSdkIntegration());
+```
+
+See the [full guide](https://langfuse.com/integrations/frameworks/vercel-ai-sdk) for the complete Next.js recipe including streaming, user/session attribution, and serverless flushing, and the [@langfuse/tracing README](https://github.com/langfuse/langfuse-js/tree/main/packages/tracing) for a condensed version.
 
 ## Usage
 
@@ -91,11 +123,15 @@ await generateText({
 | [@langfuse/openai](https://github.com/langfuse/langfuse-js/tree/main/packages/openai)               | [![NPM](https://img.shields.io/npm/v/@langfuse/openai.svg)](https://www.npmjs.com/package/@langfuse/openai)               | Langfuse integration for OpenAI SDK                       | Universal JS |
 | [@langfuse/langchain](https://github.com/langfuse/langfuse-js/tree/main/packages/langchain)         | [![NPM](https://img.shields.io/npm/v/@langfuse/langchain.svg)](https://www.npmjs.com/package/@langfuse/langchain)         | Langfuse integration for LangChain                        | Universal JS |
 | [@langfuse/vercel-ai-sdk](https://github.com/langfuse/langfuse-js/tree/main/packages/vercel-ai-sdk) | [![NPM](https://img.shields.io/npm/v/@langfuse/vercel-ai-sdk.svg)](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) | Langfuse integration for AI SDK v7                        | Universal JS |
+| [@langfuse/browser](https://github.com/langfuse/langfuse-js/tree/main/packages/browser)             | [![NPM](https://img.shields.io/npm/v/@langfuse/browser.svg)](https://www.npmjs.com/package/@langfuse/browser)             | Browser score ingestion with public-key auth              | Browser      |
+| [@langfuse/core](https://github.com/langfuse/langfuse-js/tree/main/packages/core)                   | [![NPM](https://img.shields.io/npm/v/@langfuse/core.svg)](https://www.npmjs.com/package/@langfuse/core)                   | Shared core: generated API client, logger, utilities      | Universal JS |
 
 ## Documentation
 
-- Docs: https://langfuse.com/docs/sdk/typescript
-- Reference: https://js.reference.langfuse.com
+- Vercel AI SDK integration guide: https://langfuse.com/integrations/frameworks/vercel-ai-sdk
+- Docs: https://langfuse.com/docs/observability/sdk/overview
+- API reference: https://js.reference.langfuse.com
+- LLM/agent-readable docs index: https://langfuse.com/llms.txt
 
 ## License
 

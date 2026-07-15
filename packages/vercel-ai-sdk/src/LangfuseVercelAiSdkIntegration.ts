@@ -28,6 +28,59 @@ import type {
 import type { LangfuseVercelAiSdkIntegrationOptions } from "./types.js";
 import { createLangfuseObservationAttributes } from "./utils.js";
 
+/**
+ * Langfuse telemetry integration for Vercel AI SDK v7 (`ai@7`).
+ *
+ * Register this once at application startup (or pass it per-call via
+ * `telemetry.integrations`) and every AI SDK call — `generateText`,
+ * `streamText`, `generateObject`, `embed`, tool executions — is traced as
+ * Langfuse observations. Requires the `LangfuseSpanProcessor` from
+ * `@langfuse/otel` to be registered with your OpenTelemetry setup; this
+ * integration only creates spans, the processor exports them to Langfuse.
+ *
+ * For AI SDK versions ≤6, do not use this class — enable
+ * `experimental_telemetry: { isEnabled: true }` on each call instead; the
+ * `LangfuseSpanProcessor` picks those spans up without an integration.
+ *
+ * Trace-level attributes (userId, sessionId, tags, traceName, metadata)
+ * should be set with `propagateAttributes` from `@langfuse/tracing` around
+ * the AI SDK call. Runtime context keys included via the AI SDK `telemetry`
+ * option become Langfuse observation metadata; the special key
+ * `langfusePrompt` links a Langfuse prompt version to model-call
+ * observations instead.
+ *
+ * @example
+ * ```typescript
+ * // instrumentation.ts — run once at startup
+ * import { registerTelemetry } from "ai";
+ * import { LangfuseSpanProcessor } from "@langfuse/otel";
+ * import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
+ * import { NodeSDK } from "@opentelemetry/sdk-node";
+ *
+ * const sdk = new NodeSDK({ spanProcessors: [new LangfuseSpanProcessor()] });
+ * sdk.start();
+ * registerTelemetry(new LangfuseVercelAiSdkIntegration());
+ *
+ * // app code
+ * import { generateText } from "ai";
+ * import { propagateAttributes } from "@langfuse/tracing";
+ *
+ * const { text } = await propagateAttributes(
+ *   { userId: "user-123", sessionId: "session-456" },
+ *   () =>
+ *     generateText({
+ *       model,
+ *       prompt: "Explain RAG in one paragraph",
+ *       telemetry: { functionId: "chat-assistant" },
+ *     }),
+ * );
+ * ```
+ *
+ * @see https://langfuse.com/integrations/frameworks/vercel-ai-sdk for the full guide incl. Next.js setup
+ * @see https://langfuse.com/docs/observability/sdk/overview
+ *
+ * @public
+ */
 export class LangfuseVercelAiSdkIntegration implements Telemetry {
   private readonly delegate: OpenTelemetry;
 
@@ -94,12 +147,20 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     this.delegate.onStepEnd(event);
   }
 
-  /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
+  /**
+   * @deprecated Deprecated in the AI SDK `Telemetry` interface. Implemented for
+   * compatibility because AI SDK v7 still emits object-generation model spans
+   * through this callback. Not intended to be called by user code.
+   */
   onObjectStepStart(event: GenerateObjectStepStartEvent): void {
     this.delegate.onObjectStepStart(event);
   }
 
-  /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
+  /**
+   * @deprecated Deprecated in the AI SDK `Telemetry` interface. Implemented for
+   * compatibility because AI SDK v7 still emits object-generation model spans
+   * through this callback. Not intended to be called by user code.
+   */
   onObjectStepEnd(event: GenerateObjectStepEndEvent): void {
     this.delegate.onObjectStepEnd(event);
   }
