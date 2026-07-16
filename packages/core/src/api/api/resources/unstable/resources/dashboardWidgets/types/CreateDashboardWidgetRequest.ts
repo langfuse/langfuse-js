@@ -6,12 +6,13 @@ import * as LangfuseAPI from "../../../../../index.js";
 
 export interface CreateDashboardWidgetRequest {
   name: string;
-  description: string;
+  /** Defaults to an empty string. */
+  description?: string;
   view: LangfuseAPI.unstable.DashboardWidgetView;
   dimensions: LangfuseAPI.unstable.DashboardWidgetDimension[];
   metrics: LangfuseAPI.unstable.DashboardWidgetMetric[];
   filters: LangfuseAPI.unstable.DashboardWidgetFilter[];
   chartType: LangfuseAPI.unstable.DashboardWidgetChartType;
-  chartConfig: LangfuseAPI.unstable.DashboardWidgetChartConfig;
-  minVersion?: number;
+  /** Defaults to the plain config for `chartType`. */
+  chartConfig?: LangfuseAPI.unstable.DashboardWidgetChartConfigInput;
 }
