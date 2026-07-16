@@ -26,42 +26,6 @@ export type {
 // Required when users pass these as typed arguments
 export { LangfuseMedia } from "langfuse-core";
 
-let deprecationWarningEmitted = false;
-
-function emitV3DeprecationWarning(): void {
-  if (deprecationWarningEmitted) {
-    return;
-  }
-
-  if (utils.getEnv("LANGFUSE_SUPPRESS_DEPRECATION_WARNING")) {
-    return;
-  }
-
-  deprecationWarningEmitted = true;
-
-  const message =
-    "The 'langfuse' package is the legacy Langfuse v3 SDK and only receives critical bug fixes. " +
-    "For new projects, use the current SDK: npm install @langfuse/tracing @langfuse/otel @langfuse/client " +
-    "(docs: https://langfuse.com/docs/observability/sdk/overview). " +
-    "Migration guide for existing projects: https://langfuse.com/docs/observability/sdk/upgrade-path. " +
-    "Set LANGFUSE_SUPPRESS_DEPRECATION_WARNING=1 to silence this warning.";
-
-  if (typeof process !== "undefined" && typeof process.emitWarning === "function") {
-    process.emitWarning(message, { type: "DeprecationWarning", code: "LANGFUSE_V3_SDK" });
-  } else if (typeof console !== "undefined") {
-    console.warn(`DeprecationWarning: ${message}`);
-  }
-}
-
-/**
- * @deprecated The `langfuse` package is the legacy Langfuse v3 SDK and only receives critical bug fixes.
- * Use the current Langfuse SDK instead: `@langfuse/tracing` + `@langfuse/otel` for tracing and
- * `@langfuse/client` for prompts, datasets, scores, and other API access
- * (`npm install @langfuse/tracing @langfuse/otel @langfuse/client`).
- *
- * Docs: https://langfuse.com/docs/observability/sdk/overview —
- * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
- */
 export class Langfuse extends LangfuseCore {
   private _storage: LangfuseStorage;
   private _storageCache: any;
@@ -71,8 +35,6 @@ export class Langfuse extends LangfuseCore {
   constructor(params?: { publicKey?: string; secretKey?: string } & LangfuseOptions) {
     const langfuseConfig = utils.configLangfuseSDK(params);
     super(langfuseConfig);
-
-    emitV3DeprecationWarning();
 
     if (typeof window !== "undefined" && "Deno" in window === false) {
       this._storageKey = params?.persistence_name
@@ -139,14 +101,6 @@ export class Langfuse extends LangfuseCore {
   }
 }
 
-/**
- * @deprecated The `langfuse` package is the legacy Langfuse v3 SDK and only receives critical bug fixes.
- * For browser-side score ingestion, use `@langfuse/browser` instead
- * (`npm install @langfuse/browser`).
- *
- * Docs: https://langfuse.com/docs/observability/sdk/overview —
- * Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
- */
 export class LangfuseWeb extends LangfuseWebStateless {
   private _storage: LangfuseStorage;
   private _storageCache: any;

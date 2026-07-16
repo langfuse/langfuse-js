@@ -45,7 +45,7 @@
   },
   "files": [
     "lib",
-    "README.md"
+    "Readme.md"
   ],
   "dependencies": {
     "langfuse-core": "^3.38.20"
