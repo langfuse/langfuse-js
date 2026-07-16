@@ -87,7 +87,7 @@ describe("Langchain", () => {
       handler.debug(true);
       const messges = [new SystemMessage("You are an excellent Comedian"), new HumanMessage("Tell me a joke")];
 
-      const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
+      const llm = new ChatOpenAI({ modelName: "gpt-4o-mini" });
       const res = await llm.invoke(messges, { callbacks: [handler] });
 
       await handler.flushAsync();
@@ -763,7 +763,7 @@ describe("Langchain", () => {
 
       const messages = [new SystemMessage("You are an excellent Comedian"), new HumanMessage("Tell me a joke")];
 
-      const llm = new ChatOpenAI({ modelName: "gpt-4-turbo-preview" });
+      const llm = new ChatOpenAI({ modelName: "gpt-4o-mini" });
       await llm.invoke(messages, { callbacks: [handler] });
 
       await handler.flushAsync();
@@ -785,7 +785,7 @@ describe("Langchain", () => {
         name: "ChatOpenAI",
         metadata: {
           ls_provider: "openai",
-          ls_model_name: "gpt-4-turbo-preview",
+          ls_model_name: "gpt-4o-mini",
           ls_model_type: "chat",
           ls_temperature: 1,
           foo: "bar",
@@ -813,7 +813,7 @@ describe("Langchain", () => {
         name: "ChatOpenAI",
         metadata: {
           ls_provider: "openai",
-          ls_model_name: "gpt-4-turbo-preview",
+          ls_model_name: "gpt-4o-mini",
           ls_model_type: "chat",
           ls_temperature: 1,
         },
@@ -827,7 +827,7 @@ describe("Langchain", () => {
             role: "user",
           },
         ],
-        model: "gpt-4-turbo-preview",
+        model: "gpt-4o-mini",
         modelParameters: {
           temperature: 1,
           top_p: 1,

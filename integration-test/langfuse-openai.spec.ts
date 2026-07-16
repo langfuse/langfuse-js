@@ -4,7 +4,7 @@ import OpenAI from "openai";
 import Langfuse, { observeOpenAI } from "../langfuse";
 import { randomUUID } from "crypto";
 import { type AxiosResponse } from "axios";
-import { LANGFUSE_BASEURL, getHeaders, fetchTraceById, encodeFile, getAxiosClient } from "./integration-utils";
+import { LANGFUSE_BASEURL, getHeaders, fetchTraceById, encodeFile, getAxiosClient, sleep } from "./integration-utils";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
@@ -14,11 +14,14 @@ const openai = new OpenAI();
 
 const getGeneration = async (name: string): Promise<AxiosResponse<any, any>> => {
   const url = `${LANGFUSE_BASEURL}/api/public/observations?name=${name}&type=GENERATION`;
-  const res = await (
-    await getAxiosClient()
-  ).get(url, {
-    headers: getHeaders(),
-  });
+  const client = await getAxiosClient();
+
+  // Ingestion is eventually consistent; poll until the generation is available
+  let res = await client.get(url, { headers: getHeaders() });
+  for (let attempt = 0; attempt < 5 && (res.data?.data?.length ?? 0) === 0; attempt++) {
+    await sleep(2000);
+    res = await client.get(url, { headers: getHeaders() });
+  }
 
   return res;
 };
@@ -1172,7 +1175,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     const client = observeOpenAI(openai, { traceId, metadata: { someKey: "someValue" } });
 
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-audio-preview",
+      model: "gpt-audio",
       modalities: ["text", "audio"],
       audio: { voice: "alloy", format: "wav" },
       messages: [
@@ -1202,7 +1205,7 @@ describe("Langfuse-OpenAI-Integation", () => {
     expect(trace.status).toBe(200);
 
     const generation = trace.data.observations[0];
-    expect(generation.model).toContain("gpt-4o-audio-preview");
+    expect(generation.model).toContain("gpt-audio");
     expect(generation.input).toMatchObject({
       messages: [
         {
@@ -1287,8 +1290,7 @@ describe("Langfuse-OpenAI-Integation", () => {
               { type: "input_text", text: "what is in this image?" },
               {
                 type: "input_image",
-                image_url:
-                  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+                image_url: `data:image/jpeg;base64,${await encodeFile("./static/puton.jpg")}`,
               } as any,
             ],
           },
