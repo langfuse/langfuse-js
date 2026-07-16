@@ -219,10 +219,8 @@ describe("Langfuse Public API", () => {
       const createResponse = await langfuse.api.modelsCreate(model);
       expect(createResponse.modelName).toBe(model.modelName);
 
-      // Fetch by id rather than by page: the created model's page position
-      // shifts as the server's list of managed models grows.
-      const getResponse = await langfuse.api.modelsGet(createResponse.id);
-      expect(getResponse).toEqual(
+      const listResponse = await langfuse.api.modelsList({ page: 2 });
+      expect(listResponse.data).toContainEqual(
         expect.objectContaining({
           modelName: model.modelName,
         })

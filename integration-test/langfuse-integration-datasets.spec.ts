@@ -32,9 +32,7 @@ describe("Langfuse Node.js", () => {
     });
 
     it("create and get dataset, name only, special character", async () => {
-      // Slash mid-name: current servers treat "/" as a folder separator and
-      // reject names with leading/trailing/consecutive slashes
-      const projectNameRandom = Math.random().toString(36).substring(7) + "+ 7/x";
+      const projectNameRandom = Math.random().toString(36).substring(7) + "+ 7/";
       await langfuse.createDataset(projectNameRandom);
       const getDataset = await langfuse.getDataset(projectNameRandom);
       expect(getDataset).toMatchObject({
@@ -62,10 +60,8 @@ describe("Langfuse Node.js", () => {
       await langfuse.createDataset({ name: datasetNameRandom, metadata: { test: "test" } });
       const generation = langfuse.generation({ name: "test-observation" });
       await langfuse.flushAsync();
-      // Current server versions reject dataset items with null input
       const item1 = await langfuse.createDatasetItem({
         datasetName: datasetNameRandom,
-        input: "item1 input",
         metadata: { test: "test" },
       });
       const item2 = await langfuse.createDatasetItem({
@@ -235,18 +231,10 @@ describe("Langfuse Node.js", () => {
         }
       }
 
-      // Run items are ingested asynchronously on current server versions; poll until available
-      let getRun = await langfuse.getDatasetRun({
+      const getRun = await langfuse.getDatasetRun({
         datasetName: projectNameRandom,
         runName: "test-run-" + projectNameRandom,
       });
-      for (let attempt = 0; attempt < 10 && getRun.datasetRunItems.length < 2; attempt++) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        getRun = await langfuse.getDatasetRun({
-          datasetName: projectNameRandom,
-          runName: "test-run-" + projectNameRandom,
-        });
-      }
 
       expect(getRun).toMatchObject({
         name: "test-run-" + projectNameRandom,
@@ -264,7 +252,7 @@ describe("Langfuse Node.js", () => {
           }),
         ]),
       });
-    }, 45000);
+    }, 10000);
 
     it("e2e multiple runs", async () => {
       const datasetName = Math.random().toString(36).substring(7);

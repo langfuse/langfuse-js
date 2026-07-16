@@ -782,10 +782,13 @@ describe("Langfuse (fetch)", () => {
     trace.generation({ name: "test-gen" });
     trace.score({ name: "test", value: 1 });
 
-    // Events are still sent; older servers rejected the invalid environment at
-    // ingestion while current servers normalize it, so only the SDK-side error
-    // log is asserted here.
     await langfuse.flushAsync();
+
+    await expect(
+      (await getAxiosClient()).get(`${LANGFUSE_BASEURL}/api/public/traces/${traceId}`, {
+        headers: getHeaders(),
+      })
+    ).rejects.toThrow();
   }, 15_000);
 
   it("should set environment if specified in environment variable", async () => {
