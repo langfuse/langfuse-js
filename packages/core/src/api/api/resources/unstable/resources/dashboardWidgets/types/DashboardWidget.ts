@@ -16,5 +16,4 @@ export interface DashboardWidget {
   filters: LangfuseAPI.unstable.DashboardWidgetFilter[];
   chartType: LangfuseAPI.unstable.DashboardWidgetChartType;
   chartConfig: LangfuseAPI.unstable.DashboardWidgetChartConfig;
-  minVersion: number;
 }
