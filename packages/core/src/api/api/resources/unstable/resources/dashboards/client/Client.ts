@@ -10,7 +10,7 @@ import {
 } from "../../../../../../core/headers.js";
 import * as errors from "../../../../../../errors/index.js";
 
-export declare namespace DashboardWidgets {
+export declare namespace Dashboards {
   export interface Options {
     environment: core.Supplier<string>;
     /** Specify a custom URL to connect the client to. */
@@ -53,22 +53,19 @@ export declare namespace DashboardWidgets {
   }
 }
 
-export class DashboardWidgets {
-  protected readonly _options: DashboardWidgets.Options;
+export class Dashboards {
+  protected readonly _options: Dashboards.Options;
 
-  constructor(_options: DashboardWidgets.Options) {
+  constructor(_options: Dashboards.Options) {
     this._options = _options;
   }
 
   /**
-   * List dashboard widgets in the project, ordered by most recently
-   * updated first.
+   * List dashboards in the project, ordered by most recently updated
+   * first.
    *
-   * Responses may include legacy `traces` widgets created before this
-   * API existed. New widgets cannot be created with `view: traces`.
-   *
-   * @param {LangfuseAPI.unstable.ListDashboardWidgetsRequest} request
-   * @param {DashboardWidgets.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {LangfuseAPI.unstable.ListDashboardsRequest} request
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
    * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
@@ -83,21 +80,21 @@ export class DashboardWidgets {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.unstable.dashboardWidgets.list()
+   *     await client.unstable.dashboards.list()
    */
   public list(
-    request: LangfuseAPI.unstable.ListDashboardWidgetsRequest = {},
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardWidgetList> {
+    request: LangfuseAPI.unstable.ListDashboardsRequest = {},
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardList> {
     return core.HttpResponsePromise.fromPromise(
       this.__list(request, requestOptions),
     );
   }
 
   private async __list(
-    request: LangfuseAPI.unstable.ListDashboardWidgetsRequest = {},
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.DashboardWidgetList>> {
+    request: LangfuseAPI.unstable.ListDashboardsRequest = {},
+    requestOptions?: Dashboards.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.DashboardList>> {
     const { page, limit } = request;
     const _queryParams: Record<
       string,
@@ -130,7 +127,7 @@ export class DashboardWidgets {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        "/api/public/unstable/dashboard-widgets",
+        "/api/public/unstable/dashboards",
       ),
       method: "GET",
       headers: _headers,
@@ -144,7 +141,7 @@ export class DashboardWidgets {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.unstable.DashboardWidgetList,
+        data: _response.body as LangfuseAPI.unstable.DashboardList,
         rawResponse: _response.rawResponse,
       };
     }
@@ -224,7 +221,7 @@ export class DashboardWidgets {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/unstable/dashboard-widgets.",
+          "Timeout exceeded when calling GET /api/public/unstable/dashboards.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
@@ -235,29 +232,15 @@ export class DashboardWidgets {
   }
 
   /**
-   * Create a dashboard widget (a standalone chart definition you place on
-   * any dashboard).
+   * Create a dashboard.
    *
-   * This endpoint creates the widget only; place it on a dashboard via
-   * `POST /dashboards/{dashboardId}/placements`.
-   *
-   * Supported views are `observations`, `scores-numeric`, and `scores-categorical`.
-   * The legacy `traces` view is not supported by this unstable API.
-   * Widgets are created as v2 internally.
-   *
-   * `chartConfig` is optional and defaults to the plain config for
-   * `chartType`; when `chartConfig.type` is given it must match
-   * `chartType`.
-   *
-   * Unstable API note:
-   * - This surface may evolve while dashboard/widget APIs are being finalized.
-   *
-   * @param {LangfuseAPI.unstable.CreateDashboardWidgetRequest} request
-   * @param {DashboardWidgets.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {LangfuseAPI.unstable.CreateDashboardRequest} request
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
    * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
    * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
    * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
    * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
    * @throws {@link LangfuseAPI.unstable.InternalServerError}
@@ -268,37 +251,26 @@ export class DashboardWidgets {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.unstable.dashboardWidgets.create({
-   *         name: "Total cost by model",
-   *         description: "Total model cost grouped by provided model name.",
-   *         view: "observations",
-   *         dimensions: [{
-   *                 field: "providedModelName"
-   *             }],
-   *         metrics: [{
-   *                 measure: "totalCost",
-   *                 agg: "sum"
-   *             }],
-   *         filters: [],
-   *         chartType: "HORIZONTAL_BAR",
-   *         chartConfig: {
-   *             row_limit: 10
-   *         }
+   *     await client.unstable.dashboards.create({
+   *         name: "name",
+   *         description: undefined,
+   *         definition: undefined,
+   *         filters: undefined
    *     })
    */
   public create(
-    request: LangfuseAPI.unstable.CreateDashboardWidgetRequest,
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardWidget> {
+    request: LangfuseAPI.unstable.CreateDashboardRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.Dashboard> {
     return core.HttpResponsePromise.fromPromise(
       this.__create(request, requestOptions),
     );
   }
 
   private async __create(
-    request: LangfuseAPI.unstable.CreateDashboardWidgetRequest,
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.DashboardWidget>> {
+    request: LangfuseAPI.unstable.CreateDashboardRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.Dashboard>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -318,7 +290,7 @@ export class DashboardWidgets {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        "/api/public/unstable/dashboard-widgets",
+        "/api/public/unstable/dashboards",
       ),
       method: "POST",
       headers: _headers,
@@ -335,167 +307,7 @@ export class DashboardWidgets {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.unstable.DashboardWidget,
-        rawResponse: _response.rawResponse,
-      };
-    }
-
-    if (_response.error.reason === "status-code") {
-      switch (_response.error.statusCode) {
-        case 400:
-          throw new LangfuseAPI.unstable.BadRequestError(
-            _response.error.body as LangfuseAPI.unstable.PublicApiError,
-            _response.rawResponse,
-          );
-        case 401:
-          throw new LangfuseAPI.unstable.UnauthorizedError(
-            _response.error.body as LangfuseAPI.unstable.PublicApiError,
-            _response.rawResponse,
-          );
-        case 403:
-          throw new LangfuseAPI.unstable.AccessDeniedError(
-            _response.error.body as LangfuseAPI.unstable.PublicApiError,
-            _response.rawResponse,
-          );
-        case 405:
-          throw new LangfuseAPI.unstable.MethodNotAllowedError(
-            _response.error.body as LangfuseAPI.unstable.PublicApiError,
-            _response.rawResponse,
-          );
-        case 429:
-          throw new LangfuseAPI.unstable.TooManyRequestsError(
-            _response.error.body as LangfuseAPI.unstable.PublicApiError,
-            _response.rawResponse,
-          );
-        case 500:
-          throw new LangfuseAPI.unstable.InternalServerError(
-            _response.error.body as LangfuseAPI.unstable.PublicApiError,
-            _response.rawResponse,
-          );
-        case 400:
-          throw new LangfuseAPI.Error(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 401:
-          throw new LangfuseAPI.UnauthorizedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 403:
-          throw new LangfuseAPI.AccessDeniedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 405:
-          throw new LangfuseAPI.MethodNotAllowedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 404:
-          throw new LangfuseAPI.NotFoundError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        default:
-          throw new errors.LangfuseAPIError({
-            statusCode: _response.error.statusCode,
-            body: _response.error.body,
-            rawResponse: _response.rawResponse,
-          });
-      }
-    }
-
-    switch (_response.error.reason) {
-      case "non-json":
-        throw new errors.LangfuseAPIError({
-          statusCode: _response.error.statusCode,
-          body: _response.error.rawBody,
-          rawResponse: _response.rawResponse,
-        });
-      case "timeout":
-        throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling POST /api/public/unstable/dashboard-widgets.",
-        );
-      case "unknown":
-        throw new errors.LangfuseAPIError({
-          message: _response.error.errorMessage,
-          rawResponse: _response.rawResponse,
-        });
-    }
-  }
-
-  /**
-   * Get a dashboard widget by id.
-   *
-   * The response may use `view: traces` for legacy widgets.
-   *
-   * @param {string} widgetId
-   * @param {DashboardWidgets.RequestOptions} requestOptions - Request-specific configuration.
-   *
-   * @throws {@link LangfuseAPI.unstable.BadRequestError}
-   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
-   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
-   * @throws {@link LangfuseAPI.unstable.NotFoundError}
-   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
-   * @throws {@link LangfuseAPI.unstable.InternalServerError}
-   * @throws {@link LangfuseAPI.Error}
-   * @throws {@link LangfuseAPI.UnauthorizedError}
-   * @throws {@link LangfuseAPI.AccessDeniedError}
-   * @throws {@link LangfuseAPI.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.NotFoundError}
-   *
-   * @example
-   *     await client.unstable.dashboardWidgets.get("widgetId")
-   */
-  public get(
-    widgetId: string,
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardWidget> {
-    return core.HttpResponsePromise.fromPromise(
-      this.__get(widgetId, requestOptions),
-    );
-  }
-
-  private async __get(
-    widgetId: string,
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.DashboardWidget>> {
-    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
-      this._options?.headers,
-      mergeOnlyDefinedHeaders({
-        Authorization: await this._getAuthorizationHeader(),
-        "X-Langfuse-Sdk-Name":
-          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
-        "X-Langfuse-Sdk-Version":
-          requestOptions?.xLangfuseSdkVersion ??
-          this._options?.xLangfuseSdkVersion,
-        "X-Langfuse-Public-Key":
-          requestOptions?.xLangfusePublicKey ??
-          this._options?.xLangfusePublicKey,
-      }),
-      requestOptions?.headers,
-    );
-    const _response = await core.fetcher({
-      url: core.url.join(
-        (await core.Supplier.get(this._options.baseUrl)) ??
-          (await core.Supplier.get(this._options.environment)),
-        `/api/public/unstable/dashboard-widgets/${encodeURIComponent(widgetId)}`,
-      ),
-      method: "GET",
-      headers: _headers,
-      queryParameters: requestOptions?.queryParams,
-      timeoutMs:
-        requestOptions?.timeoutInSeconds != null
-          ? requestOptions.timeoutInSeconds * 1000
-          : 60000,
-      maxRetries: requestOptions?.maxRetries,
-      abortSignal: requestOptions?.abortSignal,
-    });
-    if (_response.ok) {
-      return {
-        data: _response.body as LangfuseAPI.unstable.DashboardWidget,
+        data: _response.body as LangfuseAPI.unstable.Dashboard,
         rawResponse: _response.rawResponse,
       };
     }
@@ -580,7 +392,7 @@ export class DashboardWidgets {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/unstable/dashboard-widgets/{widgetId}.",
+          "Timeout exceeded when calling POST /api/public/unstable/dashboards.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
@@ -591,19 +403,10 @@ export class DashboardWidgets {
   }
 
   /**
-   * Update a dashboard widget.
+   * Get a dashboard by id.
    *
-   * All fields are optional; at least one field is required.
-   * Changing `chartType` without sending `chartConfig` resets the config
-   * to the new chart type's defaults. When `chartConfig.type` is given
-   * it must match the widget's (possibly updated) `chartType`.
-   *
-   * `view` cannot be changed to the legacy `traces` value. Existing
-   * `traces` widgets may be updated on other fields.
-   *
-   * @param {string} widgetId
-   * @param {LangfuseAPI.unstable.UpdateDashboardWidgetRequest} request
-   * @param {DashboardWidgets.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {string} dashboardId
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
    * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
@@ -619,32 +422,21 @@ export class DashboardWidgets {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.unstable.dashboardWidgets.update("widgetId", {
-   *         name: undefined,
-   *         description: undefined,
-   *         view: undefined,
-   *         dimensions: undefined,
-   *         metrics: undefined,
-   *         filters: undefined,
-   *         chartType: undefined,
-   *         chartConfig: undefined
-   *     })
+   *     await client.unstable.dashboards.get("dashboardId")
    */
-  public update(
-    widgetId: string,
-    request: LangfuseAPI.unstable.UpdateDashboardWidgetRequest,
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardWidget> {
+  public get(
+    dashboardId: string,
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.Dashboard> {
     return core.HttpResponsePromise.fromPromise(
-      this.__update(widgetId, request, requestOptions),
+      this.__get(dashboardId, requestOptions),
     );
   }
 
-  private async __update(
-    widgetId: string,
-    request: LangfuseAPI.unstable.UpdateDashboardWidgetRequest,
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.DashboardWidget>> {
+  private async __get(
+    dashboardId: string,
+    requestOptions?: Dashboards.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.Dashboard>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -664,7 +456,178 @@ export class DashboardWidgets {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        `/api/public/unstable/dashboard-widgets/${encodeURIComponent(widgetId)}`,
+        `/api/public/unstable/dashboards/${encodeURIComponent(dashboardId)}`,
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.Dashboard,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/unstable/dashboards/{dashboardId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Update a dashboard's name, description, definition, or filters.
+   *
+   * @param {string} dashboardId
+   * @param {LangfuseAPI.unstable.UpdateDashboardRequest} request
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.dashboards.update("dashboardId", {
+   *         name: undefined,
+   *         description: undefined,
+   *         definition: undefined,
+   *         filters: undefined
+   *     })
+   */
+  public update(
+    dashboardId: string,
+    request: LangfuseAPI.unstable.UpdateDashboardRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.Dashboard> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__update(dashboardId, request, requestOptions),
+    );
+  }
+
+  private async __update(
+    dashboardId: string,
+    request: LangfuseAPI.unstable.UpdateDashboardRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.Dashboard>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/unstable/dashboards/${encodeURIComponent(dashboardId)}`,
       ),
       method: "PATCH",
       headers: _headers,
@@ -681,7 +644,7 @@ export class DashboardWidgets {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.unstable.DashboardWidget,
+        data: _response.body as LangfuseAPI.unstable.Dashboard,
         rawResponse: _response.rawResponse,
       };
     }
@@ -766,7 +729,7 @@ export class DashboardWidgets {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling PATCH /api/public/unstable/dashboard-widgets/{widgetId}.",
+          "Timeout exceeded when calling PATCH /api/public/unstable/dashboards/{dashboardId}.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
@@ -777,20 +740,16 @@ export class DashboardWidgets {
   }
 
   /**
-   * Delete a dashboard widget.
+   * Delete a dashboard.
    *
-   * The API returns `409` while the widget is still placed on a dashboard.
-   * Remove those placements first.
-   *
-   * @param {string} widgetId
-   * @param {DashboardWidgets.RequestOptions} requestOptions - Request-specific configuration.
+   * @param {string} dashboardId
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
    * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
    * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
    * @throws {@link LangfuseAPI.unstable.NotFoundError}
    * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.unstable.ConflictError}
    * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
    * @throws {@link LangfuseAPI.unstable.InternalServerError}
    * @throws {@link LangfuseAPI.Error}
@@ -800,22 +759,22 @@ export class DashboardWidgets {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.unstable.dashboardWidgets.delete("widgetId")
+   *     await client.unstable.dashboards.delete("dashboardId")
    */
   public delete(
-    widgetId: string,
-    requestOptions?: DashboardWidgets.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteDashboardWidgetResponse> {
+    dashboardId: string,
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteDashboardResponse> {
     return core.HttpResponsePromise.fromPromise(
-      this.__delete(widgetId, requestOptions),
+      this.__delete(dashboardId, requestOptions),
     );
   }
 
   private async __delete(
-    widgetId: string,
-    requestOptions?: DashboardWidgets.RequestOptions,
+    dashboardId: string,
+    requestOptions?: Dashboards.RequestOptions,
   ): Promise<
-    core.WithRawResponse<LangfuseAPI.unstable.DeleteDashboardWidgetResponse>
+    core.WithRawResponse<LangfuseAPI.unstable.DeleteDashboardResponse>
   > {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
@@ -836,7 +795,7 @@ export class DashboardWidgets {
       url: core.url.join(
         (await core.Supplier.get(this._options.baseUrl)) ??
           (await core.Supplier.get(this._options.environment)),
-        `/api/public/unstable/dashboard-widgets/${encodeURIComponent(widgetId)}`,
+        `/api/public/unstable/dashboards/${encodeURIComponent(dashboardId)}`,
       ),
       method: "DELETE",
       headers: _headers,
@@ -850,7 +809,194 @@ export class DashboardWidgets {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.unstable.DeleteDashboardWidgetResponse,
+        data: _response.body as LangfuseAPI.unstable.DeleteDashboardResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/unstable/dashboards/{dashboardId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Add a placement to a dashboard grid (see `DashboardPlacement` for
+   * grid semantics).
+   *
+   * `id` and the position fields are optional: when omitted, the
+   * placement gets a server-generated id and is appended below all
+   * existing tiles as a 6x6 tile. Returns the created placement.
+   *
+   * The referenced widget must exist in the same project or be a
+   * Langfuse-managed widget. The API returns `409` if a placement with
+   * the same `id` already exists on the dashboard.
+   *
+   * @param {string} dashboardId
+   * @param {LangfuseAPI.unstable.CreateDashboardPlacementRequest} request
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.ConflictError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.dashboards.addPlacement("dashboardId", {
+   *         type: "widget",
+   *         id: undefined,
+   *         widgetId: "widgetId",
+   *         x: undefined,
+   *         y: undefined,
+   *         width: undefined,
+   *         height: undefined
+   *     })
+   */
+  public addPlacement(
+    dashboardId: string,
+    request: LangfuseAPI.unstable.CreateDashboardPlacementRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardPlacement> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__addPlacement(dashboardId, request, requestOptions),
+    );
+  }
+
+  private async __addPlacement(
+    dashboardId: string,
+    request: LangfuseAPI.unstable.CreateDashboardPlacementRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.DashboardPlacement>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/unstable/dashboards/${encodeURIComponent(dashboardId)}/placements`,
+      ),
+      method: "POST",
+      headers: _headers,
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.DashboardPlacement,
         rawResponse: _response.rawResponse,
       };
     }
@@ -940,7 +1086,355 @@ export class DashboardWidgets {
         });
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling DELETE /api/public/unstable/dashboard-widgets/{widgetId}.",
+          "Timeout exceeded when calling POST /api/public/unstable/dashboards/{dashboardId}/placements.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Move or resize a placement. All fields are optional; at least one is
+   * required. Omitted fields keep their current value. The placement's
+   * content (widget/preset reference) and id cannot change — delete and
+   * re-add the placement to swap content. Returns the updated placement.
+   *
+   * @param {string} dashboardId
+   * @param {string} placementId
+   * @param {LangfuseAPI.unstable.UpdateDashboardPlacementRequest} request
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.dashboards.updatePlacement("dashboardId", "placementId", {
+   *         x: undefined,
+   *         y: undefined,
+   *         width: undefined,
+   *         height: undefined
+   *     })
+   */
+  public updatePlacement(
+    dashboardId: string,
+    placementId: string,
+    request: LangfuseAPI.unstable.UpdateDashboardPlacementRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardPlacement> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__updatePlacement(dashboardId, placementId, request, requestOptions),
+    );
+  }
+
+  private async __updatePlacement(
+    dashboardId: string,
+    placementId: string,
+    request: LangfuseAPI.unstable.UpdateDashboardPlacementRequest,
+    requestOptions?: Dashboards.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.DashboardPlacement>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/unstable/dashboards/${encodeURIComponent(dashboardId)}/placements/${encodeURIComponent(placementId)}`,
+      ),
+      method: "PATCH",
+      headers: _headers,
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.DashboardPlacement,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling PATCH /api/public/unstable/dashboards/{dashboardId}/placements/{placementId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Remove a placement from a dashboard grid without deleting the referenced widget.
+   *
+   * @param {string} dashboardId
+   * @param {string} placementId
+   * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.dashboards.deletePlacement("dashboardId", "placementId")
+   */
+  public deletePlacement(
+    dashboardId: string,
+    placementId: string,
+    requestOptions?: Dashboards.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteDashboardPlacementResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__deletePlacement(dashboardId, placementId, requestOptions),
+    );
+  }
+
+  private async __deletePlacement(
+    dashboardId: string,
+    placementId: string,
+    requestOptions?: Dashboards.RequestOptions,
+  ): Promise<
+    core.WithRawResponse<LangfuseAPI.unstable.DeleteDashboardPlacementResponse>
+  > {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/unstable/dashboards/${encodeURIComponent(dashboardId)}/placements/${encodeURIComponent(placementId)}`,
+      ),
+      method: "DELETE",
+      headers: _headers,
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.DeleteDashboardPlacementResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/unstable/dashboards/{dashboardId}/placements/{placementId}.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
