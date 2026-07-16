@@ -18,30 +18,22 @@ import { ScoreManager } from "./score/index.js";
  */
 export interface LangfuseClientParams {
   /**
-   * Public API key for authentication with Langfuse (`pk-lf-...`).
-   * Falls back to the `LANGFUSE_PUBLIC_KEY` environment variable.
+   * Public API key for authentication with Langfuse.
+   * Can also be provided via LANGFUSE_PUBLIC_KEY environment variable.
    */
   publicKey?: string;
 
   /**
-   * Secret API key for authentication with Langfuse (`sk-lf-...`).
-   * Falls back to the `LANGFUSE_SECRET_KEY` environment variable.
+   * Secret API key for authentication with Langfuse.
+   * Can also be provided via LANGFUSE_SECRET_KEY environment variable.
    */
   secretKey?: string;
 
   /**
    * Base URL of the Langfuse instance to connect to, e.g.
-   * `https://cloud.langfuse.com` (EU), `https://us.cloud.langfuse.com` (US),
-   * or your self-hosted URL.
+   * `https://cloud.langfuse.com` (EU), `https://us.cloud.langfuse.com` (US), `https://jp.cloud.langfuse.com` (Japan), `https://hipaa.cloud.langfuse.com` (HIPAA),
+   * or your self-hosted URL, `https://jp.cloud.langfuse.com` (Japan), `https://hipaa.cloud.langfuse.com` (HIPAA).
    *
-   * Resolution order:
-   * 1. This parameter
-   * 2. `LANGFUSE_BASE_URL` environment variable (canonical spelling, identical
-   *    to the Python SDK's `LANGFUSE_BASE_URL`)
-   * 3. `LANGFUSE_BASEURL` environment variable (legacy JS v2/v3 spelling
-   *    without the second underscore — still accepted, but prefer
-   *    `LANGFUSE_BASE_URL`)
-   * 4. Default: `https://cloud.langfuse.com`
    *
    * @defaultValue "https://cloud.langfuse.com"
    */
@@ -76,10 +68,6 @@ export interface LangfuseClientParams {
  * Tracing/observability is intentionally NOT part of this client. To trace
  * your application, use `@langfuse/tracing` (instrumentation) together with
  * the `LangfuseSpanProcessor` from `@langfuse/otel` (export).
- *
- * Configuration is read from constructor params first, then from environment
- * variables: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`
- * (legacy alias: `LANGFUSE_BASEURL`), `LANGFUSE_TIMEOUT`.
  *
  * @example
  * ```typescript
@@ -354,42 +342,28 @@ export class LangfuseClient {
   }
 
   /**
-   * Flushes pending score events to the Langfuse API.
+   * Flushes any pending score events to the Langfuse API.
    *
-   * Scores created via `langfuse.score.create(...)` are queued and sent in
-   * batches; awaiting this method sends everything still queued immediately.
-   *
-   * **Important**: this flushes scores only — it does NOT flush tracing
-   * spans. Spans are exported by the `LangfuseSpanProcessor` from
-   * `@langfuse/otel`; in serverless environments await its `forceFlush()`
-   * separately before the process is frozen or terminated. Queued scores are
-   * lost if the process exits before this promise resolves.
+   * This method ensures all queued scores are sent immediately rather than
+   * waiting for the automatic flush interval or batch size threshold.
    *
    * @returns Promise that resolves when all pending scores have been sent
    *
    * @example
    * ```typescript
-   * langfuse.score.create({ traceId, name: "quality", value: 0.8 });
-   * await langfuse.flush(); // scores
-   * await langfuseSpanProcessor.forceFlush(); // tracing spans (separate!)
+   * langfuse.score.create({ name: "quality", value: 0.8 });
+   * await langfuse.flush(); // Ensures the score is sent immediately
    * ```
-   *
-   * @see https://langfuse.com/docs/observability/sdk/instrumentation
    */
   public async flush() {
     return this.score.flush();
   }
 
   /**
-   * Gracefully shuts down the client by flushing all pending score events.
+   * Gracefully shuts down the client by flushing all pending data.
    *
-   * Call this once before a long-running process exits so queued scores are
-   * not lost. In serverless environments, prefer {@link LangfuseClient.flush}
-   * per invocation since the same instance may serve later requests.
-   *
-   * Like {@link LangfuseClient.flush}, this does NOT flush tracing spans —
-   * call `shutdown()` (or `forceFlush()`) on the `LangfuseSpanProcessor` from
-   * `@langfuse/otel` for those.
+   * This method should be called before your application exits to ensure
+   * all data is sent to Langfuse.
    *
    * @returns Promise that resolves when shutdown is complete
    *

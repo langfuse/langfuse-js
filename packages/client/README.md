@@ -1,8 +1,8 @@
-![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+![GitHub Banner](https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861)
 
 # @langfuse/client
 
-[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & observability for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **`LangfuseClient`** — prompt management (`langfuse.prompt`), datasets (`langfuse.dataset`), experiments (`langfuse.experiment`), scores (`langfuse.score`), media (`langfuse.media`), and the full generated REST API client (`langfuse.api`). Tracing is intentionally separate: use [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing) + [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel) for that.
+[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & evaluation for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **`LangfuseClient`** — prompt management (`langfuse.prompt`), datasets (`langfuse.dataset`), experiments (`langfuse.experiment`), scores (`langfuse.score`), media (`langfuse.media`), and the full generated REST API client (`langfuse.api`). Tracing is intentionally separate: use [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing) + [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel) for that.
 
 > [!IMPORTANT]
 > This is the current SDK generation (`@langfuse/*` scoped packages). The unscoped `langfuse` npm package is the legacy v3 SDK — for new integrations use the `@langfuse/*` packages. Migration guides: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
@@ -20,8 +20,6 @@ LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
 ```
-
-`LANGFUSE_BASE_URL` is the canonical spelling (identical to the Python SDK). The legacy JS v2/v3 spelling `LANGFUSE_BASEURL` is still accepted as a fallback.
 
 ## Quickstart
 
@@ -74,7 +72,7 @@ const trace = await langfuse.api.trace.get("trace-id");
 - Prompt management: https://langfuse.com/docs/prompt-management/get-started
 - Experiments: https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk
 - Scores: https://langfuse.com/docs/evaluation/evaluation-methods/scores-via-sdk
-- API reference: https://js.reference.langfuse.com
+- Reference: https://js.reference.langfuse.com
 - LLM/agent-readable docs index: https://langfuse.com/llms.txt
 
 ## License

@@ -1,8 +1,8 @@
-![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+![GitHub Banner](https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861)
 
 # @langfuse/tracing
 
-[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & observability for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **tracing instrumentation** primitives of the Langfuse JS SDK, built on OpenTelemetry: `startObservation`, `startActiveObservation`, the `observe()` wrapper, and `propagateAttributes` for user/session attribution and prompt linking. It pairs with the `LangfuseSpanProcessor` from [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel), which exports the spans to Langfuse. Prompt management, datasets/experiments, evals/scores, and the full REST API live in [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client).
+[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & evaluation for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **tracing instrumentation** primitives of the Langfuse JS SDK, built on OpenTelemetry: `startObservation`, `startActiveObservation`, the `observe()` wrapper, and `propagateAttributes` for user/session attribution and prompt linking. It pairs with the `LangfuseSpanProcessor` from [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel), which exports the spans to Langfuse. Prompt management, datasets/experiments, evals/scores, and the full REST API live in [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client).
 
 > [!IMPORTANT]
 > This is the current SDK generation (`@langfuse/*` scoped packages). The unscoped `langfuse` npm package is the legacy v3 SDK — for new integrations use `@langfuse/tracing` + `@langfuse/otel`. Migration guides: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
@@ -20,8 +20,6 @@ LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
 ```
-
-`LANGFUSE_BASE_URL` is the canonical spelling (identical to the Python SDK). The legacy JS v2/v3 spelling `LANGFUSE_BASEURL` is still accepted as a fallback.
 
 ## Quickstart: Next.js + Vercel AI SDK
 
@@ -46,17 +44,6 @@ export function register() {
   tracerProvider.register();
 }
 ```
-
-With **AI SDK 7** (`ai@7`), additionally register the Langfuse telemetry integration from [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) inside `register()`:
-
-```typescript
-import { registerTelemetry } from "ai";
-import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
-
-registerTelemetry(new LangfuseVercelAiSdkIntegration());
-```
-
-With **AI SDK ≤ 6**, no integration package is needed — instead pass `experimental_telemetry: { isEnabled: true }` on each `generateText` / `streamText` call and the `LangfuseSpanProcessor` picks the spans up.
 
 **2. Trace the route handler with user/session attribution:**
 
@@ -180,7 +167,7 @@ Key exports:
 
 - Docs: https://langfuse.com/docs/observability/sdk/overview
 - Instrumentation guide: https://langfuse.com/docs/observability/sdk/instrumentation
-- API reference: https://js.reference.langfuse.com
+- Reference: https://js.reference.langfuse.com
 - LLM/agent-readable docs index: https://langfuse.com/llms.txt
 
 ## License

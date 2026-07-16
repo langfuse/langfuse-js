@@ -1,8 +1,8 @@
-![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+![GitHub Banner](https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861)
 
 # @langfuse/otel
 
-[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & observability for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **`LangfuseSpanProcessor`** — the OpenTelemetry span processor that exports spans to Langfuse with smart filtering, masking, and media upload. Register it with any OTel setup and spans from [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing), the Vercel AI SDK, or any other GenAI instrumentation are sent to Langfuse. Prompt management, datasets/experiments, and evals/scores live in [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client).
+[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & evaluation for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **`LangfuseSpanProcessor`** — the OpenTelemetry span processor that exports spans to Langfuse with smart filtering, masking, and media upload. Register it with any OTel setup and spans from [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing), the Vercel AI SDK, or any other GenAI instrumentation are sent to Langfuse. Prompt management, datasets/experiments, and evals/scores live in [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client).
 
 > [!IMPORTANT]
 > This is the current SDK generation (`@langfuse/*` scoped packages). The unscoped `langfuse` npm package is the legacy v3 SDK — for new integrations use `@langfuse/tracing` + `@langfuse/otel`. Migration guides: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
@@ -20,8 +20,6 @@ LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
 ```
-
-`LANGFUSE_BASE_URL` is the canonical spelling (identical to the Python SDK). The legacy JS v2/v3 spelling `LANGFUSE_BASEURL` is still accepted as a fallback. Additional options: `LANGFUSE_FLUSH_AT`, `LANGFUSE_FLUSH_INTERVAL`, `LANGFUSE_TIMEOUT`, `LANGFUSE_MEDIA_UPLOAD_ENABLED`, `LANGFUSE_TRACING_ENVIRONMENT`, `LANGFUSE_RELEASE`, `LANGFUSE_LOG_LEVEL`.
 
 ## Quickstart
 
@@ -59,7 +57,7 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 - Docs: https://langfuse.com/docs/observability/sdk/overview
 - Vercel AI SDK / Next.js guide: https://langfuse.com/integrations/frameworks/vercel-ai-sdk
-- API reference: https://js.reference.langfuse.com
+- Reference: https://js.reference.langfuse.com
 - LLM/agent-readable docs index: https://langfuse.com/llms.txt
 
 ## License

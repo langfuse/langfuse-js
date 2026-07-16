@@ -147,20 +147,12 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     this.delegate.onStepEnd(event);
   }
 
-  /**
-   * @deprecated Deprecated in the AI SDK `Telemetry` interface. Implemented for
-   * compatibility because AI SDK v7 still emits object-generation model spans
-   * through this callback. Not intended to be called by user code.
-   */
+  /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
   onObjectStepStart(event: GenerateObjectStepStartEvent): void {
     this.delegate.onObjectStepStart(event);
   }
 
-  /**
-   * @deprecated Deprecated in the AI SDK `Telemetry` interface. Implemented for
-   * compatibility because AI SDK v7 still emits object-generation model spans
-   * through this callback. Not intended to be called by user code.
-   */
+  /** @deprecated AI SDK v7 still emits object generation model spans through this callback. */
   onObjectStepEnd(event: GenerateObjectStepEndEvent): void {
     this.delegate.onObjectStepEnd(event);
   }

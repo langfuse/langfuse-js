@@ -1,8 +1,8 @@
-![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+![GitHub Banner](https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861)
 
 # @langfuse/browser
 
-[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & observability for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **browser client for score ingestion only** — e.g. capturing end-user feedback (thumbs up/down, ratings) from the frontend and attaching it to traces. It authenticates with the public key alone, so it is safe to ship to browsers. Everything else (tracing, prompt management, datasets/experiments, full API access) requires a secret key and lives in the server-side packages [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing), [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel), and [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client).
+[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & evaluation for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **browser client for score ingestion only** — e.g. capturing end-user feedback (thumbs up/down, ratings) from the frontend and attaching it to traces. It authenticates with the public key alone, so it is safe to ship to browsers. Everything else (tracing, prompt management, datasets/experiments, full API access) requires a secret key and lives in the server-side packages [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing), [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel), and [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client).
 
 ## Install
 
@@ -17,7 +17,7 @@ import { LangfuseBrowserClient } from "@langfuse/browser";
 
 const langfuse = new LangfuseBrowserClient({
   publicKey: "pk-lf-...",
-  baseUrl: "https://cloud.langfuse.com", // 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
+  baseUrl: "https://cloud.langfuse.com", // 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com 🇯🇵 Japan: https://jp.cloud.langfuse.com ⚕️ HIPAA: https://hipaa.cloud.langfuse.com
 });
 
 await langfuse.score({
@@ -50,7 +50,7 @@ environment variables instead.
 
 - User feedback: https://langfuse.com/docs/observability/features/user-feedback
 - Docs: https://langfuse.com/docs/observability/sdk/overview
-- API reference: https://js.reference.langfuse.com
+- Reference: https://js.reference.langfuse.com
 - LLM/agent-readable docs index: https://langfuse.com/llms.txt
 
 ## License

@@ -73,155 +73,89 @@ export type ShouldExportSpan = (params: { otelSpan: ReadableSpan }) => boolean;
 /**
  * Configuration parameters for the LangfuseSpanProcessor.
  *
- * All parameters are optional. Explicit values always take precedence over
- * environment variables; environment variables take precedence over defaults.
- *
  * @public
  */
 export interface LangfuseSpanProcessorParams {
   /**
-   * Custom OpenTelemetry span exporter. If not provided, a default OTLP HTTP
-   * exporter targeting `{baseUrl}/api/public/otel/v1/traces` is created from
-   * the credentials below. Provide your own exporter only when routing spans
-   * somewhere other than Langfuse (e.g. an OTel collector).
+   * Custom OpenTelemetry span exporter. If not provided, a default OTLP exporter will be used.
    */
   exporter?: SpanExporter;
 
   /**
-   * Langfuse public API key (`pk-lf-...`).
-   * Falls back to the `LANGFUSE_PUBLIC_KEY` environment variable.
+   * Langfuse public API key. Can also be set via LANGFUSE_PUBLIC_KEY environment variable.
    */
   publicKey?: string;
 
   /**
-   * Langfuse secret API key (`sk-lf-...`).
-   * Falls back to the `LANGFUSE_SECRET_KEY` environment variable.
+   * Langfuse secret API key. Can also be set via LANGFUSE_SECRET_KEY environment variable.
    */
   secretKey?: string;
 
   /**
-   * Base URL of the Langfuse instance, e.g. `https://cloud.langfuse.com` (EU),
-   * `https://us.cloud.langfuse.com` (US), or your self-hosted URL.
-   *
-   * Resolution order:
-   * 1. This parameter
-   * 2. `LANGFUSE_BASE_URL` environment variable (canonical spelling, identical
-   *    to the Python SDK's `LANGFUSE_BASE_URL`)
-   * 3. `LANGFUSE_BASEURL` environment variable (legacy JS v2/v3 spelling
-   *    without the second underscore — still accepted, but prefer
-   *    `LANGFUSE_BASE_URL`)
-   * 4. Default: `https://cloud.langfuse.com`
-   *
+   * Langfuse instance base URL. Can also be set via LANGFUSE_BASE_URL environment variable.
    * @defaultValue "https://cloud.langfuse.com"
    */
   baseUrl?: string;
 
   /**
-   * Number of finished spans to buffer before an export is triggered.
-   * Only applies to `exportMode: "batched"` (the default); ignored in
-   * `"immediate"` mode. Falls back to the `LANGFUSE_FLUSH_AT` environment
-   * variable.
+   * Number of spans to batch before flushing. Can also be set via LANGFUSE_FLUSH_AT environment variable.
    */
   flushAt?: number;
 
   /**
-   * Maximum delay in seconds between exports in `"batched"` mode; ignored in
-   * `"immediate"` mode. Falls back to the `LANGFUSE_FLUSH_INTERVAL`
-   * environment variable.
+   * Flush interval in seconds. Can also be set via LANGFUSE_FLUSH_INTERVAL environment variable.
    */
   flushInterval?: number;
 
   /**
-   * Function to mask sensitive data before export. It is applied to the
-   * observation/trace input, output, and metadata attributes of every
-   * exported span. If the function throws, the affected attribute is replaced
-   * with `<fully masked due to failed mask function>` rather than exported
-   * unmasked.
-   *
-   * @see {@link MaskFunction}
-   * @see https://langfuse.com/docs/observability/features/masking
+   * Function to mask sensitive data in spans before export.
    */
   mask?: MaskFunction;
 
   /**
-   * Predicate that decides whether a span is exported to Langfuse. Providing
-   * it fully replaces the default filter, which exports Langfuse SDK spans,
-   * spans with `gen_ai.*`/`ai.*` attributes, and spans from known LLM
-   * instrumentation libraries. Use it to drop noisy infrastructure spans
-   * (HTTP, database) or to restrict export to specific subtrees.
-   *
-   * @see {@link ShouldExportSpan}
+   * Function to determine whether a span should be exported to Langfuse.
+   * If not provided, a smart default filter is applied to export Langfuse spans,
+   * spans with `gen_ai.` attributes, and spans from known LLM instrumentors.
    */
   shouldExportSpan?: ShouldExportSpan;
 
   /**
-   * Whether the processor scans span input/output/metadata for base64 data
-   * URIs (images, audio, PDFs, ...), uploads them to the Langfuse media API,
-   * and replaces them with lightweight reference strings before export.
+   * Whether media detection and upload should be attempted by the processor.
+   * Can also be set via LANGFUSE_MEDIA_UPLOAD_ENABLED environment variable.
    *
-   * Set to `false` to skip media handling and export base64 payloads
-   * unchanged — e.g. when spans never contain media and you want to avoid the
-   * scanning overhead, or when payload size limits are not a concern.
-   * Can also be disabled by setting the `LANGFUSE_MEDIA_UPLOAD_ENABLED`
-   * environment variable to `false` or `0`.
-   *
-   * Media uploads happen asynchronously; await {@link LangfuseSpanProcessor.forceFlush}
-   * to guarantee they complete before process exit.
+   * Set to `false` to keep base64 media payloads unchanged on exported spans.
    *
    * @defaultValue true
-   * @see https://langfuse.com/docs/observability/features/multi-modality
    */
   mediaUploadEnabled?: boolean;
 
   /**
-   * Environment tag added to all exported traces (e.g. `production`,
-   * `staging`). Must be a lowercase alphanumeric string (hyphens/underscores
-   * allowed, max 40 chars) not starting with `langfuse`. Falls back to the
-   * `LANGFUSE_TRACING_ENVIRONMENT` environment variable.
-   *
-   * @see https://langfuse.com/docs/observability/features/environments
+   * Environment identifier for the traces. Can also be set via LANGFUSE_TRACING_ENVIRONMENT environment variable.
    */
   environment?: string;
 
   /**
-   * Release identifier (e.g. git SHA, semver) added to all exported traces.
-   * Falls back to the `LANGFUSE_RELEASE` environment variable.
-   *
-   * @see https://langfuse.com/docs/observability/features/releases-and-versioning
+   * Release identifier for the traces. Can also be set via LANGFUSE_RELEASE environment variable.
    */
   release?: string;
 
   /**
-   * Export request timeout in seconds. Falls back to the `LANGFUSE_TIMEOUT`
-   * environment variable.
-   *
+   * Request timeout in seconds. Can also be set via LANGFUSE_TIMEOUT environment variable.
    * @defaultValue 5
    */
   timeout?: number;
 
   /**
-   * Additional HTTP headers to include with span export and media upload requests.
+   * Additional HTTP headers to include with requests.
    */
   additionalHeaders?: Record<string, string>;
-
   /**
-   * Span export mode.
+   * Span export mode to use.
    *
-   * - **batched** (default): Spans are buffered and exported in batches
-   *   (see {@link LangfuseSpanProcessorParams.flushAt} and
-   *   {@link LangfuseSpanProcessorParams.flushInterval}). Use this in
-   *   long-running processes (servers, workers) for best throughput.
-   * - **immediate**: Every span is handed to the exporter as soon as it ends,
-   *   without batching. Use this in short-lived or freezable environments —
-   *   serverless functions (Vercel, AWS Lambda, Cloudflare Workers, edge
-   *   runtimes) — where the process may be frozen or terminated right after
-   *   the response is sent and batched spans would be lost.
-   *
-   * Note: even with `"immediate"`, span post-processing (masking, media
-   * upload) and the export HTTP request are asynchronous. In serverless
-   * environments, additionally await {@link LangfuseSpanProcessor.forceFlush}
-   * before the function returns (e.g. inside Vercel's `after()` or
-   * `waitUntil()`) to guarantee delivery.
+   * - **batched**: Recommended for production environments with long-running processes.
+   *   Spans are batched and exported in groups for optimal performance.
+   * - **immediate**: Recommended for short-lived environments such as serverless functions.
+   *   Spans are exported immediately to prevent data loss when the process terminates / is frozen.
    *
    * @defaultValue "batched"
    */
@@ -229,34 +163,17 @@ export interface LangfuseSpanProcessorParams {
 }
 
 /**
- * OpenTelemetry span processor that exports spans to Langfuse.
+ * OpenTelemetry span processor for sending spans to Langfuse.
  *
- * This is the single component that connects any OpenTelemetry-instrumented
- * application to Langfuse: register it with your OTel trace provider and all
- * matching spans (from `@langfuse/tracing`, Vercel AI SDK telemetry, or any
- * other GenAI instrumentation) are sent to Langfuse. It provides:
- * - Batched (default) or immediate span export
- * - Media extraction and upload from base64 data URIs
- * - Masking of sensitive data before export
- * - Smart span filtering (or a custom `shouldExportSpan` override)
+ * This processor extends the standard BatchSpanProcessor to provide:
+ * - Automatic batching and flushing of spans to Langfuse
+ * - Media content extraction and upload from base64 data URIs
+ * - Data masking capabilities for sensitive information
+ * - Conditional span export based on custom logic
+ *   (or default smart filtering when no custom filter is provided)
  * - Environment and release tagging
  *
- * Configuration is read from constructor params first, then from environment
- * variables: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`
- * (legacy alias: `LANGFUSE_BASEURL`), `LANGFUSE_FLUSH_AT`,
- * `LANGFUSE_FLUSH_INTERVAL`, `LANGFUSE_TIMEOUT`,
- * `LANGFUSE_MEDIA_UPLOAD_ENABLED`, `LANGFUSE_TRACING_ENVIRONMENT`,
- * `LANGFUSE_RELEASE`.
- *
- * **Serverless / short-lived environments** (Vercel, AWS Lambda, Cloudflare
- * Workers, edge): pass `exportMode: "immediate"` so spans are not held in a
- * batch, and await {@link LangfuseSpanProcessor.forceFlush} before the
- * function instance is frozen or terminated — e.g. inside Vercel's `after()`
- * callback or the platform's `waitUntil()`. Spans that are still buffered or
- * mid-processing when the process exits are lost.
- *
  * @example
- * Long-running Node.js process:
  * ```typescript
  * import { NodeSDK } from '@opentelemetry/sdk-node';
  * import { LangfuseSpanProcessor } from '@langfuse/otel';
@@ -264,39 +181,20 @@ export interface LangfuseSpanProcessorParams {
  * const sdk = new NodeSDK({
  *   spanProcessors: [
  *     new LangfuseSpanProcessor({
- *       publicKey: 'pk-lf-...',
- *       secretKey: 'sk-lf-...',
+ *       publicKey: 'pk_...',
+ *       secretKey: 'sk_...',
  *       baseUrl: 'https://cloud.langfuse.com',
  *       environment: 'production',
+ *       mask: ({ data }) => {
+ *         // Mask sensitive data
+ *         return data.replace(/api_key=\w+/g, 'api_key=***');
+ *       }
  *     })
  *   ]
  * });
  *
  * sdk.start();
  * ```
- *
- * @example
- * Serverless (e.g. Next.js on Vercel):
- * ```typescript
- * // instrumentation.ts
- * import { LangfuseSpanProcessor } from '@langfuse/otel';
- * import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
- *
- * export const langfuseSpanProcessor = new LangfuseSpanProcessor({
- *   exportMode: 'immediate', // do not batch; process may freeze after response
- * });
- *
- * new NodeTracerProvider({
- *   spanProcessors: [langfuseSpanProcessor],
- * }).register();
- *
- * // app/api/chat/route.ts
- * // import { after } from 'next/server';
- * // after(async () => await langfuseSpanProcessor.forceFlush());
- * ```
- *
- * @see https://langfuse.com/docs/observability/sdk/overview
- * @see https://langfuse.com/integrations/frameworks/vercel-ai-sdk for the Next.js / AI SDK setup
  *
  * @public
  */
@@ -317,13 +215,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
   /**
    * Creates a new LangfuseSpanProcessor instance.
-   *
-   * Credentials and settings not passed explicitly are read from environment
-   * variables (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`,
-   * `LANGFUSE_BASE_URL` — legacy alias `LANGFUSE_BASEURL`), so
-   * `new LangfuseSpanProcessor()` with no arguments is the common setup.
-   * Missing credentials log a warning at construction time and cause span
-   * exports to fail.
    *
    * @param params - Configuration parameters for the processor
    *
@@ -530,39 +421,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   /**
    * Forces an immediate flush of all pending spans and media uploads.
    *
-   * Awaiting this promise guarantees that every span that has ended so far —
-   * including its asynchronous masking and media-upload post-processing — has
-   * been handed to the exporter and exported. This is the only way to
-   * guarantee delivery of tracing data; `exportMode: "immediate"` alone does
-   * not wait for in-flight async work.
-   *
-   * **When to call:**
-   * - Serverless / edge (Vercel, AWS Lambda, Cloudflare Workers): await this
-   *   before the function instance is frozen or terminated — e.g. inside
-   *   Vercel's `after()` callback, or via the platform's `waitUntil()`.
-   *   For streaming responses, flush after the stream has finished (e.g. from
-   *   the `onFinish` callback), otherwise the final spans are not yet ended.
-   * - Long-running processes: not needed during normal operation; call
-   *   {@link LangfuseSpanProcessor.shutdown} on process exit instead.
-   *
-   * Note: this flushes tracing spans only. Scores created via
-   * `@langfuse/client`'s `LangfuseClient` are flushed separately with
-   * `langfuseClient.flush()`.
-   *
-   * @returns Promise that resolves when all pending spans, media uploads, and exports are complete
-   *
-   * @example
-   * ```typescript
-   * // Next.js route handler on Vercel
-   * import { after } from 'next/server';
-   * import { langfuseSpanProcessor } from '@/instrumentation';
-   *
-   * export async function POST(req: Request) {
-   *   const response = await handleChat(req);
-   *   after(async () => await langfuseSpanProcessor.forceFlush());
-   *   return response;
-   * }
-   * ```
+   * @returns Promise that resolves when all pending operations are complete
    *
    * @override
    */
@@ -573,15 +432,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   /**
-   * Gracefully shuts down the processor: flushes all pending spans and media
-   * uploads (like {@link LangfuseSpanProcessor.forceFlush}), then shuts down
-   * the underlying exporter. After shutdown, newly ended spans are no longer
-   * exported.
-   *
-   * Call this once before a long-running process exits (e.g. in a `SIGTERM`
-   * handler, or via `NodeSDK.shutdown()` which delegates here). In serverless
-   * environments prefer {@link LangfuseSpanProcessor.forceFlush}, since the
-   * same function instance may be reused for later invocations.
+   * Gracefully shuts down the processor, ensuring all pending operations are completed.
    *
    * @returns Promise that resolves when shutdown is complete
    *

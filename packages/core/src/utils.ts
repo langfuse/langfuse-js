@@ -1,22 +1,3 @@
-/**
- * Environment variables recognized by the Langfuse SDK. Explicit constructor
- * params always take precedence over environment variables.
- *
- * - `LANGFUSE_PUBLIC_KEY` — public API key (`pk-lf-...`)
- * - `LANGFUSE_SECRET_KEY` — secret API key (`sk-lf-...`)
- * - `LANGFUSE_BASE_URL` — Langfuse host, e.g. `https://cloud.langfuse.com`
- *   (EU) or `https://us.cloud.langfuse.com` (US). Canonical spelling, same as
- *   the Python SDK. The legacy JS v2/v3 spelling `LANGFUSE_BASEURL` (no
- *   underscore between BASE and URL) is still accepted as a fallback.
- * - `LANGFUSE_TIMEOUT` — API request timeout in seconds (default: 5)
- * - `LANGFUSE_FLUSH_AT` — number of buffered events/spans that triggers an export
- * - `LANGFUSE_FLUSH_INTERVAL` — max seconds between exports
- * - `LANGFUSE_MEDIA_UPLOAD_ENABLED` — set to `false` or `0` to disable media upload
- * - `LANGFUSE_LOG_LEVEL` — `DEBUG` | `INFO` | `WARN` | `ERROR`
- * - `LANGFUSE_DEBUG` — set to `true` as a shortcut for the DEBUG log level
- * - `LANGFUSE_RELEASE` — release identifier added to all traces
- * - `LANGFUSE_TRACING_ENVIRONMENT` — environment tag for traces (e.g. `production`)
- */
 type LangfuseEnvVar =
   | "LANGFUSE_PUBLIC_KEY"
   | "LANGFUSE_SECRET_KEY"
@@ -31,15 +12,6 @@ type LangfuseEnvVar =
   | "LANGFUSE_RELEASE"
   | "LANGFUSE_TRACING_ENVIRONMENT";
 
-/**
- * Reads a Langfuse environment variable from `process.env` (Node.js and
- * compatible runtimes) or `globalThis` (browsers, tests) as a fallback.
- *
- * @param key - The environment variable name
- * @returns The value, or undefined if not set
- *
- * @public
- */
 export function getEnv(key: LangfuseEnvVar): string | undefined {
   if (typeof process !== "undefined" && process.env[key]) {
     return process.env[key];

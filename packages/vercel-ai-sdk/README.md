@@ -1,8 +1,8 @@
-![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+![GitHub Banner](https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861)
 
 # @langfuse/vercel-ai-sdk
 
-[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & observability for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **Langfuse telemetry integration for Vercel AI SDK v7** (`ai@7`) using the callback-based telemetry system — every `generateText` / `streamText` / `generateObject` / `embed` call is traced as Langfuse observations. Span export requires the `LangfuseSpanProcessor` from [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel); prompt management, datasets/experiments, and evals/scores live in [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client). For AI SDK ≤ 6, this package is not needed — use `experimental_telemetry: { isEnabled: true }` instead (see the [integration guide](https://langfuse.com/integrations/frameworks/vercel-ai-sdk)).
+[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & evaluation for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This package provides the **Langfuse telemetry integration for Vercel AI SDK v7** (`ai@7`) using the callback-based telemetry system — every `generateText` / `streamText` / `generateObject` / `embed` call is traced as Langfuse observations. Span export requires the `LangfuseSpanProcessor` from [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel); prompt management, datasets/experiments, and evals/scores live in [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client). For AI SDK ≤ 6, this package is not needed — use `experimental_telemetry: { isEnabled: true }` instead (see the [integration guide](https://langfuse.com/integrations/frameworks/vercel-ai-sdk)).
 
 It delegates AI SDK-compatible OpenTelemetry span creation to Vercel's `@ai-sdk/otel` package so it works with the existing Langfuse OTEL ingestion pipeline. Runtime context keys included via AI SDK telemetry are attached as Langfuse observation metadata. The only special runtime context key is `langfusePrompt`, which links Langfuse prompt name and version to model-call observations.
 
@@ -24,7 +24,7 @@ LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
 ```
 
-`LANGFUSE_BASE_URL` is the canonical spelling (identical to the Python SDK). The legacy JS v2/v3 spelling `LANGFUSE_BASEURL` is still accepted as a fallback.
+`LANGFUSE_BASE_URL` is the canonical spelling.
 
 ## Setup
 
@@ -130,7 +130,7 @@ await generateText({
 
 - Vercel AI SDK integration guide: https://langfuse.com/integrations/frameworks/vercel-ai-sdk
 - Docs: https://langfuse.com/docs/observability/sdk/overview
-- API reference: https://js.reference.langfuse.com
+- Reference: https://js.reference.langfuse.com
 - LLM/agent-readable docs index: https://langfuse.com/llms.txt
 
 ## License

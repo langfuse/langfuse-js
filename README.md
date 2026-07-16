@@ -1,4 +1,4 @@
-<img width="2400" height="600" alt="hero-b" src="https://github.com/user-attachments/assets/0d06e77e-6f4a-4ae3-8aee-7d3463a6f98c" />
+<img width="2400" height="600" alt="hero-b" src="https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861" />
 
 # langfuse-js
 
@@ -30,7 +30,7 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 ## Documentation
 
 - [Docs](https://langfuse.com/docs/observability/sdk/overview)
-- [API Reference](https://js.reference.langfuse.com)
+- [Reference](https://js.reference.langfuse.com)
 - [LLM/agent-readable docs index](https://langfuse.com/llms.txt)
 
 ## Development

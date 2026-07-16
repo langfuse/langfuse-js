@@ -1,8 +1,8 @@
-![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
+![GitHub Banner](https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861)
 
 # @langfuse/core
 
-[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & observability for LLM and agent applications, prompt management, datasets & experiments, and evaluation (scores). This is the **shared core package** of the Langfuse JS SDK: the generated REST API client (`LangfuseAPIClient`), logger, environment-variable handling, media types, and the `propagateAttributes` context propagation utilities. You usually don't install it directly — it is a dependency of the other `@langfuse/*` packages: use [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing) + [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel) for tracing and [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client) for prompt management, datasets/experiments, and scores.
+[Langfuse](https://langfuse.com) is the open-source LLM engineering platform: tracing & evaluation for AI and agent applications, prompt management, datasets & experiments, and evaluation (scores). This is the **shared core package** of the Langfuse JS SDK: the generated REST API client (`LangfuseAPIClient`), logger, environment-variable handling, media types, and the `propagateAttributes` context propagation utilities. Use [`@langfuse/tracing`](https://www.npmjs.com/package/@langfuse/tracing) + [`@langfuse/otel`](https://www.npmjs.com/package/@langfuse/otel) for tracing and [`@langfuse/client`](https://www.npmjs.com/package/@langfuse/client) for prompt management, datasets/experiments, and scores.
 
 > [!IMPORTANT]
 > This is the current SDK generation (`@langfuse/*` scoped packages). The unscoped `langfuse-core` npm package belongs to the legacy v3 SDK. Migration guides: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
@@ -14,10 +14,8 @@ Configuration shared across all `@langfuse/*` packages:
 ```bash
 LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
-LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
+LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com, 🇯🇵 Japan: https://jp.cloud.langfuse.com, ⚕️ HIPAA: https://hipaa.cloud.langfuse.com
 ```
-
-`LANGFUSE_BASE_URL` is the canonical spelling (identical to the Python SDK). The legacy JS v2/v3 spelling `LANGFUSE_BASEURL` is still accepted as a fallback. Additional options: `LANGFUSE_TIMEOUT`, `LANGFUSE_FLUSH_AT`, `LANGFUSE_FLUSH_INTERVAL`, `LANGFUSE_MEDIA_UPLOAD_ENABLED`, `LANGFUSE_TRACING_ENVIRONMENT`, `LANGFUSE_RELEASE`, `LANGFUSE_LOG_LEVEL`, `LANGFUSE_DEBUG`.
 
 ## Packages
 
@@ -35,7 +33,7 @@ LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US
 ## Documentation
 
 - Docs: https://langfuse.com/docs/observability/sdk/overview
-- API reference: https://js.reference.langfuse.com
+- Reference: https://js.reference.langfuse.com
 - LLM/agent-readable docs index: https://langfuse.com/llms.txt
 
 ## License

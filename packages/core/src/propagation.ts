@@ -236,25 +236,10 @@ export interface PropagateAttributesParams {
  * propagates them to all new child spans created within the callback. This is the
  * recommended way to set trace-level attributes like userId, sessionId, and metadata
  * dimensions that should be consistently applied across all observations in a trace.
- * It is the JS equivalent of the Python SDK's `propagate_attributes` context manager
- * and shares its semantics.
  *
- * **Scope semantics**:
- * - The span that is active when `propagateAttributes` is called receives the
- *   attributes directly (if it is still recording).
- * - Every span started inside `fn` — including spans created by
- *   auto-instrumentation libraries and nested descendants — receives the
- *   attributes via OpenTelemetry context when it starts. This application
- *   happens in the `LangfuseSpanProcessor` (from `@langfuse/otel`), which must
- *   therefore be registered for propagation to child spans to take effect.
- * - Spans created *before* the call are NOT retroactively updated.
- * - Nested `propagateAttributes` calls merge: `tags` are unioned and
- *   `metadata` keys are merged (inner values win); other keys are overridden
- *   by the inner call for its duration.
- *
- * **IMPORTANT — ordering**: Call this as early as possible within your
- * trace/workflow, ideally wrapping it entirely. Only the currently active span
- * and spans created after entering this context will have these attributes.
+ * **IMPORTANT**: Call this as early as possible within your trace/workflow. Only the
+ * currently active span and spans created after entering this context will have these
+ * attributes. Pre-existing spans will NOT be retroactively updated.
  *
  * **Why this matters**: Langfuse aggregation queries (e.g., total cost by userId,
  * filtering by sessionId) only include observations that have the attribute set.
@@ -356,21 +341,14 @@ export interface PropagateAttributesParams {
  * ```
  *
  * @remarks
- * - **Validation**: All attribute values (userId, sessionId, tags, metadata values)
- *   must be strings ≤200 characters; prefer US-ASCII for cross-SDK and baggage
- *   compatibility. Invalid values are dropped with a warning logged — no
- *   exceptions are thrown. Ensure values meet constraints before calling.
+ * - **Validation**: All attribute values (userId, sessionId, metadata values)
+ *   must be strings ≤200 characters. Invalid values will be dropped with a
+ *   warning logged. Ensure values meet constraints before calling.
  * - **OpenTelemetry**: This uses OpenTelemetry context propagation under the hood,
- *   making it compatible with other OTel-instrumented libraries. Attributes
- *   are applied to child spans by the `LangfuseSpanProcessor` when each span
- *   starts.
+ *   making it compatible with other OTel-instrumented libraries.
  * - **Baggage Security**: When `asBaggage=true`, attribute values are added to HTTP
- *   headers on ALL outbound requests. Only use for non-sensitive values and when you
+ *   headers on outbound requests. Only use for non-sensitive values and when you
  *   need cross-service tracing.
- *
- * @see https://langfuse.com/docs/observability/sdk/instrumentation for the full guide
- * @see https://langfuse.com/docs/observability/features/sessions
- * @see https://langfuse.com/docs/observability/features/users
  *
  * @public
  */
