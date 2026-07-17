@@ -10,6 +10,7 @@ import { ExperimentManager } from "./experiment/ExperimentManager.js";
 import { MediaManager } from "./media/index.js";
 import { PromptManager } from "./prompt/index.js";
 import { ScoreManager } from "./score/index.js";
+import { SkillManager } from "./skill/index.js";
 
 /**
  * Configuration parameters for initializing a LangfuseClient instance.
@@ -56,6 +57,7 @@ export interface LangfuseClientParams {
  *
  * The LangfuseClient provides access to all Langfuse functionality including:
  * - Prompt management and retrieval
+ * - Skill management and retrieval
  * - Dataset operations
  * - Score creation and management
  * - Media upload and handling
@@ -76,6 +78,9 @@ export interface LangfuseClientParams {
  * // Use the client
  * const prompt = await langfuse.prompt.get("my-prompt");
  * const compiledPrompt = prompt.compile({ variable: "value" });
+ *
+ * const skill = await langfuse.skill.get("my-skill");
+ * const compiledSkill = skill.compile({ variable: "value" });
  * ```
  *
  * @public
@@ -91,6 +96,11 @@ export class LangfuseClient {
    * Manager for prompt operations including creation, retrieval, and caching.
    */
   public prompt: PromptManager;
+
+  /**
+   * Manager for skill operations including creation, retrieval, and caching.
+   */
+  public skill: SkillManager;
 
   /**
    * Manager for dataset operations including retrieval and item linking.
@@ -239,6 +249,19 @@ export class LangfuseClient {
   public resolveMediaReferences: typeof MediaManager.prototype.resolveReferences;
 
   /**
+   * Convenience alias for skill.get.
+   */
+  public getSkill: typeof SkillManager.prototype.get;
+  /**
+   * Convenience alias for skill.create.
+   */
+  public createSkill: typeof SkillManager.prototype.create;
+  /**
+   * Convenience alias for skill.update.
+   */
+  public updateSkill: typeof SkillManager.prototype.update;
+
+  /**
    * Creates a new LangfuseClient instance.
    *
    * @param params - Configuration parameters. If not provided, will use environment variables.
@@ -300,6 +323,7 @@ export class LangfuseClient {
     });
 
     this.prompt = new PromptManager({ apiClient: this.api });
+    this.skill = new SkillManager({ apiClient: this.api });
     this.dataset = new DatasetManager({ langfuseClient: this });
     this.score = new ScoreManager({ apiClient: this.api });
     this.media = new MediaManager({ apiClient: this.api });
@@ -309,6 +333,9 @@ export class LangfuseClient {
     this.getPrompt = this.prompt.get.bind(this.prompt); // keep correct this context for cache access
     this.createPrompt = this.prompt.create.bind(this.prompt);
     this.updatePrompt = this.prompt.update.bind(this.prompt);
+    this.getSkill = this.skill.get.bind(this.skill); // keep correct this context for cache access
+    this.createSkill = this.skill.create.bind(this.skill);
+    this.updateSkill = this.skill.update.bind(this.skill);
     this.getDataset = this.dataset.get.bind(this.dataset);
     this.fetchTrace = this.api.trace.get.bind(this.api.trace);
     this.fetchTraces = this.api.trace.list.bind(this.api.trace);
