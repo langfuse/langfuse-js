@@ -255,7 +255,7 @@ jobs:
 
       - name: Notify Slack on success
         if: success() && inputs.dry_run == false
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_RELEASES }}
           webhook-type: incoming-webhook
@@ -349,7 +349,7 @@ jobs:
 
       - name: Notify Slack on dry run success
         if: success() && inputs.dry_run == true
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
           webhook-type: incoming-webhook
@@ -431,7 +431,7 @@ jobs:
 
       - name: Notify Slack on failure
         if: failure()
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_ENGINEERING }}
           webhook-type: incoming-webhook
