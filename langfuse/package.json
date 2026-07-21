@@ -1,6 +1,6 @@
 {
   "name": "langfuse",
-  "version": "3.39.0",
+  "version": "3.39.1",
   "description": "LEGACY Langfuse v3 SDK (maintenance mode). For new projects use the current Langfuse JS/TS SDK: npm install @langfuse/tracing @langfuse/otel @langfuse/client. Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path",
   "keywords": [
     "llm",
@@ -48,7 +48,7 @@
     "Readme.md"
   ],
   "dependencies": {
-    "langfuse-core": "^3.39.0"
+    "langfuse-core": "^3.39.1"
   },
   "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed",
   "devDependencies": {
