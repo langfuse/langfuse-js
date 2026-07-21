@@ -30,8 +30,10 @@ export interface LangfuseClientParams {
   secretKey?: string;
 
   /**
-   * Base URL of the Langfuse instance to connect to.
-   * Can also be provided via LANGFUSE_BASE_URL environment variable.
+   * Base URL of the Langfuse instance to connect to, e.g.
+   * `https://cloud.langfuse.com` (EU), `https://us.cloud.langfuse.com` (US), `https://jp.cloud.langfuse.com` (Japan), `https://hipaa.cloud.langfuse.com` (HIPAA),
+   * or your self-hosted URL, `https://jp.cloud.langfuse.com` (Japan), `https://hipaa.cloud.langfuse.com` (HIPAA).
+   *
    *
    * @defaultValue "https://cloud.langfuse.com"
    */
@@ -54,19 +56,25 @@ export interface LangfuseClientParams {
 /**
  * Main client for interacting with the Langfuse API.
  *
- * The LangfuseClient provides access to all Langfuse functionality including:
- * - Prompt management and retrieval
- * - Dataset operations
- * - Score creation and management
- * - Media upload and handling
- * - Direct API access for advanced use cases
+ * The LangfuseClient provides access to all non-tracing Langfuse
+ * functionality:
+ * - Prompt management (`langfuse.prompt`) — fetch, cache, compile, and version prompts
+ * - Datasets (`langfuse.dataset`) — manage test datasets and link items to runs
+ * - Experiments (`langfuse.experiment`) — run tasks + evaluators over datasets
+ * - Scores (`langfuse.score`) — create evaluation/feedback scores for traces and observations
+ * - Media (`langfuse.media`) — upload media and resolve media references
+ * - Direct API access (`langfuse.api`) — the full generated Langfuse REST API client
+ *
+ * Tracing/observability is intentionally NOT part of this client. To trace
+ * your application, use `@langfuse/tracing` (instrumentation) together with
+ * the `LangfuseSpanProcessor` from `@langfuse/otel` (export).
  *
  * @example
  * ```typescript
  * // Initialize with explicit credentials
  * const langfuse = new LangfuseClient({
- *   publicKey: "pk_...",
- *   secretKey: "sk_...",
+ *   publicKey: "pk-lf-...",
+ *   secretKey: "sk-lf-...",
  *   baseUrl: "https://cloud.langfuse.com"
  * });
  *
@@ -77,6 +85,11 @@ export interface LangfuseClientParams {
  * const prompt = await langfuse.prompt.get("my-prompt");
  * const compiledPrompt = prompt.compile({ variable: "value" });
  * ```
+ *
+ * @see https://langfuse.com/docs/prompt-management/get-started
+ * @see https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk
+ * @see https://langfuse.com/docs/evaluation/evaluation-methods/scores-via-sdk
+ * @see https://langfuse.com/docs/observability/sdk/overview for tracing setup
  *
  * @public
  */
