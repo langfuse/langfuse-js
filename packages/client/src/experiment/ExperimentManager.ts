@@ -456,10 +456,10 @@ export class ExperimentManager {
           input,
           output,
           metadata: {
+            ...(itemMetadata ?? {}),
+            ...experimentMetadata,
             experiment_name: params.experimentName,
             experiment_run_name: params.experimentRunName,
-            ...experimentMetadata,
-            ...(itemMetadata ?? {}),
             ...(datasetId && datasetItemId
               ? {
                   dataset_id: datasetId,
