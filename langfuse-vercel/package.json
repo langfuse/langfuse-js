@@ -1,6 +1,17 @@
 {
   "name": "langfuse-vercel",
   "version": "3.38.20",
+  "description": "LEGACY Langfuse v3 integration for Vercel AI SDK (maintenance mode). For new projects use @langfuse/otel with the AI SDK's experimental_telemetry: npm install @langfuse/otel @langfuse/tracing",
+  "keywords": [
+    "langfuse",
+    "legacy",
+    "deprecated",
+    "vercel",
+    "ai-sdk",
+    "llm",
+    "observability"
+  ],
+  "homepage": "https://langfuse.com/docs/observability/sdk/overview",
   "engines": {
     "node": ">=18"
   },
@@ -35,7 +46,7 @@
   },
   "files": [
     "lib",
-    "Readme.md"
+    "README.md"
   ],
   "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed",
   "dependencies": {

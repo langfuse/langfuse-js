@@ -4,8 +4,17 @@
 
 [![MIT License](https://img.shields.io/badge/License-MIT-red.svg?style=flat-square)](https://opensource.org/licenses/MIT) [![npm package](https://img.shields.io/npm/v/langfuse-langchain?style=flat-square)](https://www.npmjs.com/package/langfuse) [![GitHub Repo stars](https://img.shields.io/github/stars/langfuse/langfuse?style=flat-square&logo=GitHub&label=langfuse%2Flangfuse)](https://github.com/langfuse/langfuse) [![Discord](https://img.shields.io/discord/1111061815649124414?style=flat-square&logo=Discord&logoColor=white&label=Discord&color=%23434EE4)](https://discord.gg/7NXusRtqYU) [![YC W23](https://img.shields.io/badge/Y%20Combinator-W23-orange?style=flat-square)](https://www.ycombinator.com/companies/langfuse)
 
-> [!IMPORTANT]
-> **This SDK is deprecated.** The Langfuse TypeScript SDK was completely rewritten and released as v4 in August 2025. Please refer to the [TypeScript SDK documentation](https://langfuse.com/docs/observability/sdk/typescript/overview) for migration instructions.
+> ⚠️ **`langfuse-vercel` is the legacy Langfuse v3 integration for the Vercel AI SDK.** It is in maintenance mode and only receives critical bug fixes. Do not use it for new projects.
+>
+> **Current setup:** use the AI SDK's built-in `experimental_telemetry` together with the current Langfuse SDK:
+>
+> ```bash
+> npm install @langfuse/otel @langfuse/tracing
+> ```
+>
+> For AI SDK v7 (`ai@7`), use [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) instead.
+>
+> Docs: https://langfuse.com/integrations/frameworks/vercel-ai-sdk — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
 
 This is the JS/TS client for the Langfuse Vercel AI SDK integration. This integration is currently in beta and functionality and interfaces may change.
 
