@@ -599,6 +599,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         output.llmOutput?.["tokenUsage"] ??
         {};
       const modelName = this.extractModelNameFromMetadata(lastResponse);
+      const costDetails = this.extractCostDetails(lastResponse);
 
       const usageDetails: Record<string, any> = {
         input:
@@ -656,6 +657,7 @@ export class CallbackHandler extends BaseCallbackHandler {
               ? this.completionStartTimes[runId]
               : undefined,
           usageDetails: usageDetails,
+          costDetails: costDetails,
         },
       });
 
@@ -919,6 +921,36 @@ export class CallbackHandler extends BaseCallbackHandler {
         ? generation["message"].response_metadata.model_name
         : undefined;
     } catch {}
+  }
+
+  /**
+   * Some OpenAI-compatible providers (e.g. OpenRouter) report a total cost
+   * directly on the response instead of leaving it to be derived from a
+   * model price table. LangChain surfaces this as `usage.cost` inside
+   * `response_metadata`. When present, forward it as `costDetails` so
+   * Langfuse doesn't fall back to a price-table lookup that fails for
+   * models it doesn't know about.
+   */
+  private extractCostDetails(
+    generation: any,
+  ): Record<string, number> | undefined {
+    try {
+      if (
+        !("message" in generation) ||
+        !(
+          generation["message"] instanceof AIMessage ||
+          generation["message"] instanceof AIMessageChunk
+        )
+      ) {
+        return undefined;
+      }
+
+      const cost = generation["message"].response_metadata?.usage?.cost;
+
+      return typeof cost === "number" ? { total: cost } : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   private extractChatMessageContent(
