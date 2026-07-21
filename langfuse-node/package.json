@@ -1,6 +1,6 @@
 {
   "name": "langfuse-node",
-  "version": "3.38.20",
+  "version": "3.39.0",
   "description": "LEGACY Langfuse v3 SDK for Node.js < 18 (maintenance mode). For new projects use the current Langfuse JS/TS SDK: npm install @langfuse/tracing @langfuse/otel @langfuse/client",
   "keywords": [
     "langfuse",
@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "axios": "^1.8.2",
-    "langfuse-core": "^3.38.20"
+    "langfuse-core": "^3.39.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
