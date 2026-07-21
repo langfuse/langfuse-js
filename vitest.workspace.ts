@@ -48,6 +48,7 @@ export default defineWorkspace([
       setupFiles: ["./vitest.setup.ts"],
     },
     resolve: {
+      dedupe: ["@langchain/core"],
       alias: {
         "@langfuse/browser": new URL(
           "./packages/browser/dist/index.mjs",
@@ -93,6 +94,7 @@ export default defineWorkspace([
       testTimeout: 30000, // Longer timeout for real HTTP calls
     },
     resolve: {
+      dedupe: ["@langchain/core"],
       alias: {
         "@langfuse/browser": new URL(
           "./packages/browser/dist/index.mjs",
