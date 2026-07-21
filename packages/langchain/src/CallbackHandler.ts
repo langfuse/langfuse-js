@@ -930,22 +930,28 @@ export class CallbackHandler extends BaseCallbackHandler {
    * `response_metadata`. When present, forward it as `costDetails` so
    * Langfuse doesn't fall back to a price-table lookup that fails for
    * models it doesn't know about.
+   *
+   * Deliberately checks the shape of `response_metadata` rather than
+   * `instanceof AIMessage`/`AIMessageChunk`: an app that ends up with two
+   * separately-resolved copies of `@langchain/core` (a realistic scenario in
+   * a large dependency tree, not just this monorepo's own test setup) would
+   * otherwise have a genuinely valid, provider-created message silently fail
+   * an identity check and drop its cost.
    */
   private extractCostDetails(
     generation: any,
   ): Record<string, number> | undefined {
     try {
-      if (
-        !("message" in generation) ||
-        !(
-          generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk
-        )
-      ) {
+      const responseMetadata =
+        "message" in generation
+          ? generation["message"]?.response_metadata
+          : undefined;
+
+      if (typeof responseMetadata !== "object" || responseMetadata === null) {
         return undefined;
       }
 
-      const cost = generation["message"].response_metadata?.usage?.cost;
+      const cost = responseMetadata.usage?.cost;
 
       return typeof cost === "number" ? { total: cost } : undefined;
     } catch {
