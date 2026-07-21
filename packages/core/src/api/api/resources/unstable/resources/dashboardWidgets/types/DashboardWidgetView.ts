@@ -5,9 +5,11 @@
 export type DashboardWidgetView =
   | "observations"
   | "scores-numeric"
+  | "scores-boolean"
   | "scores-categorical";
 export const DashboardWidgetView = {
   Observations: "observations",
   ScoresNumeric: "scores-numeric",
+  ScoresBoolean: "scores-boolean",
   ScoresCategorical: "scores-categorical",
 } as const;

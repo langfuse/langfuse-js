@@ -9,11 +9,13 @@
 export type DashboardWidgetViewWithLegacy =
   | "observations"
   | "scores-numeric"
+  | "scores-boolean"
   | "scores-categorical"
   | "traces";
 export const DashboardWidgetViewWithLegacy = {
   Observations: "observations",
   ScoresNumeric: "scores-numeric",
+  ScoresBoolean: "scores-boolean",
   ScoresCategorical: "scores-categorical",
   Traces: "traces",
 } as const;
