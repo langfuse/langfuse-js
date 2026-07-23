@@ -22,23 +22,27 @@ export type Score =
   | LangfuseAPI.Score.Text;
 
 export namespace Score {
-  export interface Numeric extends LangfuseAPI.NumericScore {
+  export interface Numeric extends LangfuseAPI.NumericScore, _Base {
     dataType: "NUMERIC";
   }
 
-  export interface Categorical extends LangfuseAPI.CategoricalScore {
+  export interface Categorical extends LangfuseAPI.CategoricalScore, _Base {
     dataType: "CATEGORICAL";
   }
 
-  export interface Boolean extends LangfuseAPI.BooleanScore {
+  export interface Boolean extends LangfuseAPI.BooleanScore, _Base {
     dataType: "BOOLEAN";
   }
 
-  export interface Correction extends LangfuseAPI.CorrectionScore {
+  export interface Correction extends LangfuseAPI.CorrectionScore, _Base {
     dataType: "CORRECTION";
   }
 
-  export interface Text extends LangfuseAPI.TextScore {
+  export interface Text extends LangfuseAPI.TextScore, _Base {
     dataType: "TEXT";
+  }
+
+  export interface _Base {
+    _deprecation?: LangfuseAPI.Deprecation;
   }
 }

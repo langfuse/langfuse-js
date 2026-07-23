@@ -15,4 +15,5 @@ export interface TraceWithFullDetails extends LangfuseAPI.Trace {
   observations: LangfuseAPI.ObservationsView[];
   /** List of scores */
   scores: LangfuseAPI.ScoreV1[];
+  _deprecation?: LangfuseAPI.Deprecation;
 }
