@@ -4,8 +4,6 @@
 
 import * as LangfuseAPI from "../../../index.js";
 
-export interface PaginatedDatasetRunItems {
-  data: LangfuseAPI.DatasetRunItem[];
-  meta: LangfuseAPI.utils.MetaResponse;
+export interface ObservationsViewSingle extends LangfuseAPI.ObservationsView {
   _deprecation?: LangfuseAPI.Deprecation;
 }

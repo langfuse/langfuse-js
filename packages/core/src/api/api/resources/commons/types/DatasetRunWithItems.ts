@@ -6,4 +6,5 @@ import * as LangfuseAPI from "../../../index.js";
 
 export interface DatasetRunWithItems extends LangfuseAPI.DatasetRun {
   datasetRunItems: LangfuseAPI.DatasetRunItem[];
+  _deprecation?: LangfuseAPI.Deprecation;
 }
