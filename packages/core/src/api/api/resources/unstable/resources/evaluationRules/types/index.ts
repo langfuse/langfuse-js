@@ -1,4 +1,7 @@
+export * from "./EvaluationRuleBase.js";
 export * from "./EvaluationRule.js";
+export * from "./LegacyEvaluationRule.js";
+export * from "./ReadableEvaluationRule.js";
 export * from "./EvaluationRules.js";
 export * from "./CreateEvaluationRuleRequest.js";
 export * from "./CreateLlmAsJudgeEvaluationRuleRequest.js";
@@ -9,4 +12,8 @@ export * from "./EvaluationRuleEvaluatorReference.js";
 export * from "./LlmAsJudgeEvaluationRuleEvaluatorReference.js";
 export * from "./CodeEvaluationRuleEvaluatorReference.js";
 export * from "./LlmAsJudgeEvaluatorType.js";
+export * from "./EvaluationRuleTimeScope.js";
+export * from "./LegacyEvaluationRuleTarget.js";
+export * from "./LegacyEvaluationRuleMapping.js";
+export * from "./LegacyEvaluationObject.js";
 export * from "./EvaluationRuleEvaluator.js";
