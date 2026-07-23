@@ -7,4 +7,5 @@ import * as LangfuseAPI from "../../../../../index.js";
 export interface ObservationsViews {
   data: LangfuseAPI.ObservationsView[];
   meta: LangfuseAPI.utils.MetaResponse;
+  _deprecation?: LangfuseAPI.Deprecation;
 }

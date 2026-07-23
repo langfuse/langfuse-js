@@ -11,6 +11,7 @@ import { DatasetItems } from "./api/resources/datasetItems/client/Client.js";
 import { DatasetRunItems } from "./api/resources/datasetRunItems/client/Client.js";
 import { Datasets } from "./api/resources/datasets/client/Client.js";
 import { Experiments } from "./api/resources/experiments/client/Client.js";
+import { Feedback } from "./api/resources/feedback/client/Client.js";
 import { Health } from "./api/resources/health/client/Client.js";
 import { Ingestion } from "./api/resources/ingestion/client/Client.js";
 import { Legacy } from "./api/resources/legacy/client/Client.js";
@@ -84,6 +85,7 @@ export class LangfuseAPIClient {
   protected _datasetRunItems: DatasetRunItems | undefined;
   protected _datasets: Datasets | undefined;
   protected _experiments: Experiments | undefined;
+  protected _feedback: Feedback | undefined;
   protected _health: Health | undefined;
   protected _ingestion: Ingestion | undefined;
   protected _legacy: Legacy | undefined;
@@ -147,6 +149,10 @@ export class LangfuseAPIClient {
 
   public get experiments(): Experiments {
     return (this._experiments ??= new Experiments(this._options));
+  }
+
+  public get feedback(): Feedback {
+    return (this._feedback ??= new Feedback(this._options));
   }
 
   public get health(): Health {
