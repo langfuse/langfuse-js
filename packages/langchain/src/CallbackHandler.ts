@@ -36,11 +36,13 @@ export type LlmMessage = {
   role: string;
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
+  tool_call_id?: string;
 };
 
 export type AnonymousLlmMessage = {
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
+  tool_call_id?: string;
 };
 
 type ConstructorParams = {
@@ -52,6 +54,45 @@ type ConstructorParams = {
 };
 
 type TrackedObservation = LangfuseSpan | LangfuseGeneration | LangfuseTool;
+
+/**
+ * Normalizes a tool definition to the canonical OpenAI Chat-Completions shape
+ * `{ type: "function", function: { name, description, parameters, ... } }` so
+ * Langfuse renders it as a recognizable function.
+ *
+ * The OpenAI Responses API (used by ChatOpenAI/AzureChatOpenAI for gpt-5.x)
+ * exposes tools in a flattened shape `{ type: "function", name, description,
+ * parameters, strict }` without the `function` wrapper, which Langfuse does
+ * not recognize. Tools already in canonical shape, and non-function built-in
+ * tools (e.g. `web_search`, which have no `name`), are returned unchanged.
+ */
+function normalizeToolForLangfuse(tool: unknown): unknown {
+  if (!tool || typeof tool !== "object") return tool;
+  const t = tool as Record<string, unknown>;
+  // Already canonical: { type: "function", function: {...} }
+  if (t.type === "function" && t.function && typeof t.function === "object") {
+    return tool;
+  }
+  // Responses API flat shape: { type: "function", name, ... } → wrap under function
+  if (t.type === "function" && typeof t.name === "string") {
+    const { type, name, description, parameters, strict, ...rest } = t;
+    return {
+      type: "function",
+      function: {
+        name,
+        ...(description !== undefined && description !== null
+          ? { description }
+          : {}),
+        ...(parameters !== undefined && parameters !== null
+          ? { parameters }
+          : {}),
+        ...(strict !== undefined && strict !== null ? { strict } : {}),
+        ...rest,
+      },
+    };
+  }
+  return tool;
+}
 
 export class CallbackHandler extends BaseCallbackHandler {
   name = "LangfuseCallbackHandler";
@@ -331,6 +372,22 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.deregisterLangfusePrompt(parentRunId);
     }
 
+    const tools = (invocationParams as Record<string, unknown> | undefined)
+      ?.tools;
+    let inputMessages = messages;
+    if (Array.isArray(tools) && tools.length > 0) {
+      inputMessages = [
+        ...messages,
+        ...tools.map(
+          (t) =>
+            ({
+              role: "tool",
+              content: normalizeToolForLangfuse(t) as LlmMessage["content"],
+            }) as LlmMessage,
+        ),
+      ];
+    }
+
     this.startAndRegisterOtelSpan({
       type: "generation",
       runId,
@@ -339,7 +396,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       tags,
       runName,
       attributes: {
-        input: messages,
+        input: inputMessages,
         model: extractedModelName,
         modelParameters: modelParameters,
         prompt: registeredPrompt,
@@ -962,7 +1019,15 @@ export class CallbackHandler extends BaseCallbackHandler {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "tool",
+        tool_call_id:
+          "tool_call_id" in message
+            ? (
+                message as BaseMessage & {
+                  tool_call_id?: string;
+                }
+              ).tool_call_id
+            : undefined,
       };
     } else if (!message.name) {
       response = { content: message.content };
