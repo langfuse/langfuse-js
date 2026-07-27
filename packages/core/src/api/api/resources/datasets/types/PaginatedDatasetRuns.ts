@@ -7,4 +7,5 @@ import * as LangfuseAPI from "../../../index.js";
 export interface PaginatedDatasetRuns {
   data: LangfuseAPI.DatasetRun[];
   meta: LangfuseAPI.utils.MetaResponse;
+  _deprecation?: LangfuseAPI.Deprecation;
 }

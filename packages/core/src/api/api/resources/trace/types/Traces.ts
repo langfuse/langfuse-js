@@ -7,4 +7,5 @@ import * as LangfuseAPI from "../../../index.js";
 export interface Traces {
   data: LangfuseAPI.TraceWithDetails[];
   meta: LangfuseAPI.utils.MetaResponse;
+  _deprecation?: LangfuseAPI.Deprecation;
 }

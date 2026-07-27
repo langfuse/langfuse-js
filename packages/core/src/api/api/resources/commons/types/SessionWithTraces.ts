@@ -6,4 +6,5 @@ import * as LangfuseAPI from "../../../index.js";
 
 export interface SessionWithTraces extends LangfuseAPI.Session {
   traces: LangfuseAPI.Trace[];
+  _deprecation?: LangfuseAPI.Deprecation;
 }

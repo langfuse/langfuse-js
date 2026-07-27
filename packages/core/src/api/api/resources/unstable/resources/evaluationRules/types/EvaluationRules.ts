@@ -9,7 +9,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  */
 export interface EvaluationRules {
   /** Evaluation rules in the current page. */
-  data: LangfuseAPI.unstable.EvaluationRule[];
+  data: LangfuseAPI.unstable.ReadableEvaluationRule[];
   /** Standard pagination metadata. */
   meta: LangfuseAPI.utils.MetaResponse;
 }
