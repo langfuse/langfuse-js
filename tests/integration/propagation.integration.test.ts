@@ -2,8 +2,8 @@
  * Comprehensive tests for propagateAttributes functionality.
  *
  * This module tests the propagateAttributes function that allows setting
- * trace-level attributes (userId, sessionId, version, metadata) that automatically propagate
- * to all child spans within the context.
+ * trace-level attributes (userId, sessionId, environment, version, metadata) that
+ * automatically propagate to all child spans within the context.
  */
 
 import { TextPromptClient } from "@langfuse/client";
@@ -307,6 +307,136 @@ describe("propagateAttributes", () => {
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
       ).toBe("prod");
+    });
+  });
+
+  describe("Environment Propagation", () => {
+    it("should propagate environment as a first-class attribute", async () => {
+      const tracer = otelTrace.getTracer("langfuse-sdk");
+
+      await tracer.startActiveSpan("parent", async (parentSpan) => {
+        propagateAttributes({ environment: "staging" }, () => {
+          const child = startObservation("child");
+          child.end();
+        });
+        parentSpan.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const parent = spans.find((s) => s.name === "parent");
+      const child = spans.find((s) => s.name === "child");
+
+      expect(parent?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        "staging",
+      );
+      expect(child?.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        "staging",
+      );
+    });
+
+    it("should override the processor default and restore nested scopes", async () => {
+      await teardownTestEnvironment(testEnv);
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: { environment: "default" },
+      });
+
+      const before = startObservation("before");
+      before.end();
+
+      propagateAttributes({ environment: "outer", asBaggage: true }, () => {
+        const outer1 = startObservation("outer-1");
+        outer1.end();
+
+        expect(
+          propagation
+            .getBaggage(otelContext.active())
+            ?.getEntry("langfuse_environment")?.value,
+        ).toBe("outer");
+
+        propagateAttributes({ environment: "inner", asBaggage: true }, () => {
+          expect(
+            propagation
+              .getBaggage(otelContext.active())
+              ?.getEntry("langfuse_environment")?.value,
+          ).toBe("inner");
+
+          const inner = startObservation("inner");
+          inner.end();
+        });
+
+        expect(
+          propagation
+            .getBaggage(otelContext.active())
+            ?.getEntry("langfuse_environment")?.value,
+        ).toBe("outer");
+
+        const outer2 = startObservation("outer-2");
+        outer2.end();
+      });
+
+      const after = startObservation("after");
+      after.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 5);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const getEnvironment = (name: string) =>
+        spans.find((span) => span.name === name)?.attributes[
+          LangfuseOtelSpanAttributes.ENVIRONMENT
+        ];
+
+      expect(getEnvironment("before")).toBe("default");
+      expect(getEnvironment("outer-1")).toBe("outer");
+      expect(getEnvironment("inner")).toBe("inner");
+      expect(getEnvironment("outer-2")).toBe("outer");
+      expect(getEnvironment("after")).toBe("default");
+    });
+
+    it.each(["", "Production", "prod.eu", "langfuse-prod", "x".repeat(41)])(
+      "should drop invalid environment %j",
+      async (environment) => {
+        propagateAttributes({ environment }, () => {
+          const child = startObservation(`child-${environment}`);
+          child.end();
+        });
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+        const [child] = testEnv.mockExporter.exportedSpans;
+
+        expect(
+          child.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT],
+        ).toBeUndefined();
+      },
+    );
+
+    it("should drop a non-string environment", async () => {
+      propagateAttributes({ environment: 123 as unknown as string }, () => {
+        const child = startObservation("child");
+        child.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+      const [child] = testEnv.mockExporter.exportedSpans;
+
+      expect(
+        child.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT],
+      ).toBeUndefined();
+    });
+
+    it("should accept a 40-character environment", async () => {
+      const environment = "e".repeat(40);
+
+      propagateAttributes({ environment }, () => {
+        const child = startObservation("child");
+        child.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+      const [child] = testEnv.mockExporter.exportedSpans;
+
+      expect(child.attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        environment,
+      );
     });
   });
 
@@ -2012,6 +2142,18 @@ describe("propagateAttributes", () => {
       );
     });
 
+    it("should read environment from context", () => {
+      const context = ROOT_CONTEXT.setValue(
+        LangfuseOtelContextKeys["environment"],
+        "context-env",
+      );
+      const attributes = getPropagatedAttributesFromContext(context);
+
+      expect(attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        "context-env",
+      );
+    });
+
     it("should read metadata from context", () => {
       const context = ROOT_CONTEXT.setValue(
         LangfuseOtelContextKeys["metadata"],
@@ -2073,6 +2215,9 @@ describe("propagateAttributes", () => {
       baggage = baggage.setEntry("langfuse_trace_name", {
         value: "baggage-trace",
       });
+      baggage = baggage.setEntry("langfuse_environment", {
+        value: "baggage-env",
+      });
       baggage = baggage.setEntry("langfuse_metadata_env", { value: "prod" });
 
       const context = propagation.setBaggage(ROOT_CONTEXT, baggage);
@@ -2088,9 +2233,25 @@ describe("propagateAttributes", () => {
       expect(attributes[LangfuseOtelSpanAttributes.TRACE_NAME]).toBe(
         "baggage-trace",
       );
+      expect(attributes[LangfuseOtelSpanAttributes.ENVIRONMENT]).toBe(
+        "baggage-env",
+      );
       expect(
         attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
       ).toBe("prod");
+    });
+
+    it("should drop invalid environment from baggage", () => {
+      const baggage = propagation
+        .createBaggage()
+        .setEntry("langfuse_environment", { value: "Production" });
+      const context = propagation.setBaggage(ROOT_CONTEXT, baggage);
+
+      const attributes = getPropagatedAttributesFromContext(context);
+
+      expect(
+        attributes[LangfuseOtelSpanAttributes.ENVIRONMENT],
+      ).toBeUndefined();
     });
 
     it("should return empty object for context with no propagated attributes", () => {

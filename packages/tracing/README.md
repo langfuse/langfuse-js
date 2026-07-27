@@ -140,7 +140,7 @@ Key exports:
 
 - `startObservation` / `startActiveObservation` — create spans, generations, agents, tools, and other observation types
 - `observe()` — wrap any existing function with tracing
-- `propagateAttributes()` — set `userId`, `sessionId`, `tags`, `metadata`, `version`, and prompt links on all spans created within a callback
+- `propagateAttributes()` — set `userId`, `sessionId`, `environment`, `tags`, `metadata`, `version`, and prompt links on all spans created within a callback
 - `createTraceId()` — deterministic trace IDs for correlating external IDs
 - `updateActiveObservation`, `getActiveTraceId`, `setActiveTraceAsPublic`
 
