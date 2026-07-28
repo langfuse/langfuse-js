@@ -140,6 +140,46 @@ describe("Experiment Attribute Propagation", () => {
       );
       expect(metadata).toEqual(itemMetadata);
     });
+
+    it("should preserve run metadata over conflicting item metadata", async () => {
+      await langfuse.experiment.run({
+        name: "metadata-precedence-test",
+        runName: "run-name",
+        metadata: { shared: "run" },
+        data: [
+          {
+            input: "test",
+            metadata: {
+              shared: "item",
+              itemOnly: "item",
+              experiment_run_name: "item-run-name",
+            },
+          },
+        ],
+        task: async () => "output",
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+      const rootSpan = testEnv.mockExporter.exportedSpans.find(
+        (span) => span.name === "experiment-item-run",
+      );
+
+      expect(
+        rootSpan?.attributes[
+          `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.shared`
+        ],
+      ).toBe("run");
+      expect(
+        rootSpan?.attributes[
+          `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.experiment_run_name`
+        ],
+      ).toBe("run-name");
+      expect(
+        rootSpan?.attributes[
+          `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.itemOnly`
+        ],
+      ).toBe("item");
+    });
   });
 
   describe("Nested Spans", () => {
