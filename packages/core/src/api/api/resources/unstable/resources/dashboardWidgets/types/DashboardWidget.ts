@@ -10,11 +10,10 @@ export interface DashboardWidget {
   updatedAt: string;
   name: string;
   description: string;
-  view: LangfuseAPI.unstable.DashboardWidgetView;
+  view: LangfuseAPI.unstable.DashboardWidgetViewWithLegacy;
   dimensions: LangfuseAPI.unstable.DashboardWidgetDimension[];
   metrics: LangfuseAPI.unstable.DashboardWidgetMetric[];
   filters: LangfuseAPI.unstable.DashboardWidgetFilter[];
   chartType: LangfuseAPI.unstable.DashboardWidgetChartType;
   chartConfig: LangfuseAPI.unstable.DashboardWidgetChartConfig;
-  minVersion: number;
 }

@@ -64,7 +64,7 @@ export class Metrics {
    * Get metrics from the Langfuse project using a query object. V2 endpoint with optimized performance.
    *
    * ## V2 Differences
-   * - Supports `observations`, `scores-numeric`, and `scores-categorical` views only (traces view not supported)
+   * - Supports `observations`, `scores-numeric`, `scores-boolean`, and `scores-categorical` views only (traces view not supported)
    * - Direct access to tags and release fields on observations
    * - Backwards-compatible: traceName, traceRelease, traceVersion dimensions are still available on observations view
    * - High cardinality dimensions are not supported and will return a 400 error (see below)
@@ -132,6 +132,16 @@ export class Metrics {
    * - `count` - Total number of scores
    * - `value` - Score value (for aggregations)
    *
+   * ### scores-boolean
+   * Query boolean score data. It has the same score and parent trace/observation dimensions as scores-numeric, plus:
+   *
+   * **Dimensions:**
+   * - `booleanValue` - Boolean value for true/false grouping and filtering
+   *
+   * **Measures:**
+   * - `count` - Total number of boolean scores
+   * - `value` - Numeric 0/1 score value; `avg` returns the true-rate
+   *
    * ### scores-categorical
    * Query categorical score data. Same dimensions as scores-numeric except uses `stringValue` instead of `value`.
    *
@@ -149,7 +159,7 @@ export class Metrics {
    * - `sessionId` - Use sessionId filter instead
    * - `parentObservationId` - Use parentObservationId filter instead
    *
-   * **scores-numeric / scores-categorical views:**
+   * **scores-numeric / scores-boolean / scores-categorical views:**
    * - `id` - Use specific filters to narrow down results
    * - `traceId` - Use traceId filter instead
    * - `userId` - Use userId filter instead

@@ -5,20 +5,6 @@
 import * as LangfuseAPI from "../../../../../index.js";
 
 /**
- * Live evaluation rule for incoming data.
- *
- * An evaluation rule answers:
- * - which evaluator should be used
- * - which target objects should trigger scoring
- * - how often scoring should run
- * - which target fields should populate each evaluator variable
- * - whether the deployment is active, inactive, or paused
- *
- * Important status semantics:
- * - `enabled` is the desired on/off setting from the client
- * - `status` is the effective runtime state after Langfuse applies validation and blocking rules
- * - `enabled=true` with `status=paused` means the rule should run, but Langfuse has paused it until the underlying problem is fixed
- *
  * @example
  *     {
  *         id: "erule_123",
@@ -52,43 +38,12 @@ import * as LangfuseAPI from "../../../../../index.js";
  *         updatedAt: "2026-03-30T09:20:00.000Z"
  *     }
  */
-export interface EvaluationRule {
-  /** Stable evaluation rule identifier. */
-  id: string;
-  /** Human-readable deployment name. This is independent from the evaluator name. */
-  name: string;
-  /**
-   * Evaluator currently used by this rule.
-   *
-   * `name` and `scope` identify the evaluator family conceptually.
-   * `id` is the currently active evaluator version in that family.
-   * If you create a newer project version with the same evaluator name later, existing evaluation rules are moved to it automatically.
-   */
-  evaluator: LangfuseAPI.unstable.EvaluationRuleEvaluator;
+export interface EvaluationRule
+  extends LangfuseAPI.unstable.EvaluationRuleBase {
   /** Target object type that should trigger scoring. */
   target: LangfuseAPI.unstable.EvaluationRuleTarget;
-  /** Desired enabled state configured by the client. */
-  enabled: boolean;
-  /** Effective runtime status after Langfuse applies validation and blocking rules. */
-  status: LangfuseAPI.unstable.EvaluationRuleStatus;
-  /** Machine-readable reason when `status=paused`, otherwise `null`. */
-  pausedReason: string | null;
-  /** Human-readable explanation when `status=paused`, otherwise `null`. */
-  pausedMessage: string | null;
-  /**
-   * Fraction of matching target objects that should be evaluated.
-   *
-   * Must be greater than `0` and less than or equal to `1`.
-   * - `1` means evaluate every matching target.
-   * - `0.25` means evaluate approximately 25% of matching targets.
-   */
-  sampling: number;
   /** List of filter conditions used to decide whether a target should be evaluated. */
   filter: LangfuseAPI.unstable.EvaluationRuleFilter[];
   /** Variable mappings used to populate evaluator runtime variables from the live target object. */
   mapping: LangfuseAPI.unstable.EvaluationRuleMapping[];
-  /** Timestamp when the evaluation rule was created. */
-  createdAt: string;
-  /** Timestamp when the evaluation rule was last updated. */
-  updatedAt: string;
 }

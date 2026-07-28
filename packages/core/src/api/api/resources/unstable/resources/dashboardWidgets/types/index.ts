@@ -1,4 +1,5 @@
 export * from "./DashboardWidgetView.js";
+export * from "./DashboardWidgetViewWithLegacy.js";
 export * from "./DashboardWidgetChartType.js";
 export * from "./DashboardWidgetMetricAggregation.js";
 export * from "./DashboardWidgetDimension.js";
@@ -7,5 +8,9 @@ export * from "./DashboardWidgetFilter.js";
 export * from "./DashboardWidgetChartConfig.js";
 export * from "./DashboardWidgetDefaultSort.js";
 export * from "./DashboardWidgetSortOrder.js";
+export * from "./DashboardWidgetChartConfigInput.js";
 export * from "./CreateDashboardWidgetRequest.js";
+export * from "./UpdateDashboardWidgetRequest.js";
+export * from "./DashboardWidgetList.js";
+export * from "./DeleteDashboardWidgetResponse.js";
 export * from "./DashboardWidget.js";

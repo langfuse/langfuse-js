@@ -344,7 +344,7 @@ export class EvaluationRules {
   /**
    * List evaluation rules in the authenticated project.
    *
-   * Each item describes one live evaluation rule and its effective runtime status.
+   * This includes legacy `trace` and `dataset` rules so they can be inspected and migrated to v4 rules. Legacy rules are read-only through this API; create, update, and delete continue to support only `observation` and `experiment` rules.
    *
    * @param {LangfuseAPI.unstable.ListEvaluationRulesRequest} request
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
@@ -516,7 +516,7 @@ export class EvaluationRules {
   /**
    * Get one evaluation rule by its identifier.
    *
-   * Use this endpoint to inspect the current evaluator, target, mapping, filters, and effective runtime status.
+   * Use this endpoint to inspect the current evaluator, target, mapping, filters, execution timing, and effective runtime status. Legacy `trace` and `dataset` rules are returned for migration and are read-only through this API.
    *
    * @param {string} evaluationRuleId - Evaluation rule identifier returned by the evaluation rule endpoints.
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
@@ -540,7 +540,7 @@ export class EvaluationRules {
   public get(
     evaluationRuleId: string,
     requestOptions?: EvaluationRules.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.unstable.EvaluationRule> {
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.ReadableEvaluationRule> {
     return core.HttpResponsePromise.fromPromise(
       this.__get(evaluationRuleId, requestOptions),
     );
@@ -549,7 +549,9 @@ export class EvaluationRules {
   private async __get(
     evaluationRuleId: string,
     requestOptions?: EvaluationRules.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.EvaluationRule>> {
+  ): Promise<
+    core.WithRawResponse<LangfuseAPI.unstable.ReadableEvaluationRule>
+  > {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -583,7 +585,7 @@ export class EvaluationRules {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.unstable.EvaluationRule,
+        data: _response.body as LangfuseAPI.unstable.ReadableEvaluationRule,
         rawResponse: _response.rawResponse,
       };
     }

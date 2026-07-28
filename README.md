@@ -1,4 +1,4 @@
-<img width="2400" height="600" alt="hero-b" src="https://github.com/user-attachments/assets/0d06e77e-6f4a-4ae3-8aee-7d3463a6f98c" />
+<img width="2400" height="600" alt="hero-b" src="https://github.com/user-attachments/assets/5810ae13-15d6-4b60-afd2-927adc501861" />
 
 # langfuse-js
 
@@ -14,6 +14,8 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 > [!IMPORTANT]
 > The SDK was rewritten in v5 and released in March 2026. Refer to the [v5 migration guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5) for instructions on updating your code.
+>
+> The unscoped npm packages `langfuse`, `langfuse-core`, `langfuse-node`, and `langfuse-langchain` belong to the legacy v3 SDK. For new integrations use the `@langfuse/*` scoped packages below — start with [@langfuse/tracing](./packages/tracing) + [@langfuse/otel](./packages/otel) for tracing.
 
 | Package                                             | NPM                                                                                                                       | Description                                               | Environments |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------ |
@@ -27,8 +29,9 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 
 ## Documentation
 
-- [Docs](https://langfuse.com/docs/observability/sdk/typescript/overview)
-- [Reference](https://langfuse-js-git-main-langfuse.vercel.app/)
+- [Docs](https://langfuse.com/docs/observability/sdk/overview)
+- [Reference](https://js.reference.langfuse.com)
+- [LLM/agent-readable docs index](https://langfuse.com/llms.txt)
 
 ## Development
 

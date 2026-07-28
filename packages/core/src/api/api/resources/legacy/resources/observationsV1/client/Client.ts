@@ -78,7 +78,7 @@ export class ObservationsV1 {
   public get(
     observationId: string,
     requestOptions?: ObservationsV1.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.ObservationsView> {
+  ): core.HttpResponsePromise<LangfuseAPI.ObservationsViewSingle> {
     return core.HttpResponsePromise.fromPromise(
       this.__get(observationId, requestOptions),
     );
@@ -87,7 +87,7 @@ export class ObservationsV1 {
   private async __get(
     observationId: string,
     requestOptions?: ObservationsV1.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.ObservationsView>> {
+  ): Promise<core.WithRawResponse<LangfuseAPI.ObservationsViewSingle>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -121,7 +121,7 @@ export class ObservationsV1 {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.ObservationsView,
+        data: _response.body as LangfuseAPI.ObservationsViewSingle,
         rawResponse: _response.rawResponse,
       };
     }

@@ -2,8 +2,8 @@
  * Attribute propagation utilities for Langfuse OpenTelemetry integration.
  *
  * This module provides the `propagateAttributes` function for setting trace-level
- * attributes (userId, sessionId, metadata) that automatically propagate to all child spans
- * within the context.
+ * attributes (userId, sessionId, environment, metadata) that automatically propagate
+ * to all child spans within the context.
  */
 
 import {
@@ -27,6 +27,7 @@ type CorrelatedKey =
   | "version"
   | "tags"
   | "traceName"
+  | "environment"
   | "promptName"
   | "promptVersion";
 
@@ -59,6 +60,7 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   version: createContextKey("langfuse_version"),
   tags: createContextKey("langfuse_tags"),
   traceName: createContextKey("langfuse_trace_name"),
+  environment: createContextKey("langfuse_environment"),
   promptName: createContextKey("langfuse_prompt_name"),
   promptVersion: createContextKey("langfuse_prompt_version"),
 
@@ -191,6 +193,19 @@ export interface PropagateAttributesParams {
   traceName?: string;
 
   /**
+   * Langfuse environment to associate with all spans in this context.
+   *
+   * Must be a lowercase alphanumeric string with optional hyphens or underscores,
+   * must be ≤40 characters, and must not start with `langfuse`. This maps to the
+   * first-class `langfuse.environment` attribute, not to trace metadata.
+   *
+   * A propagated environment takes precedence over the default configured on
+   * `LangfuseSpanProcessor` or via `LANGFUSE_TRACING_ENVIRONMENT` while this
+   * propagation scope is active.
+   */
+  environment?: string;
+
+  /**
    * Langfuse prompt to link to observations created within this context.
    *
    * Accepts a prompt client returned by `langfuse.prompt.get(...)` or any plain
@@ -234,8 +249,9 @@ export interface PropagateAttributesParams {
  *
  * This function sets attributes on the currently active span AND automatically
  * propagates them to all new child spans created within the callback. This is the
- * recommended way to set trace-level attributes like userId, sessionId, and metadata
- * dimensions that should be consistently applied across all observations in a trace.
+ * recommended way to set trace-level attributes like userId, sessionId, environment,
+ * and metadata dimensions that should be consistently applied across all observations
+ * in a trace.
  *
  * **IMPORTANT**: Call this as early as possible within your trace/workflow. Only the
  * currently active span and spans created after entering this context will have these
@@ -261,11 +277,12 @@ export interface PropagateAttributesParams {
  *   await propagateAttributes({
  *     userId: 'user_123',
  *     sessionId: 'session_abc',
- *     metadata: { experiment: 'variant_a', environment: 'production' }
+ *     environment: 'production',
+ *     metadata: { experiment: 'variant_a' }
  *   }, async () => {
- *     // All spans created here will have userId, sessionId, and metadata
+ *     // All spans created here will have userId, sessionId, environment, and metadata
  *     const llmSpan = startObservation('llm_call', { input: 'Hello' });
- *     // This span inherits: userId, sessionId, experiment, environment
+ *     // This span inherits userId, sessionId, environment, and experiment metadata
  *     llmSpan.end();
  *
  *     const gen = startObservation('completion', {}, { asType: 'generation' });
@@ -327,11 +344,12 @@ export interface PropagateAttributesParams {
  *   await propagateAttributes({
  *     userId: 'user_123',
  *     sessionId: 'session_abc',
+ *     environment: 'staging',
  *     asBaggage: true  // Propagate via HTTP headers
  *   }, async () => {
  *     // Make HTTP request to Service B
  *     const response = await fetch('https://service-b.example.com/api');
- *     // userId and sessionId are now in HTTP headers
+ *     // userId, sessionId, and environment are now in HTTP headers
  *   });
  * });
  *
@@ -341,9 +359,10 @@ export interface PropagateAttributesParams {
  * ```
  *
  * @remarks
- * - **Validation**: All attribute values (userId, sessionId, metadata values)
- *   must be strings ≤200 characters. Invalid values will be dropped with a
- *   warning logged. Ensure values meet constraints before calling.
+ * - **Validation**: Attribute values (userId, sessionId, metadata values) must be
+ *   strings ≤200 characters. Environment must be a lowercase alphanumeric string
+ *   with optional hyphens or underscores, must be ≤40 characters, and must not start
+ *   with `langfuse`. Invalid values will be dropped with a warning logged.
  * - **OpenTelemetry**: This uses OpenTelemetry context propagation under the hood,
  *   making it compatible with other OTel-instrumented libraries.
  * - **Baggage Security**: When `asBaggage=true`, attribute values are added to HTTP
@@ -368,6 +387,7 @@ export function propagateAttributes<
     version,
     tags,
     traceName,
+    environment,
     prompt,
     _internalExperiment,
   } = params;
@@ -437,6 +457,17 @@ export function propagateAttributes<
         asBaggage,
       });
     }
+  }
+
+  // Validate and set environment
+  if (environment !== undefined && isValidEnvironment(environment)) {
+    context = setPropagatedAttribute({
+      key: "environment",
+      value: environment,
+      context,
+      span,
+      asBaggage,
+    });
   }
 
   // Validate and set tags
@@ -590,6 +621,14 @@ export function getPropagatedAttributesFromContext(
         const spanKey = getSpanKeyFromBaggageKey(baggageKey);
 
         if (spanKey) {
+          if (spanKey === LangfuseOtelSpanAttributes.ENVIRONMENT) {
+            if (isValidEnvironment(baggageEntry.value)) {
+              propagatedAttributes[spanKey] = baggageEntry.value;
+            }
+
+            return;
+          }
+
           // Prompt version is an integer span attribute; restore it from its
           // string representation in baggage
           if (
@@ -639,6 +678,11 @@ export function getPropagatedAttributesFromContext(
     const spanKey = getSpanKeyForPropagatedKey("traceName");
 
     propagatedAttributes[spanKey] = traceName;
+  }
+
+  const environment = context.getValue(LangfuseOtelContextKeys["environment"]);
+  if (isValidEnvironment(environment)) {
+    propagatedAttributes[LangfuseOtelSpanAttributes.ENVIRONMENT] = environment;
   }
 
   const tags = context.getValue(LangfuseOtelContextKeys["tags"]);
@@ -708,6 +752,7 @@ type SetPropagatedAttributeParams = {
         | "sessionId"
         | "version"
         | "traceName"
+        | "environment"
         | "promptName"
         | ExperimentKey;
       value: string;
@@ -845,6 +890,40 @@ function isValidPropagatedString(params: {
   return true;
 }
 
+const ENVIRONMENT_VALUE_PATTERN = /^(?!langfuse)[a-z0-9_-]+$/;
+
+function isValidEnvironment(value: unknown): value is string {
+  const logger = getGlobalLogger();
+
+  if (typeof value !== "string") {
+    if (value !== undefined) {
+      logger.warn(
+        "Propagated attribute 'environment' must be a string. Dropping value.",
+      );
+    }
+
+    return false;
+  }
+
+  if (value.length > 40) {
+    logger.warn(
+      `Propagated attribute 'environment' value is over 40 characters (${value.length} chars). Dropping value.`,
+    );
+
+    return false;
+  }
+
+  if (!ENVIRONMENT_VALUE_PATTERN.test(value)) {
+    logger.warn(
+      "Propagated attribute 'environment' must be a lowercase alphanumeric string with optional hyphens or underscores and must not start with 'langfuse'. Dropping value.",
+    );
+
+    return false;
+  }
+
+  return true;
+}
+
 function getContextKeyForPropagatedKey(key: PropagatedKey): symbol {
   return LangfuseOtelContextKeys[key];
 }
@@ -859,6 +938,8 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.VERSION;
     case "traceName":
       return LangfuseOtelSpanAttributes.TRACE_NAME;
+    case "environment":
+      return LangfuseOtelSpanAttributes.ENVIRONMENT;
     case "metadata":
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
     case "tags":
@@ -901,6 +982,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}version`;
     case "traceName":
       return `${LANGFUSE_BAGGAGE_PREFIX}trace_name`;
+    case "environment":
+      return `${LANGFUSE_BAGGAGE_PREFIX}environment`;
     case "metadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
     case "tags":
@@ -952,6 +1035,8 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
       return getSpanKeyForPropagatedKey("version");
     case "trace_name":
       return getSpanKeyForPropagatedKey("traceName");
+    case "environment":
+      return getSpanKeyForPropagatedKey("environment");
     case "tags":
       return getSpanKeyForPropagatedKey("tags");
     case "prompt_name":

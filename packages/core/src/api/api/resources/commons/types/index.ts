@@ -1,3 +1,4 @@
+export * from "./Deprecation.js";
 export * from "./Trace.js";
 export * from "./TraceWithDetails.js";
 export * from "./TraceWithFullDetails.js";
@@ -5,6 +6,7 @@ export * from "./Session.js";
 export * from "./SessionWithTraces.js";
 export * from "./Observation.js";
 export * from "./ObservationsView.js";
+export * from "./ObservationsViewSingle.js";
 export * from "./ObservationV2.js";
 export * from "./Usage.js";
 export * from "./ScoreConfig.js";
