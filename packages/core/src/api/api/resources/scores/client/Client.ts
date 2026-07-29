@@ -4,6 +4,7 @@
 
 import * as core from "../../../../core/index.js";
 import * as LangfuseAPI from "../../../index.js";
+import { ScoreV1 } from "../../legacy/resources/scoreV1/client/Client.js";
 import {
   mergeHeaders,
   mergeOnlyDefinedHeaders,
@@ -58,6 +59,18 @@ export class Scores {
 
   constructor(_options: Scores.Options) {
     this._options = _options;
+  }
+
+  /**
+   * Create a score (supports both trace and session scores)
+   *
+   * Compatibility alias managed by scripts/patch-generated-score-create-alias.mjs
+   */
+  public create(
+    request: LangfuseAPI.legacy.CreateScoreRequest,
+    requestOptions?: Scores.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.legacy.CreateScoreResponse> {
+    return new ScoreV1(this._options).create(request, requestOptions);
   }
 
   /**
