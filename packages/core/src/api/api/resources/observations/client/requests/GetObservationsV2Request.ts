@@ -40,7 +40,17 @@ export interface GetObservationsV2Request {
   traceId?: string;
   /** Optional filter for observations with a specific level (e.g. "DEBUG", "DEFAULT", "WARNING", "ERROR"). */
   level?: LangfuseAPI.ObservationLevel;
+  /**
+   * Filter by the physical parent observation ID.
+   * An empty value matches only observations without a physical parent. Use `isRootObservation` to include observations marked as app roots by the SDK, which may retain a non-null `parentObservationId`.
+   */
   parentObservationId?: string;
+  /**
+   * Filter by whether an observation is a logical root.
+   * Root observations include observations without a physical parent and observations marked as app roots by the SDK.
+   * An app-root observation may have `isRootObservation=true` and a non-null `parentObservationId`.
+   */
+  isRootObservation?: boolean;
   /** Optional filter for observations where the environment is one of the provided values. */
   environment?: string | string[];
   /** Retrieve only observations with a start_time on or after this datetime (ISO 8601). */
@@ -91,6 +101,7 @@ export interface GetObservationsV2Request {
    * - `version` (string) - Version tag
    * - `userId` (string) - User ID
    * - `sessionId` (string) - Session ID
+   * - `isRootObservation` (boolean) - Whether the observation is a logical root. Observations marked as app roots by the SDK may retain a non-null parentObservationId.
    *
    * ### Trace-Related Fields
    * - `traceName` (string) - Name of the parent trace
@@ -151,6 +162,12 @@ export interface GetObservationsV2Request {
    *     "column": "output",
    *     "operator": "matches",
    *     "value": "needle"
+   *   },
+   *   {
+   *     "type": "boolean",
+   *     "column": "isRootObservation",
+   *     "operator": "=",
+   *     "value": true
    *   }
    * ]
    * ```

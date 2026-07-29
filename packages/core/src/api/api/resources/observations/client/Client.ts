@@ -71,7 +71,7 @@ export class Observations {
    * ## Field Selection
    * Use the `fields` parameter to control which observation fields are returned:
    * - `core` - Always included: id, traceId, startTime, endTime, projectId, parentObservationId, type
-   * - `basic` - name, level, statusMessage, version, environment, bookmarked, public, userId, sessionId
+   * - `basic` - name, level, statusMessage, version, environment, bookmarked, public, userId, sessionId, isRootObservation
    * - `time` - completionStartTime, createdAt, updatedAt
    * - `io` - input, output
    * - `metadata` - metadata (truncated to 200 chars by default, use `expandMetadata` to get full values)
@@ -124,6 +124,7 @@ export class Observations {
       traceId,
       level,
       parentObservationId,
+      isRootObservation,
       environment,
       fromStartTime,
       toStartTime,
@@ -176,6 +177,10 @@ export class Observations {
 
     if (parentObservationId != null) {
       _queryParams["parentObservationId"] = parentObservationId;
+    }
+
+    if (isRootObservation != null) {
+      _queryParams["isRootObservation"] = isRootObservation.toString();
     }
 
     if (environment != null) {
