@@ -19,10 +19,18 @@ export interface ObservationV2 {
   endTime: string | null;
   /** The project ID this observation belongs to */
   projectId: string;
-  /** The parent observation ID */
+  /**
+   * The physical parent observation ID, if present.
+   * Observations marked as app roots by the SDK may retain a non-null parent ID.
+   */
   parentObservationId: string | null;
   /** The type of the observation (e.g. GENERATION, SPAN, EVENT) */
   type: string;
+  /**
+   * Whether this observation is a logical root.
+   * This is true for observations without a physical parent and observations marked as app roots by the SDK.
+   */
+  isRootObservation?: boolean;
   /** The name of the observation */
   name?: string | null;
   /** The level of the observation */
