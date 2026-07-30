@@ -9,6 +9,7 @@ import { startActiveObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 
+import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
@@ -19,11 +20,13 @@ import {
 describe("Langchain integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
   let testEnv: ServerTestEnvironment;
+  let assertions: ServerAssertions;
 
   beforeEach(async () => {
     configureGlobalLogger({ level: 0 });
     testEnv = await setupServerTestEnvironment();
     langfuseClient = new LangfuseClient();
+    assertions = new ServerAssertions(langfuseClient.api);
   });
 
   afterEach(async () => {
@@ -68,7 +71,7 @@ describe("Langchain integration E2E tests", () => {
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,
@@ -155,7 +158,7 @@ describe("Langchain integration E2E tests", () => {
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,
@@ -231,7 +234,7 @@ describe("Langchain integration E2E tests", () => {
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,
@@ -323,7 +326,7 @@ describe("Langchain integration E2E tests", () => {
 
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,
@@ -409,7 +412,7 @@ describe("Langchain integration E2E tests", () => {
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,
@@ -505,7 +508,7 @@ describe("Langchain integration E2E tests", () => {
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,
@@ -633,7 +636,7 @@ describe("Langchain integration E2E tests", () => {
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,
@@ -738,7 +741,7 @@ describe("Langchain integration E2E tests", () => {
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const trace = await assertions.fetchTrace(traceId!);
 
     expect(trace).toMatchObject({
       sessionId: testConfig.sessionId,

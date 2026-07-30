@@ -10,6 +10,10 @@ import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import z from "zod";
 
 import {
+  ServerAssertions,
+  type TraceSnapshot,
+} from "./helpers/serverAssertions.js";
+import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
   waitForServerIngestion,
@@ -86,7 +90,7 @@ async function withTrace<T>({
 }
 
 function expectTraceAttributes(
-  trace: Awaited<ReturnType<LangfuseClient["api"]["trace"]["get"]>>,
+  trace: TraceSnapshot,
   traceId: string,
   traceAttributes: TraceAttributes,
 ) {
@@ -102,7 +106,7 @@ function expectGenerationBasics({
   modelName,
   maxTokens,
 }: {
-  trace: Awaited<ReturnType<LangfuseClient["api"]["trace"]["get"]>>;
+  trace: TraceSnapshot;
   modelName: string;
   maxTokens?: number;
 }) {
@@ -138,10 +142,12 @@ function expectGenerationBasics({
 describe("Vercel AI SDK v7 integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
   let testEnv: ServerTestEnvironment;
+  let assertions: ServerAssertions;
 
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
     langfuseClient = new LangfuseClient();
+    assertions = new ServerAssertions(langfuseClient.api);
   });
 
   afterEach(async () => {
@@ -195,7 +201,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const trace = await assertions.fetchTrace(traceId);
 
     expectTraceAttributes(trace, traceId, {
       userId,
@@ -271,7 +277,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const trace = await assertions.fetchTrace(traceId);
 
     expectTraceAttributes(trace, traceId, {
       userId,
@@ -343,7 +349,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const trace = await assertions.fetchTrace(traceId);
 
     expectTraceAttributes(trace, traceId, {
       userId,
@@ -392,7 +398,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const trace = await assertions.fetchTrace(traceId);
 
     expectTraceAttributes(trace, traceId, {
       userId,
@@ -480,7 +486,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const trace = await assertions.fetchTrace(traceId);
 
     expectTraceAttributes(trace, traceId, {
       userId,
@@ -541,7 +547,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const trace = await assertions.fetchTrace(traceId);
 
     expect(trace.id).toBe(traceId);
     expect(trace.observations.length).toBeGreaterThan(0);
@@ -594,7 +600,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const trace = await assertions.fetchTrace(traceId);
 
     expect(trace.id).toBe(traceId);
     expect(trace.observations.length).toBeGreaterThan(0);

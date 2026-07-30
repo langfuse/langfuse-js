@@ -37,6 +37,7 @@ const experimentKeys = [
   "experimentMetadata",
   "experimentDatasetId",
   "experimentItemId",
+  "experimentItemVersion",
   "experimentItemMetadata",
   "experimentItemRootObservationId",
 ] as const;
@@ -49,6 +50,7 @@ type PropagatedExperimentAttributes = {
   experimentMetadata?: string; // serialized JSON
   experimentDatasetId?: string;
   experimentItemId: string;
+  experimentItemVersion?: string;
   experimentItemMetadata?: string; // serialized JSON
   experimentItemRootObservationId: string;
 };
@@ -70,6 +72,7 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   experimentMetadata: createContextKey("langfuse_experiment_metadata"),
   experimentDatasetId: createContextKey("langfuse_experiment_dataset_id"),
   experimentItemId: createContextKey("langfuse_experiment_item_id"),
+  experimentItemVersion: createContextKey("langfuse_experiment_item_version"),
   experimentItemMetadata: createContextKey("langfuse_experiment_item_metadata"),
   experimentItemRootObservationId: createContextKey(
     "langfuse_experiment_item_root_observation_id",
@@ -958,6 +961,8 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.EXPERIMENT_DATASET_ID;
     case "experimentItemId":
       return LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_ID;
+    case "experimentItemVersion":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_VERSION;
     case "experimentItemMetadata":
       return LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_METADATA;
     case "experimentItemRootObservationId":
@@ -1002,6 +1007,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}experiment_dataset_id`;
     case "experimentItemId":
       return `${LANGFUSE_BAGGAGE_PREFIX}experiment_item_id`;
+    case "experimentItemVersion":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_item_version`;
     case "experimentItemMetadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}experiment_item_metadata`;
     case "experimentItemRootObservationId":
@@ -1053,6 +1060,8 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
       return getSpanKeyForPropagatedKey("experimentDatasetId");
     case "experiment_item_id":
       return getSpanKeyForPropagatedKey("experimentItemId");
+    case "experiment_item_version":
+      return getSpanKeyForPropagatedKey("experimentItemVersion");
     case "experiment_item_metadata":
       return getSpanKeyForPropagatedKey("experimentItemMetadata");
     case "experiment_item_root_observation_id":

@@ -254,12 +254,16 @@ export class ExperimentManager {
 
     let datasetRunUrl = undefined;
     if (datasetRunId && data.length > 0 && "datasetId" in data[0]) {
-      const datasetId = data[0].datasetId;
-      const projectUrl = (await this.langfuseClient.getTraceUrl("mock")).split(
-        "/traces",
-      )[0];
+      try {
+        const datasetId = data[0].datasetId;
+        const projectUrl = (
+          await this.langfuseClient.getTraceUrl("mock")
+        ).split("/traces")[0];
 
-      datasetRunUrl = `${projectUrl}/datasets/${datasetId}/runs/${datasetRunId}`;
+        datasetRunUrl = `${projectUrl}/datasets/${datasetId}/runs/${datasetRunId}`;
+      } catch (error) {
+        this.logger.warn("Creating dataset run URL failed", error);
+      }
     }
 
     // Execute run evaluators
@@ -385,34 +389,16 @@ export class ExperimentManager {
           throw new Error("Experiment item is missing input. Skipping item.");
         }
 
-        let datasetRunId: string | undefined = undefined;
-
-        if (datasetItemId) {
-          try {
-            const result = await this.langfuseClient.api.datasetRunItems.create(
-              {
-                runName: params.experimentRunName,
-                runDescription: params.experimentDescription,
-                metadata: params.experimentMetadata,
-                datasetItemId,
-                traceId,
-                observationId,
-                ...(params.datasetVersion && {
-                  datasetVersion: params.datasetVersion,
-                }),
-              },
-            );
-
-            datasetRunId = result.datasetRunId;
-          } catch (err) {
-            this.logger.error("Linking dataset run item failed", err);
-          }
-        }
+        // Platform v4 derives experiments from immutable OTel observations.
+        // Keep datasetRunId as a compatibility alias for dataset-backed runs.
+        const datasetRunId = datasetItemId
+          ? params.fallbackExperimentId
+          : undefined;
 
         // Generate IDs
         const experimentItemId =
           datasetItemId || (await createExperimentItemId(input));
-        const experimentId = datasetRunId || params.fallbackExperimentId;
+        const experimentId = params.fallbackExperimentId;
 
         // Set non-propagated experiment attributes directly on root span
         const rootSpanAttributes: Record<string, string> = {
@@ -445,6 +431,7 @@ export class ExperimentManager {
               experimentMetadata: serializeValue(experimentMetadata),
               experimentDatasetId: datasetId,
               experimentItemId,
+              experimentItemVersion: params.datasetVersion,
               experimentItemMetadata: serializeValue(itemMetadata),
               experimentItemRootObservationId: span.id,
             },

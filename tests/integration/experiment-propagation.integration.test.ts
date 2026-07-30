@@ -356,9 +356,11 @@ describe("Experiment Attribute Propagation", () => {
 
     it("should use dataset item ID when available", async () => {
       const datasetItemId = "dataset-item-123";
+      const datasetVersion = "2026-07-30T09:00:00Z";
 
-      await langfuse.experiment.run({
+      const result = await langfuse.experiment.run({
         name: "dataset-id-test",
+        datasetVersion,
         data: [
           {
             input: "test",
@@ -380,6 +382,10 @@ describe("Experiment Attribute Propagation", () => {
 
       // Should use the dataset item ID directly
       expect(experimentItemId).toBe(datasetItemId);
+      expect(result.datasetRunId).toBe(result.experimentId);
+      expect(
+        rootSpan.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_VERSION],
+      ).toBe(datasetVersion);
     });
   });
 
