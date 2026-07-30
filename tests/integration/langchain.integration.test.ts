@@ -287,4 +287,40 @@ describe("LangChain callback handler integration tests", () => {
       ],
     ).toBeUndefined();
   });
+
+  it("should clear completion start time after a streamed chat model error", async () => {
+    const handler = new CallbackHandler();
+    const callbackManager = CallbackManager.configure([handler])!;
+    const runId = crypto.randomUUID();
+
+    const [runManager] = await callbackManager.handleChatModelStart(
+      {
+        lc: 1,
+        type: "not_implemented",
+        id: ["test", "stream-events-v3-error"],
+      },
+      [[new HumanMessage("Hello")]],
+      runId,
+    );
+
+    await runManager.handleChatModelStreamEvent({
+      event: "content-block-delta",
+      index: 0,
+      delta: {
+        type: "text-delta",
+        text: "Hello",
+      },
+    });
+
+    const completionStartTimes = Reflect.get(
+      handler,
+      "completionStartTimes",
+    ) as Record<string, Date>;
+
+    expect(completionStartTimes).toHaveProperty(runId);
+
+    await runManager.handleLLMError(new Error("stream failed"));
+
+    expect(completionStartTimes).not.toHaveProperty(runId);
+  });
 });

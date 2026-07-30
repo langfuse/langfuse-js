@@ -676,12 +676,10 @@ export class CallbackHandler extends BaseCallbackHandler {
           usageDetails: usageDetails,
         },
       });
-
-      if (runId in this.completionStartTimes) {
-        delete this.completionStartTimes[runId];
-      }
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
+    } finally {
+      delete this.completionStartTimes[runId];
     }
   }
 
@@ -708,6 +706,8 @@ export class CallbackHandler extends BaseCallbackHandler {
       });
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
+    } finally {
+      delete this.completionStartTimes[runId];
     }
   }
 
