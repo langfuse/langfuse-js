@@ -400,7 +400,7 @@ export class ExperimentManager {
           datasetItemId || (await createExperimentItemId(input));
         const experimentId = params.fallbackExperimentId;
 
-        // Set non-propagated experiment attributes directly on root span
+        // Set root-only experiment attributes directly on the root span.
         const rootSpanAttributes: Record<string, string> = {
           [LangfuseOtelSpanAttributes.ENVIRONMENT]:
             LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
@@ -428,6 +428,7 @@ export class ExperimentManager {
             _internalExperiment: {
               experimentId,
               experimentName: params.experimentRunName,
+              experimentDescription: params.experimentDescription,
               experimentMetadata: serializeValue(experimentMetadata),
               experimentDatasetId: datasetId,
               experimentItemId,

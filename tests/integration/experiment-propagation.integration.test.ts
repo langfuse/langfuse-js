@@ -222,8 +222,8 @@ describe("Experiment Attribute Propagation", () => {
     });
   });
 
-  describe("Non-Propagated Attributes", () => {
-    it("should set description only on root span, not child spans", async () => {
+  describe("Experiment Projection Attributes", () => {
+    it("should propagate description to every experiment span", async () => {
       const description = "Test experiment description";
 
       await langfuse.experiment.run({
@@ -243,17 +243,16 @@ describe("Experiment Attribute Propagation", () => {
       const rootSpan = spans.find((s) => s.name === "experiment-item-run");
       const childSpan = spans.find((s) => s.name === "child");
 
-      // Root span should have description
+      // v4 aggregates experiment fields from immutable observations, so every
+      // experiment span must carry the description alongside the experiment ID.
       expect(
         rootSpan?.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION],
       ).toBe(description);
-
-      // Child span should NOT have description
       expect(
         childSpan?.attributes[
           LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION
         ],
-      ).toBeUndefined();
+      ).toBe(description);
     });
 
     it("should set expectedOutput only on root span, not child spans", async () => {

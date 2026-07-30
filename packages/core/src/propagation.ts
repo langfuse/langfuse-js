@@ -34,6 +34,7 @@ type CorrelatedKey =
 const experimentKeys = [
   "experimentId",
   "experimentName",
+  "experimentDescription",
   "experimentMetadata",
   "experimentDatasetId",
   "experimentItemId",
@@ -47,6 +48,7 @@ type PropagatedKey = CorrelatedKey | ExperimentKey;
 type PropagatedExperimentAttributes = {
   experimentId: string;
   experimentName: string;
+  experimentDescription?: string;
   experimentMetadata?: string; // serialized JSON
   experimentDatasetId?: string;
   experimentItemId: string;
@@ -69,6 +71,7 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   // Experiments
   experimentId: createContextKey("langfuse_experiment_id"),
   experimentName: createContextKey("langfuse_experiment_name"),
+  experimentDescription: createContextKey("langfuse_experiment_description"),
   experimentMetadata: createContextKey("langfuse_experiment_metadata"),
   experimentDatasetId: createContextKey("langfuse_experiment_dataset_id"),
   experimentItemId: createContextKey("langfuse_experiment_item_id"),
@@ -955,6 +958,8 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.EXPERIMENT_ID;
     case "experimentName":
       return LangfuseOtelSpanAttributes.EXPERIMENT_NAME;
+    case "experimentDescription":
+      return LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION;
     case "experimentMetadata":
       return LangfuseOtelSpanAttributes.EXPERIMENT_METADATA;
     case "experimentDatasetId":
@@ -1001,6 +1006,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}experiment_id`;
     case "experimentName":
       return `${LANGFUSE_BAGGAGE_PREFIX}experiment_name`;
+    case "experimentDescription":
+      return `${LANGFUSE_BAGGAGE_PREFIX}experiment_description`;
     case "experimentMetadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}experiment_metadata`;
     case "experimentDatasetId":
@@ -1054,6 +1061,8 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
       return getSpanKeyForPropagatedKey("experimentId");
     case "experiment_name":
       return getSpanKeyForPropagatedKey("experimentName");
+    case "experiment_description":
+      return getSpanKeyForPropagatedKey("experimentDescription");
     case "experiment_metadata":
       return getSpanKeyForPropagatedKey("experimentMetadata");
     case "experiment_dataset_id":
