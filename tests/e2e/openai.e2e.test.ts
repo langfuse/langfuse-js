@@ -7,7 +7,6 @@ import { nanoid } from "nanoid";
 import { OpenAI } from "openai";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 
-import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
@@ -18,12 +17,10 @@ import {
 describe("OpenAI integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
   let testEnv: ServerTestEnvironment;
-  let assertions: ServerAssertions;
 
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
     langfuseClient = new LangfuseClient();
-    assertions = new ServerAssertions(langfuseClient.api);
   });
 
   afterEach(async () => {
@@ -62,10 +59,10 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({ name: traceName });
-    expect(traces.length).toBe(1);
+    const traces = await langfuseClient.api.trace.list({ name: traceName });
+    expect(traces.data.length).toBe(1);
 
-    const trace = traces[0];
+    const trace = traces.data[0];
 
     expect(trace).toMatchObject({
       sessionId: config.sessionId,
@@ -74,12 +71,14 @@ describe("OpenAI integration E2E tests", () => {
       name: config.traceName,
     });
 
-    const observations = await assertions.fetchObservations({
-      traceId: trace.id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: trace.id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.input).toBeDefined();
     expect(generation.output).toBeDefined();
@@ -116,7 +115,7 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const trace = await assertions.fetchTrace(traceId);
+    const trace = await langfuseClient.api.trace.get(traceId);
 
     expect(trace.observations.length).toBe(2);
     const span = trace.observations.find((o) => o.name === "parent");
@@ -155,17 +154,19 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(4000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
-    expect(traces.length).toBe(1);
+    expect(traces.data.length).toBe(1);
 
-    const observations = await assertions.fetchObservations({
-      traceId: traces[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -214,17 +215,19 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
-    expect(traces.length).toBe(1);
+    expect(traces.data.length).toBe(1);
 
-    const observations = await assertions.fetchObservations({
-      traceId: traces[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -280,17 +283,19 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
-    expect(traces.length).toBe(1);
+    expect(traces.data.length).toBe(1);
 
-    const observations = await assertions.fetchObservations({
-      traceId: traces[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -357,17 +362,19 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
-    expect(traces.length).toBe(1);
+    expect(traces.data.length).toBe(1);
 
-    const observations = await assertions.fetchObservations({
-      traceId: traces[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -446,17 +453,19 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
-    expect(traces.length).toBe(1);
+    expect(traces.data.length).toBe(1);
 
-    const observations = await assertions.fetchObservations({
-      traceId: traces[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -554,17 +563,19 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
-    expect(traces.length).toBe(1);
+    expect(traces.data.length).toBe(1);
 
-    const observations = await assertions.fetchObservations({
-      traceId: traces[0].id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: traces.data[0].id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -649,19 +660,21 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
     // Should have at least 2 traces (potentially 3, depending on timing)
-    expect(traces.length).toBeGreaterThanOrEqual(2);
+    expect(traces.data.length).toBeGreaterThanOrEqual(2);
 
-    const firstTrace = traces[0];
-    const observations = await assertions.fetchObservations({
-      traceId: firstTrace.id,
-    });
+    const firstTrace = traces.data[0];
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: firstTrace.id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -708,12 +721,12 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const traces = await assertions.fetchTraces({
+    const traces = await langfuseClient.api.trace.list({
       name: generationName,
     });
-    expect(traces.length).toBe(1);
+    expect(traces.data.length).toBe(1);
 
-    const trace = traces[0];
+    const trace = traces.data[0];
     expect(trace.tags).toBeDefined();
     expect(trace.tags).toEqual(expect.arrayContaining(["hello", "World"]));
     expect(trace.sessionId).toBeDefined();
@@ -721,12 +734,14 @@ describe("OpenAI integration E2E tests", () => {
     expect(trace.userId).toBeDefined();
     expect(trace.userId).toBe("LangfuseUser");
 
-    const observations = await assertions.fetchObservations({
-      traceId: trace.id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: trace.id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -784,12 +799,12 @@ describe("OpenAI integration E2E tests", () => {
       await testEnv.spanProcessor.forceFlush();
       await waitForServerIngestion(2000);
 
-      const traces = await assertions.fetchTraces({
+      const traces = await langfuseClient.api.trace.list({
         name: generationName,
       });
-      expect(traces.length).toBe(1);
+      expect(traces.data.length).toBe(1);
 
-      const trace = traces[0];
+      const trace = traces.data[0];
       expect(trace.tags).toBeDefined();
       expect(trace.tags).toEqual(expect.arrayContaining(["hello", "World"]));
       expect(trace.sessionId).toBeDefined();
@@ -797,12 +812,13 @@ describe("OpenAI integration E2E tests", () => {
       expect(trace.userId).toBeDefined();
       expect(trace.userId).toBe("LangfuseUser");
 
-      const observations = await assertions.fetchObservations({
-        traceId: trace.id,
-      });
+      const observations =
+        await langfuseClient.api.legacy.observationsV1.getMany({
+          traceId: trace.id,
+        });
 
-      expect(observations.length).toBe(1);
-      const generation = observations[0];
+      expect(observations.data.length).toBe(1);
+      const generation = observations.data[0];
 
       expect(generation.name).toBe(generationName);
       expect(generation.modelParameters).toBeDefined();
@@ -845,18 +861,20 @@ describe("OpenAI integration E2E tests", () => {
     await testEnv.spanProcessor.forceFlush();
     await waitForServerIngestion(2000);
 
-    const trace = await assertions.fetchTrace(traceId);
+    const trace = await langfuseClient.api.trace.get(traceId);
 
     // TODO: Currently AS_ROOT is not passed that would trigger trace data propagation
     // expect(trace.name).toBe(traceName);
     // expect(trace.metadata).toEqual({ parent: true });
 
-    const observations = await assertions.fetchObservations({
-      traceId: trace.id,
-    });
+    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
+      {
+        traceId: trace.id,
+      },
+    );
 
-    expect(observations.length).toBe(1);
-    const generation = observations[0];
+    expect(observations.data.length).toBe(1);
+    const generation = observations.data[0];
 
     expect(generation.name).toBe("OpenAI.chat"); // Default name
     expect(generation.metadata).toMatchObject({ child: true });
@@ -876,8 +894,7 @@ describe("OpenAI integration E2E tests", () => {
     ]);
     expect(generation.output).toBeDefined();
     expect(generation.output).toMatchObject(res.choices[0].message);
-    // Platform v4 projects trace I/O from the root observation.
-    expect(trace.output).toMatchObject(res.choices[0].message);
+    expect(trace.output).toBeNull(); // Do not update trace if traceId is passed
     expect(generation.usage).toMatchObject({
       unit: "TOKENS",
       input: usage?.prompt_tokens,

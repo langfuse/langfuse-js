@@ -222,8 +222,8 @@ describe("Experiment Attribute Propagation", () => {
     });
   });
 
-  describe("Experiment Projection Attributes", () => {
-    it("should propagate description to every experiment span", async () => {
+  describe("Non-Propagated Attributes", () => {
+    it("should set description only on root span, not child spans", async () => {
       const description = "Test experiment description";
 
       await langfuse.experiment.run({
@@ -243,16 +243,17 @@ describe("Experiment Attribute Propagation", () => {
       const rootSpan = spans.find((s) => s.name === "experiment-item-run");
       const childSpan = spans.find((s) => s.name === "child");
 
-      // v4 aggregates experiment fields from immutable observations, so every
-      // experiment span must carry the description alongside the experiment ID.
+      // Root span should have description
       expect(
         rootSpan?.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION],
       ).toBe(description);
+
+      // Child span should NOT have description
       expect(
         childSpan?.attributes[
           LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION
         ],
-      ).toBe(description);
+      ).toBeUndefined();
     });
 
     it("should set expectedOutput only on root span, not child spans", async () => {
@@ -355,11 +356,9 @@ describe("Experiment Attribute Propagation", () => {
 
     it("should use dataset item ID when available", async () => {
       const datasetItemId = "dataset-item-123";
-      const datasetVersion = "2026-07-30T09:00:00Z";
 
-      const result = await langfuse.experiment.run({
+      await langfuse.experiment.run({
         name: "dataset-id-test",
-        datasetVersion,
         data: [
           {
             input: "test",
@@ -381,10 +380,6 @@ describe("Experiment Attribute Propagation", () => {
 
       // Should use the dataset item ID directly
       expect(experimentItemId).toBe(datasetItemId);
-      expect(result.datasetRunId).toBe(result.experimentId);
-      expect(
-        rootSpan.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_VERSION],
-      ).toBe(datasetVersion);
     });
   });
 

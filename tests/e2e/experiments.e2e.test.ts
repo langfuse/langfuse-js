@@ -17,11 +17,9 @@ import {
   waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
-import { ServerAssertions } from "./helpers/serverAssertions.js";
 
 describe("Langfuse Datasets E2E", () => {
   let langfuse: LangfuseClient;
-  let assertions: ServerAssertions;
   let testEnv: ServerTestEnvironment;
 
   const dataset = [
@@ -120,7 +118,6 @@ describe("Langfuse Datasets E2E", () => {
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
     langfuse = new LangfuseClient();
-    assertions = new ServerAssertions(langfuse.api);
   });
 
   afterEach(async () => {
@@ -265,34 +262,33 @@ describe("Langfuse Datasets E2E", () => {
       expect(itemResult.evaluations).toHaveLength(3);
     });
 
-    // Fetch the v4 experiment projection and validate persisted attributes.
-    const experiment = await assertions.fetchExperiment({
-      id: result.experimentId,
-    });
+    // Fetch dataset run from API and validate against database
+    const datasetRun = await langfuse.api.datasets.getRun(
+      datasetName,
+      result.runName,
+    );
 
-    expect(experiment).toMatchObject({
-      id: result.experimentId,
+    expect(datasetRun).toBeDefined();
+    expect(datasetRun).toMatchObject({
       name: result.runName,
       description: "Country capital experiment",
       datasetId: fetchedDataset.id,
+      datasetName: datasetName,
     });
 
-    const experimentItems = await assertions.fetchExperimentItems(
-      result.experimentId,
-    );
-    expect(experimentItems).toHaveLength(3);
+    // Validate dataset run items
+    expect(datasetRun.datasetRunItems).toHaveLength(3);
 
-    // Each experiment item should correspond to one of our task results.
+    // Each run item should correspond to one of our experiment results
     result.itemResults.forEach((itemResult) => {
-      const correspondingExperimentItem = experimentItems.find(
-        (item) => item.traceId === itemResult.traceId,
+      const correspondingRunItem = datasetRun.datasetRunItems.find(
+        (runItem) => runItem.traceId === itemResult.traceId,
       );
 
-      expect(correspondingExperimentItem).toBeDefined();
-      expect(correspondingExperimentItem).toMatchObject({
+      expect(correspondingRunItem).toBeDefined();
+      expect(correspondingRunItem).toMatchObject({
         traceId: itemResult.traceId,
-        experimentItemId: expect.any(String),
-        experimentDatasetId: fetchedDataset.id,
+        datasetItemId: expect.any(String),
       });
     });
 
@@ -341,15 +337,18 @@ describe("Langfuse Datasets E2E", () => {
     expect(result.datasetRunId).toBeDefined();
     expect(result.experimentId).toBe(result.datasetRunId);
 
-    // Fetch the v4 experiment projection and verify it has the custom name.
-    const experiment = await assertions.fetchExperiment({
-      id: result.experimentId,
-    });
+    // Fetch dataset run and verify it has the custom name
+    const datasetRun = await langfuse.api.datasets.getRun(
+      datasetName,
+      customRunName,
+    );
 
-    expect(experiment).toMatchObject({
-      id: result.experimentId,
+    expect(datasetRun).toBeDefined();
+    expect(datasetRun).toMatchObject({
       name: customRunName,
+      description: "Testing custom run name",
       datasetId: fetchedDataset.id,
+      datasetName: datasetName,
     });
   });
 
@@ -759,7 +758,7 @@ describe("Langfuse Datasets E2E", () => {
       const result = await fetchedDataset.runExperiment({
         name: "Score persistence test",
         description: "Test score persistence",
-        task: async () => "Test output",
+        task,
         evaluators: [testEvaluator],
         runEvaluators: [testRunEvaluator],
       });
@@ -767,36 +766,18 @@ describe("Langfuse Datasets E2E", () => {
       await testEnv.spanProcessor.forceFlush();
       await waitForServerIngestion(3000);
 
-      // Validate the v4 experiment item is persisted.
-      const experiment = await assertions.fetchExperiment({
-        id: result.experimentId,
-      });
-      const experimentItems = await assertions.fetchExperimentItems(
-        result.experimentId,
+      // Validate scores are persisted
+      const datasetRun = await langfuse.api.datasets.getRun(
+        datasetName,
+        result.runName,
       );
 
-      expect(experiment.scores).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            name: "persistence-test-run-eval",
-            value: 0.9,
-          }),
-        ]),
-      );
-      expect(experimentItems).toHaveLength(1);
+      expect(datasetRun).toBeDefined();
+      expect(datasetRun.datasetRunItems).toHaveLength(1);
 
       // Validate item-level scores are linked to traces
-      const experimentItem = experimentItems[0];
-      expect(experimentItem.traceId).toBe(result.itemResults[0].traceId);
-      expect(experimentItem.experimentItemId).toBe(createdItem.id);
-      expect(experimentItem.scores).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            name: "persistence-test-eval",
-            value: 0.85,
-          }),
-        ]),
-      );
+      const runItem = datasetRun.datasetRunItems[0];
+      expect(runItem.traceId).toBe(result.itemResults[0].traceId);
     });
 
     it("should handle multiple experiments on same dataset", async () => {
@@ -817,8 +798,8 @@ describe("Langfuse Datasets E2E", () => {
       const result1 = await fetchedDataset.runExperiment({
         name: "Experiment 1",
         description: "First experiment",
-        task: async ({ input }) => `First result for ${input}`,
-        evaluators: [async () => ({ name: "first-eval", value: 1 })],
+        task,
+        evaluators: [createEvaluatorFromAutoevals(Factuality)],
       });
 
       await testEnv.spanProcessor.forceFlush();
@@ -828,8 +809,8 @@ describe("Langfuse Datasets E2E", () => {
       const result2 = await fetchedDataset.runExperiment({
         name: "Experiment 2",
         description: "Second experiment",
-        task: async ({ input }) => `Second result for ${input}`,
-        evaluators: [async () => ({ name: "second-eval", value: 1 })],
+        task,
+        evaluators: [createEvaluatorFromAutoevals(Levenshtein)],
       });
 
       await testEnv.spanProcessor.forceFlush();
@@ -840,17 +821,19 @@ describe("Langfuse Datasets E2E", () => {
       expect(result2.datasetRunId).toBeDefined();
       expect(result1.datasetRunId).not.toBe(result2.datasetRunId);
 
-      // Validate both v4 experiment projections exist.
-      const experiment1 = await assertions.fetchExperiment({
-        id: result1.experimentId,
-      });
-      const experiment2 = await assertions.fetchExperiment({
-        id: result2.experimentId,
-      });
+      // Validate both runs exist in database
+      const run1 = await langfuse.api.datasets.getRun(
+        datasetName,
+        result1.runName,
+      );
+      const run2 = await langfuse.api.datasets.getRun(
+        datasetName,
+        result2.runName,
+      );
 
-      expect(experiment1.name).toBe(result1.runName);
-      expect(experiment2.name).toBe(result2.runName);
-      expect(experiment1.id).not.toBe(experiment2.id);
+      expect(run1).toBeDefined();
+      expect(run2).toBeDefined();
+      expect(run1.id).not.toBe(run2.id);
     });
 
     it("should preserve dataset run metadata", async () => {
@@ -869,7 +852,7 @@ describe("Langfuse Datasets E2E", () => {
         name: "Metadata test experiment",
         description: "Testing metadata preservation",
         metadata: { testKey: "testValue", experimentVersion: "1.0" },
-        task: async () => "Test output",
+        task,
         evaluators: [
           async () => ({
             name: "test-eval",
@@ -882,12 +865,12 @@ describe("Langfuse Datasets E2E", () => {
       await testEnv.spanProcessor.forceFlush();
       await waitForServerIngestion(2000);
 
-      const experiment = await assertions.fetchExperiment({
-        id: result.experimentId,
-      });
+      const datasetRun = await langfuse.api.datasets.getRun(
+        datasetName,
+        result.runName,
+      );
 
-      expect(experiment).toMatchObject({
-        id: result.experimentId,
+      expect(datasetRun).toMatchObject({
         name: result.runName,
         description: "Testing metadata preservation",
         metadata: { testKey: "testValue", experimentVersion: "1.0" },

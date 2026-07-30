@@ -80,6 +80,8 @@ jobs:
           LANGFUSE_SERVER_SHA="$(git ls-remote https://github.com/langfuse/langfuse.git HEAD | cut -f1)"
           curl -fsSL "https://raw.githubusercontent.com/langfuse/langfuse/${LANGFUSE_SERVER_SHA}/docker-compose.yml" \
             -o ./langfuse-server/docker-compose.yml
+          cp ./.github/langfuse-v4-dual-write.override.yml \
+            ./langfuse-server/docker-compose.override.yml
           echo "${LANGFUSE_SERVER_SHA}"
 
       - name: Run langfuse server
@@ -92,6 +94,10 @@ jobs:
           LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=http://localhost:9090 \
           LANGFUSE_INGESTION_QUEUE_DELAY_MS=10 \
           LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS=10 \
+          LANGFUSE_EXPERIMENT_INSERT_INTO_EVENTS_TABLE=true \
+          QUEUE_CONSUMER_EVENT_PROPAGATION_QUEUE_IS_ENABLED=true \
+          LANGFUSE_ENABLE_EVENTS_TABLE_V2_APIS=true \
+          LANGFUSE_ENABLE_EVENTS_TABLE_OBSERVATIONS=true \
           docker compose up -d
           echo "::endgroup::"
 
@@ -104,59 +110,40 @@ jobs:
           max_retries=20
           until curl --output /dev/null --silent --head --fail http://localhost:3000/api/public/health && \
             node - <<'NODE'
-          async function verifyServer() {
-            const healthResponse = await fetch(
-              `${process.env.LANGFUSE_BASE_URL}/api/public/health`,
-            );
-            if (!healthResponse.ok) {
-              throw new Error(
-                `Health request failed with status ${healthResponse.status}`,
+          const auth = Buffer.from(
+            `${process.env.LANGFUSE_PUBLIC_KEY}:${process.env.LANGFUSE_SECRET_KEY}`,
+          ).toString("base64");
+
+          fetch(`${process.env.LANGFUSE_BASE_URL}/api/public/projects`, {
+            headers: {
+              Authorization: `Basic ${auth}`,
+            },
+          })
+            .then(async (response) => {
+              if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+              }
+
+              return response.json();
+            })
+            .then((body) => {
+              const project = body.data?.find(
+                (candidate) =>
+                  candidate.id === process.env.LANGFUSE_INIT_PROJECT_ID,
               );
-            }
 
-            const health = await healthResponse.json();
-            if (!health.version?.startsWith("4.")) {
-              throw new Error(
-                `Expected Langfuse platform v4, received ${health.version}`,
-              );
-            }
+              if (!project) {
+                throw new Error(
+                  `Expected initialized project ${process.env.LANGFUSE_INIT_PROJECT_ID}`,
+                );
+              }
 
-            const auth = Buffer.from(
-              `${process.env.LANGFUSE_PUBLIC_KEY}:${process.env.LANGFUSE_SECRET_KEY}`,
-            ).toString("base64");
-            const projectsResponse = await fetch(
-              `${process.env.LANGFUSE_BASE_URL}/api/public/projects`,
-              {
-                headers: {
-                  Authorization: `Basic ${auth}`,
-                },
-              },
-            );
-            if (!projectsResponse.ok) {
-              throw new Error(
-                `Projects request failed with status ${projectsResponse.status}`,
-              );
-            }
-
-            const body = await projectsResponse.json();
-            const project = body.data?.find(
-              (candidate) =>
-                candidate.id === process.env.LANGFUSE_INIT_PROJECT_ID,
-            );
-
-            if (!project) {
-              throw new Error(
-                `Expected initialized project ${process.env.LANGFUSE_INIT_PROJECT_ID}`,
-              );
-            }
-
-            console.log(`Langfuse ${health.version}, project ${project.id}`);
-          }
-
-          verifyServer().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
+              console.log(project.id);
+            })
+            .catch((error) => {
+              console.error(error);
+              process.exit(1);
+            });
           NODE
           do
             retry_count=`expr $retry_count + 1`
