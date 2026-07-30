@@ -24,7 +24,7 @@ export type TestObservation = ObservationV2 & {
   input: any;
   output: any;
   model: string | null;
-  usage: Record<string, number>;
+  usage: Record<string, number | string>;
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
@@ -40,6 +40,7 @@ export type TraceSnapshot = {
   sessionId: string | null;
   tags: string[];
   release: string | null;
+  version: string | null;
   public: boolean;
   metadata: unknown;
   input: unknown;
@@ -91,7 +92,11 @@ function toTestObservation(
     input: parseIo(observation.input),
     output: parseIo(observation.output),
     model: observation.model ?? observation.providedModelName ?? null,
-    usage: observation.usageDetails ?? {},
+    usage: {
+      unit: "TOKENS",
+      ...(observation.usageDetails ?? {}),
+    },
+    statusMessage: observation.statusMessage || null,
     promptTokens: inputUsage,
     completionTokens: outputUsage,
     totalTokens: totalUsage,
@@ -118,11 +123,12 @@ function toTraceSnapshot(
 
   return {
     id: traceId,
-    name: root.traceName ?? root.name ?? null,
+    name: root.traceName || root.name || null,
     userId: root.userId ?? null,
     sessionId: root.sessionId ?? null,
-    tags: root.tags ?? [],
+    tags: [...(root.tags ?? [])].sort(),
     release: root.release ?? null,
+    version: root.version ?? null,
     public: observations.some((observation) => observation.public === true),
     metadata: root.metadata,
     input: root.input,

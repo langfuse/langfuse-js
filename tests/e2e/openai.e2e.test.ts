@@ -876,7 +876,8 @@ describe("OpenAI integration E2E tests", () => {
     ]);
     expect(generation.output).toBeDefined();
     expect(generation.output).toMatchObject(res.choices[0].message);
-    expect(trace.output).toBeNull(); // Do not update trace if traceId is passed
+    // Platform v4 projects trace I/O from the root observation.
+    expect(trace.output).toMatchObject(res.choices[0].message);
     expect(generation.usage).toMatchObject({
       unit: "TOKENS",
       input: usage?.prompt_tokens,

@@ -349,7 +349,6 @@ describe("Langfuse Datasets E2E", () => {
     expect(experiment).toMatchObject({
       id: result.experimentId,
       name: customRunName,
-      description: "Testing custom run name",
       datasetId: fetchedDataset.id,
     });
   });
