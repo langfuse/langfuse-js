@@ -53,6 +53,10 @@ type ConstructorParams = {
 
 type TrackedObservation = LangfuseSpan | LangfuseGeneration | LangfuseTool;
 
+type ChatModelStreamEventLike = {
+  event: string;
+};
+
 export class CallbackHandler extends BaseCallbackHandler {
   name = "LangfuseCallbackHandler";
 
@@ -84,6 +88,13 @@ export class CallbackHandler extends BaseCallbackHandler {
     return getGlobalLogger();
   }
 
+  private recordCompletionStartTime(runId: string): void {
+    if (runId && !(runId in this.completionStartTimes)) {
+      this.logger.debug(`LLM first streaming token: ${runId}`);
+      this.completionStartTimes[runId] = new Date();
+    }
+  }
+
   async handleLLMNewToken(
     token: string,
     _idx: any,
@@ -92,10 +103,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     _tags?: string[],
     _fields?: any,
   ): Promise<void> {
-    // if this is the first token, add it to completionStartTimes
-    if (runId && !(runId in this.completionStartTimes)) {
-      this.logger.debug(`LLM first streaming token: ${runId}`);
-      this.completionStartTimes[runId] = new Date();
+    this.recordCompletionStartTime(runId);
+  }
+
+  async handleChatModelStreamEvent(
+    event: ChatModelStreamEventLike,
+    runId: string,
+    _parentRunId?: string,
+    _tags?: string[],
+  ): Promise<void> {
+    if (event.event === "content-block-delta") {
+      this.recordCompletionStartTime(runId);
     }
   }
 

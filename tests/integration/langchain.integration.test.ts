@@ -1,7 +1,10 @@
+import { CallbackManager } from "@langchain/core/callbacks/manager";
+import type { ContentBlockDelta } from "@langchain/core/language_models/event";
+import { HumanMessage } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
 import {
@@ -10,6 +13,33 @@ import {
   waitForSpanExport,
   type TestEnvironment,
 } from "./helpers/testSetup.js";
+
+const contentDeltaCases = [
+  {
+    name: "text",
+    delta: {
+      type: "text-delta",
+      text: "Hello",
+    },
+  },
+  {
+    name: "reasoning",
+    delta: {
+      type: "reasoning-delta",
+      reasoning: "Thinking",
+    },
+  },
+  {
+    name: "tool call",
+    delta: {
+      type: "block-delta",
+      fields: {
+        type: "tool_call_chunk",
+        args: '{"query":"weather',
+      },
+    },
+  },
+] satisfies Array<{ name: string; delta: ContentBlockDelta }>;
 
 describe("LangChain callback handler integration tests", () => {
   let testEnv: TestEnvironment;
@@ -63,5 +93,198 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       "The result is: 100",
     );
+  });
+
+  it.each(contentDeltaCases)(
+    "should record the first $name content delta as completion start time",
+    async ({ delta }) => {
+      const handler = new CallbackHandler();
+      const callbackManager = CallbackManager.configure([handler])!;
+      const runId = crypto.randomUUID();
+      const firstDeltaTime = new Date("2026-01-01T00:00:01.000Z");
+
+      vi.useFakeTimers({ toFake: ["Date"] });
+
+      try {
+        vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+        const [runManager] = await callbackManager.handleChatModelStart(
+          {
+            lc: 1,
+            type: "not_implemented",
+            id: ["test", "stream-events-v3-model"],
+          },
+          [[new HumanMessage("Hello")]],
+          runId,
+        );
+
+        await runManager.handleChatModelStreamEvent({
+          event: "message-start",
+        });
+
+        vi.setSystemTime(firstDeltaTime);
+
+        await runManager.handleChatModelStreamEvent({
+          event: "content-block-delta",
+          index: 0,
+          delta,
+        });
+
+        vi.setSystemTime(new Date("2026-01-01T00:00:02.000Z"));
+
+        await runManager.handleChatModelStreamEvent({
+          event: "content-block-delta",
+          index: 0,
+          delta: {
+            type: "text-delta",
+            text: " world",
+          },
+        });
+
+        await runManager.handleLLMEnd({
+          generations: [
+            [
+              {
+                text: "Hello world",
+              },
+            ],
+          ],
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const generation = testEnv.mockExporter.getSpanByName(
+        "stream-events-v3-model",
+      );
+
+      expect(
+        generation?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME
+        ],
+      ).toBe(JSON.stringify(firstDeltaTime));
+    },
+  );
+
+  it("should preserve completion start time from legacy token callbacks", async () => {
+    const handler = new CallbackHandler();
+    const callbackManager = CallbackManager.configure([handler])!;
+    const runId = crypto.randomUUID();
+    const firstTokenTime = new Date("2026-01-01T00:00:01.000Z");
+
+    vi.useFakeTimers({ toFake: ["Date"] });
+
+    try {
+      vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+      const [runManager] = await callbackManager.handleChatModelStart(
+        {
+          lc: 1,
+          type: "not_implemented",
+          id: ["test", "legacy-token-model"],
+        },
+        [[new HumanMessage("Hello")]],
+        runId,
+      );
+
+      vi.setSystemTime(firstTokenTime);
+
+      await runManager.handleLLMNewToken("Hello", {
+        prompt: 0,
+        completion: 0,
+      });
+
+      vi.setSystemTime(new Date("2026-01-01T00:00:02.000Z"));
+
+      await runManager.handleLLMNewToken(" world", {
+        prompt: 0,
+        completion: 0,
+      });
+
+      await runManager.handleLLMEnd({
+        generations: [
+          [
+            {
+              text: "Hello world",
+            },
+          ],
+        ],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const generation = testEnv.mockExporter.getSpanByName("legacy-token-model");
+
+    expect(
+      generation?.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME
+      ],
+    ).toBe(JSON.stringify(firstTokenTime));
+  });
+
+  it("should ignore chat model stream events without content deltas", async () => {
+    const handler = new CallbackHandler();
+    const callbackManager = CallbackManager.configure([handler])!;
+    const runId = crypto.randomUUID();
+
+    const [runManager] = await callbackManager.handleChatModelStart(
+      {
+        lc: 1,
+        type: "not_implemented",
+        id: ["test", "stream-events-v3-without-delta"],
+      },
+      [[new HumanMessage("Hello")]],
+      runId,
+    );
+
+    await runManager.handleChatModelStreamEvent({
+      event: "message-start",
+    });
+
+    await runManager.handleChatModelStreamEvent({
+      event: "content-block-start",
+      index: 0,
+      content: {
+        type: "text",
+        text: "",
+      },
+    });
+
+    await runManager.handleChatModelStreamEvent({
+      event: "usage",
+      usage: {},
+    });
+
+    await runManager.handleChatModelStreamEvent({
+      event: "message-finish",
+    });
+
+    await runManager.handleLLMEnd({
+      generations: [
+        [
+          {
+            text: "Hello",
+          },
+        ],
+      ],
+    });
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const generation = testEnv.mockExporter.getSpanByName(
+      "stream-events-v3-without-delta",
+    );
+
+    assertions.expectSpanWithName("stream-events-v3-without-delta");
+    expect(
+      generation?.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME
+      ],
+    ).toBeUndefined();
   });
 });
