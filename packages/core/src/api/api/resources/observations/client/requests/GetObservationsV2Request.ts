@@ -35,6 +35,8 @@ export interface GetObservationsV2Request {
   parseIoAsJson?: boolean;
   name?: string;
   userId?: string;
+  /** Filter by session ID. */
+  sessionId?: string;
   /** Filter by observation type (e.g., "GENERATION", "SPAN", "EVENT", "AGENT", "TOOL", "CHAIN", "RETRIEVER", "EVALUATOR", "EMBEDDING", "GUARDRAIL") */
   type?: string;
   traceId?: string;
