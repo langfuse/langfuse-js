@@ -41,7 +41,7 @@
     "dist"
   ],
   "dependencies": {
-    "@ai-sdk/otel": "1.0.44",
+    "@ai-sdk/otel": "^1.0.44",
     "@langfuse/core": "workspace:^"
   },
   "peerDependencies": {

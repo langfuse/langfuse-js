@@ -223,7 +223,7 @@ importers:
   packages/vercel-ai-sdk:
     dependencies:
       '@ai-sdk/otel':
-        specifier: 1.0.44
+        specifier: ^1.0.44
         version: 1.0.44(zod@3.25.76)
       '@langfuse/core':
         specifier: workspace:^
