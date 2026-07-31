@@ -26,6 +26,15 @@ import {
 
 const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
 
+function isLangGraphControlFlowError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "is_bubble_up" in error &&
+    error.is_bubble_up === true
+  );
+}
+
 type LangfusePrompt = {
   name: string;
   version: number;
@@ -263,7 +272,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString() + azureRefusalError,
         },
       });
@@ -534,7 +543,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString(),
         },
       });
@@ -572,7 +581,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString(),
         },
       });
@@ -684,7 +693,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString() + azureRefusalError,
         },
       });
