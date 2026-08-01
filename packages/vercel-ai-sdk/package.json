@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/vercel-ai-sdk",
-  "version": "5.9.1",
+  "version": "5.10.0",
   "description": "Langfuse integration for Vercel AI SDK v7",
   "type": "module",
   "sideEffects": false,
@@ -41,11 +41,14 @@
     "dist"
   ],
   "dependencies": {
-    "@ai-sdk/otel": "1.0.2",
+    "@ai-sdk/otel": "^1.0.44",
     "@langfuse/core": "workspace:^"
   },
   "peerDependencies": {
     "@opentelemetry/api": "^1.9.0",
     "ai": ">=7.0.0 <8"
+  },
+  "devDependencies": {
+    "ai": "7.0.44"
   }
 }
