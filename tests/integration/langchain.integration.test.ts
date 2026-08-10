@@ -1,3 +1,10 @@
+import {
+  AIMessagePromptTemplate,
+  HumanMessagePromptTemplate,
+  PromptTemplate,
+  SystemMessagePromptTemplate,
+} from "@langchain/core/prompts";
+import { RunnableMap } from "@langchain/core/runnables";
 import { DynamicTool } from "@langchain/core/tools";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -63,5 +70,56 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       "The result is: 100",
     );
+  });
+
+  it("should extract display-ready prompt template outputs", async () => {
+    const handler = new CallbackHandler();
+    const map = RunnableMap.from({
+      String: PromptTemplate.fromTemplate("Tell me a joke about {topic}."),
+      Human: HumanMessagePromptTemplate.fromTemplate(
+        "Tell me a joke about {topic}.",
+      ),
+      AI: AIMessagePromptTemplate.fromTemplate("Tell me a joke about {topic}."),
+      System: SystemMessagePromptTemplate.fromTemplate(
+        "Tell me a joke about {topic}.",
+      ),
+    });
+
+    await map.invoke({ topic: "bears" }, { callbacks: [handler] });
+    await waitForSpanExport(testEnv.mockExporter, 5);
+
+    const getOutput = (spanName: string) => {
+      const span = testEnv.mockExporter.getSpanByName(spanName);
+      const output =
+        span?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT];
+
+      if (
+        typeof output === "string" &&
+        (output.startsWith("{") || output.startsWith("["))
+      ) {
+        return JSON.parse(output);
+      }
+
+      return output;
+    };
+
+    const expectedMessages = {
+      Human: [{ role: "user", content: "Tell me a joke about bears." }],
+      AI: [{ role: "assistant", content: "Tell me a joke about bears." }],
+      System: [{ role: "system", content: "Tell me a joke about bears." }],
+    };
+
+    expect(getOutput("PromptTemplate")).toBe("Tell me a joke about bears.");
+    expect(getOutput("HumanMessagePromptTemplate")).toEqual(
+      expectedMessages.Human,
+    );
+    expect(getOutput("AIMessagePromptTemplate")).toEqual(expectedMessages.AI);
+    expect(getOutput("SystemMessagePromptTemplate")).toEqual(
+      expectedMessages.System,
+    );
+    expect(getOutput("RunnableMap")).toEqual({
+      String: "Tell me a joke about bears.",
+      ...expectedMessages,
+    });
   });
 });

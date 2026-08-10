@@ -6,6 +6,7 @@ import {
   AIMessage,
   AIMessageChunk,
   BaseMessage,
+  isBaseMessage,
   type UsageMetadata,
   type BaseMessageFields,
   type MessageContent,
@@ -388,25 +389,15 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this.logger.debug(`Chain end with ID: ${runId}`);
 
-      let finalOutput: ChainValues | string = outputs;
-      if (
-        typeof outputs === "object" &&
-        "output" in outputs &&
-        typeof outputs["output"] === "string"
-      ) {
-        finalOutput = outputs["output"];
-      } else if (
-        typeof outputs === "object" &&
-        "messages" in outputs &&
-        Array.isArray(outputs["messages"]) &&
-        outputs["messages"].every((m: unknown) => m instanceof BaseMessage)
-      ) {
-        finalOutput = {
-          messages: outputs.messages.map((message: BaseMessage) =>
-            this.extractChatMessageContent(message),
-          ),
-        };
-      }
+      const output = outputs["output"];
+      const shouldUnwrapOutput =
+        typeof output === "string" ||
+        this.isStringPromptValue(output) ||
+        (Array.isArray(output) &&
+          output.every((value: unknown) => isBaseMessage(value)));
+      const finalOutput = this.extractChainOutput(
+        shouldUnwrapOutput ? output : outputs,
+      );
 
       this.handleOtelSpanEnd({
         runId,
@@ -919,6 +910,56 @@ export class CallbackHandler extends BaseCallbackHandler {
         ? generation["message"].response_metadata.model_name
         : undefined;
     } catch {}
+  }
+
+  private extractChainOutput(output: unknown): unknown {
+    if (this.isStringPromptValue(output)) {
+      return output.value;
+    }
+
+    if (isBaseMessage(output)) {
+      return this.extractChatMessageContent(output);
+    }
+
+    if (Array.isArray(output)) {
+      return output.map((value) => this.extractChainOutput(value));
+    }
+
+    if (
+      output !== null &&
+      typeof output === "object" &&
+      Object.getPrototypeOf(output) === Object.prototype
+    ) {
+      return Object.fromEntries(
+        Object.entries(output).map(([key, value]) => [
+          key,
+          this.extractChainOutput(value),
+        ]),
+      );
+    }
+
+    return output;
+  }
+
+  private isStringPromptValue(
+    value: unknown,
+  ): value is { lc_id: string[]; value: string } {
+    if (value === null || typeof value !== "object") {
+      return false;
+    }
+
+    const promptValue = value as {
+      lc_id?: unknown;
+      value?: unknown;
+    };
+
+    // lc_id is used intentionally because consumers can load multiple compatible
+    // @langchain/core versions, making instanceof checks unreliable across them.
+    return (
+      Array.isArray(promptValue.lc_id) &&
+      promptValue.lc_id.at(-1) === "StringPromptValue" &&
+      typeof promptValue.value === "string"
+    );
   }
 
   private extractChatMessageContent(
