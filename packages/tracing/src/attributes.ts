@@ -1,4 +1,7 @@
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
+import {
+  LangfuseOtelSpanAttributes,
+  serializeWithMediaReferences,
+} from "@langfuse/core";
 import { type Attributes } from "@opentelemetry/api";
 
 import {
@@ -98,7 +101,7 @@ function _serialize(obj: unknown): string | undefined {
   try {
     if (typeof obj === "string") return obj;
 
-    return obj != null ? JSON.stringify(obj) : undefined;
+    return obj != null ? serializeWithMediaReferences(obj) : undefined;
   } catch {
     return "<failed to serialize>";
   }

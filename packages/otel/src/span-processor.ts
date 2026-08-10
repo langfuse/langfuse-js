@@ -452,6 +452,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
           instrumentationScope: span.instrumentationScope.name,
         });
 
+        this.mediaService.releaseMediaReferences(span);
+
         return;
       }
     } catch (err) {
@@ -464,13 +466,23 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         err,
       );
 
+      this.mediaService.releaseMediaReferences(span);
+
       return;
     }
 
-    await this.applyMaskInPlace(span);
+    const mediaReferences = this.mediaService.getMediaReferences(span);
 
-    if (this.mediaUploadEnabled) {
-      await this.mediaService.process(span);
+    try {
+      await this.applyMaskInPlace(span);
+
+      if (this.mediaUploadEnabled) {
+        await this.mediaService.process(span, mediaReferences);
+      } else {
+        this.mediaService.restoreMediaReferences(span, mediaReferences);
+      }
+    } finally {
+      this.mediaService.releaseMediaReferenceSet(mediaReferences);
     }
 
     if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
