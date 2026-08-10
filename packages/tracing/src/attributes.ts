@@ -24,13 +24,19 @@ import {
  *
  * @internal
  */
-export function createTraceAttributes({
-  input,
-  output,
-}: LangfuseTraceAttributes = {}): Attributes {
+export function createTraceAttributes(
+  { input, output }: LangfuseTraceAttributes = {},
+  options: { referenceOwner?: object } = {},
+): Attributes {
   const attributes = {
-    [LangfuseOtelSpanAttributes.TRACE_INPUT]: _serialize(input),
-    [LangfuseOtelSpanAttributes.TRACE_OUTPUT]: _serialize(output),
+    [LangfuseOtelSpanAttributes.TRACE_INPUT]: _serialize(
+      input,
+      options.referenceOwner,
+    ),
+    [LangfuseOtelSpanAttributes.TRACE_OUTPUT]: _serialize(
+      output,
+      options.referenceOwner,
+    ),
   };
 
   return Object.fromEntries(
@@ -41,6 +47,7 @@ export function createTraceAttributes({
 export function createObservationAttributes(
   type: LangfuseObservationType,
   attributes: LangfuseObservationAttributes,
+  options: { referenceOwner?: object } = {},
 ): Attributes {
   const {
     metadata,
@@ -64,17 +71,31 @@ export function createObservationAttributes(
     [LangfuseOtelSpanAttributes.OBSERVATION_STATUS_MESSAGE]: statusMessage,
     [LangfuseOtelSpanAttributes.VERSION]: version,
     [LangfuseOtelSpanAttributes.ENVIRONMENT]: environment,
-    [LangfuseOtelSpanAttributes.OBSERVATION_INPUT]: _serialize(input),
-    [LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT]: _serialize(output),
+    [LangfuseOtelSpanAttributes.OBSERVATION_INPUT]: _serialize(
+      input,
+      options.referenceOwner,
+    ),
+    [LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT]: _serialize(
+      output,
+      options.referenceOwner,
+    ),
     [LangfuseOtelSpanAttributes.OBSERVATION_MODEL]: model,
-    [LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS]:
-      _serialize(usageDetails),
-    [LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS]:
-      _serialize(costDetails),
-    [LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME]:
-      _serialize(completionStartTime),
-    [LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS]:
-      _serialize(modelParameters),
+    [LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS]: _serialize(
+      usageDetails,
+      options.referenceOwner,
+    ),
+    [LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS]: _serialize(
+      costDetails,
+      options.referenceOwner,
+    ),
+    [LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME]: _serialize(
+      completionStartTime,
+      options.referenceOwner,
+    ),
+    [LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS]: _serialize(
+      modelParameters,
+      options.referenceOwner,
+    ),
     ...(prompt && !prompt.isFallback
       ? {
           [LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME]: prompt.name,
@@ -82,7 +103,11 @@ export function createObservationAttributes(
             prompt.version,
         }
       : {}),
-    ..._flattenAndSerializeMetadata(metadata, "observation"),
+    ..._flattenAndSerializeMetadata(
+      metadata,
+      "observation",
+      options.referenceOwner,
+    ),
   };
 
   return Object.fromEntries(
@@ -97,11 +122,13 @@ export function createObservationAttributes(
  * @returns JSON string or undefined if null/undefined, error message if serialization fails
  * @internal
  */
-function _serialize(obj: unknown): string | undefined {
+function _serialize(obj: unknown, referenceOwner?: object): string | undefined {
   try {
     if (typeof obj === "string") return obj;
 
-    return obj != null ? serializeWithMediaReferences(obj) : undefined;
+    return obj != null
+      ? serializeWithMediaReferences(obj, { referenceOwner })
+      : undefined;
   } catch {
     return "<failed to serialize>";
   }
@@ -122,6 +149,7 @@ function _serialize(obj: unknown): string | undefined {
 function _flattenAndSerializeMetadata(
   metadata: unknown,
   type: "observation" | "trace",
+  referenceOwner?: object,
 ): Record<string, string> {
   const prefix =
     type === "observation"
@@ -135,13 +163,14 @@ function _flattenAndSerializeMetadata(
   }
 
   if (typeof metadata !== "object" || Array.isArray(metadata)) {
-    const serialized = _serialize(metadata);
+    const serialized = _serialize(metadata, referenceOwner);
     if (serialized) {
       metadataAttributes[prefix] = serialized;
     }
   } else {
     for (const [key, value] of Object.entries(metadata)) {
-      const serialized = typeof value === "string" ? value : _serialize(value);
+      const serialized =
+        typeof value === "string" ? value : _serialize(value, referenceOwner);
       if (serialized) {
         metadataAttributes[`${prefix}.${key}`] = serialized;
       }

@@ -219,6 +219,74 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       expect(inputValue).toMatch(/\|source=bytes@@@/);
     });
 
+    it("should let a media mask suppress raw-byte uploads", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      const media = new LangfuseMedia({
+        source: "bytes",
+        contentBytes: new Uint8Array([1, 2, 3, 4]),
+        contentType: "image/png",
+      });
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) =>
+            typeof data === "string"
+              ? data.replace(media.base64DataUri!, "[redacted-media]")
+              : data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("masked-raw-byte-media-span", {
+        input: {
+          image: media,
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "masked-raw-byte-media-span",
+      )?.["langfuse.observation.input"] as string;
+      expect(inputValue).toContain("[redacted-media]");
+      expect(inputValue).not.toContain(media.base64DataUri);
+      expect(inputValue).not.toContain("@@@langfuseMedia:");
+    });
+
+    it("should use the base64 media path when a mask is configured", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) => data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const media = new LangfuseMedia({
+        source: "bytes",
+        contentBytes: new Uint8Array([1, 2, 3, 4]),
+        contentType: "image/png",
+      });
+
+      const span = startObservation("unmasked-raw-byte-media-span", {
+        input: {
+          image: media,
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const inputValue = testEnv.mockExporter.getSpanAttributes(
+        "unmasked-raw-byte-media-span",
+      )?.["langfuse.observation.input"] as string;
+      expect(inputValue).not.toContain(media.base64DataUri);
+      expect(inputValue).toMatch(/\|source=base64_data_uri@@@/);
+    });
+
     it("should restore raw-byte media when media upload is disabled", async () => {
       await teardownTestEnvironment(testEnv);
 

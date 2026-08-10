@@ -5,6 +5,57 @@ import { base64ToBytes, bytesToBase64, generateUUID } from "./utils.js";
 type MediaSerializationContext = Map<LangfuseMedia, string>;
 
 let activeMediaSerializationContext: MediaSerializationContext | undefined;
+type MediaReferenceOwnerRegistration = {
+  useMediaReferences: boolean;
+};
+
+const mediaReferenceOwners = new WeakMap<
+  object,
+  Set<MediaReferenceOwnerRegistration>
+>();
+
+/**
+ * Registers an owner that can resolve and release temporary media references.
+ * A weak set keeps tracing usable without retaining spans after they end.
+ *
+ * @internal
+ */
+export function registerMediaReferenceOwner(
+  owner: object,
+  options: { useMediaReferences?: boolean } = {},
+): () => void {
+  const useMediaReferences = options.useMediaReferences ?? true;
+  const registration = { useMediaReferences };
+  const registrations =
+    mediaReferenceOwners.get(owner) ??
+    new Set<MediaReferenceOwnerRegistration>();
+
+  registrations.add(registration);
+  mediaReferenceOwners.set(owner, registrations);
+
+  return () => {
+    registrations.delete(registration);
+    if (registrations.size === 0) {
+      mediaReferenceOwners.delete(owner);
+    }
+  };
+}
+
+/**
+ * Returns whether an object is owned by a processor that can clean up media
+ * references.
+ *
+ * @internal
+ */
+export function isMediaReferenceOwner(owner: object): boolean {
+  const registrations = mediaReferenceOwners.get(owner);
+
+  return (
+    registrations !== undefined &&
+    registrations.size > 0 &&
+    [...registrations].every(({ useMediaReferences }) => useMediaReferences)
+  );
+}
 
 /**
  * Parameters for creating a LangfuseMedia instance.
@@ -290,7 +341,15 @@ function getOrCreateMediaReference(media: LangfuseMedia): string {
  */
 export function serializeWithMediaReferences(
   value: unknown,
+  options: { referenceOwner?: object } = {},
 ): string | undefined {
+  if (
+    !options.referenceOwner ||
+    !isMediaReferenceOwner(options.referenceOwner)
+  ) {
+    return JSON.stringify(value);
+  }
+
   const previousContext = activeMediaSerializationContext;
   const currentContext = new Map<LangfuseMedia, string>();
   activeMediaSerializationContext = currentContext;
