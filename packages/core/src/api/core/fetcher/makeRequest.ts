@@ -25,20 +25,21 @@ export const makeRequest = async (
   if (abortSignal != null) {
     signals.push(abortSignal);
   }
-  let newSignals = anySignal(signals);
-  const response = await fetchFn(url, {
-    method: method,
-    headers,
-    body: requestBody,
-    signal: newSignals,
-    credentials: withCredentials ? "include" : undefined,
-    // @ts-ignore
-    duplex,
-  });
-
-  if (timeoutAbortId != null) {
-    clearTimeout(timeoutAbortId);
+  const { signal: newSignals, cleanup } = anySignal(signals);
+  try {
+    return await fetchFn(url, {
+      method: method,
+      headers,
+      body: requestBody,
+      signal: newSignals,
+      credentials: withCredentials ? "include" : undefined,
+      // @ts-ignore
+      duplex,
+    });
+  } finally {
+    cleanup();
+    if (timeoutAbortId != null) {
+      clearTimeout(timeoutAbortId);
+    }
   }
-
-  return response;
 };
