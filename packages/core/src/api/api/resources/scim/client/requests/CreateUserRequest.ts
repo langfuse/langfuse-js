@@ -25,6 +25,6 @@ export interface CreateUserRequest {
   emails?: LangfuseAPI.ScimEmail[];
   /** Whether the user is active */
   active?: boolean;
-  /** Initial password for the user */
+  /** Ignored. Accepted only for compatibility with identity providers that always send a password on user creation (Okta sends a placeholder value even when password sync is disabled). No credential is created for the user; provisioned users authenticate via SSO or set a password themselves through the password reset flow. */
   password?: string;
 }
