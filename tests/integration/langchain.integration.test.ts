@@ -121,6 +121,20 @@ describe("LangChain callback handler integration tests", () => {
     );
   });
 
+  it("should treat undefined tools as absent", async () => {
+    await expect(
+      recordGeneration("generation-with-undefined-tools", {
+        tools: undefined,
+      }),
+    ).resolves.toEqual([{ content: "Find customer 123", role: "user" }]);
+  });
+
+  it("should treat an empty tools array as absent", async () => {
+    await expect(
+      recordGeneration("generation-with-empty-tools", { tools: [] }),
+    ).resolves.toEqual([{ content: "Find customer 123", role: "user" }]);
+  });
+
   it("should preserve tools in generation input", async () => {
     await expect(
       recordGeneration("generation-with-tools", { tools }),

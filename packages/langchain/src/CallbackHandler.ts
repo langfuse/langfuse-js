@@ -339,17 +339,18 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.deregisterLangfusePrompt(parentRunId);
     }
 
+    const tools = invocationParams?.tools;
+    const toolChoice = invocationParams?.tool_choice;
+    const hasTools =
+      tools != null && (!Array.isArray(tools) || tools.length > 0);
+    const hasToolChoice = toolChoice != null;
+
     const generationInput =
-      invocationParams &&
-      ("tools" in invocationParams || "tool_choice" in invocationParams)
+      hasTools || hasToolChoice
         ? {
             messages,
-            ...("tools" in invocationParams
-              ? { tools: invocationParams.tools }
-              : {}),
-            ...("tool_choice" in invocationParams
-              ? { tool_choice: invocationParams.tool_choice }
-              : {}),
+            ...(hasTools ? { tools } : {}),
+            ...(hasToolChoice ? { tool_choice: toolChoice } : {}),
           }
         : messages;
 
