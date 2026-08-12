@@ -288,34 +288,42 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     const runName = name ?? llm.id.at(-1)?.toString() ?? "Langchain Generation";
 
+    interface InvocationParams {
+      _type?: string;
+      model?: string;
+      model_name?: string;
+      repo_id?: string;
+      temperature?: unknown;
+      max_tokens?: unknown;
+      top_p?: unknown;
+      frequency_penalty?: unknown;
+      presence_penalty?: unknown;
+      request_timeout?: unknown;
+      tools?: unknown;
+      tool_choice?: unknown;
+    }
+
+    const invocationParams = extraParams?.["invocation_params"] as
+      | InvocationParams
+      | undefined;
     const modelParameters: Record<string, any> = {};
-    const invocationParams = extraParams?.["invocation_params"];
 
     for (const [key, value] of Object.entries({
-      temperature: (invocationParams as any)?.temperature,
-      max_tokens: (invocationParams as any)?.max_tokens,
-      top_p: (invocationParams as any)?.top_p,
-      frequency_penalty: (invocationParams as any)?.frequency_penalty,
-      presence_penalty: (invocationParams as any)?.presence_penalty,
-      request_timeout: (invocationParams as any)?.request_timeout,
+      temperature: invocationParams?.temperature,
+      max_tokens: invocationParams?.max_tokens,
+      top_p: invocationParams?.top_p,
+      frequency_penalty: invocationParams?.frequency_penalty,
+      presence_penalty: invocationParams?.presence_penalty,
+      request_timeout: invocationParams?.request_timeout,
     })) {
       if (value !== undefined && value !== null) {
         modelParameters[key] = value;
       }
     }
 
-    interface InvocationParams {
-      _type?: string;
-      model?: string;
-      model_name?: string;
-      repo_id?: string;
-    }
-
     let extractedModelName: string | undefined;
-    if (extraParams) {
-      const invocationParamsModelName = (
-        extraParams.invocation_params as InvocationParams
-      ).model;
+    if (invocationParams) {
+      const invocationParamsModelName = invocationParams.model;
       const metadataModelName =
         metadata && "ls_model_name" in metadata
           ? (metadata["ls_model_name"] as string)
@@ -331,6 +339,20 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.deregisterLangfusePrompt(parentRunId);
     }
 
+    const generationInput =
+      invocationParams &&
+      ("tools" in invocationParams || "tool_choice" in invocationParams)
+        ? {
+            messages,
+            ...("tools" in invocationParams
+              ? { tools: invocationParams.tools }
+              : {}),
+            ...("tool_choice" in invocationParams
+              ? { tool_choice: invocationParams.tool_choice }
+              : {}),
+          }
+        : messages;
+
     this.startAndRegisterOtelSpan({
       type: "generation",
       runId,
@@ -339,7 +361,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       tags,
       runName,
       attributes: {
-        input: messages,
+        input: generationInput,
         model: extractedModelName,
         modelParameters: modelParameters,
         prompt: registeredPrompt,
