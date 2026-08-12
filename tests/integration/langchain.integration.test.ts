@@ -64,4 +64,78 @@ describe("LangChain callback handler integration tests", () => {
       "The result is: 100",
     );
   });
+
+  it("should include tools and tool choice in generation input", async () => {
+    const handler = new CallbackHandler();
+    const runId = "generation-with-tools";
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "validate_customer",
+          description: "Validates a customer",
+          parameters: {
+            type: "object",
+            properties: { id: { type: "string" } },
+          },
+        },
+      },
+    ];
+
+    await handler.handleGenerationStart(
+      { id: ["ChatOpenAI"] },
+      [{ role: "user", content: "hi" }],
+      runId,
+      undefined,
+      {
+        invocation_params: {
+          model: "gpt-4.1-mini",
+          temperature: 0.2,
+          tools,
+          tool_choice: "auto",
+        },
+      },
+    );
+    await handler.handleLLMEnd({ generations: [[{ text: "ok" }]] }, runId);
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"name":"validate_customer"',
+    );
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"tool_choice":"auto"',
+    );
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS,
+      '"temperature":0.2',
+    );
+  });
+
+  it("should preserve message-array input without tool configuration", async () => {
+    const handler = new CallbackHandler();
+    const runId = "generation-without-tools";
+
+    await handler.handleGenerationStart(
+      { id: ["ChatOpenAI"] },
+      [{ role: "user", content: "hi" }],
+      runId,
+      undefined,
+      { invocation_params: { model: "gpt-4.1-mini" } },
+    );
+    await handler.handleLLMEnd({ generations: [[{ text: "ok" }]] }, runId);
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanAttribute(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '[{"role":"user","content":"hi"}]',
+    );
+  });
 });
