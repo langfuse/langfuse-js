@@ -308,6 +308,8 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     const modelParameters: Record<string, any> = {};
     const invocationParams = extraParams?.["invocation_params"];
+    const tools = (invocationParams as any)?.tools;
+    const toolChoice = (invocationParams as any)?.tool_choice;
 
     for (const [key, value] of Object.entries({
       temperature: (invocationParams as any)?.temperature,
@@ -357,7 +359,16 @@ export class CallbackHandler extends BaseCallbackHandler {
       tags,
       runName,
       attributes: {
-        input: messages,
+        input:
+          tools !== undefined || toolChoice !== undefined
+            ? {
+                messages,
+                ...(tools !== undefined ? { tools } : {}),
+                ...(toolChoice !== undefined
+                  ? { tool_choice: toolChoice }
+                  : {}),
+              }
+            : messages,
         model: extractedModelName,
         modelParameters: modelParameters,
         prompt: registeredPrompt,
