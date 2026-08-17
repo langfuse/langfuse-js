@@ -9,7 +9,7 @@ import { observeOpenAI } from "@langfuse/openai";
 import { Factuality, Levenshtein } from "autoevals";
 import { nanoid } from "nanoid";
 import OpenAI from "openai";
-import { describe, it, afterEach, beforeEach, expect } from "vitest";
+import { describe, it, afterEach, beforeEach, expect, vi } from "vitest";
 
 import {
   setupServerTestEnvironment,
@@ -436,6 +436,8 @@ describe("Langfuse Datasets E2E", () => {
         description: "Test mixed success/failure handling",
         data: dataset.slice(0, 2), // Germany and France
         task: mixedTask,
+        // This evaluator is unrelated to failure continuation, but preserves the
+        // existing AutoEvals/OpenAI coverage in this E2E test.
         evaluators: [createEvaluatorFromAutoevals(Factuality)],
       });
 
@@ -651,40 +653,81 @@ describe("Langfuse Datasets E2E", () => {
 
   // Concurrency and Performance Tests
   describe("Concurrency and Performance", () => {
-    it("should respect maxConcurrency parameter", async () => {
-      let concurrentCount = 0;
-      let maxConcurrentReached = 0;
-
-      const slowTask: ExperimentTask = async ({ input }) => {
-        concurrentCount++;
-        maxConcurrentReached = Math.max(maxConcurrentReached, concurrentCount);
-
-        // Simulate slow operation
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        concurrentCount--;
-        return `Processed ${input}`;
-      };
-
-      const testData = Array.from({ length: 10 }, (_, i) => ({
-        input: `Item ${i}`,
-        expectedOutput: `Expected ${i}`,
+    it("refills concurrency slots before slower items complete", async () => {
+      const testData = ["first", "slow", "third", "fourth"].map((input) => ({
+        input,
       }));
+      const gates = new Map(
+        testData.map((item) => {
+          let resolve!: (value: string) => void;
+          const promise = new Promise<string>((resolvePromise) => {
+            resolve = resolvePromise;
+          });
 
-      const result = await langfuse.experiment.run({
-        name: "Concurrency test",
-        description: "Test maxConcurrency parameter",
+          return [item.input, { promise, resolve }] as const;
+        }),
+      );
+      const started: string[] = [];
+      let activeTasks = 0;
+      let maxActiveTasks = 0;
+
+      const runPromise = langfuse.experiment.run({
+        name: "Rolling concurrency test",
+        description: "Refills capacity after each completed item",
         data: testData,
-        task: slowTask,
-        maxConcurrency: 3,
+        maxConcurrency: 2,
+        task: async ({ input }) => {
+          started.push(input);
+          activeTasks += 1;
+          maxActiveTasks = Math.max(maxActiveTasks, activeTasks);
+
+          try {
+            return await gates.get(input)!.promise;
+          } finally {
+            activeTasks -= 1;
+          }
+        },
       });
 
-      await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(2000);
+      try {
+        await vi.waitFor(() => expect([...started]).toEqual(["first", "slow"]));
 
-      expect(result.itemResults).toHaveLength(10);
-      expect(maxConcurrentReached).toBeLessThanOrEqual(3);
-    }, 15000);
+        gates.get("first")!.resolve("first-output");
+        await vi.waitFor(() =>
+          expect([...started]).toEqual(["first", "slow", "third"]),
+        );
+        expect(activeTasks).toBe(2);
+
+        gates.get("third")!.resolve("third-output");
+        await vi.waitFor(() =>
+          expect([...started]).toEqual(["first", "slow", "third", "fourth"]),
+        );
+        expect(activeTasks).toBe(2);
+
+        gates.get("fourth")!.resolve("fourth-output");
+        gates.get("slow")!.resolve("slow-output");
+
+        const result = await runPromise;
+
+        expect(maxActiveTasks).toBe(2);
+        expect(result.itemResults.map(({ item }) => item.input)).toEqual([
+          "first",
+          "slow",
+          "third",
+          "fourth",
+        ]);
+
+        await testEnv.spanProcessor.forceFlush();
+        await waitForServerIngestion(2000);
+
+        const traceId = result.itemResults[0].traceId;
+        const trace = await langfuse.api.trace.get(traceId);
+        expect(trace.id).toBe(traceId);
+      } finally {
+        gates.forEach((gate, input) => gate.resolve(`${input}-output`));
+        await runPromise;
+      }
+    });
 
     it("should handle evaluators with different execution times", async () => {
       const fastEvaluator: Evaluator = async () => ({
