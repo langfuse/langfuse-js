@@ -66,6 +66,7 @@ export class Metrics {
    * ## V2 Differences
    * - Supports `observations`, `scores-numeric`, `scores-boolean`, and `scores-categorical` views only (traces view not supported)
    * - Direct access to tags and release fields on observations
+   * - Semantic-root filtering and grouping through the v2-only `isRootObservation` dimension
    * - Backwards-compatible: traceName, traceRelease, traceVersion dimensions are still available on observations view
    * - High cardinality dimensions are not supported and will return a 400 error (see below)
    *
@@ -90,6 +91,7 @@ export class Metrics {
    * - `providedModelName` - Name of the model used
    * - `promptName` - Name of the prompt used
    * - `promptVersion` - Version of the prompt used
+   * - `isRootObservation` - Boolean semantic-root status. `true` includes physical roots and app roots whose SDK parent is external (so `parentObservationId` may be non-null).
    * - `startTimeMonth` - Month of start_time in YYYY-MM format
    *
    * **Measures:**

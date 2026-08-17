@@ -59,6 +59,17 @@ export interface GetMetricsV2Request {
    *   }
    * }
    * ```
+   *
+   * For example, to count semantic roots (including app roots with a non-null external parent), use a boolean filter:
+   * ```json
+   * {
+   *   "view": "observations",
+   *   "metrics": [{"measure": "count", "aggregation": "count"}],
+   *   "filters": [{"column": "isRootObservation", "operator": "=", "value": true, "type": "boolean"}],
+   *   "fromTimestamp": "2025-01-01T00:00:00.000Z",
+   *   "toTimestamp": "2025-02-01T00:00:00.000Z"
+   * }
+   * ```
    */
   query: string;
 }

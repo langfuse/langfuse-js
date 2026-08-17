@@ -120,6 +120,7 @@ export class Observations {
       parseIoAsJson,
       name,
       userId,
+      sessionId,
       type: type_,
       traceId,
       level,
@@ -161,6 +162,10 @@ export class Observations {
 
     if (userId != null) {
       _queryParams["userId"] = userId;
+    }
+
+    if (sessionId != null) {
+      _queryParams["sessionId"] = sessionId;
     }
 
     if (type_ != null) {
