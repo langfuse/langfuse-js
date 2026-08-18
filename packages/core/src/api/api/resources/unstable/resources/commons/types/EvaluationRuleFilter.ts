@@ -22,6 +22,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  * - `stringOptions`: `any of`, `none of`
  * - `arrayOptions`: `any of`, `none of`, `all of`
  * - `stringObject`: same operators as `string`
+ * - `boolean`: `"="`, `"<>"`
  * - `null`: `is null`, `is not null`
  *
  * Supported columns by target:
@@ -36,6 +37,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  *   - `sessionId`: `string`
  *   - `tags`: `arrayOptions`, operators `any of` / `none of` / `all of`
  *   - `metadata`: `stringObject` with `key`
+ *   - `isRootObservation`: `boolean`, operators `=` / `<>`; true when the observation has no parent or is explicitly marked as an application root
  *   - `parentObservationId`: `null`, operators `is null` / `is not null`
  *   - `calledToolNames`: `arrayOptions`, operators `any of` / `none of` / `all of`
  *   - `toolCalls`: `number`
@@ -70,6 +72,14 @@ import * as LangfuseAPI from "../../../../../index.js";
  *         type: "null",
  *         column: "parentObservationId",
  *         operator: LangfuseAPI.unstable.EvaluationRuleNullFilterOperator.IsNull
+ *     }
+ *
+ * @example
+ *     {
+ *         type: "boolean",
+ *         column: "isRootObservation",
+ *         operator: LangfuseAPI.unstable.EvaluationRuleBooleanFilterOperator.Equals,
+ *         value: true
  *     }
  *
  * @example
