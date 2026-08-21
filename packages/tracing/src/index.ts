@@ -930,7 +930,11 @@ export function setActiveTraceIO(attributes: LangfuseTraceAttributes) {
     return;
   }
 
-  span.setAttributes(createTraceAttributes(attributes));
+  span.setAttributes(
+    createTraceAttributes(attributes, {
+      referenceOwner: span.isRecording() ? span : undefined,
+    }),
+  );
 }
 
 /**
@@ -1155,6 +1159,7 @@ export function updateActiveObservation(
   const otelAttributes = createObservationAttributes(
     options?.asType ?? "span",
     attributes,
+    { referenceOwner: span.isRecording() ? span : undefined },
   );
 
   // If no 'asType' was provided, drop the observation type OTEL attribute
