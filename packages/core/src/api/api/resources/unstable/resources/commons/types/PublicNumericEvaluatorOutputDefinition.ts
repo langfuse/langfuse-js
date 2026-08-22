@@ -8,5 +8,5 @@ export interface PublicNumericEvaluatorOutputDefinition {
   /** Always `NUMERIC`. */
   dataType: LangfuseAPI.unstable.EvaluatorOutputDataType;
   reasoning: LangfuseAPI.unstable.EvaluatorOutputFieldDefinition;
-  score: LangfuseAPI.unstable.EvaluatorOutputFieldDefinition;
+  score: LangfuseAPI.unstable.PublicNumericEvaluatorOutputScoreDefinition;
 }

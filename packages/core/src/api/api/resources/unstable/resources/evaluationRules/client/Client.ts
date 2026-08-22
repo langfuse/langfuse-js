@@ -70,19 +70,21 @@ export class EvaluationRules {
    * Key rules:
    * - `name` must be unique within the project for public evaluation rules
    * - `target` must be `observation` or `experiment`
-   * - `evaluator.name` + `evaluator.scope` must identify an existing evaluator family returned by the evaluator endpoints
+   * - provide either the compatibility `evaluator` field or the new `evaluators` array, never both
+   * - each evaluator `name` + `type` must identify an existing evaluator family returned by the evaluator endpoints
    * - Langfuse resolves that family to its latest version before saving the evaluation rule
    * - for `target=experiment`, use dataset `id` values from `GET /api/public/v2/datasets` when filtering by `datasetId`
-   * - for `llm_as_judge` evaluators, every evaluator prompt variable must be mapped exactly once
+   * - an omitted LLM-as-judge assignment mapping inherits the evaluator version's default mapping
+   * - the effective mapping must map every evaluator prompt variable exactly once
    * - for `code` evaluators, Langfuse uses the fixed code runtime mapping; omit `mapping` in create and update requests
    * - for user-provided `llm_as_judge` mappings, `expected_output` and `experiment_item_metadata` are only valid for `target=experiment`
    * - if `enabled=true`, Langfuse validates that the referenced evaluator can currently run
-   * - at most 50 evaluation rules can be effectively active in one project at the same time
+   * - at most 500 evaluation rules can be effectively active in one project at the same time (enforced identically by the API, the MCP tools, and the app)
    *
    * If an evaluation rule with the same `name` already exists in the project, the API returns `409`.
    * In that case, update the existing resource with `PATCH /api/public/unstable/evaluation-rules/{evaluationRuleId}` instead of creating a second one.
    *
-   * If enabling this resource would exceed the 50-active limit, the API also returns `409`.
+   * If enabling this resource would exceed the 500-active limit, the API also returns `409`.
    * In that case, disable or pause another active evaluation rule before enabling a new one.
    *
    * Current scope:
@@ -121,7 +123,6 @@ export class EvaluationRules {
    *         name: "answer-correctness-live",
    *         evaluator: {
    *             name: "answer-correctness",
-   *             scope: "project",
    *             type: "llm_as_judge"
    *         },
    *         target: "observation",
@@ -147,7 +148,6 @@ export class EvaluationRules {
    *         name: "toxicity-code-live",
    *         evaluator: {
    *             name: "toxicity-detector",
-   *             scope: "project",
    *             type: "code"
    *         },
    *         target: "observation",
@@ -166,7 +166,6 @@ export class EvaluationRules {
    *         name: "experiment-expected-output-match",
    *         evaluator: {
    *             name: "expected-output-match",
-   *             scope: "project",
    *             type: "llm_as_judge"
    *         },
    *         target: "experiment",
@@ -697,7 +696,7 @@ export class EvaluationRules {
    * - if you change `target` for an LLM-as-judge rule, also send a compatible `filter` and `mapping` in the same request unless the existing ones are still valid for the new target
    * - for `code` evaluator rules, omit `mapping`; Langfuse stores the fixed code runtime mapping automatically
    * - if the resulting config is enabled, Langfuse re-validates that the selected evaluator can run
-   * - if the update would move a non-active evaluation rule into the active state and the project already has 50 active evaluation rules, the API returns `409`
+   * - if the update would move a non-active evaluation rule into the active state and the project already has 500 active evaluation rules, the API returns `409`
    *
    * Recovery guidance:
    * - if an LLM-as-judge update fails with `missing_variable_mapping` or `invalid_variable_mapping` after changing `evaluator` or `target`, resend the request with a complete new `mapping`
@@ -724,6 +723,7 @@ export class EvaluationRules {
    * @example
    *     await client.unstable.evaluationRules.update("evaluationRuleId", {
    *         name: undefined,
+   *         evaluators: undefined,
    *         evaluator: undefined,
    *         target: undefined,
    *         enabled: undefined,
