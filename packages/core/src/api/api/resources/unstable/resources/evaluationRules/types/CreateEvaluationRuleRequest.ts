@@ -8,7 +8,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  * Request body for creating an evaluation rule.
  *
  * Checklist for agents and SDK clients:
- * - reference an existing evaluator family by `evaluator.name` and `evaluator.scope`
+ * - reference an existing evaluator family by `evaluator.name` and `evaluator.type`
  * - choose `target=observation` or `target=experiment`
  * - if `target=experiment` and you want a dataset filter, call `GET /api/public/v2/datasets` first and use dataset `id` values in `filter[].value`
  * - for `llm_as_judge`, fetch or inspect the evaluator first and provide a complete variable mapping for every evaluator variable
@@ -18,4 +18,5 @@ import * as LangfuseAPI from "../../../../../index.js";
  */
 export type CreateEvaluationRuleRequest =
   | LangfuseAPI.unstable.CreateLlmAsJudgeEvaluationRuleRequest
-  | LangfuseAPI.unstable.CreateCodeEvaluationRuleRequest;
+  | LangfuseAPI.unstable.CreateCodeEvaluationRuleRequest
+  | LangfuseAPI.unstable.CreateEvaluationRuleWithEvaluatorsRequest;

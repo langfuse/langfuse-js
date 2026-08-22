@@ -7,10 +7,12 @@ import * as LangfuseAPI from "../../../../../index.js";
 /**
  * Legacy trace- or dataset-level evaluation rule returned by list and get for migration.
  *
- * This resource is read-only through the unstable public API. Its mapping preserves the trace, dataset item, or named observation that each evaluator variable previously read from. Its filters use the persisted legacy filter format so migration clients can read the configuration without losing information.
+ * This resource is read-only through the unstable public API. Its mapping preserves the trace, dataset item, or named observation selected for each evaluator variable.
  */
 export interface LegacyEvaluationRule
   extends LangfuseAPI.unstable.EvaluationRuleBase {
+  /** Evaluators attached to this rule in deterministic assignment order. */
+  evaluators: LangfuseAPI.unstable.LegacyEvaluationRuleEvaluatorAssignment[];
   target: LangfuseAPI.unstable.LegacyEvaluationRuleTarget;
   /** Delay in milliseconds before the legacy evaluation job runs. */
   delay: number;

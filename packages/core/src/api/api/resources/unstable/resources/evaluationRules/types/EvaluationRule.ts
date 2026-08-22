@@ -12,9 +12,22 @@ import * as LangfuseAPI from "../../../../../index.js";
  *         evaluator: {
  *             id: "evaltmpl_123",
  *             name: "answer-correctness",
- *             scope: LangfuseAPI.unstable.EvaluatorScope.Project,
  *             type: LangfuseAPI.unstable.EvaluatorType.LlmAsJudge
  *         },
+ *         evaluators: [{
+ *                 evaluator: {
+ *                     id: "evaltmpl_123",
+ *                     name: "answer-correctness",
+ *                     type: LangfuseAPI.unstable.EvaluatorType.LlmAsJudge
+ *                 },
+ *                 mapping: [{
+ *                         variable: "input",
+ *                         source: LangfuseAPI.unstable.EvaluationRuleMappingSource.Input
+ *                     }, {
+ *                         variable: "output",
+ *                         source: LangfuseAPI.unstable.EvaluationRuleMappingSource.Output
+ *                     }]
+ *             }],
  *         target: LangfuseAPI.unstable.EvaluationRuleTarget.Observation,
  *         enabled: true,
  *         status: LangfuseAPI.unstable.EvaluationRuleStatus.Active,
@@ -40,10 +53,12 @@ import * as LangfuseAPI from "../../../../../index.js";
  */
 export interface EvaluationRule
   extends LangfuseAPI.unstable.EvaluationRuleBase {
+  /** Evaluators attached to this rule in deterministic assignment order. A `null` mapping inherits the evaluator version's default mapping. */
+  evaluators: LangfuseAPI.unstable.EvaluationRuleEvaluatorAssignment[];
   /** Target object type that should trigger scoring. */
   target: LangfuseAPI.unstable.EvaluationRuleTarget;
   /** List of filter conditions used to decide whether a target should be evaluated. */
   filter: LangfuseAPI.unstable.EvaluationRuleFilter[];
-  /** Variable mappings used to populate evaluator runtime variables from the live target object. */
-  mapping: LangfuseAPI.unstable.EvaluationRuleMapping[];
+  /** Deprecated compatibility alias containing the effective mapping for `evaluators[0]`. */
+  mapping: LangfuseAPI.unstable.EvaluationRuleReadMapping[];
 }
