@@ -5,21 +5,27 @@
 import * as LangfuseAPI from "../../../../../index.js";
 
 export interface EvaluatorBase {
-  /** Identifier of this evaluator. */
+  /** Stable identifier of this evaluator across all versions. */
   id: string;
   /** Evaluator name. */
   name: string;
   /** Version number of this evaluator. */
   version: number;
-  /** Where this evaluator comes from: your project or Langfuse-managed defaults. */
-  scope: LangfuseAPI.unstable.EvaluatorScope;
   /**
    * Variables that can be mapped when creating an evaluation rule.
    *
    * LLM evaluators require every variable to be mapped exactly once. Code evaluators always expose the fixed runtime payload fields and Langfuse maps them automatically.
    */
   variables: string[];
-  /** Number of evaluation rules in the project that currently use this evaluator version. */
+  /**
+   * Default variable mapping for this evaluator version, or `null` when no default is configured.
+   *
+   * An entry's `source` is `null` when that variable was never fully configured, and sources
+   * are not restricted by rule `target` here, because the default is stored on the evaluator
+   * rather than on any one rule.
+   */
+  mapping: LangfuseAPI.unstable.EvaluationRuleReadMapping[] | null;
+  /** Number of evaluation rules in the project that currently use this evaluator. */
   evaluationRuleCount: number;
   /** Timestamp when this evaluator was created. */
   createdAt: string;

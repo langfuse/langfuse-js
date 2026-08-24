@@ -186,7 +186,7 @@ export class ExperimentManager {
       runName: providedRunName,
       description,
       metadata,
-      maxConcurrency: batchSize = 50,
+      maxConcurrency = 50,
       runEvaluators,
     } = config;
 
@@ -202,49 +202,50 @@ export class ExperimentManager {
       );
     }
 
-    const itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[] =
-      [];
+    const itemResultsByIndex: Array<
+      ExperimentItemResult<Input, ExpectedOutput, Metadata> | undefined
+    > = new Array(data.length);
+    let nextIndex = 0;
 
-    for (let i = 0; i < data.length; i += batchSize) {
-      const batch = data.slice(i, i + batchSize);
+    const runNextItem = async () => {
+      while (nextIndex < data.length) {
+        const index = nextIndex++;
+        const item = data[index];
 
-      const promises: Promise<
-        ExperimentItemResult<Input, ExpectedOutput, Metadata>
-      >[] = batch.map(async (item) => {
-        return this.runItem({
-          item,
-          evaluators,
-          task,
-          experimentName: name,
-          experimentRunName: runName,
-          experimentDescription: description,
-          experimentMetadata: metadata,
-          fallbackExperimentId,
-          datasetVersion: config.datasetVersion,
-        });
-      });
+        try {
+          itemResultsByIndex[index] = await this.runItem({
+            item,
+            evaluators,
+            task,
+            experimentName: name,
+            experimentRunName: runName,
+            experimentDescription: description,
+            experimentMetadata: metadata,
+            fallbackExperimentId,
+            datasetVersion: config.datasetVersion,
+          });
+        } catch (reason) {
+          const errorMessage =
+            reason instanceof Error ? reason.message : String(reason);
+          this.logger.error(
+            `Task failed with error: ${errorMessage}. Skipping item.`,
+          );
+        }
+      }
+    };
 
-      const settledResults = await Promise.allSettled(promises);
-      const results = settledResults.reduce(
-        (acc, settledResult) => {
-          if (settledResult.status === "fulfilled") {
-            acc.push(settledResult.value);
-          } else {
-            const errorMessage =
-              settledResult.reason instanceof Error
-                ? settledResult.reason.message
-                : String(settledResult.reason);
-            this.logger.error(
-              `Task failed with error: ${errorMessage}. Skipping item.`,
-            );
-          }
-          return acc;
-        },
-        [] as ExperimentItemResult<Input, ExpectedOutput, Metadata>[],
-      );
+    const workers = Array.from(
+      { length: Math.min(maxConcurrency, data.length) },
+      runNextItem,
+    );
+    await Promise.all(workers);
 
-      itemResults.push(...results);
-    }
+    const itemResults = itemResultsByIndex.filter(
+      (
+        result,
+      ): result is ExperimentItemResult<Input, ExpectedOutput, Metadata> =>
+        result !== undefined,
+    );
 
     // Get dataset run URL
     const datasetRunId = itemResults.find(

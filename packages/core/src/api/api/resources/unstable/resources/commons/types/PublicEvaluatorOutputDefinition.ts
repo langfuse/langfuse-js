@@ -23,7 +23,9 @@ import * as LangfuseAPI from "../../../../../index.js";
  *             description: "Explain why the answer is correct or incorrect."
  *         },
  *         score: {
- *             description: "Return a score between 0 and 1."
+ *             description: "Return a score between 0 and 1.",
+ *             minValue: 0,
+ *             maxValue: 1
  *         }
  *     }
  *

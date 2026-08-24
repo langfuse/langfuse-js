@@ -12,6 +12,8 @@ import * as LangfuseAPI from "../../../../../index.js";
  *
  * Practical guidance:
  * - If you only want to rename the rule or change sampling, send just those fields.
+ * - To add, remove, or remap evaluators, send `evaluators`. It replaces the whole assignment set, so include every evaluator the rule should keep.
+ * - `evaluators` cannot be combined with the deprecated `evaluator`/`mapping` pair, which only ever addressed the first assignment.
  * - If you change to an LLM-as-judge `evaluator`, send a fresh `mapping` unless you are certain the existing mapping still matches the evaluator variables.
  * - If you change `target` for an LLM-as-judge rule, usually send both `filter` and `mapping` in the same request.
  * - For code evaluator rules, omit `mapping`; Langfuse stores the fixed code runtime mapping automatically.
@@ -21,10 +23,17 @@ export interface UpdateEvaluationRuleRequest {
   /** Updated deployment name. */
   name?: string;
   /**
-   * Updated evaluator family.
+   * Full replacement of the rule's evaluator assignments: entries that are
+   * not listed are detached.
+   *
+   * Mutually exclusive with the deprecated `evaluator` and `mapping` fields.
+   */
+  evaluators?: LangfuseAPI.unstable.CreateEvaluationRuleEvaluatorAssignment[];
+  /**
+   * Deprecated single-evaluator alias: updates the first assignment only. Prefer `evaluators`.
    *
    * Langfuse resolves the provided evaluator family to its latest version before saving the rule.
-   * A rule's evaluator type cannot be changed: provide `name` and `scope` for an evaluator family of the rule's current type. To use a different evaluator type, create a new rule.
+   * A rule's evaluator type cannot be changed: provide `name` for an evaluator family of the rule's current type. To use a different evaluator type, create a new rule.
    */
   evaluator?: LangfuseAPI.unstable.EvaluationRuleEvaluatorReference;
   /** Updated target object type. */

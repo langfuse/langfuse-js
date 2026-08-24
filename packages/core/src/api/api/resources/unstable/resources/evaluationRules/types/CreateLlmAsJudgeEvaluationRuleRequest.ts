@@ -10,7 +10,7 @@ export interface CreateLlmAsJudgeEvaluationRuleRequest {
   /**
    * LLM-as-judge evaluator family to use.
    *
-   * Use `name`, `scope`, and `type` from the evaluator endpoints. If `type` is omitted, Langfuse defaults it to `llm_as_judge` for backwards compatibility.
+   * Use `name` and `type` from the evaluator endpoints. If `type` is omitted, Langfuse defaults it to `llm_as_judge` for backwards compatibility.
    * Langfuse resolves that family to its latest version before saving the rule.
    */
   evaluator: LangfuseAPI.unstable.LlmAsJudgeEvaluationRuleEvaluatorReference;
