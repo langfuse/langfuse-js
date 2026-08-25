@@ -40,6 +40,8 @@ export * from "./PricingTierCondition.js";
 export * from "./PricingTierUsageCondition.js";
 export * from "./PricingTierAttributeCondition.js";
 export * from "./PricingTierAttributeSource.js";
+export * from "./PricingTierConditionInput.js";
+export * from "./PricingTierUsageConditionInput.js";
 export * from "./PricingTier.js";
 export * from "./PricingTierInput.js";
 export * from "./PricingTierOperator.js";
