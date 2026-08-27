@@ -4,7 +4,10 @@
 
 import * as LangfuseAPI from "../../../../../index.js";
 
+/**
+ * **Deprecated:** Evaluator assignment on a legacy trace or dataset rule.
+ */
 export interface LegacyEvaluationRuleEvaluatorAssignment {
   evaluator: LangfuseAPI.unstable.EvaluationRuleEvaluator;
-  mapping: LangfuseAPI.unstable.LegacyEvaluationRuleMapping[] | null;
+  mapping: LangfuseAPI.unstable.LegacyPromptVariableMapping[] | null;
 }

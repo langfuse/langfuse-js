@@ -19,14 +19,14 @@
  * - `expected_output`: the experiment item's expected output. Only valid for `target=experiment`.
  * - `experiment_item_metadata`: the experiment item's metadata object. Only valid for `target=experiment`.
  */
-export type EvaluationRuleMappingSource =
+export type PromptVariableMappingSource =
   | "input"
   | "output"
   | "metadata"
   | "tool_calls"
   | "expected_output"
   | "experiment_item_metadata";
-export const EvaluationRuleMappingSource = {
+export const PromptVariableMappingSource = {
   Input: "input",
   Output: "output",
   Metadata: "metadata",

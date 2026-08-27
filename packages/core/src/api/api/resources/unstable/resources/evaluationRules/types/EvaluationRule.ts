@@ -22,10 +22,10 @@ import * as LangfuseAPI from "../../../../../index.js";
  *                 },
  *                 mapping: [{
  *                         variable: "input",
- *                         source: LangfuseAPI.unstable.EvaluationRuleMappingSource.Input
+ *                         source: LangfuseAPI.unstable.PromptVariableMappingSource.Input
  *                     }, {
  *                         variable: "output",
- *                         source: LangfuseAPI.unstable.EvaluationRuleMappingSource.Output
+ *                         source: LangfuseAPI.unstable.PromptVariableMappingSource.Output
  *                     }]
  *             }],
  *         target: LangfuseAPI.unstable.EvaluationRuleTarget.Observation,
@@ -42,10 +42,10 @@ import * as LangfuseAPI from "../../../../../index.js";
  *             }],
  *         mapping: [{
  *                 variable: "input",
- *                 source: LangfuseAPI.unstable.EvaluationRuleMappingSource.Input
+ *                 source: LangfuseAPI.unstable.PromptVariableMappingSource.Input
  *             }, {
  *                 variable: "output",
- *                 source: LangfuseAPI.unstable.EvaluationRuleMappingSource.Output
+ *                 source: LangfuseAPI.unstable.PromptVariableMappingSource.Output
  *             }],
  *         createdAt: "2026-03-30T09:20:00.000Z",
  *         updatedAt: "2026-03-30T09:20:00.000Z"
@@ -60,5 +60,5 @@ export interface EvaluationRule
   /** List of filter conditions used to decide whether a target should be evaluated. */
   filter: LangfuseAPI.unstable.EvaluationRuleFilter[];
   /** Deprecated compatibility alias containing the effective mapping for `evaluators[0]`. */
-  mapping: LangfuseAPI.unstable.EvaluationRuleReadMapping[];
+  mapping: LangfuseAPI.unstable.PromptVariableMappingRead[];
 }

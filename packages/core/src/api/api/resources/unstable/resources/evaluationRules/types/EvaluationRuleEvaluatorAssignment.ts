@@ -7,5 +7,5 @@ import * as LangfuseAPI from "../../../../../index.js";
 export interface EvaluationRuleEvaluatorAssignment {
   evaluator: LangfuseAPI.unstable.EvaluationRuleEvaluator;
   /** Rule-specific override, or `null` to inherit the evaluator version's default mapping. */
-  mapping: LangfuseAPI.unstable.EvaluationRuleReadMapping[] | null;
+  mapping: LangfuseAPI.unstable.PromptVariableMappingRead[] | null;
 }

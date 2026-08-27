@@ -100,6 +100,8 @@ export class EvaluationRules {
    * - `400 invalid_json_path`: remove or correct the `jsonPath`
    * - `422 evaluator_preflight_failed`: the selected evaluator cannot run with the resolved model configuration. Fix the evaluator/default model setup, then retry the create request.
    *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluation-rules` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {LangfuseAPI.unstable.CreateEvaluationRuleRequest} request
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -345,6 +347,8 @@ export class EvaluationRules {
    *
    * This includes legacy `trace` and `dataset` rules so they can be inspected and migrated to v4 rules. Legacy rules are read-only through this API; create, update, and delete continue to support only `observation` and `experiment` rules.
    *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluation-rules` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {LangfuseAPI.unstable.ListEvaluationRulesRequest} request
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -516,6 +520,8 @@ export class EvaluationRules {
    * Get one evaluation rule by its identifier.
    *
    * Use this endpoint to inspect the current evaluator, target, mapping, filters, execution timing, and effective runtime status. Legacy `trace` and `dataset` rules are returned for migration and are read-only through this API.
+   *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluation-rules` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} evaluationRuleId - Evaluation rule identifier returned by the evaluation rule endpoints.
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
@@ -702,6 +708,8 @@ export class EvaluationRules {
    * - if an LLM-as-judge update fails with `missing_variable_mapping` or `invalid_variable_mapping` after changing `evaluator` or `target`, resend the request with a complete new `mapping`
    * - if the update fails with `invalid_filter_value` after changing `target`, resend the request with a target-compatible `filter`
    *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluation-rules` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {string} evaluationRuleId - Evaluation rule identifier.
    * @param {LangfuseAPI.unstable.UpdateEvaluationRuleRequest} request
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
@@ -887,6 +895,8 @@ export class EvaluationRules {
    * Delete an evaluation rule.
    *
    * This removes the live-ingestion rule only. It does not delete the referenced evaluator.
+   *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluation-rules` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} evaluationRuleId - Evaluation rule identifier.
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
