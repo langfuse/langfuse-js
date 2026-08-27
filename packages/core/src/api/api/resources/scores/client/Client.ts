@@ -202,6 +202,8 @@ export class Scores {
   /**
    * Get a list of scores (supports both trace and session scores)
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v3/scores` instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {LangfuseAPI.GetScoresRequest} request
    * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -441,6 +443,8 @@ export class Scores {
 
   /**
    * Get a score (supports both trace and session scores)
+   *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v3/scores` with the `id` filter instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} scoreId - The unique langfuse identifier of a score
    * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.

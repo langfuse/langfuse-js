@@ -67,6 +67,8 @@ export class MetricsV1 {
    *
    * For more details, see the [Metrics API documentation](https://langfuse.com/docs/metrics/features/metrics-api).
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v2/metrics?query=<urlencoded json query>` instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {LangfuseAPI.legacy.GetMetricsRequest} request
    * @param {MetricsV1.RequestOptions} requestOptions - Request-specific configuration.
    *

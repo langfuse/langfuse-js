@@ -63,6 +63,8 @@ export class DatasetRunItems {
   /**
    * Create a dataset run item
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, create experiment data via the SDK experiment runner or the OpenTelemetry endpoint at POST /api/public/otel/v1/traces. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {LangfuseAPI.CreateDatasetRunItemRequest} request
    * @param {DatasetRunItems.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -195,6 +197,8 @@ export class DatasetRunItems {
 
   /**
    * List dataset run items
+   *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, dataset run items are replaced by experiment items; use `GET /api/public/experiment-items?fromStartTime=<from>&toStartTime=<to>` instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {LangfuseAPI.ListDatasetRunItemsRequest} request
    * @param {DatasetRunItems.RequestOptions} requestOptions - Request-specific configuration.

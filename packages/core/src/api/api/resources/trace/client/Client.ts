@@ -63,6 +63,8 @@ export class Trace {
   /**
    * Get a specific trace
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, read span and trace data via `GET /api/public/v2/observations?fromStartTime=<from>&toStartTime=<to>`. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {string} traceId - The unique langfuse identifier of a trace
    * @param {LangfuseAPI.GetTraceRequest} request
    * @param {Trace.RequestOptions} requestOptions - Request-specific configuration.
@@ -316,6 +318,8 @@ export class Trace {
 
   /**
    * Get list of traces
+   *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, read span and trace data via `GET /api/public/v2/observations?fromStartTime=<from>&toStartTime=<to>`. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {LangfuseAPI.GetTracesRequest} request
    * @param {Trace.RequestOptions} requestOptions - Request-specific configuration.
