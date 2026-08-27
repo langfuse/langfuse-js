@@ -5,9 +5,9 @@
 import * as LangfuseAPI from "../../../../../index.js";
 
 /**
- * Maps one evaluator variable to a trace, dataset item, or field on a named observation in a legacy rule.
+ * **Deprecated:** Connects one prompt variable to data from a trace, dataset item, or named observation in a legacy rule.
  */
-export interface LegacyEvaluationRuleMapping {
+export interface LegacyPromptVariableMapping {
   variable: string;
   langfuseObject: LangfuseAPI.unstable.LegacyEvaluationObject;
   /** Observation name to match, or `null` when `langfuseObject` is `trace` or `dataset_item`. */

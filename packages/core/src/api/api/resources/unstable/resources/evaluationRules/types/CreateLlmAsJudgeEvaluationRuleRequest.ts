@@ -31,8 +31,8 @@ export interface CreateLlmAsJudgeEvaluationRuleRequest {
   /**
    * LLM-as-judge variable mappings.
    *
-   * Every evaluator variable must appear exactly once.
-   * Build this list from the evaluator `variables` array returned by the evaluator endpoints.
+   * Every prompt variable must appear exactly once.
+   * Build this list from the evaluator's `variables` array.
    */
-  mapping: LangfuseAPI.unstable.EvaluationRuleMapping[];
+  mapping: LangfuseAPI.unstable.PromptVariableMappingInput[];
 }

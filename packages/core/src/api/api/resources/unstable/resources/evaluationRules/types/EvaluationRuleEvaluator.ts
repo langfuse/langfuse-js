@@ -15,6 +15,6 @@ export interface EvaluationRuleEvaluator {
   id: string;
   /** Evaluator family name. */
   name: string;
-  /** Evaluator engine type. */
+  /** Evaluator type. */
   type: LangfuseAPI.unstable.EvaluatorType;
 }

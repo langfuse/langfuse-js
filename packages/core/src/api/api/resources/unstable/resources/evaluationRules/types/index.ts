@@ -18,7 +18,7 @@ export * from "./EvaluationRuleEvaluatorAssignment.js";
 export * from "./LegacyEvaluationRuleEvaluatorAssignment.js";
 export * from "./EvaluationRuleTimeScope.js";
 export * from "./LegacyEvaluationRuleTarget.js";
-export * from "./LegacyEvaluationRuleMapping.js";
+export * from "./LegacyPromptVariableMapping.js";
 export * from "./LegacyEvaluationObject.js";
 export * from "./CreateEvaluationRuleEvaluatorAssignment.js";
 export * from "./CreateEvaluationRuleEvaluatorReference.js";

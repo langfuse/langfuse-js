@@ -24,7 +24,7 @@ export interface EvaluatorBase {
    * are not restricted by rule `target` here, because the default is stored on the evaluator
    * rather than on any one rule.
    */
-  mapping: LangfuseAPI.unstable.EvaluationRuleReadMapping[] | null;
+  mapping: LangfuseAPI.unstable.PromptVariableMappingRead[] | null;
   /** Number of evaluation rules in the project that currently use this evaluator. */
   evaluationRuleCount: number;
   /** Timestamp when this evaluator was created. */

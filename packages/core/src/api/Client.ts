@@ -10,6 +10,8 @@ import { Comments } from "./api/resources/comments/client/Client.js";
 import { DatasetItems } from "./api/resources/datasetItems/client/Client.js";
 import { DatasetRunItems } from "./api/resources/datasetRunItems/client/Client.js";
 import { Datasets } from "./api/resources/datasets/client/Client.js";
+import { EvaluationRules } from "./api/resources/evaluationRules/client/Client.js";
+import { Evaluators } from "./api/resources/evaluators/client/Client.js";
 import { Experiments } from "./api/resources/experiments/client/Client.js";
 import { Feedback } from "./api/resources/feedback/client/Client.js";
 import { Health } from "./api/resources/health/client/Client.js";
@@ -84,6 +86,8 @@ export class LangfuseAPIClient {
   protected _datasetItems: DatasetItems | undefined;
   protected _datasetRunItems: DatasetRunItems | undefined;
   protected _datasets: Datasets | undefined;
+  protected _evaluationRules: EvaluationRules | undefined;
+  protected _evaluators: Evaluators | undefined;
   protected _experiments: Experiments | undefined;
   protected _feedback: Feedback | undefined;
   protected _health: Health | undefined;
@@ -145,6 +149,14 @@ export class LangfuseAPIClient {
 
   public get datasets(): Datasets {
     return (this._datasets ??= new Datasets(this._options));
+  }
+
+  public get evaluationRules(): EvaluationRules {
+    return (this._evaluationRules ??= new EvaluationRules(this._options));
+  }
+
+  public get evaluators(): Evaluators {
+    return (this._evaluators ??= new Evaluators(this._options));
   }
 
   public get experiments(): Experiments {

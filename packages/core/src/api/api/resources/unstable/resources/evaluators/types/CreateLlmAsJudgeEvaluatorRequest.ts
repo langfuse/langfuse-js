@@ -19,5 +19,5 @@ export interface CreateLlmAsJudgeEvaluatorRequest {
   /** Optional explicit model configuration. Omit or set to `null` to use the project default evaluation model. */
   modelConfig?: LangfuseAPI.unstable.EvaluatorModelConfig | null;
   /** Optional default variable mapping inherited by rule assignments that do not provide an override. */
-  mapping?: LangfuseAPI.unstable.EvaluationRuleMapping[];
+  mapping?: LangfuseAPI.unstable.PromptVariableMappingInput[];
 }

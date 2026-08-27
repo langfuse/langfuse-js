@@ -14,7 +14,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  * - If you only want to rename the rule or change sampling, send just those fields.
  * - To add, remove, or remap evaluators, send `evaluators`. It replaces the whole assignment set, so include every evaluator the rule should keep.
  * - `evaluators` cannot be combined with the deprecated `evaluator`/`mapping` pair, which only ever addressed the first assignment.
- * - If you change to an LLM-as-judge `evaluator`, send a fresh `mapping` unless you are certain the existing mapping still matches the evaluator variables.
+ * - If you change to an LLM-as-judge `evaluator`, send a fresh `mapping` unless you are certain the existing mapping still matches the prompt variables.
  * - If you change `target` for an LLM-as-judge rule, usually send both `filter` and `mapping` in the same request.
  * - For code evaluator rules, omit `mapping`; Langfuse stores the fixed code runtime mapping automatically.
  * - If you change an experiment `datasetId` filter, call `GET /api/public/v2/datasets` and use dataset `id` values from that response.
@@ -53,5 +53,5 @@ export interface UpdateEvaluationRuleRequest {
    *
    * Do not send this field for code evaluator rules. Langfuse stores the fixed code runtime mapping automatically and returns it in the response.
    */
-  mapping?: LangfuseAPI.unstable.EvaluationRuleMapping[];
+  mapping?: LangfuseAPI.unstable.PromptVariableMappingInput[];
 }

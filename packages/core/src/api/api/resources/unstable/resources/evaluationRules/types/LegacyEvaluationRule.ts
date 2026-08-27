@@ -5,9 +5,9 @@
 import * as LangfuseAPI from "../../../../../index.js";
 
 /**
- * Legacy trace- or dataset-level evaluation rule returned by list and get for migration.
+ * **Deprecated:** Legacy trace- or dataset-level evaluation rule returned by list and get for migration.
  *
- * This resource is read-only through the unstable public API. Its mapping preserves the trace, dataset item, or named observation selected for each evaluator variable.
+ * This resource is read-only through the unstable public API. Its mapping preserves the trace, dataset item, or named observation selected for each prompt variable.
  */
 export interface LegacyEvaluationRule
   extends LangfuseAPI.unstable.EvaluationRuleBase {
@@ -21,5 +21,5 @@ export interface LegacyEvaluationRule
   /** Stored filters used by the legacy trace or dataset rule. */
   filter: LangfuseAPI.unstable.EvaluationRuleFilter[];
   /** Stored variable mappings, including the trace, dataset item, or named observation selected for each variable. */
-  mapping: LangfuseAPI.unstable.LegacyEvaluationRuleMapping[];
+  mapping: LangfuseAPI.unstable.LegacyPromptVariableMapping[];
 }

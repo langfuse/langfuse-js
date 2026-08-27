@@ -11,7 +11,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  * - which evaluator should be used
  * - which target objects should trigger scoring
  * - how often scoring should run
- * - which target fields should populate each evaluator variable
+ * - which target fields should populate each prompt variable
  * - whether the deployment is active, inactive, or paused
  *
  * Important status semantics:
