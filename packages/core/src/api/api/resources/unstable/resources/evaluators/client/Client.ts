@@ -92,7 +92,7 @@ export class Evaluators {
    * Unstable API note:
    * - This surface may evolve while the underlying evaluation data model is being redesigned.
    *
-   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {LangfuseAPI.unstable.CreateEvaluatorRequest} request
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
@@ -311,7 +311,7 @@ export class Evaluators {
    * - This endpoint returns the latest version of each available evaluator.
    * - Every evaluator is owned by the authenticated project.
    *
-   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {LangfuseAPI.unstable.ListEvaluatorsRequest} request
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
@@ -485,7 +485,7 @@ export class Evaluators {
    *
    * This endpoint always returns the evaluator's latest version. Use it when you want the current prompt, output definition, model configuration, and derived variables for the evaluator you plan to use in an evaluation rule.
    *
-   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} evaluatorId - Evaluator identifier returned by the evaluator endpoints.
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
@@ -655,7 +655,7 @@ export class Evaluators {
    * - Evaluation rule assignments referencing the evaluator are also deleted.
    * - Scores already produced by the evaluator are not deleted.
    *
-   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on November 16, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} evaluatorId - Evaluator identifier returned by the evaluator endpoints.
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
