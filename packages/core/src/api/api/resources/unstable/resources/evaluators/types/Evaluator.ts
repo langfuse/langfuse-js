@@ -17,7 +17,8 @@ import * as LangfuseAPI from "../../../../../index.js";
  *
  * Versioning behavior:
  * - `GET /evaluators` returns the latest version of each available evaluator.
- * - `GET /evaluators/{id}` can return an older version.
+ * - `GET /evaluators/{id}` returns the latest version.
+ * - `id` identifies the evaluator family and remains stable when a new version is created.
  * - Evaluation rules always run against the latest version for the selected evaluator name within the same source (`project` or `managed`).
  */
 export type Evaluator =

@@ -10,7 +10,7 @@ export interface CreateCodeEvaluationRuleRequest {
   /**
    * Code evaluator family to use.
    *
-   * Use `name`, `scope`, and `type` from the evaluator endpoints.
+   * Use `name` and `type` from the evaluator endpoints.
    * Langfuse resolves that family to its latest version before saving the rule.
    */
   evaluator: LangfuseAPI.unstable.CodeEvaluationRuleEvaluatorReference;

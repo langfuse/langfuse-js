@@ -68,6 +68,8 @@ export class Sessions {
    * `sessionId` instead:
    * `GET /api/public/v2/observations?fromStartTime=<from>&toStartTime=<to>`.
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, read session data via `GET /api/public/v2/observations?filter=<urlencoded sessionId filter>&fromStartTime=<from>&toStartTime=<to>`. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {LangfuseAPI.GetSessionsRequest} request
    * @param {Sessions.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -222,6 +224,8 @@ export class Sessions {
    * sessions or new data extraction workflows, use the v2 observations endpoint
    * with a URL-encoded `sessionId` filter and a bounded time range:
    * `GET /api/public/v2/observations?filter=<sessionId filter>&fromStartTime=<from>&toStartTime=<to>`.
+   *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, read session data via `GET /api/public/v2/observations?filter=<urlencoded sessionId filter>&fromStartTime=<from>&toStartTime=<to>`. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} sessionId - The unique id of a session
    * @param {Sessions.RequestOptions} requestOptions - Request-specific configuration.

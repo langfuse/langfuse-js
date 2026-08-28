@@ -5,44 +5,10 @@
 import * as LangfuseAPI from "../../../index.js";
 
 /**
- * Condition for matching a pricing tier based on usage details. Used to implement tiered pricing models where costs vary based on usage thresholds.
+ * Condition for matching a pricing tier against usage details or observation attributes.
  *
- * How it works:
- * 1. The regex pattern matches against usage detail keys (e.g., "input_tokens", "input_cached")
- * 2. Values of all matching keys are summed together
- * 3. The sum is compared against the threshold value using the specified operator
- * 4. All conditions in a tier must be met (AND logic) for the tier to match
- *
- * Common use cases:
- * - Threshold-based pricing: Match when accumulated usage exceeds a certain amount
- * - Usage-type-specific pricing: Different rates for cached vs non-cached tokens, or input vs output
- * - Volume-based pricing: Different rates based on total request or token count
+ * Usage-detail conditions treat usageDetailPattern as a regex, sum all matching usage values, and compare the sum to the numeric value. Model-parameter and metadata conditions match an exact top-level key against one or more string values.
  */
-export interface PricingTierCondition {
-  /**
-   * Regex pattern to match against usage detail keys. All matching keys' values are summed for threshold comparison.
-   *
-   * Examples:
-   * - "^input" matches "input", "input_tokens", "input_cached", etc.
-   * - "^(input|prompt)" matches both "input_tokens" and "prompt_tokens"
-   * - "_cache$" matches "input_cache", "output_cache", etc.
-   *
-   * The pattern is case-insensitive by default. If no keys match, the sum is treated as zero.
-   */
-  usageDetailPattern: string;
-  /**
-   * Comparison operator to apply between the summed value and the threshold.
-   *
-   * - gt: greater than (sum > threshold)
-   * - gte: greater than or equal (sum >= threshold)
-   * - lt: less than (sum < threshold)
-   * - lte: less than or equal (sum <= threshold)
-   * - eq: equal (sum == threshold)
-   * - neq: not equal (sum != threshold)
-   */
-  operator: LangfuseAPI.PricingTierOperator;
-  /** Threshold value for comparison. For token-based pricing, this is typically the token count threshold (e.g., 200000 for a 200K token threshold). */
-  value: number;
-  /** Whether the regex pattern matching is case-sensitive. Default is false (case-insensitive matching). */
-  caseSensitive: boolean;
-}
+export type PricingTierCondition =
+  | LangfuseAPI.PricingTierUsageCondition
+  | LangfuseAPI.PricingTierAttributeCondition;

@@ -63,6 +63,8 @@ export class ObservationsV1 {
   /**
    * Get a observation
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v2/observations?fromStartTime=<from>&toStartTime=<to>` instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {string} observationId - The unique langfuse identifier of an observation, can be an event, span or generation
    * @param {ObservationsV1.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -185,6 +187,8 @@ export class ObservationsV1 {
    * Get a list of observations.
    *
    * Consider using the [v2 observations endpoint](/api-reference#tag/observationsv2/GET/api/public/v2/observations) for cursor-based pagination and field selection.
+   *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v2/observations?fromStartTime=<from>&toStartTime=<to>` instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {LangfuseAPI.legacy.GetObservationsRequest} request
    * @param {ObservationsV1.RequestOptions} requestOptions - Request-specific configuration.

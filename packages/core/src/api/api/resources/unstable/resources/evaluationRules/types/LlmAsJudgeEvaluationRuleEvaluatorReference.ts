@@ -10,8 +10,6 @@ import * as LangfuseAPI from "../../../../../index.js";
 export interface LlmAsJudgeEvaluationRuleEvaluatorReference {
   /** Evaluator family name. */
   name: string;
-  /** Whether the evaluator family is project-owned or Langfuse-managed. */
-  scope: LangfuseAPI.unstable.EvaluatorScope;
-  /** Evaluator engine type. Defaults to `llm_as_judge` when omitted. */
+  /** Evaluator type. Defaults to `llm_as_judge` when omitted. */
   type?: LangfuseAPI.unstable.LlmAsJudgeEvaluatorType;
 }
