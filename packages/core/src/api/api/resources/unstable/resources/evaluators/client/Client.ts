@@ -70,13 +70,14 @@ export class Evaluators {
    * Naming behavior:
    * - If this is a new evaluator name in your project, Langfuse creates version `1`.
    * - If the name already exists in your project, Langfuse creates the next version and returns it.
-   * - When a new project version is created, existing evaluation rules in that project automatically move to the newest version for that evaluator name.
+   * - The evaluator `id` remains stable across versions.
+   * - Existing evaluation rules automatically use the latest evaluator version; no rule update is required.
    *
    * Recommended workflow:
    * 1. Create the evaluator.
    * 2. Read the returned `variables` array.
    * 3. Read the returned `outputDefinition.dataType` so the client knows whether future scores will be numeric, boolean, or categorical.
-   * 4. Create one or more evaluation rules that reference the returned evaluator family using `name` and `scope`.
+   * 4. Create one or more evaluation rules that reference the returned evaluator family using `name` and `type`.
    *
    * Code evaluator validation:
    * - At creation, Langfuse only validates the request shape
@@ -90,6 +91,8 @@ export class Evaluators {
    *
    * Unstable API note:
    * - This surface may evolve while the underlying evaluation data model is being redesigned.
+   *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {LangfuseAPI.unstable.CreateEvaluatorRequest} request
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
@@ -126,7 +129,14 @@ export class Evaluators {
    *         modelConfig: {
    *             provider: "openai",
    *             model: "gpt-4.1-mini"
-   *         }
+   *         },
+   *         mapping: [{
+   *                 variable: "input",
+   *                 source: "input"
+   *             }, {
+   *                 variable: "output",
+   *                 source: "output"
+   *             }]
    *     })
    *
    * @example
@@ -299,8 +309,9 @@ export class Evaluators {
    *
    * Important behavior:
    * - This endpoint returns the latest version of each available evaluator.
-   * - Results can include evaluators from your project and Langfuse-managed evaluators.
-   * - If the same evaluator name exists in both places, both are returned as separate items with different `scope` values.
+   * - Every evaluator is owned by the authenticated project.
+   *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {LangfuseAPI.unstable.ListEvaluatorsRequest} request
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
@@ -472,7 +483,9 @@ export class Evaluators {
   /**
    * Get one evaluator by `id`.
    *
-   * Use this endpoint when you want the prompt, output definition, model configuration, and derived variables for the evaluator you plan to use in an evaluation rule.
+   * This endpoint always returns the evaluator's latest version. Use it when you want the current prompt, output definition, model configuration, and derived variables for the evaluator you plan to use in an evaluation rule.
+   *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} evaluatorId - Evaluator identifier returned by the evaluator endpoints.
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
@@ -638,10 +651,11 @@ export class Evaluators {
    * Delete an evaluator.
    *
    * Important behavior:
-   * - This deletes the evaluator including all of its stored versions; `evaluatorId` may reference any version.
-   * - The API returns `409` while evaluation rules still reference the evaluator. Delete those evaluation rules first.
-   * - Langfuse-managed evaluators (`scope=managed`) cannot be deleted; the API returns `403`.
+   * - This deletes the evaluator including all of its stored versions.
+   * - Evaluation rule assignments referencing the evaluator are also deleted.
    * - Scores already produced by the evaluator are not deleted.
+   *
+   * @deprecated On Langfuse Cloud, this unstable endpoint is deprecated and will be removed on September 4, 2026. Use the stable `/api/public/v2/evaluators` API instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} evaluatorId - Evaluator identifier returned by the evaluator endpoints.
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
@@ -651,7 +665,6 @@ export class Evaluators {
    * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
    * @throws {@link LangfuseAPI.unstable.NotFoundError}
    * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.unstable.ConflictError}
    * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
    * @throws {@link LangfuseAPI.unstable.InternalServerError}
    * @throws {@link LangfuseAPI.Error}
@@ -740,11 +753,6 @@ export class Evaluators {
           );
         case 405:
           throw new LangfuseAPI.unstable.MethodNotAllowedError(
-            _response.error.body as LangfuseAPI.unstable.PublicApiError,
-            _response.rawResponse,
-          );
-        case 409:
-          throw new LangfuseAPI.unstable.ConflictError(
             _response.error.body as LangfuseAPI.unstable.PublicApiError,
             _response.rawResponse,
           );

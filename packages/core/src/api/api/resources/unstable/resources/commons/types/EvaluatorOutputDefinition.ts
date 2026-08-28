@@ -11,6 +11,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  * - `dataType` is required.
  * - Do not send `version`; that is an internal storage detail and is not part of the public request contract.
  * - For `NUMERIC` and `BOOLEAN`, provide `reasoning.description` and `score.description`.
+ * - For `NUMERIC`, `score.minValue` and `score.maxValue` optionally define inclusive bounds. If both are set, `minValue` must not exceed `maxValue`.
  * - For `CATEGORICAL`, also provide `score.categories` and `score.shouldAllowMultipleMatches`.
  *
  * @example
@@ -21,7 +22,9 @@ import * as LangfuseAPI from "../../../../../index.js";
  *             description: "Explain why the answer is correct or incorrect."
  *         },
  *         score: {
- *             description: "Return a score between 0 and 1."
+ *             description: "Return a score between 0 and 1.",
+ *             minValue: 0,
+ *             maxValue: 1
  *         }
  *     }
  *

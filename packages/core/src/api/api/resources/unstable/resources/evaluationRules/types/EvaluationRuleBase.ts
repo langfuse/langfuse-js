@@ -11,7 +11,7 @@ import * as LangfuseAPI from "../../../../../index.js";
  * - which evaluator should be used
  * - which target objects should trigger scoring
  * - how often scoring should run
- * - which target fields should populate each evaluator variable
+ * - which target fields should populate each prompt variable
  * - whether the deployment is active, inactive, or paused
  *
  * Important status semantics:
@@ -25,13 +25,13 @@ export interface EvaluationRuleBase {
   /** Human-readable deployment name. This is independent from the evaluator name. */
   name: string;
   /**
-   * Evaluator currently used by this rule.
+   * Deprecated compatibility alias for `evaluators[0].evaluator`, or `null`
+   * when the rule currently has no evaluator assignments.
    *
-   * `name` and `scope` identify the evaluator family conceptually.
-   * `id` is the currently active evaluator version in that family.
-   * If you create a newer project version with the same evaluator name later, existing evaluation rules are moved to it automatically.
+   * `id` identifies the evaluator family. The rule automatically uses the
+   * latest available version of that evaluator.
    */
-  evaluator: LangfuseAPI.unstable.EvaluationRuleEvaluator;
+  evaluator: LangfuseAPI.unstable.EvaluationRuleEvaluator | null;
   /** Desired enabled state configured by the client. */
   enabled: boolean;
   /** Effective runtime status after Langfuse applies validation and blocking rules. */

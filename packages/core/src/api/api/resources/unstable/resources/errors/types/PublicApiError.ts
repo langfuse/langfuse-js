@@ -79,10 +79,10 @@ import * as LangfuseAPI from "../../../../../index.js";
  *
  * @example
  *     {
- *         message: "This project already has the maximum number of active evaluation rules (50). Disable an existing active evaluation rule before enabling another one.",
+ *         message: "This project already has the maximum number of active evaluation rules (500). Disable an existing active evaluation rule before enabling another one.",
  *         code: LangfuseAPI.unstable.PublicApiErrorCode.Conflict,
  *         details: {
- *             limit: 50
+ *             limit: 500
  *         }
  *     }
  *

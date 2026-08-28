@@ -10,15 +10,15 @@ export interface CreateModelRequest {
   /** Regex pattern which matches this model definition to generation.model. Useful in case of fine-tuned models. If you want to exact match, use `(?i)^modelname$` */
   matchPattern: string;
   /** Apply only to generations which are newer than this ISO date. */
-  startDate?: string;
+  startDate?: string | null;
   /** Unit used by this model. */
-  unit?: LangfuseAPI.ModelUsageUnit;
+  unit: LangfuseAPI.ModelUsageUnit;
   /** Deprecated. Use 'pricingTiers' instead. Price (USD) per input unit. Creates a default tier if pricingTiers not provided. */
-  inputPrice?: number;
+  inputPrice?: number | null;
   /** Deprecated. Use 'pricingTiers' instead. Price (USD) per output unit. Creates a default tier if pricingTiers not provided. */
-  outputPrice?: number;
+  outputPrice?: number | null;
   /** Deprecated. Use 'pricingTiers' instead. Price (USD) per total units. Cannot be set if input or output price is set. Creates a default tier if pricingTiers not provided. */
-  totalPrice?: number;
+  totalPrice?: number | null;
   /**
    * Optional. Array of pricing tiers for this model.
    *
@@ -39,9 +39,9 @@ export interface CreateModelRequest {
    * If omitted, you must provide flat prices instead (inputPrice/outputPrice/totalPrice),
    * which will automatically create a single default tier named "Standard".
    */
-  pricingTiers?: LangfuseAPI.PricingTierInput[];
+  pricingTiers?: LangfuseAPI.PricingTierInput[] | null;
   /** Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
-  tokenizerId?: string;
+  tokenizerId?: LangfuseAPI.ModelTokenizerId | null;
   /** Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
-  tokenizerConfig?: unknown;
+  tokenizerConfig?: unknown | null;
 }

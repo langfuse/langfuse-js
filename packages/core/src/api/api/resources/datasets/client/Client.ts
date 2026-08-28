@@ -448,6 +448,8 @@ export class Datasets {
   /**
    * Get a dataset run and its items
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, dataset runs are replaced by experiments; use GET /api/public/experiments instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {string} datasetName
    * @param {string} runName
    * @param {Datasets.RequestOptions} requestOptions - Request-specific configuration.
@@ -572,6 +574,8 @@ export class Datasets {
   /**
    * Delete a dataset run and all its run items. This action is irreversible.
    *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, dataset runs are replaced by experiments. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   *
    * @param {string} datasetName
    * @param {string} runName
    * @param {Datasets.RequestOptions} requestOptions - Request-specific configuration.
@@ -695,6 +699,8 @@ export class Datasets {
 
   /**
    * Get dataset runs
+   *
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, dataset runs are replaced by experiments; use GET /api/public/experiments instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} datasetName
    * @param {LangfuseAPI.GetDatasetRunsRequest} request
