@@ -744,7 +744,7 @@ export class EvaluationRules {
     evaluationRuleId: string,
     request: LangfuseAPI.unstable.UpdateEvaluationRuleRequest,
     requestOptions?: EvaluationRules.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.unstable.EvaluationRule> {
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.ReadableV2EvaluationRule> {
     return core.HttpResponsePromise.fromPromise(
       this.__update(evaluationRuleId, request, requestOptions),
     );
@@ -754,7 +754,9 @@ export class EvaluationRules {
     evaluationRuleId: string,
     request: LangfuseAPI.unstable.UpdateEvaluationRuleRequest,
     requestOptions?: EvaluationRules.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.EvaluationRule>> {
+  ): Promise<
+    core.WithRawResponse<LangfuseAPI.unstable.ReadableV2EvaluationRule>
+  > {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -791,7 +793,7 @@ export class EvaluationRules {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.unstable.EvaluationRule,
+        data: _response.body as LangfuseAPI.unstable.ReadableV2EvaluationRule,
         rawResponse: _response.rawResponse,
       };
     }

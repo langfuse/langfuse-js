@@ -4,53 +4,6 @@
 
 import * as LangfuseAPI from "../../../../../index.js";
 
-/**
- * @example
- *     {
- *         id: "erule_123",
- *         name: "answer-correctness-live",
- *         evaluator: {
- *             id: "evaltmpl_123",
- *             name: "answer-correctness",
- *             type: LangfuseAPI.unstable.EvaluatorType.LlmAsJudge
- *         },
- *         evaluators: [{
- *                 evaluator: {
- *                     id: "evaltmpl_123",
- *                     name: "answer-correctness",
- *                     type: LangfuseAPI.unstable.EvaluatorType.LlmAsJudge
- *                 },
- *                 mapping: [{
- *                         variable: "input",
- *                         source: LangfuseAPI.unstable.PromptVariableMappingSource.Input
- *                     }, {
- *                         variable: "output",
- *                         source: LangfuseAPI.unstable.PromptVariableMappingSource.Output
- *                     }]
- *             }],
- *         target: LangfuseAPI.unstable.EvaluationRuleTarget.Observation,
- *         enabled: true,
- *         status: LangfuseAPI.unstable.EvaluationRuleStatus.Active,
- *         pausedReason: null,
- *         pausedMessage: null,
- *         sampling: 1,
- *         filter: [{
- *                 type: "stringOptions",
- *                 column: "type",
- *                 operator: LangfuseAPI.unstable.EvaluationRuleOptionsFilterOperator.AnyOf,
- *                 value: ["GENERATION"]
- *             }],
- *         mapping: [{
- *                 variable: "input",
- *                 source: LangfuseAPI.unstable.PromptVariableMappingSource.Input
- *             }, {
- *                 variable: "output",
- *                 source: LangfuseAPI.unstable.PromptVariableMappingSource.Output
- *             }],
- *         createdAt: "2026-03-30T09:20:00.000Z",
- *         updatedAt: "2026-03-30T09:20:00.000Z"
- *     }
- */
 export interface EvaluationRule
   extends LangfuseAPI.unstable.EvaluationRuleBase {
   /** Evaluators attached to this rule in deterministic assignment order. A `null` mapping inherits the evaluator version's default mapping. */

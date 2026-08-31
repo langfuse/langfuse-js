@@ -8,5 +8,5 @@ import * as LangfuseAPI from "../../../../../index.js";
  * Evaluation rule returned by list and get, including read-only legacy trace and dataset rules.
  */
 export type ReadableEvaluationRule =
-  | LangfuseAPI.unstable.EvaluationRule
+  | LangfuseAPI.unstable.ReadableV2EvaluationRule
   | LangfuseAPI.unstable.LegacyEvaluationRule;
