@@ -1,5 +1,6 @@
 export * from "./EvaluationRuleBase.js";
 export * from "./EvaluationRule.js";
+export * from "./ReadableV2EvaluationRule.js";
 export * from "./LegacyEvaluationRule.js";
 export * from "./ReadableEvaluationRule.js";
 export * from "./EvaluationRules.js";
