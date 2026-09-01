@@ -8,7 +8,7 @@ export interface LlmAsJudgeEvaluatorVersion
   extends LangfuseAPI.EvaluatorVersionBase {
   /** Evaluator type. */
   type: "llm_as_judge";
-  /** The single user chat message used during evaluation. */
+  /** Ordered chat messages used during evaluation. */
   prompt: LangfuseAPI.EvaluatorChatPrompt;
   /**
    * Variables extracted from the prompt and available for evaluation-rule mappings.
