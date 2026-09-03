@@ -14,6 +14,6 @@ module.exports = {
   name: "Langfuse JS/TS SDKs",
   navigationLinks: {
     GitHub: "http://github.com/langfuse/langfuse-js",
-    Docs: "https://langfuse.com/docs/sdk/typescript",
+    Docs: "https://langfuse.com/docs/observability/sdk/typescript/overview",
   },
 };
