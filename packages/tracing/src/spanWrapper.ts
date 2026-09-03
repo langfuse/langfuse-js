@@ -153,7 +153,9 @@ abstract class LangfuseBaseObservation {
     this.type = params.type;
 
     this.otelSpan.setAttributes(
-      createObservationAttributes(params.type, params.attributes ?? {}),
+      createObservationAttributes(params.type, params.attributes ?? {}, {
+        referenceOwner: this.otelSpan.isRecording() ? this.otelSpan : undefined,
+      }),
     );
   }
 
@@ -173,7 +175,9 @@ abstract class LangfuseBaseObservation {
 
   updateOtelSpanAttributes(attributes: LangfuseObservationAttributes) {
     this.otelSpan.setAttributes(
-      createObservationAttributes(this.type, attributes),
+      createObservationAttributes(this.type, attributes, {
+        referenceOwner: this.otelSpan.isRecording() ? this.otelSpan : undefined,
+      }),
     );
   }
 
@@ -200,7 +204,11 @@ abstract class LangfuseBaseObservation {
    * ```
    */
   public setTraceIO(attributes: LangfuseTraceAttributes) {
-    this.otelSpan.setAttributes(createTraceAttributes(attributes));
+    this.otelSpan.setAttributes(
+      createTraceAttributes(attributes, {
+        referenceOwner: this.otelSpan.isRecording() ? this.otelSpan : undefined,
+      }),
+    );
 
     return this;
   }
