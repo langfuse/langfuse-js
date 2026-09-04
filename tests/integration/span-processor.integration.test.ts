@@ -1,9 +1,14 @@
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+
 import {
   LogLevel,
   configureGlobalLogger,
   resetGlobalLogger,
 } from "@langfuse/core";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { trace } from "@opentelemetry/api";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 import { startObservation } from "@langfuse/tracing";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
@@ -28,6 +33,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
   afterEach(async () => {
     delete process.env.LANGFUSE_MEDIA_UPLOAD_ENABLED;
+    delete process.env.LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES;
     await teardownTestEnvironment(testEnv);
     vi.restoreAllMocks();
     resetGlobalLogger();
@@ -718,6 +724,57 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
   });
 
   describe("Export Mode Selection", () => {
+    it("does not send an oversized request through the default exporter", async () => {
+      await teardownTestEnvironment(testEnv);
+      process.env.LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES = "1";
+      const warn = vi
+        .spyOn(console, "warn")
+        .mockImplementation(() => undefined);
+      let requestCount = 0;
+      const server = createServer((request, response) => {
+        requestCount += 1;
+        request.resume();
+        response.writeHead(200);
+        response.end();
+      });
+      await new Promise<void>((resolve) =>
+        server.listen(0, "127.0.0.1", resolve),
+      );
+      const { port } = server.address() as AddressInfo;
+      const spanProcessor = new LangfuseSpanProcessor({
+        baseUrl: `http://127.0.0.1:${port}`,
+        publicKey: "pk-lf-test",
+        secretKey: "sk-lf-test",
+        exportMode: "immediate",
+        mediaUploadEnabled: false,
+      });
+      const sdk = new NodeSDK({
+        spanProcessor,
+        instrumentations: [],
+      });
+      sdk.start();
+
+      try {
+        const span = startObservation("oversized-default-export");
+        span.end();
+        await spanProcessor.forceFlush();
+
+        expect(requestCount).toBe(0);
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining("Dropping OpenTelemetry span batch"),
+          expect.objectContaining({
+            maxBatchSizeBytes: 1,
+            spanCount: 1,
+          }),
+        );
+      } finally {
+        await sdk.shutdown();
+        await new Promise<void>((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve())),
+        );
+      }
+    });
+
     it("should use BatchSpanProcessor by default", async () => {
       // Default testEnv uses batched mode
       const span1 = startObservation("default-batch-1");

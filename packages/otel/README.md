@@ -19,7 +19,15 @@ npm install @langfuse/otel @opentelemetry/sdk-trace-node
 LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
+LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES="67108864" # Optional; defaults to 64 MiB
 ```
+
+The batch byte limit applies to the final serialized OTLP/HTTP JSON request
+before compression. If a batch exceeds the limit, the entire batch is dropped;
+it is not split, retried, or truncated. Invalid values fall back to 64 MiB with
+a warning. Set the limit to a positive decimal safe integer; surrounding
+whitespace is ignored. Custom exporters passed to `LangfuseSpanProcessor`
+bypass this limit because they may use a different wire format or transport.
 
 ## Quickstart
 
