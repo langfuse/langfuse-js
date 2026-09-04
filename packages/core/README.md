@@ -38,4 +38,4 @@ LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/langfuse/langfuse-js/blob/main/LICENSE)

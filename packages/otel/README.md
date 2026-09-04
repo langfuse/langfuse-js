@@ -62,4 +62,4 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/langfuse/langfuse-js/blob/main/LICENSE)

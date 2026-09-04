@@ -77,4 +77,4 @@ const trace = await langfuse.api.trace.get("trace-id");
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/langfuse/langfuse-js/blob/main/LICENSE)
