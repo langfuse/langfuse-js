@@ -3,16 +3,10 @@
  */
 
 /**
- * One validation issue returned for malformed request bodies or query parameters.
- *
- * This mirrors the most important parts of a Zod issue: a machine-readable `code`,
- * a human-readable `message`, and a structured `path`.
+ * A validation issue returned for malformed request bodies or query parameters.
  */
 export interface PublicApiValidationIssue {
-  /** Machine-readable validation issue code emitted by the server validator. */
   code: string;
-  /** Human-readable explanation of the validation failure. */
   message: string;
-  /** Path to the invalid field, for example `["mapping", 0, "jsonPath"]`. */
   path: unknown[];
 }
