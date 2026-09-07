@@ -3,10 +3,7 @@
  */
 
 /**
- * Machine-readable error code returned by the unstable evaluators API.
- *
- * SDKs, CLIs, and agents should branch on `code` rather than parsing the human-readable `message`.
- * The HTTP status still indicates the broad error class, while `code` gives the specific failure reason.
+ * Machine-readable error code returned by unstable public API endpoints.
  */
 export type PublicApiErrorCode =
   | "authentication_failed"
@@ -14,16 +11,8 @@ export type PublicApiErrorCode =
   | "invalid_request"
   | "invalid_query"
   | "invalid_body"
-  | "invalid_filter_value"
-  | "invalid_json_path"
-  | "invalid_variable_mapping"
-  | "missing_variable_mapping"
-  | "duplicate_variable_mapping"
   | "resource_not_found"
-  | "name_conflict"
-  | "evaluator_preflight_failed"
   | "conflict"
-  | "unprocessable_content"
   | "rate_limited"
   | "method_not_allowed"
   | "internal_error";
@@ -33,16 +22,8 @@ export const PublicApiErrorCode = {
   InvalidRequest: "invalid_request",
   InvalidQuery: "invalid_query",
   InvalidBody: "invalid_body",
-  InvalidFilterValue: "invalid_filter_value",
-  InvalidJsonPath: "invalid_json_path",
-  InvalidVariableMapping: "invalid_variable_mapping",
-  MissingVariableMapping: "missing_variable_mapping",
-  DuplicateVariableMapping: "duplicate_variable_mapping",
   ResourceNotFound: "resource_not_found",
-  NameConflict: "name_conflict",
-  EvaluatorPreflightFailed: "evaluator_preflight_failed",
   Conflict: "conflict",
-  UnprocessableContent: "unprocessable_content",
   RateLimited: "rate_limited",
   MethodNotAllowed: "method_not_allowed",
   InternalError: "internal_error",
