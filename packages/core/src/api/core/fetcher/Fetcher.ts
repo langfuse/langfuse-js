@@ -106,9 +106,10 @@ export async function fetcherImpl<R = unknown>(
     type: args.requestType === "json" ? "json" : "other",
   });
   const fetchFn = await getFetchFn();
+  let cleanup: (() => void) | undefined;
 
   try {
-    const response = await requestWithRetries(
+    const request = await requestWithRetries(
       async () =>
         makeRequest(
           fetchFn,
@@ -123,11 +124,17 @@ export async function fetcherImpl<R = unknown>(
         ),
       args.maxRetries,
     );
+    const response = request.response;
+    cleanup = request.cleanup;
 
     if (response.status >= 200 && response.status < 400) {
       return {
         ok: true,
-        body: (await getResponseBody(response, args.responseType)) as R,
+        body: (await getResponseBody(
+          response,
+          args.responseType,
+          cleanup,
+        )) as R,
         headers: response.headers,
         rawResponse: toRawResponse(response),
       };
@@ -137,12 +144,13 @@ export async function fetcherImpl<R = unknown>(
         error: {
           reason: "status-code",
           statusCode: response.status,
-          body: await getErrorResponseBody(response),
+          body: await getErrorResponseBody(response, cleanup),
         },
         rawResponse: toRawResponse(response),
       };
     }
   } catch (error) {
+    cleanup?.();
     if (args.abortSignal != null && args.abortSignal.aborted) {
       return {
         ok: false,
