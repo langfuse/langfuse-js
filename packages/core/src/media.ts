@@ -1,6 +1,61 @@
 import { MediaContentType } from "./api/api/index.js";
 import { getGlobalLogger } from "./logger/index.js";
-import { base64ToBytes, bytesToBase64 } from "./utils.js";
+import { base64ToBytes, bytesToBase64, generateUUID } from "./utils.js";
+
+type MediaSerializationContext = Map<LangfuseMedia, string>;
+
+let activeMediaSerializationContext: MediaSerializationContext | undefined;
+type MediaReferenceOwnerRegistration = {
+  useMediaReferences: boolean;
+};
+
+const mediaReferenceOwners = new WeakMap<
+  object,
+  Set<MediaReferenceOwnerRegistration>
+>();
+
+/**
+ * Registers an owner that can resolve and release temporary media references.
+ * A weak set keeps tracing usable without retaining spans after they end.
+ *
+ * @internal
+ */
+export function registerMediaReferenceOwner(
+  owner: object,
+  options: { useMediaReferences?: boolean } = {},
+): () => void {
+  const useMediaReferences = options.useMediaReferences ?? true;
+  const registration = { useMediaReferences };
+  const registrations =
+    mediaReferenceOwners.get(owner) ??
+    new Set<MediaReferenceOwnerRegistration>();
+
+  registrations.add(registration);
+  mediaReferenceOwners.set(owner, registrations);
+
+  return () => {
+    registrations.delete(registration);
+    if (registrations.size === 0) {
+      mediaReferenceOwners.delete(owner);
+    }
+  };
+}
+
+/**
+ * Returns whether an object is owned by a processor that can clean up media
+ * references.
+ *
+ * @internal
+ */
+export function isMediaReferenceOwner(owner: object): boolean {
+  const registrations = mediaReferenceOwners.get(owner);
+
+  return (
+    registrations !== undefined &&
+    registrations.size > 0 &&
+    [...registrations].every(({ useMediaReferences }) => useMediaReferences)
+  );
+}
 
 /**
  * Parameters for creating a LangfuseMedia instance.
@@ -239,12 +294,104 @@ export class LangfuseMedia {
   }
 
   /**
-   * Serializes the media to JSON (returns the base64 data URI).
+   * Serializes the media to JSON. Tracing uses an internal reference so the
+   * raw bytes can be uploaded without creating a transient base64 string.
+   * Other callers continue to receive the base64 data URI.
    *
-   * @returns The base64 data URI, or null if no content is available
+   * @returns The base64 data URI, an internal tracing reference, or null if no content is available
    */
   toJSON(): string | null {
+    if (
+      activeMediaSerializationContext &&
+      this._contentBytes &&
+      this._contentBytes.length > 0 &&
+      this._contentType &&
+      this._source
+    ) {
+      const reference = getOrCreateMediaReference(this);
+      return reference;
+    }
+
     return this.base64DataUri;
+  }
+}
+
+const mediaReferenceRegistry = new Map<string, LangfuseMedia>();
+const mediaReferencePattern = /@@@langfuseMediaBytes:[^@]+@@@/g;
+
+function getOrCreateMediaReference(media: LangfuseMedia): string {
+  const existingReference = activeMediaSerializationContext?.get(media);
+  if (existingReference) {
+    return existingReference;
+  }
+
+  const reference = `@@@langfuseMediaBytes:${generateUUID()}@@@`;
+
+  activeMediaSerializationContext?.set(media, reference);
+  mediaReferenceRegistry.set(reference, media);
+
+  return reference;
+}
+
+/**
+ * Serializes a value for tracing while preserving LangfuseMedia instances as
+ * internal references until the span processor can upload their raw bytes.
+ *
+ * @internal
+ */
+export function serializeWithMediaReferences(
+  value: unknown,
+  options: { referenceOwner?: object } = {},
+): string | undefined {
+  if (
+    !options.referenceOwner ||
+    !isMediaReferenceOwner(options.referenceOwner)
+  ) {
+    return JSON.stringify(value);
+  }
+
+  const previousContext = activeMediaSerializationContext;
+  const currentContext = new Map<LangfuseMedia, string>();
+  activeMediaSerializationContext = currentContext;
+
+  try {
+    return JSON.stringify(value);
+  } catch (error) {
+    releaseMediaReferences(currentContext.values());
+    throw error;
+  } finally {
+    activeMediaSerializationContext = previousContext;
+  }
+}
+
+/**
+ * Finds internal media references in a serialized tracing attribute.
+ *
+ * @internal
+ */
+export function findMediaReferences(value: string): string[] {
+  return [...new Set(value.match(mediaReferencePattern) ?? [])];
+}
+
+/**
+ * Resolves an internal media reference to its original LangfuseMedia object.
+ *
+ * @internal
+ */
+export function resolveMediaReference(
+  reference: string,
+): LangfuseMedia | undefined {
+  return mediaReferenceRegistry.get(reference);
+}
+
+/**
+ * Releases internal media references after a span has been processed.
+ *
+ * @internal
+ */
+export function releaseMediaReferences(references: Iterable<string>): void {
+  for (const reference of references) {
+    mediaReferenceRegistry.delete(reference);
   }
 }
 
