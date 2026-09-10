@@ -63,7 +63,7 @@ export class Ingestion {
   /**
    * **Legacy endpoint for batch ingestion for Langfuse Observability.**
    *
-   * -> Please use the OpenTelemetry endpoint (`/api/public/otel/v1/traces`). Learn more: https://langfuse.com/integrations/native/opentelemetry
+   * This endpoint is never shut down. Trace and observation events are rejected only in v4-only write mode (not dual or legacy); score events continue to be accepted. Always prefer upgrading to the current Python and JS SDKs. If you use custom auto-instrumentation, only then send traces via the OpenTelemetry endpoint (`POST /api/public/otel/v1/traces`), for example with curl. Learn more: https://langfuse.com/integrations/native/opentelemetry
    *
    * Within each batch, there can be multiple events.
    * Each event has a type, an id, a timestamp, metadata and a body.
@@ -77,7 +77,7 @@ export class Ingestion {
    * - Batch sizes are limited to 3.5 MB in total. You need to adjust the number of events per batch accordingly.
    * - The API does not return a 4xx status code for input errors. Instead, it responds with a 207 status code, which includes a list of the encountered errors.
    *
-   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Send data via the OpenTelemetry endpoint at `POST /api/public/otel/v1/traces` instead, see the [OpenTelemetry integration docs](https://langfuse.com/integrations/native/opentelemetry). Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
+   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and v4-only write mode begins on November 16, 2026. This endpoint is never shut down; it continues to accept score events. Trace and observation events fail only in v4-only write mode, not in dual or legacy mode. Always prefer upgrading to the current Python and JS SDKs. If you use custom auto-instrumentation, only then send data via the OpenTelemetry endpoint at `POST /api/public/otel/v1/traces` (for example with curl); see the [OpenTelemetry integration docs](https://langfuse.com/integrations/native/opentelemetry). Self-hosted deployments are unaffected by this date; they reject trace and observation events only in v4-only write mode, not dual or legacy.
    *
    * @param {LangfuseAPI.IngestionRequest} request
    * @param {Ingestion.RequestOptions} requestOptions - Request-specific configuration.
