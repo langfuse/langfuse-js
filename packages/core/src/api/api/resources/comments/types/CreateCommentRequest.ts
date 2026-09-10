@@ -13,4 +13,6 @@ export interface CreateCommentRequest {
   content: string;
   /** The id of the user who created the comment. Must be a member of the organization that owns the project, otherwise an error will be thrown. */
   authorUserId?: string;
+  /** The start time of the referenced object (for observations, the observation's start time). Optional performance hint - when provided, Langfuse narrows the lookup to validate the reference faster. It only affects speed - an incorrect or omitted value never changes the result. */
+  objectStartTime?: string;
 }
