@@ -5,7 +5,7 @@ echo "🚀 Running pre-commit checks..."
 echo
 
 # Check if pnpm is available
-if ! command -v pnpm &> /dev/null; then
+if ! command -v pnpm > /dev/null 2>&1; then
     echo "❌ Error: pnpm is not installed or not in PATH"
     exit 1
 fi
