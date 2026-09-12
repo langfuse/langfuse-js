@@ -1,4 +1,3 @@
-import type { AgentAction, AgentFinish } from "@langchain/core/agents";
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import type { Document } from "@langchain/core/documents";
 import type { Serialized } from "@langchain/core/load/serializable";
@@ -211,43 +210,14 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  async handleAgentAction(
-    action: AgentAction,
-    runId: string,
-    parentRunId?: string,
-  ): Promise<void> {
-    try {
-      this.logger.debug(`Agent action ${action.tool} with ID: ${runId}`);
-      this.startAndRegisterOtelSpan({
-        runId,
-        parentRunId,
-        runName: action.tool,
-        attributes: {
-          input: action,
-        },
-      });
-    } catch (e) {
-      this.logger.debug(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async handleAgentEnd?(
-    action: AgentFinish,
-    runId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    parentRunId?: string,
-  ): Promise<void> {
-    try {
-      this.logger.debug(`Agent finish with ID: ${runId}`);
-
-      this.handleOtelSpanEnd({
-        runId,
-        attributes: { output: action },
-      });
-    } catch (e) {
-      this.logger.debug(e instanceof Error ? e.message : String(e));
-    }
-  }
+  // handleAgentAction and handleAgentEnd are intentionally not implemented.
+  //
+  // AgentExecutor dispatches both with the running chain's own runId, not a run
+  // id of their own. Opening a span for the action under that runId overwrote
+  // the chain span already registered there and reparented it at the root, so
+  // the chain span was never ended and every span after the first action opened
+  // a second trace. The tool call is already captured by handleToolStart and
+  // the final output by handleChainEnd, so nothing is lost by leaving these out.
 
   async handleChainError(
     err: any,
