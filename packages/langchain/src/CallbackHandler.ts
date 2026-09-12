@@ -967,14 +967,20 @@ export class CallbackHandler extends BaseCallbackHandler {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "function",
       };
+      if (message.name) {
+        (response as any)["name"] = message.name;
+      }
     } else if (message.getType() === "tool") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "tool",
       };
+      if ("tool_call_id" in message) {
+        (response as any)["tool_call_id"] = message["tool_call_id"];
+      }
     } else if (!message.name) {
       response = { content: message.content };
     } else {
