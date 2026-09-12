@@ -41,7 +41,8 @@
     "dist"
   ],
   "dependencies": {
-    "@langfuse/core": "workspace:^"
+    "@langfuse/core": "workspace:^",
+    "@opentelemetry/otlp-transformer": "0.220.0"
   },
   "peerDependencies": {
     "@opentelemetry/api": "^1.9.0",

@@ -23,6 +23,10 @@ import {
 } from "@opentelemetry/sdk-trace-base";
 
 import { MediaService } from "./MediaService.js";
+import {
+  SizeLimitedSpanExporter,
+  resolveMaxBatchSizeBytesFromEnvironment,
+} from "./size-limited-span-exporter.js";
 import { isDefaultExportSpan } from "./span-filter.js";
 
 /**
@@ -78,6 +82,8 @@ export type ShouldExportSpan = (params: { otelSpan: ReadableSpan }) => boolean;
 export interface LangfuseSpanProcessorParams {
   /**
    * Custom OpenTelemetry span exporter. If not provided, a default OTLP exporter will be used.
+   * Custom exporters bypass Langfuse's OTLP batch byte limit and must enforce
+   * any transport-specific request limits themselves.
    */
   exporter?: SpanExporter;
 
@@ -275,19 +281,22 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         ? !["false", "0"].includes(envMediaUploadEnabled.toLowerCase())
         : true);
 
-    const exporter =
-      params?.exporter ??
-      new OTLPTraceExporter({
-        url: `${baseUrl}/api/public/otel/v1/traces`,
-        headers: {
-          Authorization: `Basic ${authHeaderValue}`,
-          "x-langfuse-sdk-name": "javascript",
-          "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
-          "x-langfuse-public-key": publicKey ?? "<missing>",
-          ...params?.additionalHeaders,
-        },
-        timeoutMillis: timeoutSeconds * 1_000,
-      });
+    const exporter = params?.exporter
+      ? params.exporter
+      : new SizeLimitedSpanExporter({
+          maxBatchSizeBytes: resolveMaxBatchSizeBytesFromEnvironment(),
+          delegate: new OTLPTraceExporter({
+            url: `${baseUrl}/api/public/otel/v1/traces`,
+            headers: {
+              Authorization: `Basic ${authHeaderValue}`,
+              "x-langfuse-sdk-name": "javascript",
+              "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+              "x-langfuse-public-key": publicKey ?? "<missing>",
+              ...params?.additionalHeaders,
+            },
+            timeoutMillis: timeoutSeconds * 1_000,
+          }),
+        });
 
     this.processor =
       params?.exportMode === "immediate"
