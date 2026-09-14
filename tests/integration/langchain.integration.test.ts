@@ -1,4 +1,7 @@
+import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
+import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -137,5 +140,34 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       '[{"role":"user","content":"hi"}]',
     );
+  });
+
+  it("should record completion start time from chat model stream events", async () => {
+    class StreamEventPreferringHandler extends BaseCallbackHandler {
+      name = "StreamEventPreferringHandler";
+      lc_prefer_chat_model_stream_events = true;
+    }
+
+    const handler = new CallbackHandler();
+    const model = new FakeStreamingChatModel({
+      responses: [new AIMessage("Hi!")],
+      sleep: 10,
+    });
+
+    const result = await model.invoke([new HumanMessage("Hello")], {
+      callbacks: [handler, new StreamEventPreferringHandler()],
+    });
+
+    expect(result.text).toBe("Hi!");
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const generation = assertions.expectSpanWithName("FakeStreamingChatModel");
+
+    expect(
+      generation.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME
+      ],
+    ).toBeDefined();
   });
 });
