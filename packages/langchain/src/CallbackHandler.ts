@@ -710,6 +710,10 @@ export class CallbackHandler extends BaseCallbackHandler {
           statusMessage: err.toString() + azureRefusalError,
         },
       });
+
+      if (runId in this.completionStartTimes) {
+        delete this.completionStartTimes[runId];
+      }
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
     }

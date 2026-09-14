@@ -170,4 +170,28 @@ describe("LangChain callback handler integration tests", () => {
       ],
     ).toBeDefined();
   });
+
+  it("should discard the completion start time when a streamed run errors", async () => {
+    const handler = new CallbackHandler();
+    const runId = "generation-stream-error";
+    const completionStartTimes = Reflect.get(
+      handler,
+      "completionStartTimes",
+    ) as Record<string, Date>;
+
+    await handler.handleGenerationStart(
+      { id: ["ChatOpenAI"] } as any,
+      [{ role: "user", content: "hi" }],
+      runId,
+      undefined,
+      { invocation_params: { model: "gpt-4.1-mini" } },
+    );
+    await handler.handleChatModelStreamEvent({ event: "message-start" }, runId);
+
+    expect(completionStartTimes).toHaveProperty(runId);
+
+    await handler.handleLLMError(new Error("stream failed"), runId);
+
+    expect(completionStartTimes).not.toHaveProperty(runId);
+  });
 });
