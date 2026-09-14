@@ -1,3 +1,9 @@
+import {
+  AIMessage,
+  FunctionMessage,
+  HumanMessage,
+  ToolMessage,
+} from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -136,6 +142,53 @@ describe("LangChain callback handler integration tests", () => {
       "ChatOpenAI",
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       '[{"role":"user","content":"hi"}]',
+    );
+  });
+
+  it("should serialize tool and function messages with role, name and tool_call_id", async () => {
+    const handler = new CallbackHandler();
+    const runId = "generation-with-tool-results";
+
+    await handler.handleChatModelStart(
+      { id: ["ChatOpenAI"] },
+      [
+        [
+          new HumanMessage("What is my updated debt?"),
+          new AIMessage({
+            content: "",
+            tool_calls: [{ id: "call_1", name: "get_debt", args: {} }],
+          }),
+          new ToolMessage({ content: "1874.32", tool_call_id: "call_1" }),
+          new ToolMessage({
+            content: "1874.32",
+            tool_call_id: "call_2",
+            name: "get_debt",
+          }),
+          new FunctionMessage({ content: "1874.32", name: "get_debt" }),
+        ],
+      ],
+      runId,
+      undefined,
+      { invocation_params: { model: "gpt-4.1-mini" } },
+    );
+    await handler.handleLLMEnd({ generations: [[{ text: "ok" }]] }, runId);
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '{"content":"1874.32","additional_kwargs":{},"role":"tool","tool_call_id":"call_1"}',
+    );
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '{"content":"1874.32","additional_kwargs":{},"role":"tool","name":"get_debt","tool_call_id":"call_2"}',
+    );
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '{"content":"1874.32","additional_kwargs":{},"role":"function","name":"get_debt"}',
     );
   });
 });

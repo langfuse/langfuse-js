@@ -9,6 +9,7 @@ import {
   type UsageMetadata,
   type BaseMessageFields,
   type MessageContent,
+  type ToolMessage,
 } from "@langchain/core/messages";
 import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { ChainValues } from "@langchain/core/utils/types";
@@ -34,8 +35,10 @@ type LangfusePrompt = {
 
 export type LlmMessage = {
   role: string;
+  name?: string;
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
+  tool_call_id?: string;
 };
 
 export type AnonymousLlmMessage = {
@@ -967,13 +970,16 @@ export class CallbackHandler extends BaseCallbackHandler {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "function",
+        name: message.name,
       };
     } else if (message.getType() === "tool") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "tool",
+        name: message.name,
+        tool_call_id: (message as ToolMessage).tool_call_id,
       };
     } else if (!message.name) {
       response = { content: message.content };
