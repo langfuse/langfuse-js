@@ -1,3 +1,4 @@
+import { AIMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -114,6 +115,53 @@ describe("LangChain callback handler integration tests", () => {
       "ChatOpenAI",
       LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS,
       '"temperature":0.2',
+    );
+  });
+
+  it("should serialize tool result messages with role tool and tool_call_id", async () => {
+    const handler = new CallbackHandler();
+    const runId = "generation-with-tool-result";
+
+    await handler.handleChatModelStart(
+      { id: ["ChatOpenAI"] } as never,
+      [
+        [
+          new HumanMessage("What is my updated debt?"),
+          new AIMessage({
+            content: "",
+            additional_kwargs: {
+              tool_calls: [
+                {
+                  id: "call_1",
+                  type: "function",
+                  function: { name: "get_debt", arguments: "{}" },
+                },
+              ],
+            },
+          }),
+          new ToolMessage({
+            content: '{"amount":1874.32}',
+            tool_call_id: "call_1",
+          }),
+        ],
+      ],
+      runId,
+      undefined,
+      { invocation_params: { model: "gpt-4.1-mini" } },
+    );
+    await handler.handleLLMEnd({ generations: [[{ text: "ok" }]] }, runId);
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"role":"tool"',
+    );
+    assertions.expectSpanAttributeContains(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      '"tool_call_id":"call_1"',
     );
   });
 
