@@ -1,20 +1,24 @@
 ![GitHub Banner](https://github.com/langfuse/langfuse-js/assets/2834609/d1613347-445f-4e91-9e84-428fda9c3659)
 
-# Langfuse Core
+> [!IMPORTANT]
+> **This package is not the latest Langfuse JS/TS SDK.** `langfuse-core` is an internal dependency of the **deprecated** unscoped v3 client (`langfuse`). Do **not** install it for new instrumentation.
+>
+> **Latest JS/TS SDK (OpenTelemetry):** `npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node`. Use `@langfuse/tracing` (`startActiveObservation` / `startObservation`) + `LangfuseSpanProcessor` from `@langfuse/otel`. Prompts/datasets/scores: `@langfuse/client`. Docs: https://langfuse.com/docs/observability/sdk/overview — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
+>
+> Query traces from the current SDK with Observations API v2 (`GET /api/public/v2/observations`), not `GET /api/public/traces` / `api.traceList`.
+
+# Langfuse Core (legacy v3)
 
 [![npm package](https://img.shields.io/npm/v/langfuse-core?style=flat-square)](https://www.npmjs.com/package/langfuse-core)
 
-> [!IMPORTANT]
-> **This SDK is deprecated.** The Langfuse TypeScript SDK was completely rewritten and released as v4 in August 2025. Please refer to the [TypeScript SDK documentation](https://langfuse.com/docs/observability/sdk/typescript/overview) for migration instructions.
-
-This is the core package for the Langfuse JS/TS client libraries. It is not meant to be used directly.
+This is the shared core for the legacy Langfuse v3 JS/TS client libraries. It is not meant to be used directly.
 
 Reference: https://js.reference.langfuse.com/modules/langfuse_core.html
 
-**Client Libraries**
+**Legacy client libraries (do not use for new work)**
 
-| Package                                                                                    | NPM                                                                                                                                   | Environments          |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| [langfuse](https://github.com/langfuse/langfuse-js/tree/main/langfuse)                     | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)                     | Node >= 18, Web, Edge |
-| [langfuse-node](https://github.com/langfuse/langfuse-js/tree/main/langfuse-node)           | [![npm package](https://img.shields.io/npm/v/langfuse-node?style=flat-square)](https://www.npmjs.com/package/langfuse-node)           | Node < 18             |
-| [langfuse-langchain](https://github.com/langfuse/langfuse-js/tree/main/langfuse-langchain) | [![npm package](https://img.shields.io/npm/v/langfuse-langchain?style=flat-square)](https://www.npmjs.com/package/langfuse-langchain) | Node >= 20, Web, Edge |
+| Package                                                                                     | NPM                                                                                                                                   | Environments          |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| [langfuse](https://github.com/langfuse/langfuse-js/tree/v3-stable/langfuse)                 | [![npm package](https://img.shields.io/npm/v/langfuse?style=flat-square)](https://www.npmjs.com/package/langfuse)                     | Node >= 18, Web, Edge |
+| [langfuse-node](https://github.com/langfuse/langfuse-js/tree/v3-stable/langfuse-node)       | [![npm package](https://img.shields.io/npm/v/langfuse-node?style=flat-square)](https://www.npmjs.com/package/langfuse-node)           | Node < 18             |
+| [langfuse-langchain](https://github.com/langfuse/langfuse-js/tree/v3-stable/langfuse-langchain) | [![npm package](https://img.shields.io/npm/v/langfuse-langchain?style=flat-square)](https://www.npmjs.com/package/langfuse-langchain) | Node >= 20, Web, Edge |

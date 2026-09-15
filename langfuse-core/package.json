@@ -1,7 +1,7 @@
 {
   "name": "langfuse-core",
   "version": "3.39.1",
-  "description": "LEGACY shared core for the Langfuse v3 SDK (maintenance mode). Do not install directly. Current SDK: @langfuse/tracing, @langfuse/otel, @langfuse/client",
+  "description": "NOT the latest Langfuse JS/TS SDK. Legacy v3 shared core — do not install directly. Current SDK: npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node",
   "keywords": [
     "langfuse",
     "legacy",

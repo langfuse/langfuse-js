@@ -8,19 +8,14 @@
 [![Discord](https://img.shields.io/discord/1111061815649124414?style=flat-square&logo=Discord&logoColor=white&label=Discord&color=%23434EE4)](https://discord.gg/7NXusRtqYU)
 [![YC W23](https://img.shields.io/badge/Y%20Combinator-W23-orange?style=flat-square)](https://www.ycombinator.com/companies/langfuse)
 
-> [!WARNING]
+> [!IMPORTANT]
+> **`langfuse` on npm is not the latest Langfuse JS/TS SDK.** This branch publishes the **deprecated** v3 client (`langfuse`, `langfuse-node`, `langfuse-langchain`, `langfuse-vercel`). `npm install langfuse` installs that legacy client (`new Langfuse()`, `trace()`, `span()`, `api.traceList`). Do **not** use it for new instrumentation.
 >
-> **This branch contains the legacy Langfuse v3 SDK** (`langfuse`, `langfuse-node`, `langfuse-langchain`, `langfuse-vercel`). It is in maintenance mode and only receives critical bug fixes. **Do not use these packages for new projects.**
+> **Latest JS/TS SDK (OpenTelemetry)** — developed on [`main`](https://github.com/langfuse/langfuse-js/tree/main): `npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node`. Use `@langfuse/tracing` (`startActiveObservation` / `startObservation`) + `LangfuseSpanProcessor` from `@langfuse/otel`. Prompts/datasets/scores: `@langfuse/client`. Docs: https://langfuse.com/docs/observability/sdk/overview — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
 >
-> The current Langfuse JS/TS SDK lives in the scoped `@langfuse/*` packages (developed on the [`main` branch](https://github.com/langfuse/langfuse-js/tree/main)):
->
-> ```bash
-> npm install @langfuse/tracing @langfuse/otel @langfuse/client
-> ```
->
-> Docs: https://langfuse.com/docs/observability/sdk/overview — Migration guide: https://langfuse.com/docs/observability/sdk/upgrade-path
+> Query traces from the current SDK with Observations API v2 (`GET /api/public/v2/observations`), not `GET /api/public/traces` / `api.traceList`.
 
-Modular mono repo for the **legacy v3** Langfuse JS/TS client libraries.
+Modular mono repo for the **legacy v3** Langfuse JS/TS client libraries (maintenance mode; critical bug fixes only).
 
 ## Packages
 
@@ -33,7 +28,8 @@ Modular mono repo for the **legacy v3** Langfuse JS/TS client libraries.
 
 ## Documentation
 
-- Docs: https://langfuse.com/docs/sdk/typescript
+- Current SDK docs: https://langfuse.com/docs/observability/sdk/overview
+- Legacy v3 docs: https://langfuse.com/docs/sdk/typescript
 - Reference: https://js.reference.langfuse.com
 
 ## License
