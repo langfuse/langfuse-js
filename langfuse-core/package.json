@@ -1,6 +1,6 @@
 {
   "name": "langfuse-core",
-  "version": "3.39.1",
+  "version": "3.39.2",
   "description": "NOT the latest Langfuse JS/TS SDK. Legacy v3 shared core — do not install directly. Current SDK: npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node",
   "keywords": [
     "langfuse",

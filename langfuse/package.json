@@ -1,6 +1,6 @@
 {
   "name": "langfuse",
-  "version": "3.39.1",
+  "version": "3.39.2",
   "description": "NOT the latest Langfuse JS/TS SDK. Deprecated v3 client (new Langfuse(), trace(), api.traceList). For new work: npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node. Docs: https://langfuse.com/docs/observability/sdk/overview",
   "keywords": [
     "llm",
@@ -48,7 +48,7 @@
     "Readme.md"
   ],
   "dependencies": {
-    "langfuse-core": "^3.39.1"
+    "langfuse-core": "^3.39.2"
   },
   "gitHead": "d6d5a92736bca6a2beee4a894d23f72cc5b2f0ed",
   "devDependencies": {
