@@ -9,7 +9,9 @@
 >
 > **Latest setup:** `npm install @langfuse/otel @langfuse/tracing @opentelemetry/sdk-node` (AI SDK ≤6: `experimental_telemetry` + `@langfuse/otel`). For AI SDK v7 (`ai@7`), use [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk). Docs: https://langfuse.com/integrations/frameworks/vercel-ai-sdk — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
 >
-> Query traces from the current SDK with Observations API v2 (`GET /api/public/v2/observations`), not `GET /api/public/traces` / `api.traceList`.
+> Query traces with [Observations API v2](https://langfuse.com/docs/api-and-data-platform/features/observations-api) (`GET /api/public/v2/observations`, [API reference](https://api.reference.langfuse.com/#tag/observationsv2)), not `GET /api/public/traces` / `api.traceList`.
+>
+> **Data freshness:** the only real-time path is OpenTelemetry ingestion (`@langfuse/otel`, or any OTel exporter sending `x-langfuse-ingestion-version: 4`) combined with the new public APIs. Every other path — including this legacy v3 package — can be up to 10 minutes behind on the GET APIs.
 
 This is the JS/TS client for the Langfuse Vercel AI SDK integration. This integration is currently in beta and functionality and interfaces may change.
 
