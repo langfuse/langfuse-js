@@ -1,3 +1,4 @@
+import { ChatMessage } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -22,6 +23,16 @@ describe("LangChain callback handler integration tests", () => {
 
   afterEach(async () => {
     await teardownTestEnvironment(testEnv);
+  });
+
+  it("should preserve custom roles for ChatMessage (generic) inputs", () => {
+    const handler = new CallbackHandler();
+
+    const mapped = (handler as any).extractChatMessageContent(
+      new ChatMessage({ content: "hello", role: "developer" }),
+    );
+
+    expect(mapped).toEqual({ content: "hello", role: "developer" });
   });
 
   it("should mark LangChain tool runs as tool observations", async () => {
