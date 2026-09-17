@@ -76,3 +76,31 @@ describe("LangfuseClient deprecated dataset aliases", () => {
     }
   });
 });
+
+describe("LangfuseClient score ingestion", () => {
+  it("passes LANGFUSE_TIMEOUT to ingestion requests", async () => {
+    vi.stubEnv("LANGFUSE_TIMEOUT", "0.25");
+
+    try {
+      const client = new LangfuseClient({
+        publicKey: "pk-test",
+        secretKey: "sk-test",
+        baseUrl: "http://localhost:3000",
+      });
+      const batch = vi.fn().mockResolvedValue({ success: true });
+      client.api.ingestion.batch = batch;
+
+      client.score.create({ name: "timeout-test", value: 1 });
+      await client.flush();
+
+      expect(batch).toHaveBeenCalledWith(
+        {
+          batch: [expect.objectContaining({ type: "score-create" })],
+        },
+        { timeoutInSeconds: 0.25 },
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
