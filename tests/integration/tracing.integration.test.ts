@@ -97,6 +97,26 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       );
     });
 
+    it("should preserve empty-string metadata values", async () => {
+      const span = startObservation("empty-meta-span", {
+        metadata: { empty: "", filled: "x" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "empty-meta-span",
+        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".empty",
+        "",
+      );
+      assertions.expectSpanAttribute(
+        "empty-meta-span",
+        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".filled",
+        "x",
+      );
+    });
+
     it("should handle span with error status", async () => {
       const span = startObservation("error-span");
       // Use update method to set error status in attributes
