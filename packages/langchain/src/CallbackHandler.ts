@@ -101,6 +101,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     _tags?: string[],
     _fields?: any,
   ): Promise<void> {
+    this.recordCompletionStartTime(runId);
+  }
+
+  async handleChatModelStreamEvent(
+    _event: unknown,
+    runId: string,
+  ): Promise<void> {
+    this.recordCompletionStartTime(runId);
+  }
+
+  private recordCompletionStartTime(runId: string): void {
     // if this is the first token, add it to completionStartTimes
     if (runId && !(runId in this.completionStartTimes)) {
       this.logger.debug(`LLM first streaming token: ${runId}`);
@@ -708,6 +719,10 @@ export class CallbackHandler extends BaseCallbackHandler {
           statusMessage: err.toString() + azureRefusalError,
         },
       });
+
+      if (runId in this.completionStartTimes) {
+        delete this.completionStartTimes[runId];
+      }
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
     }
