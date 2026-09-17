@@ -1,4 +1,13 @@
-import { LangfuseMediaReference, bytesToBase64 } from "@langfuse/core";
+import {
+  LangfuseMedia,
+  LangfuseMediaReference,
+  bytesToBase64,
+  findMediaReferences,
+  registerMediaReferenceOwner,
+  releaseMediaReferences,
+  resolveMediaReference,
+  serializeWithMediaReferences,
+} from "@langfuse/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("LangfuseMediaReference", () => {
@@ -118,5 +127,62 @@ describe("LangfuseMediaReference", () => {
 
       await expect(ref.fetchBytes()).rejects.toThrow(/HTTP 403/);
     });
+  });
+});
+
+describe("LangfuseMedia tracing serialization", () => {
+  it("keeps raw bytes out of tracing JSON while preserving public JSON behavior", () => {
+    const span = {};
+    registerMediaReferenceOwner(span);
+    const media = new LangfuseMedia({
+      source: "bytes",
+      contentBytes: new Uint8Array([1, 2, 3, 4]),
+      contentType: "image/png",
+    });
+
+    const tracingValue = serializeWithMediaReferences(
+      { image: media },
+      { referenceOwner: span },
+    );
+    const references = findMediaReferences(tracingValue!);
+
+    expect(tracingValue).not.toContain(media.base64DataUri);
+    expect(references).toHaveLength(1);
+    expect(resolveMediaReference(references[0]!)).toBe(media);
+
+    releaseMediaReferences(references);
+
+    expect(JSON.stringify({ image: media })).toContain(media.base64DataUri);
+  });
+
+  it("uses public JSON when media references are not enabled", () => {
+    const media = new LangfuseMedia({
+      source: "bytes",
+      contentBytes: new Uint8Array([1, 2, 3, 4]),
+      contentType: "image/png",
+    });
+
+    const serialized = serializeWithMediaReferences({ image: media });
+
+    expect(serialized).toContain(media.base64DataUri);
+    expect(findMediaReferences(serialized!)).toHaveLength(0);
+  });
+
+  it("uses public JSON when the owner has a masking processor", () => {
+    const owner = {};
+    registerMediaReferenceOwner(owner, { useMediaReferences: false });
+    const media = new LangfuseMedia({
+      source: "bytes",
+      contentBytes: new Uint8Array([1, 2, 3, 4]),
+      contentType: "image/png",
+    });
+
+    const serialized = serializeWithMediaReferences(
+      { image: media },
+      { referenceOwner: owner },
+    );
+
+    expect(serialized).toContain(media.base64DataUri);
+    expect(findMediaReferences(serialized!)).toHaveLength(0);
   });
 });
