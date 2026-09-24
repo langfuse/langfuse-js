@@ -4,7 +4,10 @@ import {
   LangfuseOtelSpanAttributes,
   Logger,
   base64ToBytes,
+  findMediaReferences,
   getGlobalLogger,
+  releaseMediaReferences as releaseMediaReferenceRegistry,
+  resolveMediaReference,
   uploadMedia,
 } from "@langfuse/core";
 import type { MediaContentType } from "@langfuse/core";
@@ -26,7 +29,144 @@ export class MediaService {
     await Promise.all(Array.from(this.pendingMediaUploads));
   }
 
-  public async process(span: ReadableSpan) {
+  public async process(
+    span: ReadableSpan,
+    mediaReferences = this.collectMediaReferences(span),
+  ) {
+    try {
+      await this.processMediaReferences(span, mediaReferences);
+      await this.processSerializedMedia(span);
+    } finally {
+      releaseMediaReferenceRegistry(mediaReferences);
+    }
+  }
+
+  public restoreMediaReferences(
+    span: ReadableSpan,
+    mediaReferences = this.collectMediaReferences(span),
+  ): void {
+    for (const key of Object.keys(span.attributes)) {
+      const value = span.attributes[key];
+
+      if (typeof value !== "string") {
+        continue;
+      }
+
+      span.attributes[key] = [...findMediaReferences(value)].reduce(
+        (replacedValue, reference) => {
+          const media = resolveMediaReference(reference);
+          return replacedValue.replaceAll(
+            reference,
+            media?.base64DataUri ?? reference,
+          );
+        },
+        value,
+      );
+    }
+
+    releaseMediaReferenceRegistry(mediaReferences);
+  }
+
+  public releaseMediaReferences(span: ReadableSpan): void {
+    releaseMediaReferenceRegistry(this.collectMediaReferences(span));
+  }
+
+  public releaseMediaReferenceSet(references: Iterable<string>): void {
+    releaseMediaReferenceRegistry(references);
+  }
+
+  public getMediaReferences(span: ReadableSpan): Set<string> {
+    return this.collectMediaReferences(span);
+  }
+
+  private collectMediaReferences(span: ReadableSpan): Set<string> {
+    const mediaReferences = new Set<string>();
+
+    for (const value of Object.values(span.attributes)) {
+      if (typeof value !== "string") {
+        continue;
+      }
+
+      for (const reference of findMediaReferences(value)) {
+        mediaReferences.add(reference);
+      }
+    }
+
+    return mediaReferences;
+  }
+
+  private async processMediaReferences(
+    span: ReadableSpan,
+    mediaReferences: Set<string>,
+  ): Promise<void> {
+    if (mediaReferences.size === 0) {
+      return;
+    }
+
+    for (const key of Object.keys(span.attributes)) {
+      const value = span.attributes[key];
+
+      if (typeof value !== "string") {
+        continue;
+      }
+
+      let mediaReplacedValue = value;
+
+      for (const reference of findMediaReferences(value)) {
+        if (!mediaReferences.has(reference)) {
+          continue;
+        }
+
+        const media = resolveMediaReference(reference);
+        if (!media) {
+          this.logger.warn(
+            "Failed to resolve an internal Langfuse media reference.",
+          );
+          continue;
+        }
+
+        const langfuseMediaTag = await media.getTag();
+
+        if (!langfuseMediaTag) {
+          this.logger.warn(
+            "Failed to create Langfuse media tag. Restoring the media data URI.",
+          );
+          mediaReplacedValue = mediaReplacedValue.replaceAll(
+            reference,
+            media.base64DataUri ?? reference,
+          );
+          continue;
+        }
+
+        this.scheduleUpload({
+          span,
+          media,
+          field: this.getMediaField(key),
+        });
+
+        mediaReplacedValue = mediaReplacedValue.replaceAll(
+          reference,
+          langfuseMediaTag,
+        );
+      }
+
+      span.attributes[key] = mediaReplacedValue;
+    }
+  }
+
+  private getMediaField(key: string): "input" | "output" | "metadata" {
+    if (key.includes("input")) {
+      return "input";
+    }
+
+    if (key.includes("output")) {
+      return "output";
+    }
+
+    return "metadata";
+  }
+
+  private async processSerializedMedia(span: ReadableSpan) {
     const mediaAttributes = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       LangfuseOtelSpanAttributes.TRACE_INPUT,
