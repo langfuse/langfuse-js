@@ -949,13 +949,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /** A chat model invoked with a streaming handler attached (e.g. `streamEvents`) keeps the response model in generationInfo only */
   private extractModelNameFromMetadata(generation: any): string | undefined {
     try {
-      return "message" in generation &&
+      const messageModelName =
+        "message" in generation &&
         (generation["message"] instanceof AIMessage ||
           generation["message"] instanceof AIMessageChunk)
-        ? generation["message"].response_metadata.model_name
-        : undefined;
+          ? generation["message"].response_metadata?.model_name
+          : undefined;
+
+      return messageModelName ?? generation.generationInfo?.model_name;
     } catch {}
   }
 
