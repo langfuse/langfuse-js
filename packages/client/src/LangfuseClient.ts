@@ -314,7 +314,7 @@ export class LangfuseClient {
 
     this.prompt = new PromptManager({ apiClient: this.api });
     this.dataset = new DatasetManager({ langfuseClient: this });
-    this.score = new ScoreManager({ apiClient: this.api });
+    this.score = new ScoreManager({ apiClient: this.api, timeoutSeconds });
     this.media = new MediaManager({ apiClient: this.api });
     this.experiment = new ExperimentManager({ langfuseClient: this });
 
