@@ -741,6 +741,27 @@ describe("propagateAttributes", () => {
       });
     });
 
+    it("should keep a baggage entry whose value is an empty string", async () => {
+      // W3C extract drops an empty value, so this state only exists in memory.
+      const received = propagation.setBaggage(
+        ROOT_CONTEXT,
+        propagation.createBaggage().setEntry("langfuse_tags", { value: "" }),
+      );
+
+      await otelContext.with(received, async () => {
+        await propagateAttributes(
+          { tags: ["service-b"], asBaggage: true },
+          async () => {
+            const tags = propagation
+              .getBaggage(otelContext.active())
+              ?.getEntry("langfuse_tags")?.value;
+
+            expect(tags).toBe(",service-b");
+          },
+        );
+      });
+    });
+
     it("should drop tags over 200 characters", async () => {
       const tracer = otelTrace.getTracer("langfuse-sdk");
       const longTag = "x".repeat(201);

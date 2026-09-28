@@ -840,12 +840,12 @@ function getBaggageTags(context: Context): string[] | undefined {
     .getBaggage(context)
     ?.getEntry(getBaggageKeyForPropagatedKey("tags"))?.value;
 
-  if (!raw) {
+  // "" is a real tag list (tags: [""]). Only a missing entry means there is
+  // nothing to merge. getPropagatedAttributesFromContext splits "" into [""].
+  if (raw === undefined) {
     return undefined;
   }
 
-  // Same split as getPropagatedAttributesFromContext. Do not drop empty
-  // segments: isValidPropagatedString accepts "" and the baggage reader keeps it.
   return raw.split(LANGFUSE_BAGGAGE_TAGS_SEPARATOR);
 }
 
