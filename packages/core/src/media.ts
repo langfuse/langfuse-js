@@ -128,7 +128,8 @@ export class LangfuseMedia {
         throw new Error("Content type is empty");
       }
 
-      return [base64ToBytes(actualData), contentType as MediaContentType];
+      const normalizedData = actualData.replace(/-/g, "+").replace(/_/g, "/");
+      return [base64ToBytes(normalizedData), contentType as MediaContentType];
     } catch (error) {
       getGlobalLogger().error("Error parsing base64 data URI", error);
       return [undefined, undefined];
