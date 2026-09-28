@@ -271,11 +271,6 @@ function wrapAsyncIterable<R>(
             : {
                 statusMessage: String(failure),
                 level: "ERROR" as const,
-                costDetails: {
-                  input: 0,
-                  output: 0,
-                  total: 0,
-                },
               }),
         })
         .end();

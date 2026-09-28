@@ -123,5 +123,73 @@ describe("observeOpenAI streaming", () => {
         statusMessage: "Error: socket closed",
       }),
     );
+    expect(mocks.generation.update.mock.calls.at(-1)?.[0].costDetails).toBe(
+      undefined,
+    );
+  });
+
+  it("keeps captured usage and does not invent a zero cost when the stream throws", async () => {
+    async function* stream() {
+      yield contentChunk("Hello", {
+        prompt_tokens: 1,
+        completion_tokens: 2,
+        total_tokens: 3,
+      });
+      throw new Error("socket closed");
+    }
+
+    const openai = observeOpenAI({
+      chat: {
+        completions: {
+          create: async () => stream(),
+        },
+      },
+    });
+
+    const result = await openai.chat.completions.create();
+
+    await expect(async () => {
+      for await (const _chunk of result as AsyncIterable<unknown>) {
+        // consume until the stream fails
+      }
+    }).rejects.toThrow("socket closed");
+
+    const update = mocks.generation.update.mock.calls.at(-1)?.[0];
+    expect(update).toMatchObject({
+      output: "Hello",
+      level: "ERROR",
+      usageDetails: { input: 1, output: 2, total: 3 },
+    });
+    expect(update.costDetails).toBeUndefined();
+  });
+
+  it("keeps partial Responses API text when the consumer stops early", async () => {
+    async function* stream() {
+      yield { type: "response.output_text.delta", delta: "Hello" };
+      yield { type: "response.output_text.delta", delta: " world" };
+      yield {
+        type: "response.completed",
+        response: { output_text: "Hello world" },
+      };
+    }
+
+    const openai = observeOpenAI({
+      chat: {
+        completions: {
+          create: async () => stream(),
+        },
+      },
+    });
+
+    const result = await openai.chat.completions.create();
+
+    for await (const _chunk of result as AsyncIterable<unknown>) {
+      break;
+    }
+
+    expect(mocks.generation.end).toHaveBeenCalledTimes(1);
+    expect(mocks.generation.update).toHaveBeenCalledWith(
+      expect.objectContaining({ output: "Hello" }),
+    );
   });
 });
