@@ -201,61 +201,85 @@ function wrapAsyncIterable<R>(
     let usageDetails: Record<string, number> | undefined = undefined;
     let output: unknown = null;
 
-    for await (const rawChunk of response as AsyncIterable<unknown>) {
-      completionStartTime = completionStartTime ?? new Date();
+    let failure: unknown;
 
-      // Handle Response API chunks
-      if (typeof rawChunk === "object" && rawChunk && "response" in rawChunk) {
-        const result = rawChunk["response"];
-        output = parseCompletionOutput(result);
-        usageDetails = parseUsageDetailsFromResponse(result);
+    try {
+      for await (const rawChunk of response as AsyncIterable<unknown>) {
+        completionStartTime = completionStartTime ?? new Date();
 
-        const {
-          model: modelFromResponse,
-          modelParameters: modelParametersFromResponse,
-          metadata: metadataFromResponse,
-        } = parseModelDataFromResponse(result);
+        // Handle Response API chunks
+        if (
+          typeof rawChunk === "object" &&
+          rawChunk &&
+          "response" in rawChunk
+        ) {
+          const result = rawChunk["response"];
+          output = parseCompletionOutput(result);
+          usageDetails = parseUsageDetailsFromResponse(result);
 
-        generation.update({
-          model: modelFromResponse,
-          modelParameters: modelParametersFromResponse,
-          metadata: metadataFromResponse,
-        });
+          const {
+            model: modelFromResponse,
+            modelParameters: modelParametersFromResponse,
+            metadata: metadataFromResponse,
+          } = parseModelDataFromResponse(result);
+
+          generation.update({
+            model: modelFromResponse,
+            modelParameters: modelParametersFromResponse,
+            metadata: metadataFromResponse,
+          });
+        }
+
+        if (
+          typeof rawChunk === "object" &&
+          rawChunk != null &&
+          "usage" in rawChunk
+        ) {
+          usage = rawChunk.usage as OpenAI.CompletionUsage | null;
+        }
+
+        const processedChunk = parseChunk(rawChunk);
+
+        if (!processedChunk.isToolCall) {
+          textChunks.push(processedChunk.data);
+        } else {
+          toolCallChunks.push(processedChunk.data);
+        }
+
+        yield rawChunk;
       }
+    } catch (error) {
+      failure = error;
+      throw error;
+    } finally {
+      // Breaking out of for-await, or a throw from the source stream, skips
+      // everything after the loop. End here so the generation is not left open.
+      output =
+        output ??
+        (toolCallChunks.length > 0
+          ? getToolCallOutput(toolCallChunks)
+          : textChunks.join(""));
 
-      if (
-        typeof rawChunk === "object" &&
-        rawChunk != null &&
-        "usage" in rawChunk
-      ) {
-        usage = rawChunk.usage as OpenAI.CompletionUsage | null;
-      }
-
-      const processedChunk = parseChunk(rawChunk);
-
-      if (!processedChunk.isToolCall) {
-        textChunks.push(processedChunk.data);
-      } else {
-        toolCallChunks.push(processedChunk.data);
-      }
-
-      yield rawChunk;
+      generation
+        .update({
+          output,
+          completionStartTime,
+          usageDetails:
+            usageDetails ?? (usage ? parseUsageDetails(usage) : undefined),
+          ...(failure === undefined
+            ? {}
+            : {
+                statusMessage: String(failure),
+                level: "ERROR" as const,
+                costDetails: {
+                  input: 0,
+                  output: 0,
+                  total: 0,
+                },
+              }),
+        })
+        .end();
     }
-
-    output =
-      output ??
-      (toolCallChunks.length > 0
-        ? getToolCallOutput(toolCallChunks)
-        : textChunks.join(""));
-
-    generation
-      .update({
-        output,
-        completionStartTime,
-        usageDetails:
-          usageDetails ?? (usage ? parseUsageDetails(usage) : undefined),
-      })
-      .end();
   }
 
   return tracedOutputGenerator() as R;
