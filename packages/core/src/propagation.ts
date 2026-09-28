@@ -844,11 +844,9 @@ function getBaggageTags(context: Context): string[] | undefined {
     return undefined;
   }
 
-  const tags = raw
-    .split(LANGFUSE_BAGGAGE_TAGS_SEPARATOR)
-    .filter((tag) => tag.length > 0);
-
-  return tags.length > 0 ? tags : undefined;
+  // Same split as getPropagatedAttributesFromContext. Do not drop empty
+  // segments: isValidPropagatedString accepts "" and the baggage reader keeps it.
+  return raw.split(LANGFUSE_BAGGAGE_TAGS_SEPARATOR);
 }
 
 function getContextMergedTags(context: Context, newTags: string[]): string[] {
