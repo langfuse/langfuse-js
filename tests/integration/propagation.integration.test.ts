@@ -676,6 +676,45 @@ describe("propagateAttributes", () => {
       );
     });
 
+    it("should keep tags inherited through baggage when a nested call adds more", async () => {
+      const carrier: Record<string, string> = {};
+
+      await propagateAttributes(
+        { tags: ["service-a"], asBaggage: true },
+        async () => {
+          propagation.inject(otelContext.active(), carrier);
+        },
+      );
+
+      const received = propagation.extract(ROOT_CONTEXT, carrier);
+
+      await otelContext.with(received, async () => {
+        await propagateAttributes(
+          { tags: ["service-b"], asBaggage: true },
+          async () => {
+            const tags = propagation
+              .getBaggage(otelContext.active())
+              ?.getEntry("langfuse_tags")?.value;
+
+            expect(tags).toBe("service-a,service-b");
+
+            const child = startObservation("child");
+            child.end();
+          },
+        );
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+      const child = testEnv.mockExporter.exportedSpans.find(
+        (span) => span.name === "child",
+      );
+
+      expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual([
+        "service-a",
+        "service-b",
+      ]);
+    });
+
     it("should drop tags over 200 characters", async () => {
       const tracer = otelTrace.getTracer("langfuse-sdk");
       const longTag = "x".repeat(201);

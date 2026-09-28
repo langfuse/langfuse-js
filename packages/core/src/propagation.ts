@@ -835,14 +835,38 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
   return context;
 }
 
-function getContextMergedTags(context: Context, newTags: string[]): string[] {
-  const existingTags = context.getValue(LangfuseOtelContextKeys["tags"]);
+function getBaggageTags(context: Context): string[] | undefined {
+  const raw = propagation
+    .getBaggage(context)
+    ?.getEntry(getBaggageKeyForPropagatedKey("tags"))?.value;
 
-  if (existingTags && Array.isArray(existingTags)) {
-    return [...new Set([...existingTags, ...newTags])];
-  } else {
-    return newTags;
+  if (!raw) {
+    return undefined;
   }
+
+  const tags = raw
+    .split(LANGFUSE_BAGGAGE_TAGS_SEPARATOR)
+    .filter((tag) => tag.length > 0);
+
+  return tags.length > 0 ? tags : undefined;
+}
+
+function getContextMergedTags(context: Context, newTags: string[]): string[] {
+  const contextTags = context.getValue(LangfuseOtelContextKeys["tags"]);
+
+  // Context values do not survive propagation.extract(). Tags carried across a
+  // process boundary live only on the langfuse_tags baggage entry until the
+  // next propagateAttributes call writes them back. Union against that entry
+  // when the context value is absent so a nested call does not replace them.
+  const existingTags = Array.isArray(contextTags)
+    ? contextTags.filter((tag): tag is string => typeof tag === "string")
+    : getBaggageTags(context);
+
+  if (existingTags) {
+    return [...new Set([...existingTags, ...newTags])];
+  }
+
+  return newTags;
 }
 
 function getContextMergedMetadata(
