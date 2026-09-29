@@ -56,6 +56,20 @@ describe("getLangchainPrompt JSON escaping", () => {
     expect(formatted).toBe('{"value": "Ann"} and {"already": "escaped"}');
   });
 
+  it("treats braces inside JSON string values as content", async () => {
+    const prompt = createTextPrompt(
+      '{"message": "closing }}}} marker", "note": "a { b"} and {{v}}',
+    );
+
+    const formatted = await PromptTemplate.fromTemplate(
+      prompt.getLangchainPrompt(),
+    ).format({ v: "V" });
+
+    expect(formatted).toBe(
+      '{"message": "closing }} marker", "note": "a { b"} and V',
+    );
+  });
+
   it("keeps nested JSON intact in chat messages", async () => {
     const prompt = new ChatPromptClient({
       type: "chat",

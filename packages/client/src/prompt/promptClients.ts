@@ -112,11 +112,38 @@ abstract class BasePromptClient {
     const out: string[] = []; // collected characters
     // how each open brace was treated: "json" (doubled), "plain" or "double" (an existing “{{”)
     const stack: ("json" | "plain" | "double")[] = [];
+    // quote character of the JSON string we are inside, if any
+    let quote: string | null = null;
     let i = 0;
     const n = text.length;
 
     while (i < n) {
       const ch = text[i];
+
+      // ---------- inside a JSON string: braces are content, not structure ----------
+      if (quote !== null) {
+        if (ch === "\\" && i + 1 < n) {
+          out.push(ch, text[i + 1]);
+          i += 2;
+          continue;
+        }
+        if (ch === quote) {
+          quote = null;
+        } else if (ch === "{" || ch === "}") {
+          // leave existing “{{” / “}}” untouched, double a lone brace so it stays literal
+          if (i + 1 < n && text[i + 1] === ch) {
+            out.push(ch + ch);
+            i += 2;
+            continue;
+          }
+          out.push(ch + ch);
+          i += 1;
+          continue;
+        }
+        out.push(ch);
+        i += 1;
+        continue;
+      }
 
       // ---------- opening brace ----------
       if (ch === "{") {
@@ -165,6 +192,9 @@ abstract class BasePromptClient {
       }
 
       // ---------- any other character ----------
+      if ((ch === '"' || ch === "'") && stack[stack.length - 1] === "json") {
+        quote = ch;
+      }
       out.push(ch);
       i += 1;
     }
