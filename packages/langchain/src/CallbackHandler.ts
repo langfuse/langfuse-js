@@ -9,6 +9,7 @@ import {
   type UsageMetadata,
   type BaseMessageFields,
   type MessageContent,
+  type ToolMessage,
 } from "@langchain/core/messages";
 import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { ChainValues } from "@langchain/core/utils/types";
@@ -26,6 +27,15 @@ import {
 
 const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
 
+function isLangGraphControlFlowError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "is_bubble_up" in error &&
+    error.is_bubble_up === true
+  );
+}
+
 type LangfusePrompt = {
   name: string;
   version: number;
@@ -34,8 +44,10 @@ type LangfusePrompt = {
 
 export type LlmMessage = {
   role: string;
+  name?: string;
   content: BaseMessageFields["content"];
   additional_kwargs?: BaseMessageFields["additional_kwargs"];
+  tool_call_id?: string;
 };
 
 export type AnonymousLlmMessage = {
@@ -92,6 +104,17 @@ export class CallbackHandler extends BaseCallbackHandler {
     _tags?: string[],
     _fields?: any,
   ): Promise<void> {
+    this.recordCompletionStartTime(runId);
+  }
+
+  async handleChatModelStreamEvent(
+    _event: unknown,
+    runId: string,
+  ): Promise<void> {
+    this.recordCompletionStartTime(runId);
+  }
+
+  private recordCompletionStartTime(runId: string): void {
     // if this is the first token, add it to completionStartTimes
     if (runId && !(runId in this.completionStartTimes)) {
       this.logger.debug(`LLM first streaming token: ${runId}`);
@@ -263,7 +286,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString() + azureRefusalError,
         },
       });
@@ -545,7 +568,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString(),
         },
       });
@@ -583,7 +606,7 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString(),
         },
       });
@@ -695,10 +718,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       this.handleOtelSpanEnd({
         runId,
         attributes: {
-          level: "ERROR",
+          level: isLangGraphControlFlowError(err) ? "DEFAULT" : "ERROR",
           statusMessage: err.toString() + azureRefusalError,
         },
       });
+
+      if (runId in this.completionStartTimes) {
+        delete this.completionStartTimes[runId];
+      }
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
     }
@@ -967,13 +994,16 @@ export class CallbackHandler extends BaseCallbackHandler {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "function",
+        name: message.name,
       };
     } else if (message.getType() === "tool") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
-        role: message.name,
+        role: "tool",
+        name: message.name,
+        tool_call_id: (message as ToolMessage).tool_call_id,
       };
     } else if (!message.name) {
       response = { content: message.content };

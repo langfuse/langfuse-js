@@ -5,6 +5,6 @@
 import * as LangfuseAPI from "../../../index.js";
 
 /**
- * A list containing exactly one user chat message.
+ * An ordered list of chat messages. A system message is only allowed as the first message.
  */
 export type EvaluatorChatPrompt = LangfuseAPI.EvaluatorChatMessage[];

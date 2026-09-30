@@ -7,7 +7,7 @@ import * as LangfuseAPI from "../../../index.js";
 export interface LlmAsJudgeEvaluator extends LangfuseAPI.EvaluatorBase {
   /** Evaluator type. */
   type: "llm_as_judge";
-  /** The single user chat message used by the latest evaluator version. */
+  /** Ordered chat messages used by the latest evaluator version. */
   prompt: LangfuseAPI.EvaluatorChatPrompt;
   /** Variables extracted from the latest prompt and available for evaluation-rule mappings. */
   variables: string[];

@@ -11,7 +11,7 @@ export interface UpdateLlmAsJudgeEvaluatorRequest {
   description?: string | null;
   /** Evaluator type. The type of an existing evaluator cannot change. */
   type: "llm_as_judge";
-  /** Complete replacement user prompt string or a list containing exactly one user chat message. */
+  /** Complete replacement user prompt string or an ordered list of chat messages. */
   prompt: LangfuseAPI.EvaluatorChatPromptInput;
   /** Explicit model configuration. Set to `null` or omit to use the project's default evaluation model. */
   modelConfig?: LangfuseAPI.EvaluatorModelConfig | null;

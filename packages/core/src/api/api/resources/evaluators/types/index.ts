@@ -1,5 +1,6 @@
 export * from "./Creator.js";
 export * from "./EvaluatorModelConfig.js";
+export * from "./EvaluatorChatMessageRole.js";
 export * from "./EvaluatorChatMessage.js";
 export * from "./EvaluatorChatPrompt.js";
 export * from "./EvaluatorChatPromptInput.js";

@@ -75,7 +75,7 @@ export class Observations {
    * - `time` - completionStartTime, createdAt, updatedAt
    * - `io` - input, output
    * - `metadata` - metadata (truncated to 200 chars by default, use `expandMetadata` to get full values)
-   * - `model` - providedModelName, internalModelId, modelParameters
+   * - `model` - model, internalModelId, modelParameters
    * - `usage` - usageDetails, costDetails, totalCost, usagePricingTierName
    * - `prompt` - promptId, promptName, promptVersion
    * - `metrics` - latency, timeToFirstToken

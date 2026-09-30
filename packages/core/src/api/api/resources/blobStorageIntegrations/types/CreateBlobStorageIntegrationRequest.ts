@@ -12,7 +12,7 @@ export interface CreateBlobStorageIntegrationRequest {
   bucketName: string;
   /** Custom endpoint URL (required for S3_COMPATIBLE type) */
   endpoint?: string;
-  /** Storage region */
+  /** Storage region used by S3-compatible clients (AWS, GCS, Cloudflare R2, MinIO, Azure location IDs such as eastus, OCI). Leading and trailing whitespace is removed. The remaining value must be 1-63 letters, numbers, or hyphens, and cannot start or end with a hyphen. Examples: us-east-1, europe-west1, eastus, auto. */
   region: string;
   /** Access key ID for authentication */
   accessKeyId?: string;

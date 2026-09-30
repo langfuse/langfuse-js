@@ -11,7 +11,7 @@ export interface CreateLlmAsJudgeEvaluatorRequest {
   description?: string | null;
   /** Evaluator type. */
   type: "llm_as_judge";
-  /** User prompt string shortcut or a list containing exactly one user chat message. */
+  /** User prompt string shortcut or an ordered list of chat messages. */
   prompt: LangfuseAPI.EvaluatorChatPromptInput;
   /** Explicit model configuration. Set to `null` or omit to use the project's default evaluation model. */
   modelConfig?: LangfuseAPI.EvaluatorModelConfig | null;

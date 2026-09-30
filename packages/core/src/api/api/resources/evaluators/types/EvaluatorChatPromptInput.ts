@@ -5,6 +5,6 @@
 import * as LangfuseAPI from "../../../index.js";
 
 /**
- * A user prompt string, or a list containing exactly one user chat message.
+ * A user prompt string shortcut, or an ordered list of chat messages.
  */
 export type EvaluatorChatPromptInput = string | LangfuseAPI.EvaluatorChatPrompt;

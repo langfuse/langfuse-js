@@ -66,4 +66,4 @@ const completion = await openai.chat.completions.create({
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/langfuse/langfuse-js/blob/main/LICENSE)

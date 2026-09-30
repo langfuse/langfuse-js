@@ -15,7 +15,13 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 > [!IMPORTANT]
 > The SDK was rewritten in v5 and released in March 2026. Refer to the [v5 migration guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5) for instructions on updating your code.
 >
-> The unscoped npm packages `langfuse`, `langfuse-core`, `langfuse-node`, and `langfuse-langchain` belong to the legacy v3 SDK. For new integrations use the `@langfuse/*` scoped packages below — start with [@langfuse/tracing](./packages/tracing) + [@langfuse/otel](./packages/otel) for tracing.
+> **`langfuse` on npm is not the latest Langfuse JS/TS SDK.** The unscoped packages `langfuse`, `langfuse-core`, `langfuse-node`, and `langfuse-langchain` are the **deprecated** v3 client (`new Langfuse()`, `trace()`, `span()`, `api.traceList`). Do **not** `npm install langfuse` for new instrumentation.
+>
+> **Latest install:** `npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node`. Use [@langfuse/tracing](./packages/tracing) (`startActiveObservation` / `startObservation`) + `LangfuseSpanProcessor` from [@langfuse/otel](./packages/otel). Prompts/datasets/scores: [@langfuse/client](./packages/client). Docs: https://langfuse.com/docs/observability/sdk/overview — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
+>
+> Query traces with [Observations API v2](https://langfuse.com/docs/api-and-data-platform/features/observations-api) (`GET /api/public/v2/observations`, [API reference](https://api.reference.langfuse.com/#tag/observationsv2)), not `GET /api/public/traces` / `api.traceList`.
+>
+> **Data freshness:** the only real-time path is OpenTelemetry ingestion ([@langfuse/otel](./packages/otel), or any OTel exporter sending `x-langfuse-ingestion-version: 4`) combined with the [Observations API v2](https://langfuse.com/docs/api-and-data-platform/features/observations-api) and [Metrics API v2](https://langfuse.com/docs/metrics/features/metrics-api). All other GET APIs from all SDK packages can be up to 10 minutes behind.
 
 | Package                                             | NPM                                                                                                                       | Description                                               | Environments |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------ |
