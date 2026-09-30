@@ -12,40 +12,25 @@ export function getSerializedBatchSizeBytes(
 }
 
 export function resolveMaxBatchSizeBytes(rawValue: string | undefined): number {
-  if (rawValue === undefined) return DEFAULT_MAX_BATCH_SIZE_BYTES;
+  const normalizedValue = rawValue?.trim();
+  if (!normalizedValue) return DEFAULT_MAX_BATCH_SIZE_BYTES;
 
-  const normalizedValue = rawValue.trim();
-  if (!/^\d+$/.test(normalizedValue)) {
-    getGlobalLogger().warn(
-      "Invalid LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES. Using the default limit.",
-      { defaultMaxBatchSizeBytes: DEFAULT_MAX_BATCH_SIZE_BYTES },
-    );
-    return DEFAULT_MAX_BATCH_SIZE_BYTES;
+  const parsedValue = /^\d+$/.test(normalizedValue)
+    ? Number(normalizedValue)
+    : Number.NaN;
+  if (Number.isSafeInteger(parsedValue) && parsedValue > 0) {
+    return parsedValue;
   }
 
-  const parsedValue = Number(normalizedValue);
-  if (!Number.isSafeInteger(parsedValue) || parsedValue <= 0) {
-    getGlobalLogger().warn(
-      "Invalid LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES. Using the default limit.",
-      { defaultMaxBatchSizeBytes: DEFAULT_MAX_BATCH_SIZE_BYTES },
-    );
-    return DEFAULT_MAX_BATCH_SIZE_BYTES;
-  }
-
-  return parsedValue;
+  getGlobalLogger().warn(
+    "Invalid LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES. Using the default limit.",
+    { defaultMaxBatchSizeBytes: DEFAULT_MAX_BATCH_SIZE_BYTES },
+  );
+  return DEFAULT_MAX_BATCH_SIZE_BYTES;
 }
 
 export function resolveMaxBatchSizeBytesFromEnvironment(): number {
-  const processValue =
-    typeof process !== "undefined"
-      ? process.env.LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES
-      : undefined;
-
-  return resolveMaxBatchSizeBytes(
-    processValue !== undefined
-      ? processValue
-      : getEnv("LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES"),
-  );
+  return resolveMaxBatchSizeBytes(getEnv("LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES"));
 }
 
 export class SizeLimitedSpanExporter implements SpanExporter {

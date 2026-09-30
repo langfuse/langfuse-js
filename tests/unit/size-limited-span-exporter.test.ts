@@ -161,10 +161,12 @@ describe("SizeLimitedSpanExporter", () => {
       .mockImplementation(() => undefined);
 
     expect(DEFAULT_MAX_BATCH_SIZE_BYTES).toBe(67_108_864);
-    expect(resolveMaxBatchSizeBytes(undefined)).toBe(67_108_864);
+    for (const unsetValue of [undefined, "", "   "]) {
+      expect(resolveMaxBatchSizeBytes(unsetValue)).toBe(67_108_864);
+    }
+    expect(warn).not.toHaveBeenCalled();
+
     for (const invalidValue of [
-      "",
-      "   ",
       "0",
       "-1",
       "+1",
@@ -177,14 +179,14 @@ describe("SizeLimitedSpanExporter", () => {
         DEFAULT_MAX_BATCH_SIZE_BYTES,
       );
     }
-    expect(warn).toHaveBeenCalledTimes(9);
+    expect(warn).toHaveBeenCalledTimes(7);
   });
 
   it("accepts a trimmed positive decimal safe integer", () => {
     expect(resolveMaxBatchSizeBytes("  001024  ")).toBe(1024);
   });
 
-  it("warns and falls back when the process environment value is empty", () => {
+  it("treats an empty process environment value as unset", () => {
     process.env.LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES = "";
     const warn = vi
       .spyOn(getGlobalLogger(), "warn")
@@ -193,6 +195,6 @@ describe("SizeLimitedSpanExporter", () => {
     expect(resolveMaxBatchSizeBytesFromEnvironment()).toBe(
       DEFAULT_MAX_BATCH_SIZE_BYTES,
     );
-    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).not.toHaveBeenCalled();
   });
 });
