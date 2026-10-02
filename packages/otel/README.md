@@ -19,6 +19,7 @@ npm install @langfuse/otel @opentelemetry/sdk-trace-node
 LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
+# LANGFUSE_OTEL_COMPRESSION="gzip" # Optional; "gzip" or "none". Node.js/Bun only; requires Langfuse server >= v3.30.0
 ```
 
 ## Quickstart
