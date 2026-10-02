@@ -10,7 +10,8 @@ type LangfuseEnvVar =
   | "LANGFUSE_LOG_LEVEL"
   | "LANGFUSE_DEBUG"
   | "LANGFUSE_RELEASE"
-  | "LANGFUSE_TRACING_ENVIRONMENT";
+  | "LANGFUSE_TRACING_ENVIRONMENT"
+  | "LANGFUSE_OTEL_COMPRESSION";
 
 export function getEnv(key: LangfuseEnvVar): string | undefined {
   if (typeof process !== "undefined" && process.env[key]) {
