@@ -25,5 +25,5 @@ export interface OtelSpan {
   /** Span attributes including Langfuse-specific attributes (langfuse.observation.*) */
   attributes?: LangfuseAPI.OtelAttribute[];
   /** Span status object */
-  status?: unknown;
+  status?: Record<string, unknown>;
 }
