@@ -273,6 +273,11 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         "No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail.",
       );
     }
+    if (params?.exporter && params.compression !== undefined) {
+      logger.warn(
+        "The compression option is ignored because a custom exporter was provided. Configure compression on the exporter instead.",
+      );
+    }
     const flushAt = params?.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
     const flushIntervalSeconds =
       params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");

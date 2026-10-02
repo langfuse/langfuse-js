@@ -11,6 +11,7 @@ import {
   LangfuseSpanProcessor,
   type LangfuseSpanProcessorParams,
 } from "@langfuse/otel";
+import { InMemorySpanExporter } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -135,5 +136,20 @@ describe("LangfuseSpanProcessor export compression", () => {
     );
     expect(request.contentEncoding).toBe("gzip");
     expect(exportedSpanName(request)).toBe("compression-span");
+  });
+
+  it("warns when compression is set with a custom exporter", async () => {
+    configureGlobalLogger({ level: LogLevel.WARN });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    const processor = new LangfuseSpanProcessor({
+      exporter: new InMemorySpanExporter(),
+      compression: "gzip",
+    });
+    await processor.shutdown();
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("The compression option is ignored"),
+    );
   });
 });
