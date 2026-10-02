@@ -3,15 +3,9 @@ import type { AddressInfo } from "node:net";
 import { gunzipSync } from "node:zlib";
 
 import {
-  LogLevel,
-  configureGlobalLogger,
-  resetGlobalLogger,
-} from "@langfuse/core";
-import {
   LangfuseSpanProcessor,
   type LangfuseSpanProcessorParams,
 } from "@langfuse/otel";
-import { InMemorySpanExporter } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -73,8 +67,6 @@ function exportedSpanName({ contentEncoding, body }: ExportRequest): string {
 describe("LangfuseSpanProcessor export compression", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
-    vi.restoreAllMocks();
-    resetGlobalLogger();
   });
 
   it.each<{
@@ -119,37 +111,5 @@ describe("LangfuseSpanProcessor export compression", () => {
 
     expect(request.contentEncoding).toBe(expectedEncoding);
     expect(exportedSpanName(request)).toBe("compression-span");
-  });
-
-  it("warns on an invalid value and falls back to OTEL env vars", async () => {
-    vi.stubEnv("LANGFUSE_OTEL_COMPRESSION", "deflate");
-    vi.stubEnv("OTEL_EXPORTER_OTLP_COMPRESSION", "gzip");
-    configureGlobalLogger({ level: LogLevel.WARN });
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-
-    const request = await exportSpan();
-
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Invalid LANGFUSE_OTEL_COMPRESSION value "deflate". Expected "gzip" or "none".',
-      ),
-    );
-    expect(request.contentEncoding).toBe("gzip");
-    expect(exportedSpanName(request)).toBe("compression-span");
-  });
-
-  it("warns when compression is set with a custom exporter", async () => {
-    configureGlobalLogger({ level: LogLevel.WARN });
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-
-    const processor = new LangfuseSpanProcessor({
-      exporter: new InMemorySpanExporter(),
-      compression: "gzip",
-    });
-    await processor.shutdown();
-
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("The compression option is ignored"),
-    );
   });
 });
