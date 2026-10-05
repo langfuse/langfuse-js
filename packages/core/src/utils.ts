@@ -6,11 +6,13 @@ type LangfuseEnvVar =
   | "LANGFUSE_TIMEOUT"
   | "LANGFUSE_FLUSH_AT"
   | "LANGFUSE_FLUSH_INTERVAL"
+  | "LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES"
   | "LANGFUSE_MEDIA_UPLOAD_ENABLED"
   | "LANGFUSE_LOG_LEVEL"
   | "LANGFUSE_DEBUG"
   | "LANGFUSE_RELEASE"
-  | "LANGFUSE_TRACING_ENVIRONMENT";
+  | "LANGFUSE_TRACING_ENVIRONMENT"
+  | "LANGFUSE_OTEL_COMPRESSION";
 
 export function getEnv(key: LangfuseEnvVar): string | undefined {
   if (typeof process !== "undefined" && process.env[key]) {

@@ -194,7 +194,8 @@ describe("OpenAI integration E2E tests", () => {
     ).toBeLessThanOrEqual(new Date(generation.endTime).getTime());
   });
 
-  it("should trace completion without streaming", async () => {
+  // OpenAI retired gpt-3.5-turbo-instruct, the legacy completions model this test depends on.
+  it.skip("should trace completion without streaming", async () => {
     const generationName = `Completion-NonStreaming-${nanoid()}`;
     const wrappedOpenAI = observeOpenAI(new OpenAI(), {
       generationName,
@@ -257,7 +258,8 @@ describe("OpenAI integration E2E tests", () => {
     expect(generation.statusMessage).toBeNull();
   });
 
-  it("should trace completion with streaming", async () => {
+  // OpenAI retired gpt-3.5-turbo-instruct, the legacy completions model this test depends on.
+  it.skip("should trace completion with streaming", async () => {
     const generationName = `Completions-streaming-${nanoid()}`;
     const wrappedOpenAI = observeOpenAI(new OpenAI(), {
       generationName,

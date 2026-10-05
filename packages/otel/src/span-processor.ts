@@ -13,6 +13,7 @@ import {
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
 import {
   Span,
   BatchSpanProcessor,
@@ -23,6 +24,10 @@ import {
 } from "@opentelemetry/sdk-trace-base";
 
 import { MediaService } from "./MediaService.js";
+import {
+  SizeLimitedSpanExporter,
+  resolveMaxBatchSizeBytesFromEnvironment,
+} from "./size-limited-span-exporter.js";
 import { isDefaultExportSpan } from "./span-filter.js";
 
 /**
@@ -78,6 +83,8 @@ export type ShouldExportSpan = (params: { otelSpan: ReadableSpan }) => boolean;
 export interface LangfuseSpanProcessorParams {
   /**
    * Custom OpenTelemetry span exporter. If not provided, a default OTLP exporter will be used.
+   * Custom exporters bypass Langfuse's OTLP batch byte limit and must enforce
+   * any transport-specific request limits themselves.
    */
   exporter?: SpanExporter;
 
@@ -149,6 +156,18 @@ export interface LangfuseSpanProcessorParams {
    * Additional HTTP headers to include with requests.
    */
   additionalHeaders?: Record<string, string>;
+
+  /**
+   * Compression for span export requests: `"gzip"` or `"none"`.
+   * Can also be set via LANGFUSE_OTEL_COMPRESSION environment variable.
+   * When unset, falls back to the OTEL_EXPORTER_OTLP_TRACES_COMPRESSION and
+   * OTEL_EXPORTER_OTLP_COMPRESSION environment variables, then to no compression.
+   *
+   * Ignored when a custom `exporter` is provided. Only takes effect on Node.js and Bun;
+   * browser and edge runtimes ignore it. Requires Langfuse server v3.30.0 or later.
+   */
+  compression?: "gzip" | "none";
+
   /**
    * Span export mode to use.
    *
@@ -261,6 +280,11 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         "No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail.",
       );
     }
+    if (params?.exporter && params.compression !== undefined) {
+      logger.warn(
+        "The compression option is ignored because a custom exporter was provided. Configure compression on the exporter instead.",
+      );
+    }
     const flushAt = params?.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
     const flushIntervalSeconds =
       params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
@@ -274,20 +298,31 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       (envMediaUploadEnabled
         ? !["false", "0"].includes(envMediaUploadEnabled.toLowerCase())
         : true);
+    const compression =
+      params?.compression !== undefined
+        ? resolveCompression(params.compression, "compression")
+        : resolveCompression(
+            getEnv("LANGFUSE_OTEL_COMPRESSION"),
+            "LANGFUSE_OTEL_COMPRESSION",
+          );
 
-    const exporter =
-      params?.exporter ??
-      new OTLPTraceExporter({
-        url: `${baseUrl}/api/public/otel/v1/traces`,
-        headers: {
-          Authorization: `Basic ${authHeaderValue}`,
-          "x-langfuse-sdk-name": "javascript",
-          "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
-          "x-langfuse-public-key": publicKey ?? "<missing>",
-          ...params?.additionalHeaders,
-        },
-        timeoutMillis: timeoutSeconds * 1_000,
-      });
+    const exporter = params?.exporter
+      ? params.exporter
+      : new SizeLimitedSpanExporter({
+          maxBatchSizeBytes: resolveMaxBatchSizeBytesFromEnvironment(),
+          delegate: new OTLPTraceExporter({
+            url: `${baseUrl}/api/public/otel/v1/traces`,
+            headers: {
+              Authorization: `Basic ${authHeaderValue}`,
+              "x-langfuse-sdk-name": "javascript",
+              "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+              "x-langfuse-public-key": publicKey ?? "<missing>",
+              ...params?.additionalHeaders,
+            },
+            timeoutMillis: timeoutSeconds * 1_000,
+            compression,
+          }),
+        });
 
     this.processor =
       params?.exportMode === "immediate"
@@ -331,6 +366,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       flushAt,
       flushIntervalSeconds,
       mediaUploadEnabled,
+      compression,
     });
   }
 
@@ -579,4 +615,24 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       return "<fully masked due to failed mask function>";
     }
   }
+}
+
+function resolveCompression(
+  value: string | undefined,
+  setting: string,
+): CompressionAlgorithm | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === CompressionAlgorithm.GZIP) {
+    return CompressionAlgorithm.GZIP;
+  }
+  if (normalized === CompressionAlgorithm.NONE) {
+    return CompressionAlgorithm.NONE;
+  }
+
+  getGlobalLogger().warn(
+    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the OTEL_EXPORTER_OTLP_*COMPRESSION environment variables.`,
+  );
+
+  return undefined;
 }
