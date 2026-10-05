@@ -13,6 +13,7 @@ import {
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
 import {
   Span,
   BatchSpanProcessor,
@@ -607,19 +608,17 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 }
 
-// CompressionAlgorithm lives in @opentelemetry/otlp-exporter-base, which is not a dependency.
-type OTLPCompression = NonNullable<
-  ConstructorParameters<typeof OTLPTraceExporter>[0]
->["compression"];
-
 function resolveCompression(
   value: string | undefined,
   setting: string,
-): OTLPCompression {
+): CompressionAlgorithm | undefined {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) return undefined;
-  if (normalized === "gzip" || normalized === "none") {
-    return normalized as OTLPCompression;
+  if (normalized === CompressionAlgorithm.GZIP) {
+    return CompressionAlgorithm.GZIP;
+  }
+  if (normalized === CompressionAlgorithm.NONE) {
+    return CompressionAlgorithm.NONE;
   }
 
   getGlobalLogger().warn(
