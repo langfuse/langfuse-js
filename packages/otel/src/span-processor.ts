@@ -13,6 +13,7 @@ import {
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
 import {
   Span,
   BatchSpanProcessor,
@@ -155,6 +156,18 @@ export interface LangfuseSpanProcessorParams {
    * Additional HTTP headers to include with requests.
    */
   additionalHeaders?: Record<string, string>;
+
+  /**
+   * Compression for span export requests: `"gzip"` or `"none"`.
+   * Can also be set via LANGFUSE_OTEL_COMPRESSION environment variable.
+   * When unset, falls back to the OTEL_EXPORTER_OTLP_TRACES_COMPRESSION and
+   * OTEL_EXPORTER_OTLP_COMPRESSION environment variables, then to no compression.
+   *
+   * Ignored when a custom `exporter` is provided. Only takes effect on Node.js and Bun;
+   * browser and edge runtimes ignore it. Requires Langfuse server v3.30.0 or later.
+   */
+  compression?: "gzip" | "none";
+
   /**
    * Span export mode to use.
    *
@@ -267,6 +280,11 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         "No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail.",
       );
     }
+    if (params?.exporter && params.compression !== undefined) {
+      logger.warn(
+        "The compression option is ignored because a custom exporter was provided. Configure compression on the exporter instead.",
+      );
+    }
     const flushAt = params?.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
     const flushIntervalSeconds =
       params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
@@ -280,6 +298,13 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       (envMediaUploadEnabled
         ? !["false", "0"].includes(envMediaUploadEnabled.toLowerCase())
         : true);
+    const compression =
+      params?.compression !== undefined
+        ? resolveCompression(params.compression, "compression")
+        : resolveCompression(
+            getEnv("LANGFUSE_OTEL_COMPRESSION"),
+            "LANGFUSE_OTEL_COMPRESSION",
+          );
 
     const exporter = params?.exporter
       ? params.exporter
@@ -295,6 +320,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
               ...params?.additionalHeaders,
             },
             timeoutMillis: timeoutSeconds * 1_000,
+            compression,
           }),
         });
 
@@ -340,6 +366,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       flushAt,
       flushIntervalSeconds,
       mediaUploadEnabled,
+      compression,
     });
   }
 
@@ -588,4 +615,24 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       return "<fully masked due to failed mask function>";
     }
   }
+}
+
+function resolveCompression(
+  value: string | undefined,
+  setting: string,
+): CompressionAlgorithm | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === CompressionAlgorithm.GZIP) {
+    return CompressionAlgorithm.GZIP;
+  }
+  if (normalized === CompressionAlgorithm.NONE) {
+    return CompressionAlgorithm.NONE;
+  }
+
+  getGlobalLogger().warn(
+    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the OTEL_EXPORTER_OTLP_*COMPRESSION environment variables.`,
+  );
+
+  return undefined;
 }
