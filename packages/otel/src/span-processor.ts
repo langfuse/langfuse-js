@@ -154,6 +154,8 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Additional HTTP headers to include with requests.
+   * Overrides default span export headers with the same name, such as
+   * `x-langfuse-ingestion-version` (default `"4"`).
    */
   additionalHeaders?: Record<string, string>;
 
@@ -317,6 +319,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
               "x-langfuse-sdk-name": "javascript",
               "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
               "x-langfuse-public-key": publicKey ?? "<missing>",
+              "x-langfuse-ingestion-version": "4",
               ...params?.additionalHeaders,
             },
             timeoutMillis: timeoutSeconds * 1_000,
