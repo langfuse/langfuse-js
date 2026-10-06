@@ -3,16 +3,17 @@ import fs from "fs/promises";
 
 import { openai } from "@ai-sdk/openai";
 import { LangfuseClient } from "@langfuse/client";
+import type { ObservationV2 } from "@langfuse/core";
 import { propagateAttributes, startActiveObservation } from "@langfuse/tracing";
 import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
 import { embed, generateText, streamText, tool } from "ai";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import z from "zod";
 
+import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
-  waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 
@@ -85,31 +86,38 @@ async function withTrace<T>({
   });
 }
 
+/**
+ * Trace attributes are propagated onto the AI SDK observations created inside
+ * `propagateAttributes` (the wrapping span is started before it).
+ */
 function expectTraceAttributes(
-  trace: Awaited<ReturnType<LangfuseClient["api"]["trace"]["get"]>>,
-  traceId: string,
+  observations: ObservationV2[],
   traceAttributes: TraceAttributes,
 ) {
-  expect(trace.id).toBe(traceId);
-  expect(trace.userId).toBe(traceAttributes.userId);
-  expect(trace.sessionId).toBe(traceAttributes.sessionId);
-  expect(trace.tags).toEqual([...traceAttributes.tags].sort());
-  expect(trace.metadata).toMatchObject(traceAttributes.metadata);
+  const sdkObservations = observations.filter((o) => o.parentObservationId);
+  expect(sdkObservations.length).toBeGreaterThan(0);
+
+  for (const observation of sdkObservations) {
+    expect(observation.userId).toBe(traceAttributes.userId);
+    expect(observation.sessionId).toBe(traceAttributes.sessionId);
+    expect([...(observation.tags ?? [])].sort()).toEqual(
+      [...traceAttributes.tags].sort(),
+    );
+    expect(observation.metadata).toMatchObject(traceAttributes.metadata);
+  }
 }
 
 function expectGenerationBasics({
-  trace,
+  observations,
   modelName,
   maxTokens,
 }: {
-  trace: Awaited<ReturnType<LangfuseClient["api"]["trace"]["get"]>>;
+  observations: ObservationV2[];
   modelName: string;
   maxTokens?: number;
 }) {
-  expect(trace.observations.length).toBeGreaterThan(0);
-
-  const generations = trace.observations.filter(
-    (observation: any) => observation.type === "GENERATION",
+  const generations = observations.filter(
+    (observation) => observation.type === "GENERATION",
   );
   expect(generations.length).toBeGreaterThan(0);
 
@@ -124,12 +132,12 @@ function expectGenerationBasics({
       });
     }
 
-    expect(generation.calculatedInputCost).toBeGreaterThan(0);
-    expect(generation.calculatedOutputCost).toBeGreaterThan(0);
-    expect(generation.calculatedTotalCost).toBeGreaterThan(0);
-    expect(generation.promptTokens).toBeGreaterThan(0);
-    expect(generation.completionTokens).toBeGreaterThan(0);
-    expect(generation.totalTokens).toBeGreaterThan(0);
+    expect(generation.costDetails?.input).toBeGreaterThan(0);
+    expect(generation.costDetails?.output).toBeGreaterThan(0);
+    expect(generation.costDetails?.total).toBeGreaterThan(0);
+    expect(generation.usageDetails?.input).toBeGreaterThan(0);
+    expect(generation.usageDetails?.output).toBeGreaterThan(0);
+    expect(generation.usageDetails?.total).toBeGreaterThan(0);
   }
 
   return generations;
@@ -138,10 +146,12 @@ function expectGenerationBasics({
 describe("Vercel AI SDK v7 integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
   let testEnv: ServerTestEnvironment;
+  let assertions: ServerAssertions;
 
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
     langfuseClient = new LangfuseClient();
+    assertions = new ServerAssertions();
   });
 
   afterEach(async () => {
@@ -192,12 +202,13 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(result.text).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expectTraceAttributes(trace, traceId, {
+    expectTraceAttributes(observations, {
       userId,
       sessionId,
       metadata,
@@ -205,14 +216,16 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     });
 
     const generations = expectGenerationBasics({
-      trace,
+      observations,
       modelName,
       maxTokens,
     });
 
     expect(
       generations.some(
-        (generation: any) => generation.metadata?.feature === "generate-text",
+        (generation) =>
+          (generation.metadata as Record<string, unknown> | undefined)
+            ?.feature === "generate-text",
       ),
     ).toBe(true);
   }, 10_000);
@@ -268,12 +281,13 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(result.text).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expectTraceAttributes(trace, traceId, {
+    expectTraceAttributes(observations, {
       userId,
       sessionId,
       metadata,
@@ -281,7 +295,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     });
 
     expectGenerationBasics({
-      trace,
+      observations,
       modelName,
       maxTokens,
     });
@@ -340,12 +354,13 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(result).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expectTraceAttributes(trace, traceId, {
+    expectTraceAttributes(observations, {
       userId,
       sessionId,
       metadata,
@@ -353,7 +368,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     });
 
     expectGenerationBasics({
-      trace,
+      observations,
       modelName,
       maxTokens,
     });
@@ -389,20 +404,21 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(result.embedding).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expectTraceAttributes(trace, traceId, {
+    expectTraceAttributes(observations, {
       userId,
       sessionId,
       metadata,
       tags,
     });
 
-    const embeddingObservation = trace.observations.find(
-      (observation: any) => observation.type === "EMBEDDING",
+    const embeddingObservation = observations.find(
+      (observation) => observation.type === "EMBEDDING",
     );
 
     expect(embeddingObservation).toBeDefined();
@@ -477,12 +493,13 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(result).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expectTraceAttributes(trace, traceId, {
+    expectTraceAttributes(observations, {
       userId,
       sessionId,
       metadata,
@@ -490,13 +507,13 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     });
 
     const generations = expectGenerationBasics({
-      trace,
+      observations,
       modelName,
       maxTokens,
     });
 
     const promptLinkedGeneration = generations.find(
-      (generation: any) => generation.promptName === promptName,
+      (generation) => generation.promptName === promptName,
     );
 
     expect(promptLinkedGeneration?.promptName).toBe(promptName);
@@ -538,21 +555,19 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(result.text).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expect(trace.id).toBe(traceId);
-    expect(trace.observations.length).toBeGreaterThan(0);
-
-    const generations = trace.observations.filter(
-      (observation: any) => observation.type === "GENERATION",
+    const generations = observations.filter(
+      (observation) => observation.type === "GENERATION",
     );
 
     expect(generations.length).toBeGreaterThan(0);
 
-    const traceInput = JSON.stringify(trace.observations);
+    const traceInput = JSON.stringify(observations);
 
     expect(traceInput).toMatch(
       /@@@langfuseMedia:type=application\/pdf\|id=.+\|source=bytes@@@/,
@@ -591,21 +606,19 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
     expect(result.text).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     const traceId = span.traceId;
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expect(trace.id).toBe(traceId);
-    expect(trace.observations.length).toBeGreaterThan(0);
-
-    const generations = trace.observations.filter(
-      (observation: any) => observation.type === "GENERATION",
+    const generations = observations.filter(
+      (observation) => observation.type === "GENERATION",
     );
 
     expect(generations.length).toBeGreaterThan(0);
 
-    const traceInput = JSON.stringify(trace.observations);
+    const traceInput = JSON.stringify(observations);
 
     expect(traceInput).toMatch(
       /@@@langfuseMedia:type=image\/jpeg\|id=.+\|source=bytes@@@/,

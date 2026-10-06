@@ -3,32 +3,65 @@ import { DynamicTool } from "@langchain/core/tools";
 import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { LangfuseClient } from "@langfuse/client";
-import { configureGlobalLogger } from "@langfuse/core";
+import { configureGlobalLogger, type ObservationV2 } from "@langfuse/core";
 import { CallbackHandler } from "@langfuse/langchain";
 import { startActiveObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 
+import { ServerAssertions, parseIO } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
-  waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 
 describe("Langchain integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
   let testEnv: ServerTestEnvironment;
+  let assertions: ServerAssertions;
 
   beforeEach(async () => {
     configureGlobalLogger({ level: 0 });
     testEnv = await setupServerTestEnvironment();
     langfuseClient = new LangfuseClient();
+    assertions = new ServerAssertions();
   });
 
-  afterEach(async () => {
-    await teardownServerTestEnvironment(testEnv);
-  });
+  /**
+   * The handler propagates trace-level attributes onto the root chain run;
+   * `version` is set on every observation.
+   */
+  function expectTraceAttributes(
+    observations: ObservationV2[],
+    expected: {
+      traceName?: string;
+      sessionId: string;
+      userId: string;
+      tags: string[];
+      version: string;
+      traceMetadata?: Record<string, unknown>;
+    },
+    root: ObservationV2 = assertions.getRootObservation(observations),
+  ) {
+    expect(root).toMatchObject({
+      ...(expected.traceName ? { traceName: expected.traceName } : {}),
+      sessionId: expected.sessionId,
+      userId: expected.userId,
+      tags: expect.arrayContaining(expected.tags),
+      ...(expected.traceMetadata
+        ? {
+            metadata: expect.objectContaining(expected.traceMetadata),
+          }
+        : {}),
+    });
+
+    for (const observation of observations) {
+      expect(observation.version, observation.name ?? undefined).toBe(
+        expected.version,
+      );
+    }
+  }
 
   it("should trace a chain", async () => {
     const testConfig = {
@@ -63,38 +96,42 @@ describe("Langchain integration E2E tests", () => {
     );
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1_000);
 
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
-
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      name: testConfig.runName,
-      tags: testConfig.tags,
-      version: testConfig.version,
+    const observations = await assertions.waitForObservations(traceId!, {
+      count: 3,
     });
-    expect(trace.metadata).toMatchObject(testConfig.traceMetadata);
 
-    expect(trace.observations.length).toBe(3);
-    const generation = trace.observations.find((o) => o.name === "ChatOpenAI");
+    expect(observations.length).toBe(3);
+    expect(assertions.getRootObservation(observations).name).toBe(
+      testConfig.runName,
+    );
+    expectTraceAttributes(observations, {
+      ...testConfig,
+      traceName: testConfig.runName,
+    });
+
+    const generation = observations.find((o) => o.name === "ChatOpenAI");
     expect(generation).toBeDefined();
+    const input = parseIO(generation!.input) as any;
+    const output = parseIO(generation!.output) as any;
 
     expect(generation!.type).toBe("GENERATION");
-    expect(generation!.input[0].content).toContain(testConfig.query);
+    expect(input[0].content).toContain(testConfig.query);
     expect(generation!.output).toBeDefined();
     expect(generation!.modelParameters).toMatchObject({
       max_tokens: 300,
     });
-    expect(generation!.usage).toBeDefined();
+    expect(generation!.usageDetails).toBeDefined();
     expect(generation!.model).toContain("gpt-4o");
-    expect(generation!.totalTokens).toBeDefined();
-    expect(generation!.promptTokens).toBeDefined();
-    expect(generation!.completionTokens).toBeDefined();
-    expect(generation!.output.content).toContain(result.content);
+    expect(generation!.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
+    expect(output.content).toContain(result.content);
   });
 
   it("should link a langfuse prompt", async () => {
@@ -150,38 +187,42 @@ describe("Langchain integration E2E tests", () => {
     );
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1_000);
 
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
-
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      name: testConfig.runName,
-      tags: testConfig.tags,
-      version: testConfig.version,
+    const observations = await assertions.waitForObservations(traceId!, {
+      count: 3,
     });
-    expect(trace.metadata).toMatchObject(testConfig.traceMetadata);
 
-    expect(trace.observations.length).toBe(3);
-    const generation = trace.observations.find((o) => o.name === "ChatOpenAI");
+    expect(observations.length).toBe(3);
+    expect(assertions.getRootObservation(observations).name).toBe(
+      testConfig.runName,
+    );
+    expectTraceAttributes(observations, {
+      ...testConfig,
+      traceName: testConfig.runName,
+    });
+
+    const generation = observations.find((o) => o.name === "ChatOpenAI");
     expect(generation).toBeDefined();
+    const input = parseIO(generation!.input) as any;
+    const output = parseIO(generation!.output) as any;
 
     expect(generation!.type).toBe("GENERATION");
-    expect(generation!.input[0].content).toContain(testConfig.query);
+    expect(input[0].content).toContain(testConfig.query);
     expect(generation!.output).toBeDefined();
     expect(generation!.modelParameters).toMatchObject({
       max_tokens: 300,
     });
-    expect(generation!.usage).toBeDefined();
+    expect(generation!.usageDetails).toBeDefined();
     expect(generation!.model).toContain("gpt-4o");
-    expect(generation!.totalTokens).toBeDefined();
-    expect(generation!.promptTokens).toBeDefined();
-    expect(generation!.completionTokens).toBeDefined();
-    expect(generation!.output.content).toContain(result.content);
+    expect(generation!.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
+    expect(output.content).toContain(result.content);
     expect(generation!.promptName).toBe(langfuseJokePrompt.name);
     expect(generation!.promptVersion).toBe(langfuseJokePrompt.version);
   });
@@ -226,38 +267,42 @@ describe("Langchain integration E2E tests", () => {
     }
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1_000);
 
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
-
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      name: testConfig.runName,
-      tags: testConfig.tags,
-      version: testConfig.version,
+    const observations = await assertions.waitForObservations(traceId!, {
+      count: 3,
     });
-    expect(trace.metadata).toMatchObject(testConfig.traceMetadata);
 
-    expect(trace.observations.length).toBe(3);
-    const generation = trace.observations.find((o) => o.name === "ChatOpenAI");
+    expect(observations.length).toBe(3);
+    expect(assertions.getRootObservation(observations).name).toBe(
+      testConfig.runName,
+    );
+    expectTraceAttributes(observations, {
+      ...testConfig,
+      traceName: testConfig.runName,
+    });
+
+    const generation = observations.find((o) => o.name === "ChatOpenAI");
     expect(generation).toBeDefined();
+    const input = parseIO(generation!.input) as any;
+    const output = parseIO(generation!.output) as any;
 
     expect(generation!.type).toBe("GENERATION");
-    expect(generation!.input[0].content).toContain(testConfig.query);
+    expect(input[0].content).toContain(testConfig.query);
     expect(generation!.output).toBeDefined();
     expect(generation!.modelParameters).toMatchObject({
       max_tokens: 300,
     });
     // Note: streaming parameter may not be captured in modelParameters
-    expect(generation!.usage).toBeDefined();
+    expect(generation!.usageDetails).toBeDefined();
     expect(generation!.model).toContain("gpt-4o");
-    expect(generation!.totalTokens).toBeDefined();
-    expect(generation!.promptTokens).toBeDefined();
-    expect(generation!.completionTokens).toBeDefined();
+    expect(generation!.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(fullContent).toBeTruthy();
     expect(fullContent.length).toBeGreaterThan(0);
   });
@@ -319,36 +364,36 @@ describe("Langchain integration E2E tests", () => {
     );
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1_000);
 
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
-
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      tags: testConfig.tags,
-      version: testConfig.version,
+    // The parent span plus 3 observations from the chain
+    const observations = await assertions.waitForObservations(traceId!, {
+      count: 4,
     });
-    expect(trace.metadata).toMatchObject(testConfig.traceMetadata);
+    expect(observations.length).toBe(4);
+    assertions.expectObservationParent(
+      observations,
+      testConfig.runName,
+      testConfig.parentSpanName,
+    );
 
-    // Should have exactly 3 observations from the chain
-    expect(trace.observations.length).toBe(4);
+    // Trace attributes apply to the chain, not the external parent span
+    expectTraceAttributes(
+      observations.filter((o) => o.name !== testConfig.parentSpanName),
+      testConfig,
+      assertions.expectObservation(observations, testConfig.runName),
+    );
 
-    // The parent span might be in a separate trace, so let's just verify the chain worked
-    // and that we can create spans alongside langchain operations
-
-    const generation = trace.observations.find((o) => o.name === "ChatOpenAI");
+    const generation = observations.find((o) => o.name === "ChatOpenAI");
     expect(generation).toBeDefined();
+    const input = parseIO(generation!.input) as any;
+    const output = parseIO(generation!.output) as any;
     expect(generation!.type).toBe("GENERATION");
-    expect(generation!.input[0].content).toContain(testConfig.query);
+    expect(input[0].content).toContain(testConfig.query);
     expect(generation!.output).toBeDefined();
     expect(generation!.model).toContain("gpt-4o");
-    expect(generation!.output.content).toContain(result.content);
-
-    // Verify that the langchain integration works properly with external spans
-    expect(trace.observations.length).toBeGreaterThan(0);
+    expect(output.content).toContain(result.content);
   });
 
   it("should capture trace attributes in metadata", async () => {
@@ -404,47 +449,39 @@ describe("Langchain integration E2E tests", () => {
     );
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1_000);
 
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
+    const observations = await assertions.waitForObservations(traceId!, {
+      count: 3,
+    });
+    expect(observations.length).toBe(3);
 
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      name: testConfig.runName,
-      tags: testConfig.tags,
-      version: testConfig.version,
+    // Verify all trace attributes, including every trace metadata entry
+    expectTraceAttributes(observations, {
+      ...testConfig,
+      traceName: testConfig.runName,
     });
 
-    // Verify trace metadata contains all expected attributes
-    expect(trace.metadata).toMatchObject(testConfig.traceMetadata);
-    expect(trace.metadata).toMatchObject({
-      environment: "test",
-      version: "2.0.0",
-      customAttribute: "custom-value",
-      numericAttribute: 42,
-      booleanAttribute: true,
-    });
-
-    expect(trace.observations.length).toBe(3);
-    const generation = trace.observations.find((o) => o.name === "ChatOpenAI");
+    const generation = observations.find((o) => o.name === "ChatOpenAI");
     expect(generation).toBeDefined();
+    const input = parseIO(generation!.input) as any;
+    const output = parseIO(generation!.output) as any;
 
     expect(generation!.type).toBe("GENERATION");
-    expect(generation!.input[0].content).toContain(testConfig.query);
+    expect(input[0].content).toContain(testConfig.query);
     expect(generation!.output).toBeDefined();
     expect(generation!.model).toContain("gpt-4o");
-    expect(generation!.output.content).toContain(result.content);
+    expect(output.content).toContain(result.content);
 
     // Verify observations have proper metadata inheritance
-    const chainObservation = trace.observations.find(
-      (o) => o.name === testConfig.runName,
-    );
-    expect(chainObservation).toBeDefined();
-    expect(chainObservation!.metadata).toBeDefined();
+    const chainObservation = assertions.getRootObservation(observations);
+    expect(chainObservation.name).toBe(testConfig.runName);
+    expect(chainObservation.metadata).toMatchObject({
+      chainLevel: "invoke-metadata",
+      executionContext: "e2e-test",
+    });
   });
 
   it("should trace a tool call", async () => {
@@ -500,29 +537,17 @@ describe("Langchain integration E2E tests", () => {
     );
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1_000);
 
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
-
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      // name: testConfig.runName, // LangChain may override the trace name with "RunnableSequence"
-      tags: testConfig.tags,
-      version: testConfig.version,
+    const observations = await assertions.waitForObservations(traceId!, {
+      count: 3,
     });
-    // The trace name might be "RunnableSequence" due to LangChain's internal naming
-    expect(trace.name).toBeDefined();
-    expect(trace.metadata).toMatchObject(testConfig.traceMetadata);
-
-    // Should have more observations due to tool call and follow-up
-    expect(trace.observations.length).toBeGreaterThanOrEqual(3);
+    expectTraceAttributes(observations, testConfig);
 
     // Find all ChatOpenAI generations
-    const generations = trace.observations.filter(
+    const generations = observations.filter(
       (o) => o.name === "ChatOpenAI" && o.type === "GENERATION",
     );
     expect(generations.length).toBeGreaterThan(0);
@@ -537,7 +562,7 @@ describe("Langchain integration E2E tests", () => {
     expect(finalGeneration.model).toContain("gpt-4o");
 
     // The final output should contain a response about the calculation result
-    const output = finalGeneration.output;
+    const output = parseIO(finalGeneration.output) as any;
     expect(output.tool_calls).toBeDefined();
 
     // Verify the tool call was properly structured in the original result
@@ -628,24 +653,21 @@ describe("Langchain integration E2E tests", () => {
     );
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2_000); // Longer wait for complex graph execution
 
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
-
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      name: testConfig.runName,
-      tags: testConfig.tags,
-      version: testConfig.version,
-    });
-    expect(trace.metadata).toMatchObject(testConfig.traceMetadata);
-
     // LangGraph execution should create multiple observations
-    expect(trace.observations.length).toBeGreaterThan(3);
+    const observations = await assertions.waitForObservations(traceId!, {
+      count: 4,
+    });
+    expect(assertions.getRootObservation(observations).name).toBe(
+      testConfig.runName,
+    );
+    expectTraceAttributes(observations, {
+      ...testConfig,
+      traceName: testConfig.runName,
+    });
 
     // Find any generations in the trace
     // parentRunId is undefined in the handleChatModelStart with LangGraph
@@ -658,7 +680,6 @@ describe("Langchain integration E2E tests", () => {
     // For this test, we expect that langgraph creates various span observations
     // The callback propagation through langgraph nodes might not create generations
     // but we should still have multiple graph-related spans
-    expect(trace.observations.length).toBeGreaterThan(0);
 
     // If generations are found, verify their properties
     // generations.forEach((generation) => {
@@ -678,7 +699,7 @@ describe("Langchain integration E2E tests", () => {
     expect(typeof lastMessage.content).toBe("string");
 
     // Check for graph-specific observations or spans
-    const graphObservations = trace.observations.filter(
+    const graphObservations = observations.filter(
       (o) =>
         o.name &&
         (o.name.includes("graph") ||
@@ -733,23 +754,20 @@ describe("Langchain integration E2E tests", () => {
     expect(caughtError?.message).toContain("model");
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1_000);
 
     const traceId = handler.last_trace_id;
     expect(traceId).toBeDefined();
 
-    const trace = await langfuseClient.api.trace.get(traceId!);
-
-    expect(trace).toMatchObject({
-      sessionId: testConfig.sessionId,
-      userId: testConfig.userId,
-      name: testConfig.runName,
-      tags: testConfig.tags,
-      version: testConfig.version,
+    const observations = await assertions.waitForObservations(traceId!, {
+      until: (obs) => obs.some((o) => o.name === "ChatOpenAI"),
+    });
+    expectTraceAttributes(observations, {
+      ...testConfig,
+      traceName: testConfig.runName,
     });
 
     // Find the generation observation that should have failed
-    const errorObservation = trace.observations.find(
+    const errorObservation = observations.find(
       (o) => o.name === "ChatOpenAI" && o.type === "GENERATION",
     );
     expect(errorObservation).toBeDefined();

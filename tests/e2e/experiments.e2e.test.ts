@@ -11,16 +11,17 @@ import { nanoid } from "nanoid";
 import OpenAI from "openai";
 import { describe, it, afterEach, beforeEach, expect, vi } from "vitest";
 
+import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
-  waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 
 describe("Langfuse Datasets E2E", () => {
   let langfuse: LangfuseClient;
   let testEnv: ServerTestEnvironment;
+  let assertions: ServerAssertions;
 
   const dataset = [
     {
@@ -118,6 +119,7 @@ describe("Langfuse Datasets E2E", () => {
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
     langfuse = new LangfuseClient();
+    assertions = new ServerAssertions();
   });
 
   afterEach(async () => {
@@ -126,6 +128,7 @@ describe("Langfuse Datasets E2E", () => {
   });
 
   it("should run an experiment on local dataset", async () => {
+    const fromStartTime = new Date().toISOString();
     const result = await langfuse.experiment.run({
       name: "Euro capitals",
       description: "Country capital experiment",
@@ -142,7 +145,6 @@ describe("Langfuse Datasets E2E", () => {
     console.log(await result.format());
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     // Validate basic result structure
     expect(result.itemResults).toHaveLength(3);
@@ -185,6 +187,24 @@ describe("Langfuse Datasets E2E", () => {
       // No datasetRunId for local datasets
       expect(itemResult.datasetRunId).toBeUndefined();
     });
+
+    // Local experiments are still persisted, without a dataset
+    const experiment = await assertions.waitForExperiment(result.experimentId, {
+      fromStartTime,
+    });
+    expect(experiment).toMatchObject({
+      name: result.runName,
+      description: "Country capital experiment",
+      datasetId: null,
+    });
+
+    const items = await assertions.waitForExperimentItems(result.experimentId, {
+      fromStartTime,
+      count: 3,
+    });
+    expect(items.map((item) => item.traceId).sort()).toEqual(
+      result.itemResults.map((item) => item.traceId).sort(),
+    );
   });
 
   it("should run an experiment on a langfuse dataset", async () => {
@@ -204,6 +224,7 @@ describe("Langfuse Datasets E2E", () => {
 
     const fetchedDataset = await langfuse.dataset.get(datasetName);
 
+    const fromStartTime = new Date().toISOString();
     const experimentName = "Euro capitals on LF dataset";
     const result = await fetchedDataset.runExperiment({
       name: experimentName,
@@ -220,7 +241,6 @@ describe("Langfuse Datasets E2E", () => {
     console.log(await result.format());
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     // Validate basic result structure
     expect(result.itemResults).toHaveLength(3);
@@ -262,43 +282,37 @@ describe("Langfuse Datasets E2E", () => {
       expect(itemResult.evaluations).toHaveLength(3);
     });
 
-    // Fetch dataset run from API and validate against database
-    const datasetRun = await langfuse.api.datasets.getRun(
-      datasetName,
-      result.runName,
-    );
-
-    expect(datasetRun).toBeDefined();
-    expect(datasetRun).toMatchObject({
+    const experiment = await assertions.waitForExperiment(result.experimentId, {
+      fromStartTime,
+    });
+    expect(experiment).toMatchObject({
       name: result.runName,
       description: "Country capital experiment",
       datasetId: fetchedDataset.id,
-      datasetName: datasetName,
     });
 
-    // Validate dataset run items
-    expect(datasetRun.datasetRunItems).toHaveLength(3);
-
-    // Each run item should correspond to one of our experiment results
+    // Each experiment item should correspond to one of our experiment results
+    const items = await assertions.waitForExperimentItems(result.experimentId, {
+      fromStartTime,
+      count: 3,
+    });
+    expect(items).toHaveLength(3);
     result.itemResults.forEach((itemResult) => {
-      const correspondingRunItem = datasetRun.datasetRunItems.find(
-        (runItem) => runItem.traceId === itemResult.traceId,
+      expect(itemResult.traceId).toMatch(/^[a-f0-9]{32}$/);
+      const experimentItem = items.find(
+        (item) => item.traceId === itemResult.traceId,
       );
-
-      expect(correspondingRunItem).toBeDefined();
-      expect(correspondingRunItem).toMatchObject({
+      expect(experimentItem).toMatchObject({
         traceId: itemResult.traceId,
-        datasetItemId: expect.any(String),
+        experimentItemId: expect.any(String),
       });
     });
 
-    // Validate that traces contain the expected scores
-    // Each trace should have 3 item-level evaluations + 1 run-level evaluation
-    const expectedTraceIds = result.itemResults.map((r) => r.traceId);
-    expect(expectedTraceIds).toHaveLength(3);
-    expectedTraceIds.forEach((traceId) => {
-      expect(traceId).toMatch(/^[a-f0-9]{32}$/);
+    const [runScore] = await assertions.waitForScores({
+      experimentId: result.experimentId,
+      name: "levenshtein-average",
     });
+    expect(runScore.value).toBe(result.runEvaluations[0].value);
   });
 
   it("should support custom runName parameter", async () => {
@@ -320,6 +334,7 @@ describe("Langfuse Datasets E2E", () => {
 
     const fetchedDataset = await langfuse.dataset.get(datasetName);
 
+    const fromStartTime = new Date().toISOString();
     const customRunName = "Custom Run Name " + nanoid();
     const result = await fetchedDataset.runExperiment({
       name: "Test Experiment",
@@ -330,25 +345,19 @@ describe("Langfuse Datasets E2E", () => {
     });
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
     // Should use the custom run name exactly
     expect(result.runName).toBe(customRunName);
     expect(result.datasetRunId).toBeDefined();
     expect(result.experimentId).toBe(result.datasetRunId);
 
-    // Fetch dataset run and verify it has the custom name
-    const datasetRun = await langfuse.api.datasets.getRun(
-      datasetName,
-      customRunName,
-    );
-
-    expect(datasetRun).toBeDefined();
-    expect(datasetRun).toMatchObject({
+    const experiment = await assertions.waitForExperiment(result.experimentId, {
+      fromStartTime,
+    });
+    expect(experiment).toMatchObject({
       name: customRunName,
       description: "Testing custom run name",
       datasetId: fetchedDataset.id,
-      datasetName: datasetName,
     });
   });
 
@@ -364,7 +373,6 @@ describe("Langfuse Datasets E2E", () => {
     });
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(1000);
 
     // Should use the custom run name exactly
     expect(result.runName).toBe(customRunName);
@@ -393,7 +401,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       // Should still complete the experiment
       expect(result.itemResults).toHaveLength(1);
@@ -416,7 +423,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       // Should complete experiment but skip the failed item
       expect(result.itemResults).toHaveLength(0);
@@ -442,7 +448,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       // Should complete experiment with only successful items
       expect(result.itemResults).toHaveLength(1); // Only France should succeed
@@ -465,7 +470,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       // Should complete experiment but run evaluations should be empty
       expect(result.itemResults).toHaveLength(1);
@@ -486,7 +490,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(500);
 
       expect(result.itemResults).toHaveLength(0);
       expect(result.experimentId).toMatch(/^[0-9a-f]{16}$/);
@@ -510,7 +513,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(2);
       // Should handle missing fields gracefully
@@ -542,7 +544,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(3000);
 
       expect(result.itemResults).toHaveLength(20);
       result.itemResults.forEach((item) => {
@@ -576,7 +577,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(2);
       result.itemResults.forEach((item) => {
@@ -608,7 +608,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.runEvaluations).toHaveLength(1);
       expect(result.runEvaluations[0]).toMatchObject({
@@ -629,7 +628,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       // Test with includeItemResults: false (default)
       const compactOutput = await result.format();
@@ -718,11 +716,10 @@ describe("Langfuse Datasets E2E", () => {
         ]);
 
         await testEnv.spanProcessor.forceFlush();
-        await waitForServerIngestion(2000);
 
-        const traceId = result.itemResults[0].traceId;
-        const trace = await langfuse.api.trace.get(traceId);
-        expect(trace.id).toBe(traceId);
+        const traceId = result.itemResults[0].traceId!;
+        const observations = await assertions.waitForObservations(traceId);
+        expect(observations[0].traceId).toBe(traceId);
       } finally {
         gates.forEach((gate, input) => gate.resolve(`${input}-output`));
         await runPromise;
@@ -754,7 +751,6 @@ describe("Langfuse Datasets E2E", () => {
       const duration = Date.now() - start;
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(2);
       result.itemResults.forEach((item) => {
@@ -798,6 +794,7 @@ describe("Langfuse Datasets E2E", () => {
         comment: "Test run evaluation for persistence",
       });
 
+      const fromStartTime = new Date().toISOString();
       const result = await fetchedDataset.runExperiment({
         name: "Score persistence test",
         description: "Test score persistence",
@@ -807,20 +804,39 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(3000);
 
-      // Validate scores are persisted
-      const datasetRun = await langfuse.api.datasets.getRun(
-        datasetName,
-        result.runName,
+      await langfuse.flush();
+
+      const items = await assertions.waitForExperimentItems(
+        result.experimentId,
+        { fromStartTime },
       );
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        traceId: result.itemResults[0].traceId,
+        experimentItemId: createdItem.id,
+      });
 
-      expect(datasetRun).toBeDefined();
-      expect(datasetRun.datasetRunItems).toHaveLength(1);
+      // Item-level scores are linked to the item trace
+      const [itemScore] = await assertions.waitForScores({
+        traceId: result.itemResults[0].traceId,
+        name: "persistence-test-eval",
+      });
+      expect(itemScore).toMatchObject({
+        value: 0.85,
+        comment: "Test evaluation for persistence",
+      });
 
-      // Validate item-level scores are linked to traces
-      const runItem = datasetRun.datasetRunItems[0];
-      expect(runItem.traceId).toBe(result.itemResults[0].traceId);
+      // Run-level scores are linked to the experiment
+      const [runScore] = await assertions.waitForScores({
+        experimentId: result.experimentId,
+        name: "persistence-test-run-eval",
+      });
+      expect(runScore).toMatchObject({
+        value: 0.9,
+        comment: "Test run evaluation for persistence",
+        subject: { kind: "experiment", id: result.experimentId },
+      });
     });
 
     it("should handle multiple experiments on same dataset", async () => {
@@ -837,6 +853,8 @@ describe("Langfuse Datasets E2E", () => {
 
       const fetchedDataset = await langfuse.dataset.get(datasetName);
 
+      const fromStartTime = new Date().toISOString();
+
       // Run first experiment
       const result1 = await fetchedDataset.runExperiment({
         name: "Experiment 1",
@@ -846,7 +864,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(2000);
 
       // Run second experiment
       const result2 = await fetchedDataset.runExperiment({
@@ -857,26 +874,28 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(2000);
 
-      // Both experiments should have different run IDs
-      expect(result1.datasetRunId).toBeDefined();
-      expect(result2.datasetRunId).toBeDefined();
-      expect(result1.datasetRunId).not.toBe(result2.datasetRunId);
+      // Both experiments should have different IDs
+      expect(result1.experimentId).not.toBe(result2.experimentId);
 
-      // Validate both runs exist in database
-      const run1 = await langfuse.api.datasets.getRun(
-        datasetName,
-        result1.runName,
+      // Validate both experiments exist on the server
+      const experiment1 = await assertions.waitForExperiment(
+        result1.experimentId,
+        { fromStartTime },
       );
-      const run2 = await langfuse.api.datasets.getRun(
-        datasetName,
-        result2.runName,
+      const experiment2 = await assertions.waitForExperiment(
+        result2.experimentId,
+        { fromStartTime },
       );
 
-      expect(run1).toBeDefined();
-      expect(run2).toBeDefined();
-      expect(run1.id).not.toBe(run2.id);
+      expect(experiment1).toMatchObject({
+        name: result1.runName,
+        datasetId: fetchedDataset.id,
+      });
+      expect(experiment2).toMatchObject({
+        name: result2.runName,
+        datasetId: fetchedDataset.id,
+      });
     });
 
     it("should preserve dataset run metadata", async () => {
@@ -891,6 +910,7 @@ describe("Langfuse Datasets E2E", () => {
 
       const fetchedDataset = await langfuse.dataset.get(datasetName);
 
+      const fromStartTime = new Date().toISOString();
       const result = await fetchedDataset.runExperiment({
         name: "Metadata test experiment",
         description: "Testing metadata preservation",
@@ -906,14 +926,13 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(2000);
 
-      const datasetRun = await langfuse.api.datasets.getRun(
-        datasetName,
-        result.runName,
+      const experiment = await assertions.waitForExperiment(
+        result.experimentId,
+        { fromStartTime, fields: "core,metadata" },
       );
 
-      expect(datasetRun).toMatchObject({
+      expect(experiment).toMatchObject({
         name: result.runName,
         description: "Testing metadata preservation",
         metadata: { testKey: "testValue", experimentVersion: "1.0" },
@@ -933,7 +952,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(2);
       result.itemResults.forEach((item) => {
@@ -961,7 +979,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(3);
       result.itemResults.forEach((item) => {
@@ -1002,7 +1019,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(2);
       result.itemResults.forEach((item) => {
@@ -1039,7 +1055,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(1);
       const evaluations = result.itemResults[0].evaluations;
@@ -1089,7 +1104,6 @@ describe("Langfuse Datasets E2E", () => {
       });
 
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(1000);
 
       expect(result.itemResults).toHaveLength(1);
       const evaluations = result.itemResults[0].evaluations;

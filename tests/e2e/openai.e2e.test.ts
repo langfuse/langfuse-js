@@ -8,19 +8,25 @@ import { OpenAI } from "openai";
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
 
 import {
+  ServerAssertions,
+  parseIO,
+  traceNameFilter,
+} from "./helpers/serverAssertions.js";
+import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
-  waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 
 describe("OpenAI integration E2E tests", () => {
   let langfuseClient: LangfuseClient;
   let testEnv: ServerTestEnvironment;
+  let assertions: ServerAssertions;
 
   beforeEach(async () => {
     testEnv = await setupServerTestEnvironment();
     langfuseClient = new LangfuseClient();
+    assertions = new ServerAssertions();
   });
 
   afterEach(async () => {
@@ -57,28 +63,13 @@ describe("OpenAI integration E2E tests", () => {
     });
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({ name: traceName });
-    expect(traces.data.length).toBe(1);
-
-    const trace = traces.data[0];
-
-    expect(trace).toMatchObject({
-      sessionId: config.sessionId,
-      userId: config.userId,
-      tags: config.tags,
-      name: config.traceName,
+    const observations = await assertions.waitForObservationsWhere({
+      filter: traceNameFilter(traceName),
     });
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: trace.id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
 
     expect(generation.input).toBeDefined();
     expect(generation.output).toBeDefined();
@@ -86,6 +77,12 @@ describe("OpenAI integration E2E tests", () => {
     expect(generation).toMatchObject({
       metadata: expect.objectContaining(config.generationMetadata),
       name: config.generationName,
+      traceName: config.traceName,
+      sessionId: config.sessionId,
+      userId: config.userId,
+      tags: config.tags,
+      promptName,
+      promptVersion: 1,
     });
   });
 
@@ -113,18 +110,13 @@ describe("OpenAI integration E2E tests", () => {
     console.log(result);
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
+    });
 
-    expect(trace.observations.length).toBe(2);
-    const span = trace.observations.find((o) => o.name === "parent");
-    expect(span).toBeDefined();
-
-    const generation = trace.observations.find((o) => o.name === "OpenAI.chat");
-    expect(generation).toBeDefined();
-
-    expect(generation!.parentObservationId).toBe(span!.id);
+    expect(observations.length).toBe(2);
+    assertions.expectObservationParent(observations, "OpenAI.chat", "parent");
   });
 
   it("should trace chat completion with streaming", async () => {
@@ -152,21 +144,14 @@ describe("OpenAI integration E2E tests", () => {
     expect(content).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(4000);
 
-    const traces = await langfuseClient.api.trace.list({
+    const observations = await assertions.waitForObservationsWhere({
       name: generationName,
     });
-    expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: traces.data[0].id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
+    const input = parseIO(generation.input) as any;
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -175,23 +160,25 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
       stream: "true",
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
-    expect(generation.input.messages).toMatchObject([
+    expect(input.messages).toMatchObject([
       { role: "system", content: "Who is the president of America ?" },
     ]);
     expect(generation.output).toBeDefined();
-    expect(generation.output).toMatch(content);
+    expect(parseIO(generation.output)).toMatch(content);
     expect(
-      new Date(generation.completionStartTime).getTime(),
+      new Date(generation.completionStartTime!).getTime(),
     ).toBeGreaterThanOrEqual(new Date(generation.startTime).getTime());
     expect(
-      new Date(generation.completionStartTime).getTime(),
-    ).toBeLessThanOrEqual(new Date(generation.endTime).getTime());
+      new Date(generation.completionStartTime!).getTime(),
+    ).toBeLessThanOrEqual(new Date(generation.endTime!).getTime());
   });
 
   // OpenAI retired gpt-3.5-turbo-instruct, the legacy completions model this test depends on.
@@ -214,21 +201,14 @@ describe("OpenAI integration E2E tests", () => {
     const usage = res.usage;
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({
+    const observations = await assertions.waitForObservationsWhere({
       name: generationName,
     });
-    expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: traces.data[0].id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
+    const input = parseIO(generation.input) as any;
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -237,25 +217,24 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
       stream: "false",
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo-instruct");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
-    expect(generation.input).toBe("Say this is a test!");
+    expect(input).toBe("Say this is a test!");
     expect(generation.output).toBeDefined();
-    expect(res.choices[0].text).toContain(generation.output);
-    expect(generation.usage).toMatchObject({
-      unit: "TOKENS",
+    expect(res.choices[0].text).toContain(parseIO(generation.output));
+    expect(generation.usageDetails).toMatchObject({
       input: usage?.prompt_tokens,
       output: usage?.completion_tokens,
       total: usage?.total_tokens,
     });
-    expect(generation.calculatedInputCost).toBeDefined();
-    expect(generation.calculatedOutputCost).toBeDefined();
-    expect(generation.calculatedTotalCost).toBeDefined();
-    expect(generation.statusMessage).toBeNull();
+    expect(generation.costDetails).toBeDefined();
+    expect(generation.statusMessage).toBeFalsy();
   });
 
   // OpenAI retired gpt-3.5-turbo-instruct, the legacy completions model this test depends on.
@@ -283,21 +262,14 @@ describe("OpenAI integration E2E tests", () => {
     expect(content).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({
+    const observations = await assertions.waitForObservationsWhere({
       name: generationName,
     });
-    expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: traces.data[0].id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
+    const input = parseIO(generation.input) as any;
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -306,21 +278,23 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
       stream: "true",
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo-instruct");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
-    expect(generation.input).toBe("Say this is a test");
+    expect(input).toBe("Say this is a test");
     expect(generation.output).toBeDefined();
-    expect(generation.output).toMatch(content);
+    expect(parseIO(generation.output)).toMatch(content);
     expect(
-      new Date(generation.completionStartTime).getTime(),
+      new Date(generation.completionStartTime!).getTime(),
     ).toBeGreaterThanOrEqual(new Date(generation.startTime).getTime());
     expect(
-      new Date(generation.completionStartTime).getTime(),
-    ).toBeLessThanOrEqual(new Date(generation.endTime).getTime());
+      new Date(generation.completionStartTime!).getTime(),
+    ).toBeLessThanOrEqual(new Date(generation.endTime!).getTime());
   });
 
   it("should trace function calling", async () => {
@@ -362,21 +336,14 @@ describe("OpenAI integration E2E tests", () => {
     expect(content).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({
+    const observations = await assertions.waitForObservationsWhere({
       name: generationName,
     });
-    expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: traces.data[0].id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
+    const input = parseIO(generation.input) as any;
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -384,29 +351,28 @@ describe("OpenAI integration E2E tests", () => {
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
-    expect(generation.input.messages).toMatchObject([
+    expect(input.messages).toMatchObject([
       { role: "user", content: "Explain how to assemble a PC" },
     ]);
-    expect(generation.input.functions).toMatchObject(functions);
-    expect(generation.input.function_call).toMatchObject(functionCall);
+    expect(input.functions).toMatchObject(functions);
+    expect(input.function_call).toMatchObject(functionCall);
     expect(generation.output).toBeDefined();
-    expect(generation.output).toMatchObject(content);
-    expect(generation.usage).toMatchObject({
-      unit: "TOKENS",
+    expect(parseIO(generation.output)).toMatchObject(content);
+    expect(generation.usageDetails).toMatchObject({
       input: usage?.prompt_tokens,
       output: usage?.completion_tokens,
       total: usage?.total_tokens,
     });
-    expect(generation.calculatedInputCost).toBeDefined();
-    expect(generation.calculatedOutputCost).toBeDefined();
-    expect(generation.calculatedTotalCost).toBeDefined();
-    expect(generation.statusMessage).toBeNull();
+    expect(generation.costDetails).toBeDefined();
+    expect(generation.statusMessage).toBeFalsy();
   });
 
   it("should trace tools and tool choice calling", async () => {
@@ -453,21 +419,14 @@ describe("OpenAI integration E2E tests", () => {
     expect(content).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({
+    const observations = await assertions.waitForObservationsWhere({
       name: generationName,
     });
-    expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: traces.data[0].id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
+    const input = parseIO(generation.input) as any;
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -475,16 +434,18 @@ describe("OpenAI integration E2E tests", () => {
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
-    expect(generation.input.messages).toMatchObject([
+    expect(input.messages).toMatchObject([
       { role: "user", content: "What's the weather like in Boston today?" },
     ]);
-    expect(generation.input.tools).toMatchObject([
+    expect(input.tools).toMatchObject([
       {
         type: "function",
         function: {
@@ -504,19 +465,16 @@ describe("OpenAI integration E2E tests", () => {
         },
       },
     ]);
-    expect(generation.input.tool_choice).toBe("auto");
+    expect(input.tool_choice).toBe("auto");
     expect(generation.output).toBeDefined();
-    expect(generation.output).toMatchObject(content);
-    expect(generation.usage).toMatchObject({
-      unit: "TOKENS",
+    expect(parseIO(generation.output)).toMatchObject(content);
+    expect(generation.usageDetails).toMatchObject({
       input: usage?.prompt_tokens,
       output: usage?.completion_tokens,
       total: usage?.total_tokens,
     });
-    expect(generation.calculatedInputCost).toBeDefined();
-    expect(generation.calculatedOutputCost).toBeDefined();
-    expect(generation.calculatedTotalCost).toBeDefined();
-    expect(generation.statusMessage).toBeNull();
+    expect(generation.costDetails).toBeDefined();
+    expect(generation.statusMessage).toBeFalsy();
   });
 
   it("should trace streamed tools and tool choice calling", async () => {
@@ -563,21 +521,14 @@ describe("OpenAI integration E2E tests", () => {
     }
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({
+    const observations = await assertions.waitForObservationsWhere({
       name: generationName,
     });
-    expect(traces.data.length).toBe(1);
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: traces.data[0].id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
+    const input = parseIO(generation.input) as any;
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -585,16 +536,18 @@ describe("OpenAI integration E2E tests", () => {
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
-    expect(generation.input.messages).toMatchObject([
+    expect(input.messages).toMatchObject([
       { role: "user", content: "What's the weather like in Boston today?" },
     ]);
-    expect(generation.input.tools).toMatchObject([
+    expect(input.tools).toMatchObject([
       {
         type: "function",
         function: {
@@ -614,12 +567,10 @@ describe("OpenAI integration E2E tests", () => {
         },
       },
     ]);
-    expect(generation.input.tool_choice).toBe("auto");
+    expect(input.tool_choice).toBe("auto");
     expect(generation.output).toBeDefined();
-    expect(generation.calculatedInputCost).toBeDefined();
-    expect(generation.calculatedOutputCost).toBeDefined();
-    expect(generation.calculatedTotalCost).toBeDefined();
-    expect(generation.statusMessage).toBeNull();
+    expect(generation.costDetails).toBeDefined();
+    expect(generation.statusMessage).toBeFalsy();
   });
 
   it("should trace multiple requests with common client", async () => {
@@ -660,23 +611,16 @@ describe("OpenAI integration E2E tests", () => {
     expect(content).toBeDefined();
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({
-      name: generationName,
-    });
-    // Should have at least 2 traces (potentially 3, depending on timing)
-    expect(traces.data.length).toBeGreaterThanOrEqual(2);
-
-    const firstTrace = traces.data[0];
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: firstTrace.id,
-      },
+    // Each request is traced as its own generation in its own trace
+    const observations = await assertions.waitForObservationsWhere(
+      { name: generationName },
+      { count: 3 },
     );
 
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(observations.length).toBe(3);
+    expect(new Set(observations.map((o) => o.traceId)).size).toBe(3);
+    const generation = observations[0];
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -684,17 +628,17 @@ describe("OpenAI integration E2E tests", () => {
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
     expect(generation.output).toBeDefined();
-    expect(generation.calculatedInputCost).toBeDefined();
-    expect(generation.calculatedOutputCost).toBeDefined();
-    expect(generation.calculatedTotalCost).toBeDefined();
-    expect(generation.statusMessage).toBeNull();
+    expect(generation.costDetails).toBeDefined();
+    expect(generation.statusMessage).toBeFalsy();
   });
 
   it("should trace with extra wrapper params", async () => {
@@ -721,29 +665,18 @@ describe("OpenAI integration E2E tests", () => {
     const usage = res.usage;
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const traces = await langfuseClient.api.trace.list({
+    const observations = await assertions.waitForObservationsWhere({
       name: generationName,
     });
-    expect(traces.data.length).toBe(1);
 
-    const trace = traces.data[0];
-    expect(trace.tags).toBeDefined();
-    expect(trace.tags).toEqual(expect.arrayContaining(["hello", "World"]));
-    expect(trace.sessionId).toBeDefined();
-    expect(trace.sessionId).toBe("Langfuse");
-    expect(trace.userId).toBeDefined();
-    expect(trace.userId).toBe("LangfuseUser");
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: trace.id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    expect(generation.traceName).toBe(generationName);
+    expect(generation.tags).toEqual(expect.arrayContaining(["hello", "World"]));
+    expect(generation.sessionId).toBe("Langfuse");
+    expect(generation.userId).toBe("LangfuseUser");
 
     expect(generation.name).toBe(generationName);
     expect(generation.modelParameters).toBeDefined();
@@ -751,24 +684,23 @@ describe("OpenAI integration E2E tests", () => {
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
     expect(generation.output).toBeDefined();
-    expect(generation.output).toMatchObject(res.choices[0].message);
-    expect(generation.usage).toMatchObject({
-      unit: "TOKENS",
+    expect(parseIO(generation.output)).toMatchObject(res.choices[0].message);
+    expect(generation.usageDetails).toMatchObject({
       input: usage?.prompt_tokens,
       output: usage?.completion_tokens,
       total: usage?.total_tokens,
     });
-    expect(generation.calculatedInputCost).toBeDefined();
-    expect(generation.calculatedOutputCost).toBeDefined();
-    expect(generation.calculatedTotalCost).toBeDefined();
-    expect(generation.statusMessage).toBeNull();
+    expect(generation.costDetails).toBeDefined();
+    expect(generation.statusMessage).toBeFalsy();
     expect(generation.metadata).toBeDefined();
     expect(generation.metadata).toMatchObject({
       hello: "World",
@@ -799,28 +731,20 @@ describe("OpenAI integration E2E tests", () => {
       });
     } catch (error) {
       await testEnv.spanProcessor.forceFlush();
-      await waitForServerIngestion(2000);
 
-      const traces = await langfuseClient.api.trace.list({
+      const observations = await assertions.waitForObservationsWhere({
         name: generationName,
       });
-      expect(traces.data.length).toBe(1);
 
-      const trace = traces.data[0];
-      expect(trace.tags).toBeDefined();
-      expect(trace.tags).toEqual(expect.arrayContaining(["hello", "World"]));
-      expect(trace.sessionId).toBeDefined();
-      expect(trace.sessionId).toBe("Langfuse");
-      expect(trace.userId).toBeDefined();
-      expect(trace.userId).toBe("LangfuseUser");
+      expect(observations.length).toBe(1);
+      const generation = observations[0];
 
-      const observations =
-        await langfuseClient.api.legacy.observationsV1.getMany({
-          traceId: trace.id,
-        });
-
-      expect(observations.data.length).toBe(1);
-      const generation = observations.data[0];
+      expect(generation.traceName).toBe(generationName);
+      expect(generation.tags).toEqual(
+        expect.arrayContaining(["hello", "World"]),
+      );
+      expect(generation.sessionId).toBe("Langfuse");
+      expect(generation.userId).toBe("LangfuseUser");
 
       expect(generation.name).toBe(generationName);
       expect(generation.modelParameters).toBeDefined();
@@ -830,8 +754,9 @@ describe("OpenAI integration E2E tests", () => {
       });
       expect(generation.model).toContain("gpt-3.5-turbo-instruct");
       expect(generation.input).toBeDefined();
-      expect(generation.output).toBeNull();
-      expect(generation.statusMessage).toBeDefined();
+      expect(generation.output).toBeFalsy();
+      expect(generation.level).toBe("ERROR");
+      expect(generation.statusMessage).toBeTruthy();
       expect(generation.metadata).toBeDefined();
       expect(generation.metadata).toMatchObject({
         hello: "World",
@@ -840,8 +765,6 @@ describe("OpenAI integration E2E tests", () => {
   });
 
   it("should allow passing a parent trace", async () => {
-    const traceName = "parent-trace";
-
     const traceId = crypto.randomBytes(16).toString("hex");
     const spanId = crypto.randomBytes(8).toString("hex");
 
@@ -861,22 +784,15 @@ describe("OpenAI integration E2E tests", () => {
     const usage = res.usage;
 
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    const trace = await langfuseClient.api.trace.get(traceId);
+    const observations = await assertions.waitForObservations(traceId);
 
-    // TODO: Currently AS_ROOT is not passed that would trigger trace data propagation
-    // expect(trace.name).toBe(traceName);
-    // expect(trace.metadata).toEqual({ parent: true });
+    expect(observations.length).toBe(1);
+    const generation = observations[0];
+    const input = parseIO(generation.input) as any;
 
-    const observations = await langfuseClient.api.legacy.observationsV1.getMany(
-      {
-        traceId: trace.id,
-      },
-    );
-
-    expect(observations.data.length).toBe(1);
-    const generation = observations.data[0];
+    // The generation is attached to the passed parent span
+    expect(generation.parentObservationId).toBe(spanId);
 
     expect(generation.name).toBe("OpenAI.chat"); // Default name
     expect(generation.metadata).toMatchObject({ child: true });
@@ -885,27 +801,25 @@ describe("OpenAI integration E2E tests", () => {
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
-    expect(generation.usage).toBeDefined();
+    expect(generation.usageDetails).toBeDefined();
     expect(generation.model).toContain("gpt-3.5-turbo");
-    expect(generation.totalTokens).toBeDefined();
-    expect(generation.promptTokens).toBeDefined();
-    expect(generation.completionTokens).toBeDefined();
+    expect(generation.usageDetails).toMatchObject({
+      input: expect.any(Number),
+      output: expect.any(Number),
+      total: expect.any(Number),
+    });
     expect(generation.input).toBeDefined();
-    expect(generation.input.messages).toMatchObject([
+    expect(input.messages).toMatchObject([
       { role: "system", content: "Tell me a story about a king." },
     ]);
     expect(generation.output).toBeDefined();
-    expect(generation.output).toMatchObject(res.choices[0].message);
-    expect(trace.output).toBeNull(); // Do not update trace if traceId is passed
-    expect(generation.usage).toMatchObject({
-      unit: "TOKENS",
+    expect(parseIO(generation.output)).toMatchObject(res.choices[0].message);
+    expect(generation.usageDetails).toMatchObject({
       input: usage?.prompt_tokens,
       output: usage?.completion_tokens,
       total: usage?.total_tokens,
     });
-    expect(generation.calculatedInputCost).toBeDefined();
-    expect(generation.calculatedOutputCost).toBeDefined();
-    expect(generation.calculatedTotalCost).toBeDefined();
-    expect(generation.statusMessage).toBeNull();
+    expect(generation.costDetails).toBeDefined();
+    expect(generation.statusMessage).toBeFalsy();
   });
 });

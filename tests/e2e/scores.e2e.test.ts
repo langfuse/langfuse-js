@@ -21,7 +21,6 @@ import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
-  waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 
@@ -37,10 +36,7 @@ function createLangfuseBrowser(): LangfuseBrowserClient {
 
   return new LangfuseBrowserClient({
     publicKey,
-    baseUrl:
-      getEnv("LANGFUSE_BASE_URL") ??
-      getEnv("LANGFUSE_BASEURL") ??
-      "http://localhost:3000",
+    baseUrl: getEnv("LANGFUSE_BASE_URL") ?? "http://localhost:3000",
   });
 }
 
@@ -80,12 +76,7 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       // Flush should complete without errors
       await expect(client.flush()).resolves.not.toThrow();
-
-      // Give server time to process
-      await waitForServerIngestion(1000);
-
-      // Try to retrieve - if successful, validate; if not, at least the flow worked
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
+      const retrievedScore = await assertions.waitForScore(scoreId);
       expect(retrievedScore.id).toBe(scoreId);
       expect(retrievedScore.name).toBe(scoreName);
       expect(retrievedScore.value).toBe(0.85);
@@ -110,11 +101,9 @@ describe("LangfuseClient Score E2E Tests", () => {
         }),
       ).resolves.toEqual({ id: scoreId });
 
-      await waitForServerIngestion(1000);
-
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
+      const retrievedScore = await assertions.waitForScore(scoreId);
       expect(retrievedScore.id).toBe(scoreId);
-      expect(retrievedScore.traceId).toBe(traceId);
+      expect(retrievedScore.subject).toEqual({ kind: "trace", id: traceId });
       expect(retrievedScore.name).toBe(scoreName);
       expect(retrievedScore.value).toBe(0.97);
       expect(retrievedScore.dataType).toBe("NUMERIC");
@@ -157,20 +146,16 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       // Flush should complete without errors
       await expect(client.flush()).resolves.not.toThrow();
-      await waitForServerIngestion(3000);
-
-      // Try to retrieve and validate if possible
       for (const originalScore of testScores) {
-        const retrievedScore = await assertions.api.scores.getById(
-          originalScore.id,
-        );
+        const retrievedScore = await assertions.waitForScore(originalScore.id);
         expect(retrievedScore.id).toBe(originalScore.id);
         expect(retrievedScore.name).toBe(originalScore.name);
-        if (originalScore.dataType === "CATEGORICAL") {
-          expect((retrievedScore as any).stringValue).toBe(originalScore.value);
-        } else {
-          expect(retrievedScore.value).toBe(originalScore.value);
-        }
+        // BOOLEAN scores are ingested as 0/1 and read back as booleans
+        expect(retrievedScore.value).toBe(
+          originalScore.dataType === "BOOLEAN"
+            ? originalScore.value === 1
+            : originalScore.value,
+        );
         expect(retrievedScore.dataType).toBe(originalScore.dataType);
       }
     });
@@ -192,13 +177,12 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await expect(client.flush()).resolves.not.toThrow();
-      await waitForServerIngestion(3000);
 
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
+      const retrievedScore = await assertions.waitForScore(scoreId);
       expect(retrievedScore.id).toBe(scoreId);
       expect(retrievedScore.name).toBe(scoreName);
       expect(retrievedScore.dataType).toBe("TEXT");
-      expect((retrievedScore as any).stringValue).toBe(scoreValue);
+      expect(retrievedScore.value).toBe(scoreValue);
       expect(retrievedScore.comment).toBe("E2E text score validation");
       expect(retrievedScore.metadata).toEqual({ testType: "text-score" });
     });
@@ -226,11 +210,10 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       // Flush should handle batching correctly
       await expect(client.flush()).resolves.not.toThrow();
-      await waitForServerIngestion(4000); // Longer wait for batch
 
       // Validate all scores were created and are retrievable
       const retrievedScores = await Promise.all(
-        scoreIds.map((id) => assertions.api.scores.getById(id)),
+        scoreIds.map((id) => assertions.waitForScore(id)),
       );
 
       expect(retrievedScores).toHaveLength(batchSize);
@@ -285,34 +268,30 @@ describe("LangfuseClient Score E2E Tests", () => {
       // Flush both spans and scores
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
-
-      // Validate scores were created and linked correctly
       const [observationScore, traceScore] = await Promise.all([
-        assertions.api.scores.getById(observationScoreId),
-        assertions.api.scores.getById(traceScoreId),
+        assertions.waitForScore(observationScoreId),
+        assertions.waitForScore(traceScoreId),
       ]);
 
       // Validate observation score
-      expect(observationScore.traceId).toBe(traceId);
-      expect(observationScore.observationId).toBe(spanId);
+      expect(observationScore.subject).toEqual({
+        kind: "observation",
+        id: spanId,
+        traceId: traceId,
+      });
       expect(observationScore.value).toBe(0.92);
       expect(observationScore.comment).toBe("Span integration test");
 
       // Validate trace score
-      expect(traceScore.traceId).toBe(traceId);
-      expect(traceScore.observationId).toBeNull(); // Trace scores don't have observationId
+      expect(traceScore.subject).toEqual({ kind: "trace", id: traceId });
       expect(traceScore.value).toBe(0.88);
       expect(traceScore.comment).toBe("Trace integration test");
 
       // Validate the trace exists and has scores attached
-      const traceData = await assertions.fetchTrace(traceId);
-      expect(traceData.id).toBe(traceId);
+      const observations = await assertions.waitForObservations(traceId);
 
       // Check that the observation exists in the trace
-      const observation = traceData.observations?.find(
-        (obs) => obs.id === spanId,
-      );
+      const observation = observations.find((obs) => obs.id === spanId);
       expect(observation).toBeDefined();
       expect(observation?.name).toBe(spanName);
     });
@@ -358,23 +337,22 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
-
-      // Validate scores were created using active context
       const [observationScore, traceScore] = await Promise.all([
-        assertions.api.scores.getById(observationScoreId),
-        assertions.api.scores.getById(traceScoreId),
+        assertions.waitForScore(observationScoreId),
+        assertions.waitForScore(traceScoreId),
       ]);
 
       // Validate observation score was linked to active span
-      expect(observationScore.traceId).toBe(activeTraceId);
-      expect(observationScore.observationId).toBe(activeSpanId);
+      expect(observationScore.subject).toEqual({
+        kind: "observation",
+        id: activeSpanId,
+        traceId: activeTraceId,
+      });
       expect(observationScore.value).toBe(0.95);
       expect(observationScore.comment).toBe("Active observation test");
 
       // Validate trace score was linked to active trace
-      expect(traceScore.traceId).toBe(activeTraceId);
-      expect(traceScore.observationId).toBeNull();
+      expect(traceScore.subject).toEqual({ kind: "trace", id: activeTraceId });
       expect(traceScore.value).toBe(0.87);
       expect(traceScore.comment).toBe("Active trace test");
     });
@@ -434,22 +412,19 @@ describe("LangfuseClient Score E2E Tests", () => {
       // Flush spans and scores
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
-
-      // Try to retrieve and validate if possible
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
-      expect(retrievedScore.traceId).toBe(traceId);
-      expect(retrievedScore.observationId).toBe(spanId);
+      const retrievedScore = await assertions.waitForScore(scoreId);
+      expect(retrievedScore.subject).toEqual({
+        kind: "observation",
+        id: spanId,
+        traceId: traceId,
+      });
       expect(retrievedScore.name).toContain("observation-quality");
       expect(retrievedScore.value).toBe(0.92);
       expect(retrievedScore.comment).toBe("High quality observation");
 
-      const traceData = await assertions.fetchTrace(traceId);
-      expect(traceData.id).toBe(traceId);
+      const observations = await assertions.waitForObservations(traceId);
 
-      const observation = traceData.observations?.find(
-        (obs) => obs.id === spanId,
-      );
+      const observation = observations.find((obs) => obs.id === spanId);
       expect(observation).toBeDefined();
       expect(observation?.name).toBe(spanName);
     });
@@ -480,21 +455,17 @@ describe("LangfuseClient Score E2E Tests", () => {
       // Flush spans and scores
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
+      const retrievedScore = await assertions.waitForScore(scoreId);
 
-      // Retrieve the score
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
-
-      // Validate score is linked to trace only (no observationId)
-      expect(retrievedScore.traceId).toBe(traceId);
-      expect(retrievedScore.observationId).toBeNull(); // API returns null, not undefined
+      // Validate score is linked to the trace only
+      expect(retrievedScore.subject).toEqual({ kind: "trace", id: traceId });
       expect(retrievedScore.name).toContain("trace-completeness");
       expect(retrievedScore.value).toBe(0.88);
       expect(retrievedScore.comment).toBe("Complete trace execution");
 
       // Verify the trace exists
-      const traceData = await assertions.fetchTrace(traceId);
-      expect(traceData.id).toBe(traceId);
+      const observations = await assertions.waitForObservations(traceId);
+      expect(observations.map((obs) => obs.name)).toContain(spanName);
     });
 
     it("should score active spans in context", async () => {
@@ -531,13 +502,13 @@ describe("LangfuseClient Score E2E Tests", () => {
       // Flush spans and scores
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
+      const retrievedScore = await assertions.waitForScore(scoreId);
 
-      // Retrieve and validate the score
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
-
-      expect(retrievedScore.traceId).toBe(activeTraceId);
-      expect(retrievedScore.observationId).toBe(activeSpanId);
+      expect(retrievedScore.subject).toEqual({
+        kind: "observation",
+        id: activeSpanId,
+        traceId: activeTraceId,
+      });
       expect(retrievedScore.value).toBe(0.95);
       expect(retrievedScore.comment).toBe("Scored from active context");
     });
@@ -574,13 +545,12 @@ describe("LangfuseClient Score E2E Tests", () => {
       // Flush spans and scores
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
+      const retrievedScore = await assertions.waitForScore(scoreId);
 
-      // Retrieve and validate the score
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
-
-      expect(retrievedScore.traceId).toBe(activeTraceId);
-      expect(retrievedScore.observationId).toBeNull(); // API returns null for trace scores
+      expect(retrievedScore.subject).toEqual({
+        kind: "trace",
+        id: activeTraceId,
+      });
       expect(retrievedScore.value).toBe(0.87);
       expect(retrievedScore.comment).toBe("Scored trace from active context");
     });
@@ -638,13 +608,12 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
-
-      // Validate generation score was created and linked correctly
-      const generationScore =
-        await assertions.api.scores.getById(generationScoreId);
-      expect(generationScore.traceId).toBe(traceId);
-      expect(generationScore.observationId).toBe(spanId);
+      const generationScore = await assertions.waitForScore(generationScoreId);
+      expect(generationScore.subject).toEqual({
+        kind: "observation",
+        id: spanId,
+        traceId: traceId,
+      });
       expect(generationScore.value).toBe(0.91);
       expect(generationScore.comment).toBe("Generation quality test");
       expect(generationScore.metadata).toEqual({
@@ -653,12 +622,9 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       // Validate the generation observation exists in the trace
-      const traceData = await assertions.fetchTrace(traceId);
-      expect(traceData.id).toBe(traceId);
+      const observations = await assertions.waitForObservations(traceId);
 
-      const observation = traceData.observations?.find(
-        (obs) => obs.id === spanId,
-      );
+      const observation = observations.find((obs) => obs.id === spanId);
       expect(observation).toBeDefined();
       expect(observation?.type).toBe("GENERATION");
       expect(observation?.name).toBe(generationName);
@@ -733,27 +699,23 @@ describe("LangfuseClient Score E2E Tests", () => {
       // Flush and wait
       await testEnv.spanProcessor.forceFlush();
       await client.flush();
-      await waitForServerIngestion(1000);
-
-      // Try to retrieve and validate scores if possible
       const scores = await Promise.all([
-        assertions.api.scores.getById(rootScoreId),
-        assertions.api.scores.getById(childScoreId),
-        assertions.api.scores.getById(grandchildScoreId),
-        assertions.api.scores.getById(traceScoreId),
+        assertions.waitForScore(rootScoreId),
+        assertions.waitForScore(childScoreId),
+        assertions.waitForScore(grandchildScoreId),
+        assertions.waitForScore(traceScoreId),
       ]);
 
-      // Validate all scores belong to same trace
+      // Validate observation scores point at their spans, trace score at the trace
       const expectedTraceId = rootContext.traceId;
-      scores.forEach((score) => {
-        expect(score.traceId).toBe(expectedTraceId);
+      [rootContext, childContext, grandchildContext].forEach((ctx, index) => {
+        expect(scores[index].subject).toEqual({
+          kind: "observation",
+          id: ctx.spanId,
+          traceId: expectedTraceId,
+        });
       });
-
-      // Validate observation scores have observationId, trace score doesn't
-      expect(scores[0].observationId).toBeDefined(); // root
-      expect(scores[1].observationId).toBeDefined(); // child
-      expect(scores[2].observationId).toBeDefined(); // grandchild
-      expect(scores[3].observationId).toBeNull(); // trace - API returns null
+      expect(scores[3].subject).toEqual({ kind: "trace", id: expectedTraceId });
 
       // Validate score values
       expect(scores[0].value).toBe(0.8);
@@ -785,10 +747,9 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       // Flush and wait
       await client.flush();
-      await waitForServerIngestion(3000);
 
       const retrievedScores = await Promise.all(
-        scoreIds.map((id) => assertions.api.scores.getById(id)),
+        scoreIds.map((id) => assertions.waitForScore(id)),
       );
 
       expect(retrievedScores).toHaveLength(batchSize);
@@ -832,9 +793,8 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await client.flush();
-      await waitForServerIngestion(1000);
 
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
+      const retrievedScore = await assertions.waitForScore(scoreId);
       expect(retrievedScore.id).toBe(scoreId);
       expect(retrievedScore.environment).toBe(testEnvironment);
       expect(retrievedScore.configId).toBe(config.id);
@@ -863,9 +823,6 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await client.flush();
-      await waitForServerIngestion(4000);
-
-      // Try to create second score with same ID
       client.score.create({
         id: duplicateId,
         traceId: nanoid(),
@@ -876,9 +833,8 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       // This should not throw, but the server might handle it differently
       await client.flush();
-      await waitForServerIngestion(4000);
 
-      const retrievedScore = await assertions.api.scores.getById(duplicateId);
+      const retrievedScore = await assertions.waitForScore(duplicateId);
       expect(retrievedScore.id).toBe(duplicateId);
       // The server might keep the first or update to the second score
       expect([0.5, 0.8]).toContain(retrievedScore.value);
@@ -924,13 +880,8 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await client.flush();
-      await waitForServerIngestion(1000);
-
-      // Try to validate extreme scores if retrieval works
       for (const originalScore of extremeScores) {
-        const retrievedScore = await assertions.api.scores.getById(
-          originalScore.id,
-        );
+        const retrievedScore = await assertions.waitForScore(originalScore.id);
 
         expect(retrievedScore.id).toBe(originalScore.id);
         expect(retrievedScore.value).toBe(originalScore.value);
@@ -988,9 +939,8 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await client.flush();
-      await waitForServerIngestion(1000);
 
-      const retrievedScore = await assertions.api.scores.getById(scoreId);
+      const retrievedScore = await assertions.waitForScore(scoreId);
       expect(retrievedScore.id).toBe(scoreId);
       expect(retrievedScore.value).toBe(0.89);
       expect(retrievedScore.metadata).toEqual(largeMetadata);
@@ -1013,9 +963,6 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await client.flush();
-      await waitForServerIngestion(4000);
-
-      // Try to create second score with same ID
       client.score.create({
         id: duplicateId,
         traceId: nanoid(),
@@ -1026,9 +973,8 @@ describe("LangfuseClient Score E2E Tests", () => {
 
       // This should not throw, but the server might handle it differently
       await client.flush();
-      await waitForServerIngestion(4000);
 
-      const retrievedScore = await assertions.api.scores.getById(duplicateId);
+      const retrievedScore = await assertions.waitForScore(duplicateId);
       expect(retrievedScore.id).toBe(duplicateId);
       // The server might keep the first or update to the second score
       expect([0.5, 0.8]).toContain(retrievedScore.value);
@@ -1071,13 +1017,8 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await expect(client.flush()).resolves.not.toThrow();
-      await waitForServerIngestion(1000);
-
-      // Validate all extreme scores were created and stored correctly
       for (const originalScore of extremeScores) {
-        const retrievedScore = await assertions.api.scores.getById(
-          originalScore.id,
-        );
+        const retrievedScore = await assertions.waitForScore(originalScore.id);
         expect(retrievedScore.id).toBe(originalScore.id);
         expect(retrievedScore.name).toBe(originalScore.name);
         expect(retrievedScore.value).toBe(originalScore.value);
@@ -1128,11 +1069,8 @@ describe("LangfuseClient Score E2E Tests", () => {
       });
 
       await expect(client.flush()).resolves.not.toThrow();
-      await waitForServerIngestion(1000);
-
-      // Validate large metadata was stored correctly
       const retrievedScore =
-        await assertions.api.scores.getById(largeMetadataScoreId);
+        await assertions.waitForScore(largeMetadataScoreId);
       expect(retrievedScore.id).toBe(largeMetadataScoreId);
       expect(retrievedScore.value).toBe(0.89);
       expect(retrievedScore.comment).toBe("Large metadata test");
@@ -1179,11 +1117,8 @@ describe("LangfuseClient Score E2E Tests", () => {
       const flushPromises = [client.flush(), client.flush(), client.flush()];
 
       await expect(Promise.all(flushPromises)).resolves.not.toThrow();
-      await waitForServerIngestion(1000);
-
-      // Validate all scores were created despite multiple flush calls
       const retrievedScores = await Promise.all(
-        scoreIds.map((id) => assertions.api.scores.getById(id)),
+        scoreIds.map((id) => assertions.waitForScore(id)),
       );
 
       expect(retrievedScores).toHaveLength(5);
