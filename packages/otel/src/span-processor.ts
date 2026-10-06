@@ -586,9 +586,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
-      LangfuseOtelSpanAttributes.TRACE_INPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
-      LangfuseOtelSpanAttributes.TRACE_OUTPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
       LangfuseOtelSpanAttributes.TRACE_METADATA,
     ];

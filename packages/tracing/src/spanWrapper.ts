@@ -1,16 +1,12 @@
 import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import { Span, TimeInput } from "@opentelemetry/api";
 
-import {
-  createObservationAttributes,
-  createTraceAttributes,
-} from "./attributes.js";
+import { createObservationAttributes } from "./attributes.js";
 import { getLangfuseTracer } from "./tracerProvider.js";
 import {
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
   LangfuseEventAttributes,
-  LangfuseTraceAttributes,
 } from "./types.js";
 import type {
   LangfuseAgentAttributes,
@@ -111,7 +107,6 @@ type LangfuseObservationParams = {
  *
  * ## Common Methods
  * - `end()`: Marks the observation as complete with optional timestamp
- * - `setTraceIO()`: Sets trace-level input/output (deprecated, for legacy platform features)
  * - `startObservation()`: Creates child observations with inherited context
  *
  * @example
@@ -175,34 +170,6 @@ abstract class LangfuseBaseObservation {
     this.otelSpan.setAttributes(
       createObservationAttributes(this.type, attributes),
     );
-  }
-
-  /**
-   * Set trace-level input and output for the trace this observation belongs to.
-   *
-   * @deprecated This is a legacy method for backward compatibility with Langfuse platform
-   * features that still rely on trace-level input/output (e.g., legacy LLM-as-a-judge
-   * evaluators). It will be removed in a future major version.
-   *
-   * For setting other trace attributes (userId, sessionId, metadata, tags, version),
-   * use {@link propagateAttributes} instead.
-   *
-   * @param attributes - Input and output data to associate with the trace
-   * @returns The observation instance for method chaining
-   *
-   * @example
-   * ```typescript
-   * const span = startObservation('my-operation');
-   * span.setTraceIO({
-   *   input: { query: 'user question' },
-   *   output: { response: 'assistant answer' }
-   * });
-   * ```
-   */
-  public setTraceIO(attributes: LangfuseTraceAttributes) {
-    this.otelSpan.setAttributes(createTraceAttributes(attributes));
-
-    return this;
   }
 
   /**

@@ -126,25 +126,6 @@ export type LangfuseObservationAttributes = LangfuseSpanAttributes &
   LangfuseGuardrailAttributes;
 
 /**
- * Attributes for setting trace-level input and output only.
- *
- * This is a restricted type used by the deprecated setTraceIO methods,
- * which only allow setting input and output on traces for backward
- * compatibility with legacy Langfuse platform features.
- *
- * @deprecated This type is for backward compatibility with legacy platform features
- * that still rely on trace-level input/output. Use propagateAttributes for other trace attributes.
- *
- * @public
- */
-export type LangfuseTraceAttributes = {
-  /** Input data that initiated the trace */
-  input?: unknown;
-  /** Final output data from the trace */
-  output?: unknown;
-};
-
-/**
  * Context information for linking observations to traces.
  *
  * Used internally for maintaining parent-child relationships between observations.

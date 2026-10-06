@@ -29,9 +29,7 @@ export class MediaService {
   public async process(span: ReadableSpan) {
     const mediaAttributes = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
-      LangfuseOtelSpanAttributes.TRACE_INPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
-      LangfuseOtelSpanAttributes.TRACE_OUTPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
       LangfuseOtelSpanAttributes.TRACE_METADATA,
     ];
