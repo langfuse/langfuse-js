@@ -187,21 +187,12 @@ export class CallbackHandler extends BaseCallbackHandler {
             ? metadata["langfuseSessionId"]
             : this.sessionId;
 
-        const traceMetadata = this.traceMetadata
-          ? Object.fromEntries(
-              Object.entries(this.traceMetadata).map(([k, v]) => [
-                k,
-                typeof v === "string" ? v : JSON.stringify(v),
-              ]),
-            )
-          : undefined;
-
         propagateAttributes(
           {
             tags: traceTags,
             userId: traceUserId,
             sessionId: traceSessionId,
-            metadata: traceMetadata,
+            metadata: this.traceMetadata,
             version: this.version,
           },
           () => {
