@@ -5,6 +5,7 @@ import {
   serializeValue,
   createExperimentId,
   createExperimentItemId,
+  createStableExperimentId,
   LangfuseOtelSpanAttributes,
   LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
 } from "@langfuse/core";
@@ -104,7 +105,7 @@ export class ExperimentManager {
    * 1. Executes the task function on each data item with proper tracing
    * 2. Runs item-level evaluators on each task output
    * 3. Executes run-level evaluators on the complete result set
-   * 4. Links results to dataset runs (for Langfuse datasets)
+   * 4. Groups all items into one Langfuse experiment (stable per dataset and run name)
    * 5. Stores all scores and traces in Langfuse
    *
    * @param config - The experiment configuration
@@ -119,7 +120,8 @@ export class ExperimentManager {
    * @param config.maxConcurrency - Maximum number of concurrent task executions (default: 50)
    *
    * @returns Promise that resolves to experiment results including:
-   *   - experimentId: Stable identifier for the experiment execution
+   *   - experimentId: Identifier of the experiment in Langfuse
+   *   - experimentUrl: Link to the experiment results in the Langfuse UI
    *   - runName: The experiment run name (either provided or generated)
    *   - itemResults: Results for each processed data item
    *   - runEvaluations: Results from run-level evaluators
@@ -194,7 +196,15 @@ export class ExperimentManager {
       name,
       runName: providedRunName,
     });
-    const fallbackExperimentId = await createExperimentId();
+    const datasetId = data.find(
+      (item): item is DatasetItem => "datasetId" in item && !!item.datasetId,
+    )?.datasetId;
+    const projectId = await this.resolveProjectId();
+    const experimentId = await this.createRunExperimentId({
+      projectId,
+      datasetId,
+      runName,
+    });
 
     if (!this.isOtelRegistered()) {
       this.logger.warn(
@@ -221,7 +231,7 @@ export class ExperimentManager {
             experimentRunName: runName,
             experimentDescription: description,
             experimentMetadata: metadata,
-            fallbackExperimentId,
+            experimentId,
             datasetVersion: config.datasetVersion,
           });
         } catch (reason) {
@@ -247,21 +257,11 @@ export class ExperimentManager {
         result !== undefined,
     );
 
-    // Get dataset run URL
-    const datasetRunId = itemResults.find(
-      (item) => item.datasetRunId,
-    )?.datasetRunId;
-    const experimentId = datasetRunId || fallbackExperimentId;
-
-    let datasetRunUrl = undefined;
-    if (datasetRunId && data.length > 0 && "datasetId" in data[0]) {
-      const datasetId = data[0].datasetId;
-      const projectUrl = (await this.langfuseClient.getTraceUrl("mock")).split(
-        "/traces",
-      )[0];
-
-      datasetRunUrl = `${projectUrl}/datasets/${datasetId}/runs/${datasetRunId}`;
-    }
+    const datasetRunId = datasetId ? experimentId : undefined;
+    const experimentUrl = projectId
+      ? await this.langfuseClient.getExperimentUrl(experimentId)
+      : undefined;
+    const datasetRunUrl = datasetRunId ? experimentUrl : undefined;
 
     // Execute run evaluators
     let runEvaluations: Evaluation[] = [];
@@ -290,17 +290,21 @@ export class ExperimentManager {
         [] as Evaluation[],
       );
 
-      if (datasetRunId) {
-        runEvaluations.forEach((runEval) =>
-          this.langfuseClient.score.create({ datasetRunId, ...runEval }),
-        );
-      }
+      // Run-level scores attach to the experiment: on Langfuse the experiment
+      // ID is the dataset run ID, also for experiments on local data.
+      runEvaluations.forEach((runEval) =>
+        this.langfuseClient.score.create({
+          datasetRunId: experimentId,
+          ...runEval,
+        }),
+      );
     }
 
     await this.langfuseClient.score.flush();
 
     return {
       experimentId,
+      experimentUrl,
       runName,
       itemResults,
       datasetRunId,
@@ -308,7 +312,7 @@ export class ExperimentManager {
       runEvaluations,
       format: async (options?: { includeItemResults?: boolean }) =>
         await this.prettyPrintResults({
-          datasetRunUrl,
+          experimentUrl,
           itemResults,
           originalData: data,
           runEvaluations,
@@ -325,7 +329,7 @@ export class ExperimentManager {
    *
    * This method handles the complete processing pipeline for one data item:
    * 1. Executes the task within a traced observation span
-   * 2. Links the result to a dataset run (if applicable)
+   * 2. Tags the observation with the experiment and dataset item attributes
    * 3. Runs all item-level evaluators on the output
    * 4. Stores evaluation scores in Langfuse
    * 5. Handles errors gracefully by continuing with remaining evaluators
@@ -362,7 +366,7 @@ export class ExperimentManager {
       ExpectedOutput,
       Metadata
     >["metadata"];
-    fallbackExperimentId: string;
+    experimentId: string;
     item: ExperimentParams<Input, ExpectedOutput, Metadata>["data"][0];
     task: ExperimentTask<Input, ExpectedOutput, Metadata>;
     evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
@@ -386,34 +390,13 @@ export class ExperimentManager {
           throw new Error("Experiment item is missing input. Skipping item.");
         }
 
-        let datasetRunId: string | undefined = undefined;
-
-        if (datasetItemId) {
-          try {
-            const result = await this.langfuseClient.api.datasetRunItems.create(
-              {
-                runName: params.experimentRunName,
-                runDescription: params.experimentDescription,
-                metadata: params.experimentMetadata,
-                datasetItemId,
-                traceId,
-                observationId,
-                ...(params.datasetVersion && {
-                  datasetVersion: params.datasetVersion,
-                }),
-              },
-            );
-
-            datasetRunId = result.datasetRunId;
-          } catch (err) {
-            this.logger.error("Linking dataset run item failed", err);
-          }
-        }
+        const datasetRunId =
+          datasetId && datasetItemId ? params.experimentId : undefined;
 
         // Generate IDs
         const experimentItemId =
           datasetItemId || (await createExperimentItemId(input));
-        const experimentId = datasetRunId || params.fallbackExperimentId;
+        const experimentId = params.experimentId;
 
         // Set non-propagated experiment attributes directly on root span
         const rootSpanAttributes: Record<string, string> = {
@@ -424,6 +407,11 @@ export class ExperimentManager {
           rootSpanAttributes[
             LangfuseOtelSpanAttributes.EXPERIMENT_DESCRIPTION
           ] = params.experimentDescription;
+        }
+        if (datasetItemId && params.datasetVersion) {
+          rootSpanAttributes[
+            LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_VERSION
+          ] = params.datasetVersion;
         }
 
         if (expectedOutput !== undefined) {
@@ -539,10 +527,10 @@ export class ExperimentManager {
    * - Experiment overview with aggregate statistics
    * - Average scores across all evaluations
    * - Run-level evaluation results
-   * - Links to dataset runs in the Langfuse UI
+   * - Link to the experiment in the Langfuse UI
    *
    * @param params - Formatting parameters
-   * @param params.datasetRunUrl - Optional URL to the dataset run in Langfuse UI
+   * @param params.experimentUrl - Optional URL to the experiment in the Langfuse UI
    * @param params.itemResults - Results from processing each data item
    * @param params.originalData - The original input data items
    * @param params.runEvaluations - Results from run-level evaluators
@@ -584,8 +572,8 @@ export class ExperimentManager {
    *   • overall_quality: 0.887
    *     💭 Good performance with room for improvement
    *
-   * 🔗 Dataset Run:
-   *    https://cloud.langfuse.com/project/123/datasets/456/runs/def456
+   * 🔗 Experiment:
+   *    https://cloud.langfuse.com/project/123/experiments/results?baseline=def456
    * ```
    *
    * @internal
@@ -595,7 +583,7 @@ export class ExperimentManager {
     ExpectedOutput = any,
     Metadata extends Record<string, any> = Record<string, any>,
   >(params: {
-    datasetRunUrl?: string;
+    experimentUrl?: string;
     itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[];
     originalData:
       | ExperimentItem<Input, ExpectedOutput, Metadata>[]
@@ -738,8 +726,8 @@ export class ExperimentManager {
       output += "\n";
     }
 
-    if (params.datasetRunUrl) {
-      output += `\n🔗 Dataset Run:\n   ${params.datasetRunUrl}`;
+    if (params.experimentUrl) {
+      output += `\n🔗 Experiment:\n   ${params.experimentUrl}`;
     }
 
     return output;
@@ -763,6 +751,48 @@ export class ExperimentManager {
       return value.length > 50 ? `${value.substring(0, 47)}...` : value;
     }
     return JSON.stringify(value);
+  }
+
+  /**
+   * Resolves the project ID for experiment IDs and URLs. Returns `undefined`
+   * and logs a warning when the lookup fails, so the experiment still runs.
+   *
+   * @internal
+   */
+  private async resolveProjectId(): Promise<string | undefined> {
+    try {
+      return await this.langfuseClient.getProjectId();
+    } catch (err) {
+      this.logger.warn(
+        "Failed to fetch the Langfuse project ID. The experiment URL is unavailable and runs on a dataset get a random experiment ID.",
+        err,
+      );
+
+      return undefined;
+    }
+  }
+
+  /**
+   * Creates the experiment ID shared by all items of a run.
+   *
+   * Runs on a Langfuse dataset get an ID derived from project, dataset and run
+   * name, so re-running or sharding a run with the same name continues the
+   * same experiment. Runs on local data get a random ID.
+   *
+   * @internal
+   */
+  private async createRunExperimentId(params: {
+    projectId?: string;
+    datasetId?: string;
+    runName: string;
+  }): Promise<string> {
+    const { projectId, datasetId, runName } = params;
+
+    if (datasetId && projectId) {
+      return await createStableExperimentId({ projectId, datasetId, runName });
+    }
+
+    return await createExperimentId();
   }
 
   private isOtelRegistered(): boolean {

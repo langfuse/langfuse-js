@@ -104,6 +104,38 @@ export async function createExperimentId(): Promise<string> {
 }
 
 /**
+ * Derive the experiment ID of a run on a Langfuse dataset: the first 16 hex
+ * characters of SHA-256 over
+ * `JSON.stringify(["langfuse-experiment-v1", projectId, datasetId, runName])`.
+ *
+ * Runs with the same project, dataset and run name share one experiment, and
+ * the ID matches the one the Langfuse platform and the Python SDK derive for
+ * the same run. Do not change the input layout: it is a cross-SDK contract.
+ * @internal
+ */
+export async function createStableExperimentId(params: {
+  projectId: string;
+  datasetId: string;
+  runName: string;
+}): Promise<string> {
+  const seed = JSON.stringify([
+    "langfuse-experiment-v1",
+    params.projectId,
+    params.datasetId,
+    params.runName,
+  ]);
+  const hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(seed),
+  );
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
+}
+
+/**
  * Generate experiment item ID from input hash (first 16 hex chars of SHA-256).
  * Skips serialization if input is already a string.
  * @internal

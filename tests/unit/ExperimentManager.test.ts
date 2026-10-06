@@ -1,5 +1,5 @@
 import { ExperimentManager } from "@langfuse/client";
-import { getGlobalLogger } from "@langfuse/core";
+import { createStableExperimentId, getGlobalLogger } from "@langfuse/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 type Deferred<T> = {
@@ -16,15 +16,38 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve };
 }
 
-function createManager(): ExperimentManager {
-  return new ExperimentManager({
-    langfuseClient: {
-      score: {
-        create: vi.fn(),
-        flush: vi.fn().mockResolvedValue(undefined),
-      },
-    } as never,
-  });
+function createLangfuseClientMock(
+  getProjectId: () => Promise<string> = async () => "project-1",
+) {
+  const datasetRunItemsCreate = vi.fn();
+
+  return {
+    score: {
+      create: vi.fn(),
+      flush: vi.fn().mockResolvedValue(undefined),
+    },
+    getProjectId: vi.fn(getProjectId),
+    getExperimentUrl: vi.fn(
+      async (experimentId: string) =>
+        `https://langfuse.test/project/${await getProjectId()}/experiments/results?baseline=${experimentId}`,
+    ),
+    api: { datasetRunItems: { create: datasetRunItemsCreate } },
+  };
+}
+
+function createManager(
+  langfuseClient = createLangfuseClientMock(),
+): ExperimentManager {
+  return new ExperimentManager({ langfuseClient: langfuseClient as never });
+}
+
+function datasetItem(id: string, input: string) {
+  return {
+    id,
+    datasetId: "dataset-1",
+    input,
+    expectedOutput: `${input}-expected`,
+  } as never;
 }
 
 describe("ExperimentManager concurrency", () => {
@@ -92,5 +115,100 @@ describe("ExperimentManager concurrency", () => {
       gates.forEach((gate, input) => gate.resolve(`${input}-output`));
       await runPromise;
     }
+  });
+});
+
+describe("ExperimentManager experiment ids", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("derives a stable experiment id for dataset runs without per-item API calls", async () => {
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    const run = () =>
+      createManager(langfuseClient).run({
+        name: "dataset-run",
+        runName: "my-run",
+        data: [datasetItem("item-1", "a"), datasetItem("item-2", "b")],
+        task: async ({ input }) => input,
+      });
+
+    const first = await run();
+    const second = await run();
+
+    const expectedId = await createStableExperimentId({
+      projectId: "project-1",
+      datasetId: "dataset-1",
+      runName: "my-run",
+    });
+    expect(first.experimentId).toBe(expectedId);
+    expect(second.experimentId).toBe(expectedId);
+    expect(first.datasetRunId).toBe(expectedId);
+    expect(first.itemResults.map((r) => r.datasetRunId)).toEqual([
+      expectedId,
+      expectedId,
+    ]);
+    expect(first.experimentUrl).toBe(
+      `https://langfuse.test/project/project-1/experiments/results?baseline=${expectedId}`,
+    );
+    expect(first.datasetRunUrl).toBe(first.experimentUrl);
+    expect(langfuseClient.api.datasetRunItems.create).not.toHaveBeenCalled();
+  });
+
+  it("uses a random experiment id for local data and still scores the run", async () => {
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    const result = await createManager(langfuseClient).run({
+      name: "local-run",
+      data: [{ input: "a" }, { input: "b" }],
+      task: async ({ input }) => input,
+      runEvaluators: [async () => ({ name: "run-score", value: 1 })],
+    });
+
+    expect(result.experimentId).toMatch(/^[0-9a-f]{16}$/);
+    expect(result.datasetRunId).toBeUndefined();
+    expect(result.datasetRunUrl).toBeUndefined();
+    expect(result.experimentUrl).toBe(
+      `https://langfuse.test/project/project-1/experiments/results?baseline=${result.experimentId}`,
+    );
+    expect(langfuseClient.score.create).toHaveBeenCalledWith({
+      datasetRunId: result.experimentId,
+      name: "run-score",
+      value: 1,
+    });
+  });
+
+  it("falls back to a random experiment id when the project id lookup fails", async () => {
+    const warn = vi
+      .spyOn(getGlobalLogger(), "warn")
+      .mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock(async () => {
+      throw new Error("unauthorized");
+    });
+
+    const result = await createManager(langfuseClient).run({
+      name: "dataset-run",
+      runName: "my-run",
+      data: [datasetItem("item-1", "a")],
+      task: async ({ input }) => input,
+    });
+
+    expect(result.experimentId).toMatch(/^[0-9a-f]{16}$/);
+    expect(result.experimentId).not.toBe(
+      await createStableExperimentId({
+        projectId: "project-1",
+        datasetId: "dataset-1",
+        runName: "my-run",
+      }),
+    );
+    expect(result.experimentUrl).toBeUndefined();
+    expect(result.itemResults).toHaveLength(1);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to fetch the Langfuse project ID"),
+      expect.any(Error),
+    );
   });
 });

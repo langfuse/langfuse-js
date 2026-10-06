@@ -634,6 +634,43 @@ describe("Experiment Attribute Propagation", () => {
       ).toBe(datasetId);
     });
 
+    it("should set the dataset version as item version on the root span only", async () => {
+      const datasetVersion = "2026-10-01T12:00:00.000Z";
+
+      await langfuse.experiment.run({
+        name: "dataset-version-test",
+        data: [
+          {
+            input: "test",
+            id: "item-1",
+            datasetId: "dataset-abc-123",
+          } as any,
+        ],
+        datasetVersion,
+        task: async () => {
+          const child = startObservation("child");
+          child.end();
+          return "output";
+        },
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      const spans = testEnv.mockExporter.exportedSpans;
+      const rootSpan = spans.find((s) => s.name === "experiment-item-run");
+      const childSpan = spans.find((s) => s.name === "child");
+
+      expect(
+        rootSpan?.attributes[
+          LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_VERSION
+        ],
+      ).toBe(datasetVersion);
+      expect(
+        childSpan?.attributes[
+          LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_VERSION
+        ],
+      ).toBeUndefined();
+    });
+
     it("should not have dataset ID for non-dataset experiments", async () => {
       await langfuse.experiment.run({
         name: "non-dataset-test",
