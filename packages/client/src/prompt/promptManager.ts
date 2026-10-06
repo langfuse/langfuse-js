@@ -32,17 +32,23 @@ import {
 export class PromptManager {
   private cache: LangfusePromptCache;
   private apiClient: LangfuseAPIClient;
+  private timeoutSeconds: number | undefined;
 
   /**
    * Creates a new PromptManager instance.
    *
-   * @param params - Configuration object containing the API client
+   * @param params - Configuration object containing the API client and the
+   *   default per-request timeout in seconds for prompt API requests
    * @internal
    */
-  constructor(params: { apiClient: LangfuseAPIClient }) {
-    const { apiClient } = params;
+  constructor(params: {
+    apiClient: LangfuseAPIClient;
+    timeoutSeconds?: number;
+  }) {
+    const { apiClient, timeoutSeconds } = params;
 
     this.apiClient = apiClient;
+    this.timeoutSeconds = timeoutSeconds;
     this.cache = new LangfusePromptCache();
   }
 
@@ -137,7 +143,9 @@ export class PromptManager {
             type: body.type ?? "text",
           };
 
-    const promptResponse = await this.apiClient.prompts.create(requestBody);
+    const promptResponse = await this.apiClient.prompts.create(requestBody, {
+      timeoutInSeconds: this.timeoutSeconds,
+    });
 
     if (promptResponse.type === "chat") {
       return new ChatPromptClient(promptResponse);
@@ -172,9 +180,12 @@ export class PromptManager {
   }): Promise<Prompt> {
     const { name, version, newLabels } = params;
 
-    const newPrompt = await this.apiClient.promptVersion.update(name, version, {
-      newLabels,
-    });
+    const newPrompt = await this.apiClient.promptVersion.update(
+      name,
+      version,
+      { newLabels },
+      { timeoutInSeconds: this.timeoutSeconds },
+    );
 
     this.cache.invalidate(name);
 
@@ -217,10 +228,14 @@ export class PromptManager {
       label?: string;
     },
   ): Promise<void> {
-    await this.apiClient.prompts.delete(name, {
-      version: options?.version,
-      label: options?.label,
-    });
+    await this.apiClient.prompts.delete(
+      name,
+      {
+        version: options?.version,
+        label: options?.label,
+      },
+      { timeoutInSeconds: this.timeoutSeconds },
+    );
 
     this.cache.invalidate(name);
   }
@@ -439,7 +454,9 @@ export class PromptManager {
         },
         {
           maxRetries,
-          timeoutInSeconds: fetchTimeoutMs ? fetchTimeoutMs / 1_000 : undefined,
+          timeoutInSeconds: fetchTimeoutMs
+            ? fetchTimeoutMs / 1_000
+            : this.timeoutSeconds,
         },
       );
 

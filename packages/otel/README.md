@@ -28,6 +28,11 @@ a warning. Set the limit to a positive decimal safe integer; surrounding
 whitespace is ignored. Custom exporters passed to `LangfuseSpanProcessor`
 bypass this limit because they may use a different wire format or transport.
 
+Span exports are gzip-compressed by default on Node.js and Bun. To send
+uncompressed requests, set the `compression: "none"` option,
+`LANGFUSE_OTEL_COMPRESSION="none"`, or `OTEL_EXPORTER_OTLP_TRACES_COMPRESSION` /
+`OTEL_EXPORTER_OTLP_COMPRESSION` to `"none"`.
+
 ## Quickstart
 
 ```typescript

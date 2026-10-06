@@ -14,6 +14,26 @@ import { Span, trace } from "@opentelemetry/api";
 const MAX_QUEUE_SIZE = 100_000; // prevent memory leaks
 const MAX_BATCH_SIZE = 100;
 
+function getScoreValidationError(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null) {
+    return "score data must be an object";
+  }
+
+  const { name, value } = data as Partial<ScoreBody>;
+  if (typeof name !== "string" || name.length === 0) {
+    return "'name' must be a non-empty string";
+  }
+
+  const isValidValue =
+    typeof value === "string" ||
+    (typeof value === "number" && Number.isFinite(value));
+  if (!isValidValue) {
+    return `'value' of score '${name}' must be a finite number or a string`;
+  }
+
+  return undefined;
+}
+
 /**
  * Manager for creating and batching score events in Langfuse.
  *
@@ -30,15 +50,21 @@ export class ScoreManager {
   private flushTimer: any = null;
   private flushAtCount: number;
   private flushIntervalSeconds: number;
+  private timeoutSeconds: number | undefined;
 
   /**
    * Creates a new ScoreManager instance.
    *
-   * @param params - Configuration object containing the API client
+   * @param params - Configuration object containing the API client and the
+   *   per-request timeout in seconds for score ingestion requests
    * @internal
    */
-  constructor(params: { apiClient: LangfuseAPIClient }) {
+  constructor(params: {
+    apiClient: LangfuseAPIClient;
+    timeoutSeconds?: number;
+  }) {
     this.apiClient = params.apiClient;
+    this.timeoutSeconds = params.timeoutSeconds;
 
     const envFlushAtCount = getEnv("LANGFUSE_FLUSH_AT");
     const envFlushIntervalSeconds = getEnv("LANGFUSE_FLUSH_INTERVAL");
@@ -60,6 +86,10 @@ export class ScoreManager {
    * automatically sent when the queue reaches the flush threshold or after
    * the flush interval expires.
    *
+   * This method never throws. Invalid scores (missing or empty `name`, or a
+   * `value` that is neither a finite number nor a string) are logged at error
+   * level and dropped. Unexpected errors are logged as well.
+   *
    * @param data - The score data to create
    *
    * @example
@@ -73,6 +103,21 @@ export class ScoreManager {
    * ```
    */
   public create(data: ScoreBody): void {
+    try {
+      this.enqueue(data);
+    } catch (err) {
+      this.logger.error("Failed to create score. Dropping score.", err);
+    }
+  }
+
+  private enqueue(data: ScoreBody): void {
+    const validationError = getScoreValidationError(data);
+    if (validationError) {
+      this.logger.error(`Invalid score: ${validationError}. Dropping score.`);
+
+      return;
+    }
+
     const scoreData: ScoreBody = {
       ...data,
       id: data.id ?? generateUUID(),
@@ -93,13 +138,13 @@ export class ScoreManager {
       return;
     }
 
-    this.eventQueue.push(scoreIngestionEvent);
     if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
       this.logger.debug(
-        "Added score event to queue:\n",
+        "Adding score event to queue:\n",
         JSON.stringify(scoreIngestionEvent, null, 2),
       );
     }
+    this.eventQueue.push(scoreIngestionEvent);
 
     if (this.eventQueue.length >= this.flushAtCount) {
       this.flushPromise = this.flush();
@@ -137,13 +182,17 @@ export class ScoreManager {
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const { spanId, traceId } = observation.otelSpan.spanContext();
+    try {
+      const { spanId, traceId } = observation.otelSpan.spanContext();
 
-    this.create({
-      ...data,
-      traceId,
-      observationId: spanId,
-    });
+      this.create({
+        ...data,
+        traceId,
+        observationId: spanId,
+      });
+    } catch (err) {
+      this.logger.error("Failed to score observation. Dropping score.", err);
+    }
   }
 
   /**
@@ -173,12 +222,16 @@ export class ScoreManager {
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const { traceId } = observation.otelSpan.spanContext();
+    try {
+      const { traceId } = observation.otelSpan.spanContext();
 
-    this.create({
-      ...data,
-      traceId,
-    });
+      this.create({
+        ...data,
+        traceId,
+      });
+    } catch (err) {
+      this.logger.error("Failed to score trace. Dropping score.", err);
+    }
   }
 
   /**
@@ -209,20 +262,27 @@ export class ScoreManager {
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const currentOtelSpan = trace.getActiveSpan();
-    if (!currentOtelSpan) {
-      this.logger.warn("No active span in context to score.");
+    try {
+      const currentOtelSpan = trace.getActiveSpan();
+      if (!currentOtelSpan) {
+        this.logger.warn("No active span in context to score.");
 
-      return;
+        return;
+      }
+
+      const { spanId, traceId } = currentOtelSpan.spanContext();
+
+      this.create({
+        ...data,
+        traceId,
+        observationId: spanId,
+      });
+    } catch (err) {
+      this.logger.error(
+        "Failed to score active observation. Dropping score.",
+        err,
+      );
     }
-
-    const { spanId, traceId } = currentOtelSpan.spanContext();
-
-    this.create({
-      ...data,
-      traceId,
-      observationId: spanId,
-    });
   }
 
   /**
@@ -254,19 +314,23 @@ export class ScoreManager {
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const currentOtelSpan = trace.getActiveSpan();
-    if (!currentOtelSpan) {
-      this.logger.warn("No active span in context to score trace.");
+    try {
+      const currentOtelSpan = trace.getActiveSpan();
+      if (!currentOtelSpan) {
+        this.logger.warn("No active span in context to score trace.");
 
-      return;
+        return;
+      }
+
+      const { traceId } = currentOtelSpan.spanContext();
+
+      this.create({
+        ...data,
+        traceId,
+      });
+    } catch (err) {
+      this.logger.error("Failed to score active trace. Dropping score.", err);
     }
-
-    const { traceId } = currentOtelSpan.spanContext();
-
-    this.create({
-      ...data,
-      traceId,
-    });
   }
 
   private async handleFlush() {
@@ -283,7 +347,7 @@ export class ScoreManager {
 
         promises.push(
           this.apiClient.ingestion
-            .batch({ batch })
+            .batch({ batch }, { timeoutInSeconds: this.timeoutSeconds })
             .then((res) => {
               if (res.errors?.length > 0) {
                 this.logger.error("Error ingesting scores:", res.errors);

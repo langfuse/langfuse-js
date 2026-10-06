@@ -154,6 +154,8 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Additional HTTP headers to include with requests.
+   * Overrides default span export headers with the same name, such as
+   * `x-langfuse-ingestion-version` (default `"4"`).
    */
   additionalHeaders?: Record<string, string>;
 
@@ -161,10 +163,13 @@ export interface LangfuseSpanProcessorParams {
    * Compression for span export requests: `"gzip"` or `"none"`.
    * Can also be set via LANGFUSE_OTEL_COMPRESSION environment variable.
    * When unset, falls back to the OTEL_EXPORTER_OTLP_TRACES_COMPRESSION and
-   * OTEL_EXPORTER_OTLP_COMPRESSION environment variables, then to no compression.
+   * OTEL_EXPORTER_OTLP_COMPRESSION environment variables, then to `"gzip"`.
+   * Set any of them to `"none"` to disable compression.
    *
    * Ignored when a custom `exporter` is provided. Only takes effect on Node.js and Bun;
-   * browser and edge runtimes ignore it. Requires Langfuse server v3.30.0 or later.
+   * browser and edge runtimes ignore it. Every Langfuse v4 server accepts gzip.
+   *
+   * @defaultValue "gzip"
    */
   compression?: "gzip" | "none";
 
@@ -267,7 +272,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     const baseUrl =
       params?.baseUrl ??
       getEnv("LANGFUSE_BASE_URL") ??
-      getEnv("LANGFUSE_BASEURL") ?? // legacy v2
       "https://cloud.langfuse.com";
 
     if (!params?.exporter && !publicKey) {
@@ -299,12 +303,14 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         ? !["false", "0"].includes(envMediaUploadEnabled.toLowerCase())
         : true);
     const compression =
-      params?.compression !== undefined
+      (params?.compression !== undefined
         ? resolveCompression(params.compression, "compression")
         : resolveCompression(
             getEnv("LANGFUSE_OTEL_COMPRESSION"),
             "LANGFUSE_OTEL_COMPRESSION",
-          );
+          )) ??
+      getOtelCompressionFromEnv() ??
+      CompressionAlgorithm.GZIP;
 
     const exporter = params?.exporter
       ? params.exporter
@@ -317,6 +323,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
               "x-langfuse-sdk-name": "javascript",
               "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
               "x-langfuse-public-key": publicKey ?? "<missing>",
+              "x-langfuse-ingestion-version": "4",
               ...params?.additionalHeaders,
             },
             timeoutMillis: timeoutSeconds * 1_000,
@@ -586,9 +593,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
-      LangfuseOtelSpanAttributes.TRACE_INPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
-      LangfuseOtelSpanAttributes.TRACE_OUTPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
       LangfuseOtelSpanAttributes.TRACE_METADATA,
     ];
@@ -631,8 +636,28 @@ function resolveCompression(
   }
 
   getGlobalLogger().warn(
-    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the OTEL_EXPORTER_OTLP_*COMPRESSION environment variables.`,
+    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the OTEL_EXPORTER_OTLP_*COMPRESSION environment variables, then gzip.`,
   );
+
+  return undefined;
+}
+
+/**
+ * Reads the OpenTelemetry compression environment variables with the same
+ * precedence and parsing as the OTLP exporter. Returns undefined outside
+ * Node.js-like runtimes or when neither variable holds a valid value.
+ */
+function getOtelCompressionFromEnv(): CompressionAlgorithm | undefined {
+  if (typeof process === "undefined" || !process.env) return undefined;
+
+  for (const key of [
+    "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION",
+    "OTEL_EXPORTER_OTLP_COMPRESSION",
+  ]) {
+    const value = process.env[key]?.trim();
+    if (value === CompressionAlgorithm.GZIP) return CompressionAlgorithm.GZIP;
+    if (value === CompressionAlgorithm.NONE) return CompressionAlgorithm.NONE;
+  }
 
   return undefined;
 }

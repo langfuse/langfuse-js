@@ -13,10 +13,7 @@ import {
   SpanContext,
 } from "@opentelemetry/api";
 
-import {
-  createObservationAttributes,
-  createTraceAttributes,
-} from "./attributes.js";
+import { createObservationAttributes } from "./attributes.js";
 import {
   LangfuseAgent,
   LangfuseEvent,
@@ -43,7 +40,6 @@ import {
   LangfuseGenerationAttributes,
   LangfuseObservationType,
   LangfuseSpanAttributes,
-  LangfuseTraceAttributes,
   LangfuseObservationAttributes,
 } from "./types.js";
 
@@ -54,14 +50,10 @@ export type {
   LangfuseEventAttributes,
   LangfuseGenerationAttributes,
   LangfuseObservationAttributes,
-  LangfuseTraceAttributes,
 } from "./types.js";
 
 export * from "./spanWrapper.js";
-export {
-  createTraceAttributes,
-  createObservationAttributes,
-} from "./attributes.js";
+export { createObservationAttributes } from "./attributes.js";
 export {
   setLangfuseTracerProvider,
   getLangfuseTracerProvider,
@@ -892,48 +884,6 @@ export function startActiveObservation<
 }
 
 /**
- * Set trace-level input and output for the currently active trace.
- *
- * This function finds the currently active OpenTelemetry span and sets
- * trace-level input/output on it. If no active span is found, a warning is logged.
- *
- * @deprecated This is a legacy function for backward compatibility with Langfuse platform
- * features that still rely on trace-level input/output (e.g., legacy LLM-as-a-judge
- * evaluators). It will be removed in a future major version.
- *
- * For setting other trace attributes (userId, sessionId, metadata, tags, version),
- * use {@link propagateAttributes} instead.
- *
- * @param attributes - Input and output data to associate with the trace
- *
- * @example
- * ```typescript
- * import { setActiveTraceIO } from '@langfuse/tracing';
- *
- * // Inside an active span context
- * setActiveTraceIO({
- *   input: { query: 'user question' },
- *   output: { response: 'assistant answer' }
- * });
- * ```
- *
- * @public
- */
-export function setActiveTraceIO(attributes: LangfuseTraceAttributes) {
-  const span = trace.getActiveSpan();
-
-  if (!span) {
-    getGlobalLogger().warn(
-      "No active OTEL span in context. Skipping trace IO update.",
-    );
-
-    return;
-  }
-
-  span.setAttributes(createTraceAttributes(attributes));
-}
-
-/**
  * Make the trace of the currently active span publicly accessible via its URL.
  *
  * When a trace is published, anyone with the trace link can view the full trace
@@ -1098,7 +1048,6 @@ export function setActiveTraceAsPublic() {
  * ```
  *
  * @see {@link startActiveObservation} - For creating active observation contexts
- * @see {@link setActiveTraceIO} - For setting trace-level input/output (deprecated)
  *
  * @public
  */
