@@ -180,78 +180,6 @@ export class LangfuseClient {
   private projectId: string | null = null;
 
   /**
-   * @deprecated Use prompt.get instead
-   */
-  public getPrompt: typeof PromptManager.prototype.get;
-  /**
-   * @deprecated Use prompt.create instead
-   */
-  public createPrompt: typeof PromptManager.prototype.create;
-  /**
-   * @deprecated Use prompt.update instead
-   */
-  public updatePrompt: typeof PromptManager.prototype.update;
-  /**
-   * @deprecated Use dataset.get instead
-   */
-  public getDataset: typeof DatasetManager.prototype.get;
-  /**
-   * @deprecated Use api.trace.get instead
-   */
-  public fetchTrace: typeof LangfuseAPIClient.prototype.trace.get;
-  /**
-   * @deprecated Use api.trace.list instead
-   */
-  public fetchTraces: typeof LangfuseAPIClient.prototype.trace.list;
-  /**
-   * @deprecated Use api.observations.get instead
-   */
-  public fetchObservation: typeof LangfuseAPIClient.prototype.legacy.observationsV1.get;
-  /**
-   * @deprecated Use api.observations.list instead
-   */
-  public fetchObservations: typeof LangfuseAPIClient.prototype.observations.getMany;
-  /**
-   * @deprecated Use api.sessions.get instead
-   */
-  public fetchSessions: typeof LangfuseAPIClient.prototype.sessions.get;
-  /**
-   * @deprecated Use api.datasets.getRun instead
-   */
-  public getDatasetRun: typeof LangfuseAPIClient.prototype.datasets.getRun;
-  /**
-   * @deprecated Use api.datasets.getRuns instead
-   */
-  public getDatasetRuns: typeof LangfuseAPIClient.prototype.datasets.getRuns;
-  /**
-   * @deprecated Use api.datasets.create instead
-   */
-  public createDataset: typeof LangfuseAPIClient.prototype.datasets.create;
-  /**
-   * @deprecated Use api.datasetItems.get instead
-   */
-  public getDatasetItem: typeof LangfuseAPIClient.prototype.datasetItems.get;
-  /**
-   * @deprecated Use dataset.createItem instead.
-   *
-   * Note: this now routes through {@link DatasetManager.createItem} so that
-   * `LangfuseMedia` in the item is uploaded. Its signature therefore differs
-   * from the old `api.datasetItems.create` passthrough — it returns a plain
-   * `Promise<DatasetItem>` (no `.withRawResponse()`) and does not accept a
-   * second `requestOptions` argument. If you need `requestOptions` or the raw
-   * response, call `api.datasetItems.create` directly (it does not upload media).
-   */
-  public createDatasetItem: typeof DatasetManager.prototype.createItem;
-  /**
-   * @deprecated Use api.media.get instead
-   */
-  public fetchMedia: typeof LangfuseAPIClient.prototype.media.get;
-  /**
-   * @deprecated Use media.resolveReferences instead
-   */
-  public resolveMediaReferences: typeof MediaManager.prototype.resolveReferences;
-
-  /**
    * Creates a new LangfuseClient instance.
    *
    * @param params - Configuration parameters. If not provided, will use environment variables.
@@ -279,7 +207,6 @@ export class LangfuseClient {
     this.baseUrl =
       params?.baseUrl ??
       getEnv("LANGFUSE_BASE_URL") ??
-      getEnv("LANGFUSE_BASEURL") ?? // legacy v2
       "https://cloud.langfuse.com";
 
     if (!publicKey) {
@@ -317,28 +244,6 @@ export class LangfuseClient {
     this.score = new ScoreManager({ apiClient: this.api });
     this.media = new MediaManager({ apiClient: this.api });
     this.experiment = new ExperimentManager({ langfuseClient: this });
-
-    // Keep v3 compat by exposing old interface
-    this.getPrompt = this.prompt.get.bind(this.prompt); // keep correct this context for cache access
-    this.createPrompt = this.prompt.create.bind(this.prompt);
-    this.updatePrompt = this.prompt.update.bind(this.prompt);
-    this.getDataset = this.dataset.get.bind(this.dataset);
-    this.fetchTrace = this.api.trace.get.bind(this.api.trace);
-    this.fetchTraces = this.api.trace.list.bind(this.api.trace);
-    this.fetchObservation = this.api.legacy.observationsV1.get.bind(
-      this.api.legacy.observationsV1,
-    );
-    this.fetchObservations = this.api.observations.getMany.bind(
-      this.api.observations,
-    );
-    this.fetchSessions = this.api.sessions.get.bind(this.api.sessions);
-    this.getDatasetRun = this.api.datasets.getRun.bind(this.api.datasets);
-    this.getDatasetRuns = this.api.datasets.getRuns.bind(this.api.datasets);
-    this.createDataset = this.api.datasets.create.bind(this.api.datasets);
-    this.getDatasetItem = this.api.datasetItems.get.bind(this.api.datasetItems);
-    this.createDatasetItem = this.dataset.createItem.bind(this.dataset);
-    this.fetchMedia = this.api.media.get.bind(this.api.media);
-    this.resolveMediaReferences = this.media.resolveReferences.bind(this.media);
   }
 
   /**
