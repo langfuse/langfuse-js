@@ -19,7 +19,7 @@ export interface BaseScoreV1 {
   /** Comment on the score */
   comment: string | null;
   /** Metadata associated with the score */
-  metadata: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   /** Reference a score config on a score. When set, config and score name must be equal and value must comply to optionally defined numerical range */
   configId: string | null;
   /** The annotation queue referenced by the score. Indicates if score was initially created while processing annotation queue. */
