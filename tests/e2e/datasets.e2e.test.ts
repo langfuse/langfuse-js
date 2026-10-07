@@ -1,18 +1,29 @@
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { ChatOpenAI } from "@langchain/openai";
 import { ExperimentTask, LangfuseClient } from "@langfuse/client";
 import { startObservation } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import { waitForServerIngestion } from "./helpers/serverSetup.js";
+import { ServerAssertions, pollUntil } from "./helpers/serverAssertions.js";
+import {
+  setupServerTestEnvironment,
+  teardownServerTestEnvironment,
+  type ServerTestEnvironment,
+} from "./helpers/serverSetup.js";
 
 describe("Langfuse Datasets E2E", () => {
   let langfuse: LangfuseClient;
+  let assertions: ServerAssertions;
+  let testEnv: ServerTestEnvironment;
 
   beforeEach(async () => {
+    testEnv = await setupServerTestEnvironment();
     langfuse = new LangfuseClient();
+    assertions = new ServerAssertions();
+  });
+
+  afterEach(async () => {
+    await langfuse.shutdown();
+    await teardownServerTestEnvironment(testEnv);
   });
 
   describe("dataset and items", () => {
@@ -244,8 +255,9 @@ describe("Langfuse Datasets E2E", () => {
       });
     }, 10000);
 
-    it("e2e dataset runs and linking", async () => {
+    it("e2e dataset experiment with items and scores", async () => {
       const datasetName = nanoid();
+      const fromStartTime = new Date().toISOString();
       await langfuse.api.datasets.create({ name: datasetName });
 
       await langfuse.api.datasetItems.create({
@@ -259,83 +271,77 @@ describe("Langfuse Datasets E2E", () => {
         input: "Hello generation",
         expectedOutput: "Hello world",
       });
-
-      // Create trace and generation using the tracing SDK
-      const span = startObservation("test-trace-" + datasetName, {
-        input: "input",
-        output: "Hello world traced",
-      });
-
-      const generation = span.startObservation(
-        "test-generation-" + datasetName,
-        {
-          input: "input",
-          model: "test-model",
-        },
-        { asType: "generation" },
-      );
-      generation.update({ output: "Hello world generated" });
-      generation.end();
-      span.end();
 
       const dataset = await langfuse.dataset.get(datasetName);
       const runName = "test-run-" + datasetName;
 
-      // Link dataset items to observations using the new linking API
-      for (const item of dataset.items) {
-        if (item.input === "Hello trace") {
-          await item.link(span, runName);
-
-          // Add score to trace
-          langfuse.score.observation(span, {
-            name: "test-score-trace",
-            value: 0.5,
-          });
-        } else if (item.input === "Hello generation") {
-          await item.link({ otelSpan: generation.otelSpan }, runName, {
-            description: "test-run-description",
-            metadata: { test: "test" },
-          });
-
-          // Add score to generation
-          langfuse.score.observation(generation, {
-            name: "test-score-generation",
-            value: 0.5,
-          });
-        }
-      }
-
-      await waitForServerIngestion(2_000);
-
-      // Verify the dataset run was created
-      const targetRun = await langfuse.api.datasets.getRun(
-        datasetName,
+      const result = await dataset.runExperiment({
+        name: "dataset-experiment",
         runName,
-      );
-
-      expect(targetRun).toBeDefined();
-      expect(targetRun).toMatchObject({
-        name: runName,
-        datasetId: dataset.id,
-        // description and metadata from second link should be preserved
         description: "test-run-description",
         metadata: { test: "test" },
+        task: async ({ input }) => `${input} -> Hello world`,
+        evaluators: [async () => ({ name: "test-score-item", value: 0.5 })],
+        runEvaluators: [async () => ({ name: "test-score-run", value: 0.5 })],
       });
 
-      // Verify run items
-      expect(targetRun.datasetRunItems).toHaveLength(2);
-      expect(targetRun.datasetRunItems).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            traceId: generation.traceId,
-            observationId: generation.id,
-          }),
-        ]),
-      );
-    }, 15000);
+      await testEnv.spanProcessor.forceFlush();
+      await langfuse.flush();
 
-    it("e2e multiple runs", async () => {
+      expect(result.runName).toBe(runName);
+      expect(result.datasetRunId).toBe(result.experimentId);
+
+      const experiment = await assertions.waitForExperiment(
+        result.experimentId,
+        {
+          fromStartTime,
+          itemCount: result.itemResults.length,
+          fields: "core,metadata",
+        },
+      );
+      expect(experiment).toMatchObject({
+        id: result.experimentId,
+        name: runName,
+        datasetId: dataset.id,
+        metadata: { test: "test" },
+      });
+      await assertions.waitForExperimentItemDescriptions(result.experimentId, {
+        fromStartTime,
+        count: result.itemResults.length,
+        description: "test-run-description",
+      });
+
+      const items = await assertions.waitForExperimentItems(
+        result.experimentId,
+        { fromStartTime, count: 2, fields: "core,dataset" },
+      );
+      expect(items).toHaveLength(2);
+      expect(items.map((item) => item.traceId).sort()).toEqual(
+        result.itemResults.map((item) => item.traceId).sort(),
+      );
+      expect(items.map((item) => item.experimentItemId).sort()).toEqual(
+        dataset.items.map((item) => item.id).sort(),
+      );
+
+      const itemScores = await assertions.waitForScores(
+        { name: "test-score-item", traceId: items[0].traceId },
+        { count: 1 },
+      );
+      expect(itemScores[0]).toMatchObject({ value: 0.5 });
+
+      const runScores = await assertions.waitForScores(
+        { name: "test-score-run", experimentId: result.experimentId },
+        { count: 1 },
+      );
+      expect(runScores[0]).toMatchObject({
+        value: 0.5,
+        subject: { kind: "experiment", id: result.experimentId },
+      });
+    }, 30000);
+
+    it("e2e multiple experiments on the same dataset", async () => {
       const datasetName = nanoid();
+      const fromStartTime = new Date().toISOString();
       await langfuse.api.datasets.create({ name: datasetName });
 
       await langfuse.api.datasetItems.create({
@@ -344,193 +350,66 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: "Hello world",
       });
 
-      await langfuse.api.datasetItems.create({
-        datasetName: datasetName,
-        input: "Hello generation",
-        expectedOutput: "Hello world",
-      });
-
-      // Create base trace and generation using tracing SDK
-      const span = startObservation("test-trace-" + datasetName, {
-        input: "input",
-        output: "Hello world traced",
-      });
-
-      const generation = span.startObservation(
-        "test-generation-" + datasetName,
-        {
-          input: "input",
-          model: "test-model",
-        },
-        { asType: "generation" },
-      );
-      generation.update({ output: "Hello world generated" });
-      generation.end();
-      span.end();
-
       const dataset = await langfuse.dataset.get(datasetName);
+      const runNames = [0, 1, 2].map((i) => `test-run-${datasetName}-${i}`);
 
-      // Create 9 different runs
-      for (let i = 0; i < 9; i++) {
-        const runName = `test-run-${datasetName}-${i}`;
-
-        // Link items to the run using the new API
-        for (const item of dataset.items) {
-          if (item.input === "Hello trace") {
-            await item.link(span, runName);
-            langfuse.score.observation(span, {
-              name: "test-score-trace",
-              value: 0.5,
-            });
-          } else if (item.input === "Hello generation") {
-            await item.link({ otelSpan: generation.otelSpan }, runName, {
-              description: "test-run-description",
-              metadata: { test: "test" },
-            });
-            langfuse.score.observation(generation, {
-              name: "test-score-generation",
-              value: 0.5,
-            });
-          }
-        }
+      const results = [];
+      for (const runName of runNames) {
+        results.push(
+          await dataset.runExperiment({
+            name: "dataset-experiment",
+            runName,
+            description: "test-run-description",
+            metadata: { test: "test" },
+            task: async ({ input }) => input,
+          }),
+        );
       }
 
-      // Get all runs
-      const getRuns = await langfuse.api.datasets.getRuns(datasetName);
+      await testEnv.spanProcessor.forceFlush();
 
-      expect(getRuns.data.length).toEqual(9);
-      expect(getRuns.data[0]).toMatchObject({
-        name: `test-run-${datasetName}-8`,
-        description: "test-run-description",
-        metadata: { test: "test" },
-        datasetName: datasetName,
-      });
+      // Each run name maps to its own experiment
+      expect(new Set(results.map((r) => r.experimentId)).size).toBe(3);
 
-      // Test pagination
-      const getRunsQuery = await langfuse.api.datasets.getRuns(datasetName, {
-        limit: 2,
-        page: 1,
-      });
+      const experiments = await pollUntil(
+        async () =>
+          (
+            await assertions.api.experiments.list({
+              datasetId: dataset.id,
+              fromStartTime,
+              fields: "core,metadata",
+            })
+          ).data,
+        (data) => data.length >= 3,
+        `3 experiments on dataset ${dataset.id}`,
+      );
 
-      expect(getRunsQuery.data.length).toBeLessThanOrEqual(2);
-      expect(getRunsQuery.meta).toMatchObject({
-        limit: 2,
-        page: 1,
-      });
-      expect(getRunsQuery.meta.totalItems).toBeGreaterThanOrEqual(9);
-    }, 20000);
-
-    it("createDatasetItemHandler equivalent with LangChain", async () => {
-      // Create simple Langchain chain
-      const prompt = new PromptTemplate({
-        template:
-          "What is the capital of {country}? Give ONLY the name of the capital.",
-        inputVariables: ["country"],
-      });
-      const llm = new ChatOpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "fake-key-for-testing",
-        model: "gpt-3.5-turbo",
-      });
-      const parser = new StringOutputParser();
-      const chain = prompt.pipe(llm).pipe(parser);
-
-      // Create a dataset
-      const datasetName = nanoid();
-      await langfuse.api.datasets.create({ name: datasetName });
-
-      // Add two items to the dataset
-      await Promise.all([
-        langfuse.api.datasetItems.create({
-          datasetName: datasetName,
-          input: "Germany",
-          expectedOutput: "Berlin",
-        }),
-        langfuse.api.datasetItems.create({
-          datasetName: datasetName,
-          input: "France",
-          expectedOutput: "Paris",
-        }),
-      ]);
-
-      // Execute chain on dataset items
-      const dataset = await langfuse.dataset.get(datasetName);
-      const runName = "test-run-" + new Date().toISOString();
-      const runDescription = "test-run-description";
-      const runMetadata = { test: "test" };
-      const traceIds: string[] = [];
-
-      for (const item of dataset.items) {
-        // Create trace for this run using tracing SDK
-        const span = startObservation("langchain-execution", {
-          input: { country: item.input },
-          metadata: { chainType: "capital-lookup" },
+      expect(experiments).toHaveLength(3);
+      expect(experiments.map((e) => e.name).sort()).toEqual(runNames.sort());
+      for (const experiment of experiments) {
+        expect(experiment).toMatchObject({
+          datasetId: dataset.id,
+          description: "test-run-description",
+          metadata: { test: "test" },
         });
-
-        traceIds.push(span.traceId);
-
-        try {
-          // Execute LangChain with tracing (simplified - in real implementation would use callbacks)
-          const result = await chain.invoke({ country: item.input });
-
-          // Update trace with result
-          span.update({ output: result });
-
-          // Link dataset item to trace using the new API
-          await item.link(span, runName, {
-            description: runDescription,
-            metadata: runMetadata,
-          });
-
-          // Add score
-          langfuse.score.observation(span, {
-            name: "test-score",
-            value: 0.5,
-          });
-        } catch (error) {
-          // Handle LLM errors gracefully - update trace with error
-          span.update({
-            output: { error: String(error) },
-            level: "ERROR",
-          });
-
-          // Still link the dataset item
-          await item.link(span, runName, {
-            description: runDescription,
-            metadata: runMetadata,
-          });
-        }
-
-        span.end();
       }
 
-      await waitForServerIngestion(2_000);
-
-      // Verify that the dataset run was created correctly
-      const targetRun = await langfuse.api.datasets.getRun(
-        datasetName,
-        runName,
-      );
-
-      expect(targetRun).toBeDefined();
-      expect(targetRun).toMatchObject({
-        name: runName,
-        description: runDescription,
-        metadata: runMetadata,
+      const firstPage = await assertions.api.experiments.list({
         datasetId: dataset.id,
+        fromStartTime,
+        limit: 2,
       });
+      expect(firstPage.data).toHaveLength(2);
+      expect(firstPage.meta.cursor).toBeTruthy();
 
-      expect(targetRun.datasetRunItems).toHaveLength(2);
-      expect(targetRun.datasetRunItems).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            traceId: traceIds[0],
-          }),
-          expect.objectContaining({
-            traceId: traceIds[1],
-          }),
-        ]),
-      );
-    }, 25000);
+      const secondPage = await assertions.api.experiments.list({
+        datasetId: dataset.id,
+        fromStartTime,
+        limit: 2,
+        cursor: firstPage.meta.cursor,
+      });
+      expect(secondPage.data).toHaveLength(1);
+    }, 30000);
 
     it("get dataset with version parameter returns items at specific timestamp", async () => {
       const datasetName = nanoid();
@@ -581,8 +460,6 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: 4,
       });
 
-      await waitForServerIngestion(3_000);
-
       // Fetch dataset to get the actual server-assigned timestamp of item1
       const datasetAfterItem1 = await langfuse.dataset.get(datasetName);
       expect(datasetAfterItem1.items).toHaveLength(1);
@@ -594,7 +471,10 @@ describe("Langfuse Datasets E2E", () => {
         item1CreatedAt.getTime() + 1000,
       ).toISOString();
 
-      await waitForServerIngestion(3_000);
+      // Later writes must land after the version timestamp
+      await new Promise((resolve) =>
+        setTimeout(resolve, Date.parse(versionTimestamp) + 500 - Date.now()),
+      );
 
       // Update item1 after the version timestamp (this should not affect versioned query)
       await langfuse.api.datasetItems.create({
@@ -604,16 +484,12 @@ describe("Langfuse Datasets E2E", () => {
         expectedOutput: 8,
       });
 
-      await waitForServerIngestion(3_000);
-
       // Create second item (after version timestamp)
       await langfuse.api.datasetItems.create({
         datasetName: datasetName,
         input: { question: "What is 3+3?" },
         expectedOutput: 6,
       });
-
-      await waitForServerIngestion(3_000);
 
       // Get versioned dataset (should only have first item with ORIGINAL state)
       const versionedDataset = await langfuse.dataset.get(datasetName, {
