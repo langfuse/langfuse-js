@@ -1,3 +1,4 @@
+import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import { SpanStatusCode } from "@opentelemetry/api";
 import { MockSpanExporter } from "./MockSpanExporter.js";
@@ -58,6 +59,25 @@ export class SpanAssertions {
         `Expected attribute '${attributeKey}' to equal '${expectedValue}'`,
       ).toBe(expectedValue);
     }
+  }
+
+  /**
+   * Assert a span's observation metadata contains the given keys and values
+   */
+  expectObservationMetadata(
+    spanName: string,
+    expectedMetadata: Record<string, unknown>,
+  ): void {
+    const span = this.expectSpanWithName(spanName);
+    const attributeValue =
+      span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_METADATA];
+    expect(
+      typeof attributeValue,
+      `Expected span '${spanName}' to have observation metadata`,
+    ).toBe("string");
+    expect(JSON.parse(attributeValue as string)).toMatchObject(
+      expectedMetadata,
+    );
   }
 
   /**

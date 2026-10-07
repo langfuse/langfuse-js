@@ -14,8 +14,8 @@ import {
 } from "@opentelemetry/api";
 
 import {
-  createObservationAttributes,
   createTraceAttributes,
+  setObservationAttributes,
 } from "./attributes.js";
 import {
   LangfuseAgent,
@@ -1152,18 +1152,11 @@ export function updateActiveObservation(
     return;
   }
 
-  const otelAttributes = createObservationAttributes(
-    options?.asType ?? "span",
-    attributes,
-  );
-
-  // If no 'asType' was provided, drop the observation type OTEL attribute
-  // to avoid inadvertendly overwriting the type to "span"
-  if (!options?.asType) {
-    otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE] = undefined;
-  }
-
-  span.setAttributes(otelAttributes);
+  // If no 'asType' was provided, leave the observation type OTEL attribute
+  // unchanged to avoid inadvertendly overwriting the type to "span"
+  setObservationAttributes(span, options?.asType ?? "span", attributes, {
+    omitType: !options?.asType,
+  });
 }
 
 /**

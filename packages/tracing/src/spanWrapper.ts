@@ -2,8 +2,8 @@ import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import { Span, TimeInput } from "@opentelemetry/api";
 
 import {
-  createObservationAttributes,
   createTraceAttributes,
+  setObservationAttributes,
 } from "./attributes.js";
 import { getLangfuseTracer } from "./tracerProvider.js";
 import {
@@ -152,8 +152,10 @@ abstract class LangfuseBaseObservation {
     this.traceId = params.otelSpan.spanContext().traceId;
     this.type = params.type;
 
-    this.otelSpan.setAttributes(
-      createObservationAttributes(params.type, params.attributes ?? {}),
+    setObservationAttributes(
+      this.otelSpan,
+      params.type,
+      params.attributes ?? {},
     );
   }
 
@@ -172,9 +174,7 @@ abstract class LangfuseBaseObservation {
   }
 
   updateOtelSpanAttributes(attributes: LangfuseObservationAttributes) {
-    this.otelSpan.setAttributes(
-      createObservationAttributes(this.type, attributes),
-    );
+    setObservationAttributes(this.otelSpan, this.type, attributes);
   }
 
   /**

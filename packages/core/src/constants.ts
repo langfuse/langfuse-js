@@ -6,6 +6,9 @@ export const LANGFUSE_SDK_NAME = "javascript";
 
 export const LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT = "sdk-experiment";
 
+/** Maximum number of top-level keys allowed in observation metadata. */
+export const MAX_OBSERVATION_METADATA_KEYS = 128;
+
 // From Langfuse platform: web/src/features/otel/server/attributes.ts
 export enum LangfuseOtelSpanAttributes {
   // Langfuse-Trace attributes

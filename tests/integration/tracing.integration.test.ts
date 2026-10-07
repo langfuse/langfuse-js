@@ -80,11 +80,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
 
       await waitForSpanExport(testEnv.mockExporter, 1);
 
-      assertions.expectSpanAttribute(
-        "test-span",
-        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".key",
-        "value",
-      );
+      assertions.expectObservationMetadata("test-span", { key: "value" });
       assertions.expectSpanAttribute(
         "test-span",
         LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
@@ -442,16 +438,12 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       );
 
       // Verify metadata attributes
-      assertions.expectSpanAttribute(
-        "test-generation",
-        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".test_run",
-        "true",
-      );
-      assertions.expectSpanAttribute(
-        "test-generation",
-        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".version",
-        "1.0",
-      );
+      assertions.expectObservationMetadata("test-generation", {
+        test_run: true,
+      });
+      assertions.expectObservationMetadata("test-generation", {
+        version: "1.0",
+      });
 
       // Verify trace attributes
       assertions.expectSpanAttribute(
@@ -584,16 +576,10 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       );
 
       // Verify metadata
-      assertions.expectSpanAttribute(
-        "test-event",
-        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".element",
-        "button",
-      );
-      assertions.expectSpanAttributeContains(
-        "test-event",
-        "langfuse.observation.metadata.coordinates",
-        "100",
-      );
+      assertions.expectObservationMetadata("test-event", { element: "button" });
+      assertions.expectObservationMetadata("test-event", {
+        coordinates: { x: 100, y: 200 },
+      });
 
       // Verify trace attributes on parent
       assertions.expectSpanAttribute(
@@ -680,11 +666,9 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         LangfuseOtelSpanAttributes.OBSERVATION_LEVEL,
         "DEBUG",
       );
-      assertions.expectSpanAttribute(
-        "timestamped-event",
-        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".source",
-        "test-suite",
-      );
+      assertions.expectObservationMetadata("timestamped-event", {
+        source: "test-suite",
+      });
       assertions.expectSpanAttributeContains(
         "timestamped-event",
         LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
@@ -774,11 +758,9 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
         '{"analysis":"Document contains 5 sections"}',
       );
-      assertions.expectSpanAttribute(
-        "agent-with-updates",
-        LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".processingTime",
-        "150",
-      );
+      assertions.expectObservationMetadata("agent-with-updates", {
+        processingTime: 150,
+      });
     });
   });
 
@@ -1075,12 +1057,12 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       // Check that execution_time metadata exists and is a timestamp-like string
       const spanAttributes =
         testEnv.mockExporter.getSpanAttributes("active-span");
-      expect(spanAttributes).toHaveProperty(
-        "langfuse.observation.metadata.execution_time",
+      const metadata = JSON.parse(
+        spanAttributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_METADATA
+        ] as string,
       );
-      expect(
-        typeof spanAttributes["langfuse.observation.metadata.execution_time"],
-      ).toBe("string");
+      expect(typeof metadata.execution_time).toBe("number");
 
       // Verify trace attributes
       assertions.expectSpanAttribute(
@@ -1950,16 +1932,12 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions.expectSpanWithName("async-llm-generation");
 
         // Verify metadata attributes
-        assertions.expectSpanAttribute(
-          "async-llm-generation",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".temperature",
-          "0.7",
-        );
-        assertions.expectSpanAttribute(
-          "async-llm-generation",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".max_tokens",
-          "100",
-        );
+        assertions.expectObservationMetadata("async-llm-generation", {
+          temperature: 0.7,
+        });
+        assertions.expectObservationMetadata("async-llm-generation", {
+          max_tokens: 100,
+        });
 
         // Verify trace attributes
         assertions.expectSpanAttribute(
@@ -4779,11 +4757,9 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
           '{"result":"updated output"}',
         );
-        assertions.expectSpanAttribute(
-          "test-span",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".key",
-          "updated value",
-        );
+        assertions.expectObservationMetadata("test-span", {
+          key: "updated value",
+        });
       });
 
       it("should do nothing when called without active span", async () => {
@@ -4812,11 +4788,9 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         await waitForSpanExport(testEnv.mockExporter, 1);
 
         assertions.expectSpanCount(1);
-        assertions.expectSpanAttribute(
-          "testFunc",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".executionStep",
-          "processing",
-        );
+        assertions.expectObservationMetadata("testFunc", {
+          executionStep: "processing",
+        });
         // The observe function captures the return value as output, overriding updateActiveSpan
         assertions.expectSpanAttribute(
           "testFunc",
@@ -4868,11 +4842,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
           '{"promptTokens":10,"completionTokens":20,"totalTokens":30}',
         );
-        assertions.expectSpanAttribute(
-          "llm-call",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".temperature",
-          "0.7",
-        );
+        assertions.expectObservationMetadata("llm-call", { temperature: 0.7 });
       });
 
       it("should not update observation type if no asType option is set", async () => {
@@ -4920,11 +4890,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
           '{"promptTokens":10,"completionTokens":20,"totalTokens":30}',
         );
-        assertions.expectSpanAttribute(
-          "llm-call",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".temperature",
-          "0.7",
-        );
+        assertions.expectObservationMetadata("llm-call", { temperature: 0.7 });
       });
 
       it("should do nothing when called without active span", async () => {
@@ -4980,11 +4946,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
           '{"promptTokens":15,"completionTokens":25,"totalTokens":40}',
         );
-        assertions.expectSpanAttribute(
-          "llmFunc",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".provider",
-          "openai",
-        );
+        assertions.expectObservationMetadata("llmFunc", { provider: "openai" });
       });
     });
 
@@ -5121,11 +5083,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
           '{"operation":"combined-operation"}',
         );
-        assertions.expectSpanAttribute(
-          "combined-span",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".step",
-          "1",
-        );
+        assertions.expectObservationMetadata("combined-span", { step: "1" });
       });
 
       it("should handle setActiveTraceIO in generation context", async () => {

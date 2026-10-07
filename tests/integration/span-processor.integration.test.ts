@@ -58,6 +58,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       const span = startObservation("masked-span", {
         input: { message: "This contains secret information" },
         output: { response: "No secret here" },
+        metadata: { note: "secret note" },
       });
       span.end();
 
@@ -73,6 +74,9 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         "langfuse.observation.output",
         "No *** here",
       );
+      assertions.expectObservationMetadata("masked-span", {
+        note: "*** note",
+      });
     });
 
     it("should apply async mask function to span attributes", async () => {

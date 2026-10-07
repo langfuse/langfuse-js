@@ -165,20 +165,16 @@ describe("Experiment Attribute Propagation", () => {
       );
 
       expect(
-        rootSpan?.attributes[
-          `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.shared`
-        ],
-      ).toBe("run");
-      expect(
-        rootSpan?.attributes[
-          `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.experiment_run_name`
-        ],
-      ).toBe("run-name");
-      expect(
-        rootSpan?.attributes[
-          `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.itemOnly`
-        ],
-      ).toBe("item");
+        JSON.parse(
+          rootSpan?.attributes[
+            LangfuseOtelSpanAttributes.OBSERVATION_METADATA
+          ] as string,
+        ),
+      ).toMatchObject({
+        shared: "run",
+        experiment_run_name: "run-name",
+        itemOnly: "item",
+      });
     });
   });
 

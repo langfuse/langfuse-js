@@ -1,5 +1,8 @@
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
-import { type Attributes } from "@opentelemetry/api";
+import {
+  LangfuseOtelSpanAttributes,
+  serializeObservationMetadata,
+} from "@langfuse/core";
+import { type Attributes, type Span } from "@opentelemetry/api";
 
 import {
   LangfuseObservationAttributes,
@@ -79,7 +82,8 @@ export function createObservationAttributes(
             prompt.version,
         }
       : {}),
-    ..._flattenAndSerializeMetadata(metadata, "observation"),
+    [LangfuseOtelSpanAttributes.OBSERVATION_METADATA]:
+      serializeObservationMetadata(metadata),
   };
 
   return Object.fromEntries(
@@ -105,45 +109,63 @@ function _serialize(obj: unknown): string | undefined {
 }
 
 /**
- * Flattens and serializes metadata into OpenTelemetry attribute format.
+ * Metadata already written to each span. Kept so that repeated updates merge
+ * into a single `langfuse.observation.metadata` attribute instead of
+ * overwriting it.
+ */
+const spanMetadata = new WeakMap<Span, Record<string, unknown>>();
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Sets observation attributes on a span, merging metadata with metadata from
+ * earlier updates on the same span.
  *
- * Converts nested metadata objects into dot-notation attribute keys.
- * For example, `{ database: { host: 'localhost' } }` becomes
- * `{ 'langfuse.metadata.database.host': 'localhost' }`.
+ * Top-level metadata keys from this update overwrite earlier values. Keys
+ * with `null` or `undefined` values leave earlier values untouched.
  *
- * @param metadata - Metadata object to flatten
- * @param type - Whether this is for observation or trace metadata
- * @returns Flattened metadata attributes
+ * @param span - Span to update
+ * @param type - Observation type
+ * @param attributes - Observation attributes to set
+ * @param options - Set `omitType` to leave the observation type attribute unchanged
+ * @throws Error if the merged metadata exceeds the maximum number of keys
  * @internal
  */
-function _flattenAndSerializeMetadata(
-  metadata: unknown,
-  type: "observation" | "trace",
-): Record<string, string> {
-  const prefix =
-    type === "observation"
-      ? LangfuseOtelSpanAttributes.OBSERVATION_METADATA
-      : LangfuseOtelSpanAttributes.TRACE_METADATA;
+export function setObservationAttributes(
+  span: Span,
+  type: LangfuseObservationType,
+  attributes: LangfuseObservationAttributes,
+  options?: { omitType?: boolean },
+): void {
+  let metadata: unknown = attributes.metadata;
+  const previous = spanMetadata.get(span);
 
-  const metadataAttributes: Record<string, string> = {};
-
-  if (metadata === undefined || metadata === null) {
-    return metadataAttributes;
+  if (previous && isPlainObject(metadata)) {
+    metadata = {
+      ...previous,
+      ...Object.fromEntries(
+        Object.entries(metadata).filter(([_, v]) => v != null),
+      ),
+    };
   }
 
-  if (typeof metadata !== "object" || Array.isArray(metadata)) {
-    const serialized = _serialize(metadata);
-    if (serialized) {
-      metadataAttributes[prefix] = serialized;
-    }
-  } else {
-    for (const [key, value] of Object.entries(metadata)) {
-      const serialized = typeof value === "string" ? value : _serialize(value);
-      if (serialized) {
-        metadataAttributes[`${prefix}.${key}`] = serialized;
-      }
-    }
+  // Throws before any state changes if the merged metadata is too large
+  const otelAttributes = createObservationAttributes(type, {
+    ...attributes,
+    metadata: metadata as LangfuseObservationAttributes["metadata"],
+  });
+
+  if (options?.omitType) {
+    delete otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE];
   }
 
-  return metadataAttributes;
+  if (isPlainObject(metadata)) {
+    spanMetadata.set(span, metadata);
+  } else if (metadata != null) {
+    spanMetadata.delete(span);
+  }
+
+  span.setAttributes(otelAttributes);
 }

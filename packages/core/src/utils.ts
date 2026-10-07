@@ -1,3 +1,5 @@
+import { MAX_OBSERVATION_METADATA_KEYS } from "./constants.js";
+
 type LangfuseEnvVar =
   | "LANGFUSE_PUBLIC_KEY"
   | "LANGFUSE_SECRET_KEY"
@@ -131,4 +133,58 @@ export function serializeValue(value: any): string | undefined {
   if (typeof value === "string") return value;
 
   return JSON.stringify(value);
+}
+
+/**
+ * Serializes observation metadata into the single JSON value written to the
+ * `langfuse.observation.metadata` span attribute.
+ *
+ * Top-level keys with `null` or `undefined` values are skipped. Values are
+ * serialized one by one, so a value that fails to serialize is replaced with
+ * `"<failed to serialize>"` instead of dropping the whole metadata object.
+ *
+ * @param metadata - Metadata to serialize
+ * @returns JSON string, or undefined if there is no metadata to write
+ * @throws Error if metadata has more than {@link MAX_OBSERVATION_METADATA_KEYS} top-level keys
+ * @internal
+ */
+export function serializeObservationMetadata(
+  metadata: unknown,
+): string | undefined {
+  if (metadata === undefined || metadata === null) return undefined;
+
+  if (typeof metadata !== "object" || Array.isArray(metadata)) {
+    try {
+      return serializeValue(metadata);
+    } catch {
+      return "<failed to serialize>";
+    }
+  }
+
+  const entries = Object.entries(metadata).filter(([_, v]) => v != null);
+
+  if (entries.length > MAX_OBSERVATION_METADATA_KEYS) {
+    throw new Error(
+      `Observation metadata has ${entries.length} keys, which exceeds the maximum of ${MAX_OBSERVATION_METADATA_KEYS}.`,
+    );
+  }
+
+  const parts: string[] = [];
+
+  for (const [key, value] of entries) {
+    let serialized: string | undefined;
+
+    try {
+      serialized = JSON.stringify(value);
+    } catch {
+      serialized = JSON.stringify("<failed to serialize>");
+    }
+
+    // JSON.stringify returns undefined for functions and symbols
+    if (serialized !== undefined) {
+      parts.push(`${JSON.stringify(key)}:${serialized}`);
+    }
+  }
+
+  return parts.length > 0 ? `{${parts.join(",")}}` : undefined;
 }
