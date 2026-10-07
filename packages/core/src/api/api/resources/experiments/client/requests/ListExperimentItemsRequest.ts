@@ -22,7 +22,12 @@ export interface ListExperimentItemsRequest {
   scoreLimit?: number;
   /** Versioned base64url cursor from the previous response page. */
   cursor?: string;
-  /** Retrieve only experiment items started on or after this datetime. */
+  /**
+   * Required. Retrieve only experiment items started on or after this
+   * datetime. A lower bound is required so the query stays fast on
+   * large projects; pair it with `toStartTime` to select a specific
+   * window.
+   */
   fromStartTime: string;
   /** Retrieve only experiment items started before this datetime. */
   toStartTime?: string;
