@@ -1,5 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { resolve } from "node:path";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -91,6 +99,88 @@ describe("generated request placeholders", () => {
   it("matches the reviewed list of placeholder methods", () => {
     const methods = JSON.parse(runScript("--list")) as { label: string }[];
     expect(methods.map((method) => method.label)).toEqual(PLACEHOLDER_METHODS);
+  });
+
+  it("patches Fern output once and leaves request-bearing methods alone", () => {
+    const apiRoot = mkdtempSync(join(tmpdir(), "langfuse-placeholders-"));
+    const clientDir = join(apiRoot, "api", "resources", "things", "client");
+    mkdirSync(clientDir, { recursive: true });
+    const clientFile = join(clientDir, "Client.ts");
+    writeFileSync(
+      clientFile,
+      [
+        "export class Things {",
+        "    /**",
+        "     * @param {Things.RequestOptions} requestOptions - Request-specific configuration.",
+        "     */",
+        "    public ping(requestOptions?: Things.RequestOptions): Promise<void> {",
+        "        return this.__ping(requestOptions);",
+        "    }",
+        "",
+        "    /**",
+        "     * @param {string} thingId",
+        "     * @param {Things.RequestOptions} requestOptions - Request-specific configuration.",
+        "     */",
+        "    public get(",
+        "        thingId: string,",
+        "        requestOptions?: Things.RequestOptions,",
+        "    ): Promise<void> {",
+        "        return this.__get(thingId, requestOptions);",
+        "    }",
+        "",
+        "    public list(",
+        "        request: ListThingsRequest = {},",
+        "        requestOptions?: Things.RequestOptions,",
+        "    ): Promise<void> {",
+        "        return this.__list(request, requestOptions);",
+        "    }",
+        "}",
+        "",
+      ].join("\n"),
+    );
+
+    try {
+      runScript("--api-root", apiRoot);
+      const patched = readFileSync(clientFile, "utf8");
+      expect(patched).toContain(
+        "public ping(request: Record<string, never> = {}, requestOptions?: Things.RequestOptions)",
+      );
+      expect(patched).toContain(
+        [
+          "        thingId: string,",
+          "        request: Record<string, never> = {},",
+          "        requestOptions?: Things.RequestOptions,",
+        ].join("\n"),
+      );
+      expect(patched).toContain(
+        "     * @param {Record<string, never>} request - ",
+      );
+      expect(
+        patched.match(/request: Record<string, never> = \{\}/g),
+      ).toHaveLength(2);
+      expect(patched).toContain("request: ListThingsRequest = {},");
+
+      runScript("--api-root", apiRoot);
+      expect(readFileSync(clientFile, "utf8")).toBe(patched);
+      expect(() => runScript("--api-root", apiRoot, "--check")).not.toThrow();
+      expect(
+        (
+          JSON.parse(runScript("--api-root", apiRoot, "--list")) as {
+            label: string;
+          }[]
+        ).map((method) => method.label),
+      ).toEqual(["things.ping()", "things.get(thingId)"]);
+
+      writeFileSync(
+        clientFile,
+        "export class Things {\n    public get(thingId?: string, requestOptions?: Things.RequestOptions) {}\n}\n",
+      );
+      expect(() => runScript("--api-root", apiRoot)).toThrow(
+        /Unexpected parameter shape/,
+      );
+    } finally {
+      rmSync(apiRoot, { recursive: true, force: true });
+    }
   });
 
   it.each(PLACEHOLDER_METHODS)(
