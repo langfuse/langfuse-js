@@ -36,7 +36,10 @@ function createLangfuseBrowser(): LangfuseBrowserClient {
 
   return new LangfuseBrowserClient({
     publicKey,
-    baseUrl: getEnv("LANGFUSE_BASE_URL") ?? "http://localhost:3000",
+    baseUrl:
+      getEnv("LANGFUSE_BASE_URL") ??
+      getEnv("LANGFUSE_BASEURL") ??
+      "http://localhost:3000",
   });
 }
 
