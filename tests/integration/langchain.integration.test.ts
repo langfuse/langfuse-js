@@ -19,6 +19,7 @@ import {
 } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
+import { MAX_OBSERVATION_METADATA_KEYS } from "@langfuse/core";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
@@ -97,6 +98,39 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       "The result is: 100",
     );
+  });
+
+  it("should keep the span when run metadata exceeds the key limit", async () => {
+    const echoTool = new DynamicTool({
+      name: "echo",
+      description: "Echoes the input",
+      func: async (input: string) => input,
+    });
+
+    const metadata = Object.fromEntries(
+      Array.from({ length: MAX_OBSERVATION_METADATA_KEYS + 1 }, (_, i) => [
+        `key${i}`,
+        i,
+      ]),
+    );
+
+    await echoTool.invoke("hi", {
+      callbacks: [new CallbackHandler()],
+      metadata,
+    });
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanAttribute(
+      "echo",
+      LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+      "hi",
+    );
+    expect(
+      assertions.expectSpanWithName("echo").attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_METADATA
+      ],
+    ).toBeUndefined();
   });
 
   it("should not mark LangGraph interrupts as errors", async () => {

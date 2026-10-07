@@ -151,7 +151,15 @@ export function countObservationMetadataKeys(metadata: unknown): number {
   return Object.values(metadata).filter(isWrittenMetadataValue).length;
 }
 
-function isWrittenMetadataValue(value: unknown): boolean {
+/**
+ * Whether a top-level metadata value is written to the metadata attribute.
+ * `null`, `undefined`, functions and symbols are skipped.
+ *
+ * @param value - Metadata value to check
+ * @returns True if the value is written
+ * @internal
+ */
+export function isWrittenMetadataValue(value: unknown): boolean {
   return (
     value != null && typeof value !== "function" && typeof value !== "symbol"
   );

@@ -13,7 +13,11 @@ import {
 } from "@langchain/core/messages";
 import type { Generation, LLMResult } from "@langchain/core/outputs";
 import type { ChainValues } from "@langchain/core/utils/types";
-import { getGlobalLogger } from "@langfuse/core";
+import {
+  countObservationMetadataKeys,
+  getGlobalLogger,
+  MAX_OBSERVATION_METADATA_KEYS,
+} from "@langfuse/core";
 import {
   startActiveObservation,
   LangfuseGeneration,
@@ -793,9 +797,20 @@ export class CallbackHandler extends BaseCallbackHandler {
     const { type, runName, runId, parentRunId, attributes, metadata, tags } =
       params;
 
+    let joinedMetadata = this.joinTagsAndMetaData(tags, metadata);
+    const metadataKeyCount = countObservationMetadataKeys(joinedMetadata);
+
+    // Too many keys would make the update below throw and drop the whole span
+    if (metadataKeyCount > MAX_OBSERVATION_METADATA_KEYS) {
+      this.logger.warn(
+        `Dropping observation metadata: it has ${metadataKeyCount} keys, which exceeds the maximum of ${MAX_OBSERVATION_METADATA_KEYS}.`,
+      );
+      joinedMetadata = undefined;
+    }
+
     const observationAttributes = {
       version: this.version,
-      metadata: this.joinTagsAndMetaData(tags, metadata),
+      metadata: joinedMetadata,
       level: tags && tags.includes(LANGSMITH_HIDDEN_TAG) ? "DEBUG" : undefined,
       ...attributes,
     } as LangfuseObservationAttributes;

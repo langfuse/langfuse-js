@@ -1,4 +1,5 @@
 import {
+  isWrittenMetadataValue,
   LangfuseOtelSpanAttributes,
   serializeObservationMetadata,
 } from "@langfuse/core";
@@ -155,7 +156,8 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * earlier updates on the same span.
  *
  * Top-level metadata keys from this update overwrite earlier values. Keys
- * with `null` or `undefined` values leave earlier values untouched.
+ * with `null`, `undefined`, function or symbol values leave earlier values
+ * untouched.
  *
  * @param span - Span to update
  * @param type - Observation type
@@ -177,7 +179,7 @@ export function setObservationAttributes(
     metadata = {
       ...previous,
       ...Object.fromEntries(
-        Object.entries(metadata).filter(([_, v]) => v != null),
+        Object.entries(metadata).filter(([_, v]) => isWrittenMetadataValue(v)),
       ),
     };
   }

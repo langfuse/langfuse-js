@@ -147,6 +147,21 @@ describe("Observation metadata", () => {
     expect(exportedMetadata("null-span")).toEqual({ a: 1, b: 2, c: 3 });
   });
 
+  it("should keep earlier values for keys updated with function values", async () => {
+    const span = startObservation("function-update-span", {
+      metadata: { cb: { x: 1 } },
+    });
+    span.update({ metadata: { cb: () => "ignored", other: "a" } });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("function-update-span")).toEqual({
+      cb: { x: 1 },
+      other: "a",
+    });
+  });
+
   it("should not write the attribute for empty metadata", async () => {
     const span = startObservation("empty-span", { metadata: {} });
     span.end();
