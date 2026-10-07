@@ -304,10 +304,11 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     const compression =
       (params?.compression !== undefined
         ? resolveCompression(params.compression, "compression")
-        : resolveCompression(
-            getEnv("LANGFUSE_OTEL_COMPRESSION"),
-            "LANGFUSE_OTEL_COMPRESSION",
-          )) ??
+        : undefined) ??
+      resolveCompression(
+        getEnv("LANGFUSE_OTEL_COMPRESSION"),
+        "LANGFUSE_OTEL_COMPRESSION",
+      ) ??
       getOtelCompressionFromEnv() ??
       CompressionAlgorithm.GZIP;
 
@@ -636,7 +637,7 @@ function resolveCompression(
   }
 
   getGlobalLogger().warn(
-    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the OTEL_EXPORTER_OTLP_*COMPRESSION environment variables, then gzip.`,
+    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the next compression setting, then gzip.`,
   );
 
   return undefined;
@@ -644,7 +645,7 @@ function resolveCompression(
 
 /**
  * Reads the OpenTelemetry compression environment variables with the same
- * precedence and parsing as the OTLP exporter. Returns undefined outside
+ * precedence as the OTLP exporter, ignoring case. Returns undefined outside
  * Node.js-like runtimes or when neither variable holds a valid value.
  */
 function getOtelCompressionFromEnv(): CompressionAlgorithm | undefined {
@@ -654,7 +655,7 @@ function getOtelCompressionFromEnv(): CompressionAlgorithm | undefined {
     "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION",
     "OTEL_EXPORTER_OTLP_COMPRESSION",
   ]) {
-    const value = process.env[key]?.trim();
+    const value = process.env[key]?.trim().toLowerCase();
     if (value === CompressionAlgorithm.GZIP) return CompressionAlgorithm.GZIP;
     if (value === CompressionAlgorithm.NONE) return CompressionAlgorithm.NONE;
   }
