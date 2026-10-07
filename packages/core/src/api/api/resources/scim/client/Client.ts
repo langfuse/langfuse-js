@@ -63,6 +63,7 @@ export class Scim {
   /**
    * Get SCIM Service Provider Configuration (requires organization-scoped API key)
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Scim.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -75,6 +76,7 @@ export class Scim {
    *     await client.scim.getServiceProviderConfig()
    */
   public getServiceProviderConfig(
+    request: Record<string, never> = {},
     requestOptions?: Scim.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ServiceProviderConfig> {
     return core.HttpResponsePromise.fromPromise(
@@ -181,6 +183,7 @@ export class Scim {
   /**
    * Get SCIM Resource Types (requires organization-scoped API key)
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Scim.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -193,6 +196,7 @@ export class Scim {
    *     await client.scim.getResourceTypes()
    */
   public getResourceTypes(
+    request: Record<string, never> = {},
     requestOptions?: Scim.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ResourceTypesResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -299,6 +303,7 @@ export class Scim {
   /**
    * Get SCIM Schemas (requires organization-scoped API key)
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Scim.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -311,6 +316,7 @@ export class Scim {
    *     await client.scim.getSchemas()
    */
   public getSchemas(
+    request: Record<string, never> = {},
     requestOptions?: Scim.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.SchemasResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -688,6 +694,7 @@ export class Scim {
    * Get a specific user by ID (requires organization-scoped API key)
    *
    * @param {string} userId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Scim.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -701,6 +708,7 @@ export class Scim {
    */
   public getUser(
     userId: string,
+    request: Record<string, never> = {},
     requestOptions?: Scim.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ScimUser> {
     return core.HttpResponsePromise.fromPromise(
@@ -809,6 +817,7 @@ export class Scim {
    * Remove a user from the organization (requires organization-scoped API key). Note that this only removes the user from the organization but does not delete the user entity itself.
    *
    * @param {string} userId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Scim.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -822,6 +831,7 @@ export class Scim {
    */
   public deleteUser(
     userId: string,
+    request: Record<string, never> = {},
     requestOptions?: Scim.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.EmptyResponse> {
     return core.HttpResponsePromise.fromPromise(

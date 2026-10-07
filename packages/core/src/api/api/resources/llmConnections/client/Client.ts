@@ -331,6 +331,7 @@ export class LlmConnections {
    * Delete an LLM connection by id. Evaluators that depend on the deleted connection are automatically paused.
    *
    * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {LlmConnections.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -344,6 +345,7 @@ export class LlmConnections {
    */
   public delete(
     id: string,
+    request: Record<string, never> = {},
     requestOptions?: LlmConnections.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DeleteLlmConnectionResponse> {
     return core.HttpResponsePromise.fromPromise(

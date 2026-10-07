@@ -198,6 +198,7 @@ export class Datasets {
    * Get a dataset
    *
    * @param {string} datasetName
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Datasets.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -211,6 +212,7 @@ export class Datasets {
    */
   public get(
     datasetName: string,
+    request: Record<string, never> = {},
     requestOptions?: Datasets.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Dataset> {
     return core.HttpResponsePromise.fromPromise(
@@ -452,6 +454,7 @@ export class Datasets {
    *
    * @param {string} datasetName
    * @param {string} runName
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Datasets.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -466,6 +469,7 @@ export class Datasets {
   public getRun(
     datasetName: string,
     runName: string,
+    request: Record<string, never> = {},
     requestOptions?: Datasets.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DatasetRunWithItems> {
     return core.HttpResponsePromise.fromPromise(
@@ -578,6 +582,7 @@ export class Datasets {
    *
    * @param {string} datasetName
    * @param {string} runName
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Datasets.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -592,6 +597,7 @@ export class Datasets {
   public deleteRun(
     datasetName: string,
     runName: string,
+    request: Record<string, never> = {},
     requestOptions?: Datasets.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DeleteDatasetRunResponse> {
     return core.HttpResponsePromise.fromPromise(

@@ -471,6 +471,7 @@ export class Models {
    * Get a model
    *
    * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Models.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -484,6 +485,7 @@ export class Models {
    */
   public get(
     id: string,
+    request: Record<string, never> = {},
     requestOptions?: Models.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Model> {
     return core.HttpResponsePromise.fromPromise(this.__get(id, requestOptions));
@@ -590,6 +592,7 @@ export class Models {
    * Delete a model. Cannot delete models managed by Langfuse. You can create your own definition with the same modelName to override the definition though.
    *
    * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Models.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -603,6 +606,7 @@ export class Models {
    */
   public delete(
     id: string,
+    request: Record<string, never> = {},
     requestOptions?: Models.RequestOptions,
   ): core.HttpResponsePromise<void> {
     return core.HttpResponsePromise.fromPromise(

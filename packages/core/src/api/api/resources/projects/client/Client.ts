@@ -63,6 +63,7 @@ export class Projects {
   /**
    * Get Project associated with API key (requires project-scoped API key). You can use GET /api/public/organizations/projects to get all projects with an organization-scoped key.
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Projects.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -75,6 +76,7 @@ export class Projects {
    *     await client.projects.get()
    */
   public get(
+    request: Record<string, never> = {},
     requestOptions?: Projects.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Projects> {
     return core.HttpResponsePromise.fromPromise(this.__get(requestOptions));
@@ -439,6 +441,7 @@ export class Projects {
    * Delete a project by ID (requires organization-scoped API key). Project deletion is processed asynchronously.
    *
    * @param {string} projectId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Projects.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -452,6 +455,7 @@ export class Projects {
    */
   public delete(
     projectId: string,
+    request: Record<string, never> = {},
     requestOptions?: Projects.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ProjectDeletionResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -560,6 +564,7 @@ export class Projects {
    * Get all API keys for a project (requires organization-scoped API key)
    *
    * @param {string} projectId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Projects.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -573,6 +578,7 @@ export class Projects {
    */
   public getApiKeys(
     projectId: string,
+    request: Record<string, never> = {},
     requestOptions?: Projects.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ApiKeyList> {
     return core.HttpResponsePromise.fromPromise(
@@ -813,6 +819,7 @@ export class Projects {
    *
    * @param {string} projectId
    * @param {string} apiKeyId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Projects.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -827,6 +834,7 @@ export class Projects {
   public deleteApiKey(
     projectId: string,
     apiKeyId: string,
+    request: Record<string, never> = {},
     requestOptions?: Projects.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ApiKeyDeletionResponse> {
     return core.HttpResponsePromise.fromPromise(

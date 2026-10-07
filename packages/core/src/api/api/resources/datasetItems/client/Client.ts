@@ -197,6 +197,7 @@ export class DatasetItems {
    * Get a dataset item
    *
    * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {DatasetItems.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -210,6 +211,7 @@ export class DatasetItems {
    */
   public get(
     id: string,
+    request: Record<string, never> = {},
     requestOptions?: DatasetItems.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DatasetItem> {
     return core.HttpResponsePromise.fromPromise(this.__get(id, requestOptions));
@@ -474,6 +476,7 @@ export class DatasetItems {
    * Delete a dataset item and all its run items. This action is irreversible.
    *
    * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {DatasetItems.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -487,6 +490,7 @@ export class DatasetItems {
    */
   public delete(
     id: string,
+    request: Record<string, never> = {},
     requestOptions?: DatasetItems.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DeleteDatasetItemResponse> {
     return core.HttpResponsePromise.fromPromise(

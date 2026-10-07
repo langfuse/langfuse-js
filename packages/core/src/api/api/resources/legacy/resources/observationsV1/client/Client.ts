@@ -66,6 +66,7 @@ export class ObservationsV1 {
    * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v2/observations?fromStartTime=<from>&toStartTime=<to>` instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} observationId - The unique langfuse identifier of an observation, can be an event, span or generation
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {ObservationsV1.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -79,6 +80,7 @@ export class ObservationsV1 {
    */
   public get(
     observationId: string,
+    request: Record<string, never> = {},
     requestOptions?: ObservationsV1.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ObservationsViewSingle> {
     return core.HttpResponsePromise.fromPromise(

@@ -228,6 +228,7 @@ export class Sessions {
    * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. In Langfuse v4, read session data via `GET /api/public/v2/observations?filter=<urlencoded sessionId filter>&fromStartTime=<from>&toStartTime=<to>`. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} sessionId - The unique id of a session
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Sessions.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -241,6 +242,7 @@ export class Sessions {
    */
   public get(
     sessionId: string,
+    request: Record<string, never> = {},
     requestOptions?: Sessions.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.SessionWithTraces> {
     return core.HttpResponsePromise.fromPromise(
