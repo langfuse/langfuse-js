@@ -67,7 +67,7 @@ describe("configured client timeout", () => {
     expect(batch.mock.calls[0][1]).toEqual({ timeoutInSeconds: 5 });
   });
 
-  it("aborts a never-resolving score ingestion request near the timeout", async () => {
+  it("aborts a never-resolving score ingestion request near the timeout and retries it once", async () => {
     const fetchMock = vi.fn(
       (_url: string, init: RequestInit) =>
         new Promise<Response>((_, reject) => {
@@ -95,7 +95,7 @@ describe("configured client timeout", () => {
     await scoreManager.shutdown();
     const elapsedMs = Date.now() - startedAt;
 
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(elapsedMs).toBeLessThan(2_000);
     expect(errorSpy).toHaveBeenCalledWith(
       "Failed to export score batch:",
@@ -171,5 +171,42 @@ describe("configured client timeout", () => {
     });
 
     expect(get).toHaveBeenCalledWith("media-id", { timeoutInSeconds: 4 });
+  });
+
+  it("aborts a stalled media download after the timeout", async () => {
+    const client = makeClient(0.05);
+    client.api.media.get = vi
+      .fn()
+      .mockResolvedValue({ url: "http://localhost:3000/media.png" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise<Response>((_, reject) => {
+            init.signal?.addEventListener("abort", () =>
+              reject(init.signal?.reason),
+            );
+          }),
+      ),
+    );
+    const warnSpy = vi
+      .spyOn(getGlobalLogger(), "warn")
+      .mockImplementation(() => {});
+    const reference =
+      "@@@langfuseMedia:type=image/png|id=media-id|source=base64_data_uri@@@";
+
+    const startedAt = Date.now();
+    const resolved = await client.media.resolveReferences({
+      obj: { image: reference },
+      resolveWith: "base64DataUri",
+    });
+
+    expect(Date.now() - startedAt).toBeLessThan(2_000);
+    expect(resolved).toEqual({ image: reference });
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Error fetching media content for reference string",
+      reference,
+      expect.anything(),
+    );
   });
 });

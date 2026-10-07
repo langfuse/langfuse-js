@@ -117,6 +117,9 @@ export class MediaManager {
               const mediaContent = await fetch(mediaData.url, {
                 method: "GET",
                 headers: {},
+                ...(this.timeoutSeconds !== undefined && {
+                  signal: AbortSignal.timeout(this.timeoutSeconds * 1_000),
+                }),
               });
               if (mediaContent.status !== 200) {
                 throw new Error("Failed to fetch media content");
