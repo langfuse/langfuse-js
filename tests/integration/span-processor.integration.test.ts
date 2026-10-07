@@ -112,6 +112,40 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       });
     });
 
+    it("should fully mask metadata values the mask turns into non-serializable values", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) => (data === "secret" ? BigInt(1) : data),
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("bigint-masked-span", {
+        input: "user input",
+        metadata: { tenant: "acme", password: "secret" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "bigint-masked-span",
+        "langfuse.observation.input",
+        "user input",
+      );
+      const metadata = JSON.parse(
+        assertions.expectSpanWithName("bigint-masked-span").attributes[
+          "langfuse.observation.metadata"
+        ] as string,
+      );
+      expect(metadata).toEqual({
+        tenant: "acme",
+        password: "<fully masked due to failed mask function>",
+      });
+    });
+
     it("should keep nested metadata structure and types after masking", async () => {
       await teardownTestEnvironment(testEnv);
 

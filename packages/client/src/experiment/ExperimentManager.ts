@@ -453,22 +453,28 @@ export class ExperimentManager {
           async () => await task(item),
         );
 
-        span.update({
-          input,
-          output,
-          metadata: {
-            ...(itemMetadata ?? {}),
-            ...experimentMetadata,
-            experiment_name: params.experimentName,
-            experiment_run_name: params.experimentRunName,
-            ...(datasetId && datasetItemId
-              ? {
-                  dataset_id: datasetId,
-                  dataset_item_id: datasetItemId,
-                }
-              : {}),
-          },
-        });
+        span.update({ input, output });
+
+        // Kept separate so that metadata over the key limit doesn't drop the
+        // item's output
+        try {
+          span.update({
+            metadata: {
+              ...(itemMetadata ?? {}),
+              ...experimentMetadata,
+              experiment_name: params.experimentName,
+              experiment_run_name: params.experimentRunName,
+              ...(datasetId && datasetItemId
+                ? {
+                    dataset_id: datasetId,
+                    dataset_item_id: datasetItemId,
+                  }
+                : {}),
+            },
+          });
+        } catch (err) {
+          this.logger.warn(`Dropping experiment item metadata: ${err}`);
+        }
 
         return {
           output,
