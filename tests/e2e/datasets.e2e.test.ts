@@ -293,7 +293,11 @@ describe("Langfuse Datasets E2E", () => {
 
       const experiment = await assertions.waitForExperiment(
         result.experimentId,
-        { fromStartTime, fields: "core,metadata" },
+        {
+          fromStartTime,
+          itemCount: result.itemResults.length,
+          fields: "core,metadata",
+        },
       );
       expect(experiment).toMatchObject({
         id: result.experimentId,

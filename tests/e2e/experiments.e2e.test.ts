@@ -191,6 +191,7 @@ describe("Langfuse Datasets E2E", () => {
     // Local experiments are still persisted, without a dataset
     const experiment = await assertions.waitForExperiment(result.experimentId, {
       fromStartTime,
+      itemCount: result.itemResults.length,
     });
     expect(experiment).toMatchObject({
       name: result.runName,
@@ -284,6 +285,7 @@ describe("Langfuse Datasets E2E", () => {
 
     const experiment = await assertions.waitForExperiment(result.experimentId, {
       fromStartTime,
+      itemCount: result.itemResults.length,
     });
     expect(experiment).toMatchObject({
       name: result.runName,
@@ -353,6 +355,7 @@ describe("Langfuse Datasets E2E", () => {
 
     const experiment = await assertions.waitForExperiment(result.experimentId, {
       fromStartTime,
+      itemCount: result.itemResults.length,
     });
     expect(experiment).toMatchObject({
       name: customRunName,
@@ -929,7 +932,11 @@ describe("Langfuse Datasets E2E", () => {
 
       const experiment = await assertions.waitForExperiment(
         result.experimentId,
-        { fromStartTime, fields: "core,metadata" },
+        {
+          fromStartTime,
+          itemCount: result.itemResults.length,
+          fields: "core,metadata",
+        },
       );
 
       expect(experiment).toMatchObject({

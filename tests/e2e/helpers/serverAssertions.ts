@@ -204,11 +204,25 @@ export class ServerAssertions {
     experimentId: string,
     options: {
       fromStartTime: string;
+      /**
+       * Waits for this many experiment items first. Item root spans carry the
+       * root-only fields (e.g. description) and can arrive after child spans,
+       * which already make the experiment visible.
+       */
+      itemCount?: number;
       fields?: string;
       until?: (experiment: Experiment) => boolean;
     } & PollOptions,
   ): Promise<Experiment> {
-    const { fromStartTime, fields, until, timeoutMs } = options;
+    const { fromStartTime, itemCount, fields, until, timeoutMs } = options;
+
+    if (itemCount !== undefined) {
+      await this.waitForExperimentItems(experimentId, {
+        fromStartTime,
+        count: itemCount,
+        timeoutMs,
+      });
+    }
 
     const experiments = await pollUntil(
       async () =>
