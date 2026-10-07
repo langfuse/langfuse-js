@@ -573,7 +573,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
       /@@@langfuseMedia:type=application\/pdf\|id=.+\|source=bytes@@@/,
     );
     expect(traceInput).not.toContain(attachmentBase64);
-  });
+  }, 90_000); // PDF summarization by the model regularly takes over 30s
 
   it("should trace a call with image", async () => {
     const imagePath = "tests/static/puton.jpg";
