@@ -13,6 +13,8 @@
 npm install @langfuse/langchain @langfuse/otel @opentelemetry/sdk-trace-node
 ```
 
+Requires LangChain v1: `@langchain/core` `^1.0.0` is a peer dependency. LangChain `0.x` is not supported; stay on `@langfuse/langchain` v5 until you upgrade LangChain.
+
 ## Environment variables
 
 ```bash

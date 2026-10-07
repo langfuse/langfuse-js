@@ -41,8 +41,11 @@
     "@langfuse/core": "workspace:^",
     "@langfuse/tracing": "workspace:^"
   },
+  "devDependencies": {
+    "@langchain/core": "^1.2.11"
+  },
   "peerDependencies": {
-    "@langchain/core": ">=0.3.8",
+    "@langchain/core": "^1.0.0",
     "@opentelemetry/api": "^1.9.0"
   }
 }
