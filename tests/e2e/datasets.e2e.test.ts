@@ -295,6 +295,8 @@ describe("Langfuse Datasets E2E", () => {
         result.experimentId,
         {
           fromStartTime,
+          until: (experiment) =>
+            experiment.description === "test-run-description",
           itemCount: result.itemResults.length,
           fields: "core,metadata",
         },
