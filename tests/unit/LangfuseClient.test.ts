@@ -1,5 +1,4 @@
 import { LangfuseClient } from "@langfuse/client";
-import { getGlobalLogger } from "@langfuse/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("LangfuseClient", () => {
@@ -38,35 +37,26 @@ describe("LangfuseClient", () => {
     }
   });
 
-  it("reads the base URL from LANGFUSE_BASE_URL and ignores LANGFUSE_BASEURL", () => {
-    vi.stubEnv("LANGFUSE_BASEURL", "http://legacy.example.com");
-    vi.stubEnv("LANGFUSE_BASE_URL", "");
-    const error = vi
-      .spyOn(getGlobalLogger(), "error")
-      .mockImplementation(() => {});
+  it("falls back to the legacy LANGFUSE_BASEURL after the option and LANGFUSE_BASE_URL", () => {
+    const baseUrlOf = (client: LangfuseClient) =>
+      (client as unknown as { baseUrl: string }).baseUrl;
+    const keys = { publicKey: "pk-test", secretKey: "sk-test" };
 
-    const defaultClient = new LangfuseClient({
-      publicKey: "pk-test",
-      secretKey: "sk-test",
-    });
-    expect((defaultClient as unknown as { baseUrl: string }).baseUrl).toBe(
-      "https://cloud.langfuse.com",
+    vi.stubEnv("LANGFUSE_BASE_URL", "");
+    vi.stubEnv("LANGFUSE_BASEURL", "http://legacy.example.com");
+    expect(baseUrlOf(new LangfuseClient(keys))).toBe(
+      "http://legacy.example.com",
     );
-    expect(error).toHaveBeenCalledWith(
-      expect.stringContaining("LANGFUSE_BASEURL is no longer supported"),
-    );
-    error.mockClear();
 
     vi.stubEnv("LANGFUSE_BASE_URL", "http://current.example.com");
-
-    const envClient = new LangfuseClient({
-      publicKey: "pk-test",
-      secretKey: "sk-test",
-    });
-    expect((envClient as unknown as { baseUrl: string }).baseUrl).toBe(
+    expect(baseUrlOf(new LangfuseClient(keys))).toBe(
       "http://current.example.com",
     );
-    expect(error).not.toHaveBeenCalled();
-    error.mockRestore();
+
+    expect(
+      baseUrlOf(
+        new LangfuseClient({ ...keys, baseUrl: "http://option.example.com" }),
+      ),
+    ).toBe("http://option.example.com");
   });
 });
