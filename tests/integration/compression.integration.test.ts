@@ -117,6 +117,17 @@ describe("LangfuseSpanProcessor export compression", () => {
       expectedEncoding: undefined,
     },
     {
+      name: "OTEL_EXPORTER_OTLP_COMPRESSION values are case-insensitive",
+      env: { OTEL_EXPORTER_OTLP_COMPRESSION: " NONE " },
+      expectedEncoding: undefined,
+    },
+    {
+      name: "an invalid compression option falls back to LANGFUSE_OTEL_COMPRESSION",
+      params: { compression: "brotli" as never },
+      env: { LANGFUSE_OTEL_COMPRESSION: "none" },
+      expectedEncoding: undefined,
+    },
+    {
       name: "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION overrides OTEL_EXPORTER_OTLP_COMPRESSION",
       env: {
         OTEL_EXPORTER_OTLP_TRACES_COMPRESSION: "none",

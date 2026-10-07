@@ -23,6 +23,7 @@ import {
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 
+import { withDefaultHeaders } from "./headers.js";
 import { MediaService } from "./MediaService.js";
 import {
   SizeLimitedSpanExporter,
@@ -274,6 +275,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       getEnv("LANGFUSE_BASE_URL") ??
       "https://cloud.langfuse.com";
 
+    if (
+      !params?.baseUrl &&
+      !getEnv("LANGFUSE_BASE_URL") &&
+      getEnv("LANGFUSE_BASEURL")
+    ) {
+      logger.error(
+        "LANGFUSE_BASEURL is no longer supported and is ignored; rename it to LANGFUSE_BASE_URL. Falling back to https://cloud.langfuse.com.",
+      );
+    }
+
     if (!params?.exporter && !publicKey) {
       logger.warn(
         "No exporter configured and no public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Span exports will fail.",
@@ -305,10 +316,11 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     const compression =
       (params?.compression !== undefined
         ? resolveCompression(params.compression, "compression")
-        : resolveCompression(
-            getEnv("LANGFUSE_OTEL_COMPRESSION"),
-            "LANGFUSE_OTEL_COMPRESSION",
-          )) ??
+        : undefined) ??
+      resolveCompression(
+        getEnv("LANGFUSE_OTEL_COMPRESSION"),
+        "LANGFUSE_OTEL_COMPRESSION",
+      ) ??
       getOtelCompressionFromEnv() ??
       CompressionAlgorithm.GZIP;
 
@@ -318,14 +330,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
           maxBatchSizeBytes: resolveMaxBatchSizeBytesFromEnvironment(),
           delegate: new OTLPTraceExporter({
             url: `${baseUrl}/api/public/otel/v1/traces`,
-            headers: {
-              Authorization: `Basic ${authHeaderValue}`,
-              "x-langfuse-sdk-name": "javascript",
-              "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
-              "x-langfuse-public-key": publicKey ?? "<missing>",
-              "x-langfuse-ingestion-version": "4",
-              ...params?.additionalHeaders,
-            },
+            headers: withDefaultHeaders(
+              {
+                Authorization: `Basic ${authHeaderValue}`,
+                "x-langfuse-sdk-name": "javascript",
+                "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+                "x-langfuse-public-key": publicKey ?? "<missing>",
+                "x-langfuse-ingestion-version": "4",
+              },
+              params?.additionalHeaders,
+            ),
             timeoutMillis: timeoutSeconds * 1_000,
             compression,
           }),
@@ -593,7 +607,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+      LangfuseOtelSpanAttributes.TRACE_INPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+      LangfuseOtelSpanAttributes.TRACE_OUTPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
       LangfuseOtelSpanAttributes.TRACE_METADATA,
     ];
@@ -636,7 +652,7 @@ function resolveCompression(
   }
 
   getGlobalLogger().warn(
-    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the OTEL_EXPORTER_OTLP_*COMPRESSION environment variables, then gzip.`,
+    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the next compression setting, then gzip.`,
   );
 
   return undefined;
@@ -644,7 +660,7 @@ function resolveCompression(
 
 /**
  * Reads the OpenTelemetry compression environment variables with the same
- * precedence and parsing as the OTLP exporter. Returns undefined outside
+ * precedence as the OTLP exporter, ignoring case. Returns undefined outside
  * Node.js-like runtimes or when neither variable holds a valid value.
  */
 function getOtelCompressionFromEnv(): CompressionAlgorithm | undefined {
@@ -654,7 +670,7 @@ function getOtelCompressionFromEnv(): CompressionAlgorithm | undefined {
     "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION",
     "OTEL_EXPORTER_OTLP_COMPRESSION",
   ]) {
-    const value = process.env[key]?.trim();
+    const value = process.env[key]?.trim().toLowerCase();
     if (value === CompressionAlgorithm.GZIP) return CompressionAlgorithm.GZIP;
     if (value === CompressionAlgorithm.NONE) return CompressionAlgorithm.NONE;
   }

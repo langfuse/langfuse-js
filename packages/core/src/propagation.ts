@@ -883,7 +883,15 @@ function serializePropagatedMetadataValue(
   let serialized: string | undefined;
 
   try {
-    serialized = JSON.stringify(value);
+    // JSON turns NaN and ±Infinity into null; treat them as unserializable
+    // instead so a computed NaN is not indistinguishable from a real null.
+    serialized = JSON.stringify(value, (_key, nested) => {
+      if (typeof nested === "number" && !Number.isFinite(nested)) {
+        throw new TypeError("Non-finite number");
+      }
+
+      return nested;
+    });
   } catch {
     serialized = undefined;
   }

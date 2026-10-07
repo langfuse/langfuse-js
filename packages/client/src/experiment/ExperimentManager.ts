@@ -196,15 +196,38 @@ export class ExperimentManager {
       name,
       runName: providedRunName,
     });
-    const datasetId = data.find(
-      (item): item is DatasetItem => "datasetId" in item && !!item.datasetId,
-    )?.datasetId;
-    const projectId = await this.resolveProjectId();
-    const experimentId = await this.createRunExperimentId({
-      projectId,
-      datasetId,
-      runName,
-    });
+    const datasetIds = [
+      ...new Set(
+        data.flatMap((item) =>
+          "datasetId" in item && item.datasetId ? [item.datasetId] : [],
+        ),
+      ),
+    ];
+    const datasetId = datasetIds[0];
+    // Only runs on Langfuse datasets need the project ID before items start;
+    // for local data it is only used for the URL afterwards.
+    const projectIdPromise = this.resolveProjectId();
+    const projectId = datasetId ? await projectIdPromise : undefined;
+    const experimentIdsByDatasetId = new Map<string, string>();
+    for (const id of datasetIds) {
+      experimentIdsByDatasetId.set(
+        id,
+        await this.createRunExperimentId({
+          projectId,
+          datasetId: id,
+          runName,
+        }),
+      );
+    }
+    const experimentId = datasetId
+      ? experimentIdsByDatasetId.get(datasetId)!
+      : await createExperimentId();
+
+    if (datasetIds.length > 1) {
+      this.logger.warn(
+        `Experiment data contains items from ${datasetIds.length} datasets. Each dataset's items form a separate experiment; the result and run evaluator scores use the experiment of dataset ${datasetId}.`,
+      );
+    }
 
     if (!this.isOtelRegistered()) {
       this.logger.warn(
@@ -231,7 +254,11 @@ export class ExperimentManager {
             experimentRunName: runName,
             experimentDescription: description,
             experimentMetadata: metadata,
-            experimentId,
+            experimentId:
+              ("datasetId" in item &&
+                item.datasetId &&
+                experimentIdsByDatasetId.get(item.datasetId)) ||
+              experimentId,
             datasetVersion: config.datasetVersion,
           });
         } catch (reason) {
@@ -258,7 +285,7 @@ export class ExperimentManager {
     );
 
     const datasetRunId = datasetId ? experimentId : undefined;
-    const experimentUrl = projectId
+    const experimentUrl = (await projectIdPromise)
       ? await this.langfuseClient.getExperimentUrl(experimentId)
       : undefined;
     const datasetRunUrl = datasetRunId ? experimentUrl : undefined;

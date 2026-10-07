@@ -7,12 +7,13 @@ import {
   getGlobalLogger,
   LogLevel,
   safeSetTimeout,
-  IngestionResponse,
+  LangfuseAPITimeoutError,
 } from "@langfuse/core";
 import { Span, trace } from "@opentelemetry/api";
 
 const MAX_QUEUE_SIZE = 100_000; // prevent memory leaks
 const MAX_BATCH_SIZE = 100;
+const MAX_BATCH_ATTEMPTS_ON_TIMEOUT = 2;
 
 function getScoreValidationError(data: unknown): string | undefined {
   if (typeof data !== "object" || data === null) {
@@ -333,6 +334,38 @@ export class ScoreManager {
     }
   }
 
+  /**
+   * Sends one batch. The API client does not retry requests that time out,
+   * so a timed-out batch is sent once more before its scores are dropped.
+   */
+  private async sendBatch(batch: IngestionEvent[]): Promise<void> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const res = await this.apiClient.ingestion.batch(
+          { batch },
+          { timeoutInSeconds: this.timeoutSeconds },
+        );
+        if (res.errors?.length > 0) {
+          this.logger.error("Error ingesting scores:", res.errors);
+        }
+
+        return;
+      } catch (err) {
+        if (
+          err instanceof LangfuseAPITimeoutError &&
+          attempt < MAX_BATCH_ATTEMPTS_ON_TIMEOUT
+        ) {
+          this.logger.warn("Score batch request timed out. Retrying once.");
+          continue;
+        }
+
+        this.logger.error("Failed to export score batch:", err);
+
+        return;
+      }
+    }
+  }
+
   private async handleFlush() {
     try {
       if (this.flushTimer) {
@@ -340,23 +373,12 @@ export class ScoreManager {
         this.flushTimer = null;
       }
 
-      const promises: Promise<IngestionResponse | void>[] = [];
+      const promises: Promise<void>[] = [];
 
       while (this.eventQueue.length > 0) {
         const batch = this.eventQueue.splice(0, MAX_BATCH_SIZE);
 
-        promises.push(
-          this.apiClient.ingestion
-            .batch({ batch }, { timeoutInSeconds: this.timeoutSeconds })
-            .then((res) => {
-              if (res.errors?.length > 0) {
-                this.logger.error("Error ingesting scores:", res.errors);
-              }
-            })
-            .catch((err) => {
-              this.logger.error("Failed to export score batch:", err);
-            }),
-        );
+        promises.push(this.sendBatch(batch));
       }
 
       await Promise.all(promises);

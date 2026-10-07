@@ -114,6 +114,8 @@ describe("propagateAttributes metadata serialization", () => {
       symbol: Symbol("s"),
       bigint: BigInt(1),
       circular,
+      nan: Number.NaN,
+      nestedInfinity: { score: Number.POSITIVE_INFINITY },
     });
 
     expect(child.attributes[metadataKey("valid")]).toBe("1");
@@ -123,6 +125,8 @@ describe("propagateAttributes metadata serialization", () => {
       "symbol",
       "bigint",
       "circular",
+      "nan",
+      "nestedInfinity",
     ]) {
       expect(child.attributes[metadataKey(key)]).toBeUndefined();
       expect(warn).toHaveBeenCalledWith(

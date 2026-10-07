@@ -17,7 +17,7 @@ describe("Trace-level input/output attributes", () => {
     testEnv = undefined;
   });
 
-  it("masks observation input/output but leaves raw trace input/output untouched", async () => {
+  it("masks raw trace input/output attributes set directly on a span", async () => {
     testEnv = await setupTestEnvironment({
       spanProcessorConfig: {
         mask: ({ data }) =>
@@ -45,10 +45,10 @@ describe("Trace-level input/output attributes", () => {
       "observation *** output",
     );
     expect(attributes[LangfuseOtelSpanAttributes.TRACE_INPUT]).toBe(
-      "trace secret input",
+      "trace *** input",
     );
     expect(attributes[LangfuseOtelSpanAttributes.TRACE_OUTPUT]).toBe(
-      "trace secret output",
+      "trace *** output",
     );
   });
 });
