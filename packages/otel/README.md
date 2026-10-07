@@ -27,6 +27,9 @@ it is not split, retried, or truncated. Invalid values fall back to 64 MiB with
 a warning. Set the limit to a positive decimal safe integer; surrounding
 whitespace is ignored. Custom exporters passed to `LangfuseSpanProcessor`
 bypass this limit because they may use a different wire format or transport.
+The limit is approximate: it is compared against the batch's character
+count, which is never larger than the request, so a batch that fits is never
+dropped, but a sent request can be somewhat larger than the limit.
 
 ## Quickstart
 
