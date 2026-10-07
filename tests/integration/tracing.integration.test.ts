@@ -3,7 +3,6 @@ import {
   startActiveObservation,
   observe,
   updateActiveObservation,
-  setActiveTraceIO,
   propagateAttributes,
   LangfuseOtelSpanAttributes,
   createTraceId,
@@ -2853,11 +2852,6 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
                 metadata: { workflow_id: "wf-123", priority: "high" },
               });
 
-              // Set trace-level input using the new setTraceIO
-              span.setTraceIO({
-                input: { original_query: "Hello AI" },
-              });
-
               // Make the trace publicly accessible
               span.setTraceAsPublic();
 
@@ -3061,11 +3055,6 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         "ai-workflow",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".version",
         "2.1.0",
-      );
-      assertions.expectSpanAttribute(
-        "ai-workflow",
-        LangfuseOtelSpanAttributes.TRACE_INPUT,
-        JSON.stringify({ original_query: "Hello AI" }),
       );
 
       // Verify level attributes across different observations
@@ -4988,147 +4977,8 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       });
     });
 
-    describe("setActiveTraceIO", () => {
-      it("should set trace input and output when called within startActiveObservation", async () => {
-        await startActiveObservation("test-span", (span) => {
-          // Set the active trace input/output
-          setActiveTraceIO({
-            input: { query: "user question" },
-            output: { response: "assistant answer" },
-          });
-        });
-
-        await waitForSpanExport(testEnv.mockExporter, 1);
-
-        assertions.expectSpanCount(1);
-        assertions.expectSpanAttribute(
-          "test-span",
-          LangfuseOtelSpanAttributes.TRACE_INPUT,
-          JSON.stringify({ query: "user question" }),
-        );
-        assertions.expectSpanAttribute(
-          "test-span",
-          LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-          JSON.stringify({ response: "assistant answer" }),
-        );
-      });
-
-      it("should do nothing when called without active span", async () => {
-        // Call setActiveTraceIO without any active span context
-        setActiveTraceIO({
-          input: { should: "not work" },
-        });
-
-        await waitForSpanExport(testEnv.mockExporter, 0, 500); // Short timeout since no spans expected
-
-        assertions.expectSpanCount(0);
-      });
-
-      it("should set trace IO during nested span operations", async () => {
-        await startActiveObservation("parent-span", (parentSpan) => {
-          setActiveTraceIO({
-            input: { original_query: "parent input" },
-          });
-
-          return startActiveObservation("child-span", (childSpan) => {
-            // Set trace output from child span - should still work
-            setActiveTraceIO({
-              output: { final_response: "child output" },
-            });
-          });
-        });
-
-        await waitForSpanExport(testEnv.mockExporter, 2);
-
-        assertions.expectSpanCount(2);
-
-        // Parent span should have the input
-        assertions.expectSpanAttribute(
-          "parent-span",
-          LangfuseOtelSpanAttributes.TRACE_INPUT,
-          JSON.stringify({ original_query: "parent input" }),
-        );
-
-        // Child span should have the output
-        assertions.expectSpanAttribute(
-          "child-span",
-          LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-          JSON.stringify({ final_response: "child output" }),
-        );
-      });
-
-      it("should set trace IO during observe function execution", async () => {
-        function testFunc(query: string) {
-          setActiveTraceIO({
-            input: { user_query: query },
-            output: { result: `Processed: ${query}` },
-          });
-          return `Processed: ${query}`;
-        }
-        const wrappedFunc = observe(testFunc);
-
-        wrappedFunc("test query");
-
-        await waitForSpanExport(testEnv.mockExporter, 1);
-
-        assertions.expectSpanCount(1);
-        assertions.expectSpanAttribute(
-          "testFunc",
-          LangfuseOtelSpanAttributes.TRACE_INPUT,
-          JSON.stringify({ user_query: "test query" }),
-        );
-        assertions.expectSpanAttribute(
-          "testFunc",
-          LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-          JSON.stringify({ result: "Processed: test query" }),
-        );
-      });
-    });
-
     describe("Combined update methods", () => {
-      it("should handle setActiveTraceIO and updateActiveObservation together", async () => {
-        await startActiveObservation("combined-span", (span) => {
-          setActiveTraceIO({
-            input: { trace_query: "combined input" },
-            output: { trace_result: "combined output" },
-          });
-
-          updateActiveObservation({
-            input: { operation: "combined-operation" },
-            metadata: { step: "1" },
-          });
-        });
-
-        await waitForSpanExport(testEnv.mockExporter, 1);
-
-        assertions.expectSpanCount(1);
-
-        // Check trace IO attributes
-        assertions.expectSpanAttribute(
-          "combined-span",
-          LangfuseOtelSpanAttributes.TRACE_INPUT,
-          JSON.stringify({ trace_query: "combined input" }),
-        );
-        assertions.expectSpanAttribute(
-          "combined-span",
-          LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-          JSON.stringify({ trace_result: "combined output" }),
-        );
-
-        // Check span attributes
-        assertions.expectSpanAttribute(
-          "combined-span",
-          LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
-          '{"operation":"combined-operation"}',
-        );
-        assertions.expectSpanAttribute(
-          "combined-span",
-          LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".step",
-          "1",
-        );
-      });
-
-      it("should handle setActiveTraceIO in generation context", async () => {
+      it("should handle propagateAttributes and updateActiveObservation in generation context", async () => {
         await propagateAttributes(
           {
             traceName: "llm-trace",
@@ -5139,11 +4989,6 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
             await startActiveObservation(
               "combined-generation",
               (generation) => {
-                setActiveTraceIO({
-                  input: { prompt: "Generate a story" },
-                  output: { story: "Once upon a time..." },
-                });
-
                 updateActiveObservation(
                   {
                     model: "gpt-4",
@@ -5179,18 +5024,6 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
           "combined-generation",
           LangfuseOtelSpanAttributes.TRACE_USER_ID,
           "user-llm",
-        );
-
-        // Check trace IO attributes
-        assertions.expectSpanAttribute(
-          "combined-generation",
-          LangfuseOtelSpanAttributes.TRACE_INPUT,
-          JSON.stringify({ prompt: "Generate a story" }),
-        );
-        assertions.expectSpanAttribute(
-          "combined-generation",
-          LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-          JSON.stringify({ story: "Once upon a time..." }),
         );
 
         // Check generation attributes
