@@ -19,7 +19,7 @@ import * as LangfuseAPI from "../../../index.js";
  * - `datetime`: `"="`, `">"`, `"<"`, `">="`, `"<="`
  * - `stringOptions`: `any of`, `none of`
  * - `arrayOptions`: `any of`, `none of`, `all of`
- * - `stringObject`: same operators as `string`
+ * - `stringObject`: `"="`, `contains`, `does not contain`, `starts with`, `ends with`, `is set`, `is not set` (use `is set` / `is not set` for key presence; an empty value for `contains`, `starts with`, or `ends with` is treated as `is set`)
  * - `boolean`: `"="`, `"<>"`
  * - `null`: `is null`, `is not null`
  *
@@ -55,7 +55,7 @@ import * as LangfuseAPI from "../../../index.js";
  *         type: "stringObject",
  *         column: "metadata",
  *         key: "customerTier",
- *         operator: LangfuseAPI.EvaluationRuleStringFilterOperator.Equals,
+ *         operator: LangfuseAPI.EvaluationRuleStringObjectFilterOperator.Equals,
  *         value: "enterprise"
  *     }
  *
