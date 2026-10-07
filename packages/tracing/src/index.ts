@@ -380,70 +380,82 @@ export function startObservation(
     ...observationOptions,
   });
 
-  switch (asType) {
-    case "generation":
-      return new LangfuseGeneration({
-        otelSpan,
-        attributes,
-      });
+  // Observation constructors throw if the metadata exceeds the key limit.
+  // End the span then, since the caller never gets a reference to it.
+  try {
+    switch (asType) {
+      case "generation":
+        return new LangfuseGeneration({
+          otelSpan,
+          attributes,
+        });
 
-    case "embedding":
-      return new LangfuseEmbedding({
-        otelSpan,
-        attributes,
-      });
+      case "embedding":
+        return new LangfuseEmbedding({
+          otelSpan,
+          attributes,
+        });
 
-    case "agent":
-      return new LangfuseAgent({
-        otelSpan,
-        attributes,
-      });
+      case "agent":
+        return new LangfuseAgent({
+          otelSpan,
+          attributes,
+        });
 
-    case "tool":
-      return new LangfuseTool({
-        otelSpan,
-        attributes,
-      });
+      case "tool":
+        return new LangfuseTool({
+          otelSpan,
+          attributes,
+        });
 
-    case "chain":
-      return new LangfuseChain({
-        otelSpan,
-        attributes,
-      });
+      case "chain":
+        return new LangfuseChain({
+          otelSpan,
+          attributes,
+        });
 
-    case "retriever":
-      return new LangfuseRetriever({
-        otelSpan,
-        attributes,
-      });
+      case "retriever":
+        return new LangfuseRetriever({
+          otelSpan,
+          attributes,
+        });
 
-    case "evaluator":
-      return new LangfuseEvaluator({
-        otelSpan,
-        attributes,
-      });
+      case "evaluator":
+        return new LangfuseEvaluator({
+          otelSpan,
+          attributes,
+        });
 
-    case "guardrail":
-      return new LangfuseGuardrail({
-        otelSpan,
-        attributes,
-      });
+      case "guardrail":
+        return new LangfuseGuardrail({
+          otelSpan,
+          attributes,
+        });
 
-    case "event": {
-      const timestamp = observationOptions?.startTime ?? new Date();
+      case "event": {
+        const timestamp = observationOptions?.startTime ?? new Date();
 
-      return new LangfuseEvent({
-        otelSpan,
-        attributes: attributes as LangfuseEventAttributes,
-        timestamp,
-      });
+        return new LangfuseEvent({
+          otelSpan,
+          attributes: attributes as LangfuseEventAttributes,
+          timestamp,
+        });
+      }
+      case "span":
+      default:
+        return new LangfuseSpan({
+          otelSpan,
+          attributes: attributes as LangfuseSpanAttributes,
+        });
     }
-    case "span":
-    default:
-      return new LangfuseSpan({
-        otelSpan,
-        attributes: attributes as LangfuseSpanAttributes,
-      });
+  } catch (err) {
+    otelSpan.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: err instanceof Error ? err.message : "Unknown error",
+    });
+    otelSpan.end();
+
+    throw err;
   }
 }
 

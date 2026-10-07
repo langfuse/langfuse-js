@@ -5,6 +5,7 @@ import {
   LangfuseOtelSpanAttributes,
 } from "@langfuse/tracing";
 import { MAX_OBSERVATION_METADATA_KEYS } from "@langfuse/core";
+import { SpanStatusCode } from "@opentelemetry/api";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
@@ -100,6 +101,22 @@ describe("Observation metadata", () => {
     });
   });
 
+  it("should not pick up later changes to the caller's metadata object", async () => {
+    const metadata = { database: { host: "first" } };
+    const span = startObservation("alias-span", { metadata });
+
+    metadata.database.host = "second";
+    span.update({ metadata: { step: 2 } });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("alias-span")).toEqual({
+      database: { host: "first" },
+      step: 2,
+    });
+  });
+
   it("should keep earlier values for keys updated with null or undefined", async () => {
     const span = startObservation("null-span", {
       metadata: { a: 1, b: 2 },
@@ -157,6 +174,19 @@ describe("Observation metadata", () => {
         metadata: manyKeys(MAX_OBSERVATION_METADATA_KEYS + 1),
       }),
     ).toThrow(/exceeds the maximum of 128/);
+  });
+
+  it("should end the span when startObservation throws on too many keys", async () => {
+    expect(() =>
+      startObservation("too-many-keys-ended-span", {
+        metadata: manyKeys(MAX_OBSERVATION_METADATA_KEYS + 1),
+      }),
+    ).toThrow(/exceeds the maximum of 128/);
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const span = assertions.expectSpanWithName("too-many-keys-ended-span");
+    expect(span.status.code).toBe(SpanStatusCode.ERROR);
   });
 
   it("should throw when merged metadata exceeds the limit and keep the earlier metadata", async () => {

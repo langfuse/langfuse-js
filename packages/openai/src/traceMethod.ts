@@ -1,5 +1,7 @@
+import { getGlobalLogger } from "@langfuse/core";
 import {
   LangfuseGeneration,
+  type LangfuseGenerationAttributes,
   startObservation,
   propagateAttributes,
 } from "@langfuse/tracing";
@@ -119,15 +121,13 @@ const wrapMethod = <T extends GenericMethod>(
                 metadata: metadataFromResponse,
               } = parseModelDataFromResponse(result);
 
-              generation
-                .update({
-                  output,
-                  usageDetails,
-                  model: modelFromResponse,
-                  modelParameters: modelParametersFromResponse,
-                  metadata: metadataFromResponse,
-                })
-                .end();
+              updateGeneration(generation, {
+                output,
+                usageDetails,
+                model: modelFromResponse,
+                modelParameters: modelParametersFromResponse,
+                metadata: metadataFromResponse,
+              }).end();
 
               return result;
             })
@@ -169,6 +169,27 @@ const wrapMethod = <T extends GenericMethod>(
     },
   );
 };
+
+/**
+ * Updates a generation after a successful OpenAI call.
+ *
+ * If the merged metadata exceeds the key limit, the update is retried without
+ * metadata, so the caller still gets the OpenAI response.
+ *
+ * @internal
+ */
+function updateGeneration(
+  generation: LangfuseGeneration,
+  attributes: LangfuseGenerationAttributes,
+): LangfuseGeneration {
+  try {
+    return generation.update(attributes);
+  } catch (err) {
+    getGlobalLogger().warn(`Dropping observation metadata: ${err}`);
+
+    return generation.update({ ...attributes, metadata: undefined });
+  }
+}
 
 /**
  * Wraps an async iterable (streaming response) with Langfuse tracing.
@@ -216,7 +237,7 @@ function wrapAsyncIterable<R>(
           metadata: metadataFromResponse,
         } = parseModelDataFromResponse(result);
 
-        generation.update({
+        updateGeneration(generation, {
           model: modelFromResponse,
           modelParameters: modelParametersFromResponse,
           metadata: metadataFromResponse,

@@ -112,8 +112,17 @@ function _serialize(obj: unknown): string | undefined {
  * Metadata already written to each span. Kept so that repeated updates merge
  * into a single `langfuse.observation.metadata` attribute instead of
  * overwriting it.
+ *
+ * Stored on `globalThis` so that the ESM and CJS builds share it when both are
+ * loaded in one process.
  */
-const spanMetadata = new WeakMap<Span, Record<string, unknown>>();
+const SPAN_METADATA_KEY = Symbol.for("langfuse.tracing.spanMetadata");
+const spanMetadata: WeakMap<Span, Record<string, unknown>> = ((
+  globalThis as Record<symbol, unknown>
+)[SPAN_METADATA_KEY] ??= new WeakMap()) as WeakMap<
+  Span,
+  Record<string, unknown>
+>;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -162,7 +171,15 @@ export function setObservationAttributes(
   }
 
   if (isPlainObject(metadata)) {
-    spanMetadata.set(span, metadata);
+    // Keep a parsed copy of what was written, not the caller's object, so
+    // later changes to that object don't leak into future updates
+    const serialized =
+      otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_METADATA];
+
+    spanMetadata.set(
+      span,
+      typeof serialized === "string" ? JSON.parse(serialized) : {},
+    );
   } else if (metadata != null) {
     spanMetadata.delete(span);
   }
