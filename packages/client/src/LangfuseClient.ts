@@ -213,17 +213,8 @@ export class LangfuseClient {
     this.baseUrl =
       params?.baseUrl ??
       getEnv("LANGFUSE_BASE_URL") ??
+      getEnv("LANGFUSE_BASEURL") ?? // legacy v2
       "https://cloud.langfuse.com";
-
-    if (
-      !params?.baseUrl &&
-      !getEnv("LANGFUSE_BASE_URL") &&
-      getEnv("LANGFUSE_BASEURL")
-    ) {
-      logger.error(
-        "LANGFUSE_BASEURL is no longer supported and is ignored; rename it to LANGFUSE_BASE_URL. Falling back to https://cloud.langfuse.com.",
-      );
-    }
 
     if (!publicKey) {
       logger.warn(
