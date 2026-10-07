@@ -230,8 +230,16 @@ export class Prompts {
     request: LangfuseAPI.ListPromptsMetaRequest = {},
     requestOptions?: Prompts.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.PromptMetaListResponse>> {
-    const { name, label, tag, page, limit, fromUpdatedAt, toUpdatedAt } =
-      request;
+    const {
+      name,
+      label,
+      tag,
+      page,
+      limit,
+      fromUpdatedAt,
+      toUpdatedAt,
+      filter,
+    } = request;
     const _queryParams: Record<
       string,
       string | string[] | object | object[] | null
@@ -262,6 +270,10 @@ export class Prompts {
 
     if (toUpdatedAt != null) {
       _queryParams["toUpdatedAt"] = toUpdatedAt;
+    }
+
+    if (filter != null) {
+      _queryParams["filter"] = filter;
     }
 
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(

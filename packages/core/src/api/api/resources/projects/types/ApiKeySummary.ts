@@ -8,8 +8,16 @@
 export interface ApiKeySummary {
   id: string;
   createdAt: string;
+  /** Expiration timestamp. Null if the key does not expire. */
   expiresAt?: string;
   lastUsedAt?: string;
+  /** Name of the API key. Contains the same value as note; null if no name was provided. */
+  name?: string | null;
+  /**
+   * Deprecated alias for name. Contains the same value as name.
+   *
+   * @deprecated Use name instead.
+   */
   note?: string;
   publicKey: string;
   displaySecretKey: string;
