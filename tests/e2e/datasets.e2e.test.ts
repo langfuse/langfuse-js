@@ -295,8 +295,6 @@ describe("Langfuse Datasets E2E", () => {
         result.experimentId,
         {
           fromStartTime,
-          until: (experiment) =>
-            experiment.description === "test-run-description",
           itemCount: result.itemResults.length,
           fields: "core,metadata",
         },
@@ -305,9 +303,20 @@ describe("Langfuse Datasets E2E", () => {
         id: result.experimentId,
         name: runName,
         datasetId: dataset.id,
-        description: "test-run-description",
         metadata: { test: "test" },
       });
+      // The description is a root-span attribute, so check it on each item.
+      const experimentItems = await assertions.waitForExperimentItems(
+        result.experimentId,
+        {
+          fromStartTime,
+          count: result.itemResults.length,
+          fields: "core,experimentMetadata",
+        },
+      );
+      expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
+        result.itemResults.map(() => "test-run-description"),
+      );
 
       const items = await assertions.waitForExperimentItems(
         result.experimentId,

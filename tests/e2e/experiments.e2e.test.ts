@@ -191,15 +191,24 @@ describe("Langfuse Datasets E2E", () => {
     // Local experiments are still persisted, without a dataset
     const experiment = await assertions.waitForExperiment(result.experimentId, {
       fromStartTime,
-      until: (experiment) =>
-        experiment.description === "Country capital experiment",
       itemCount: result.itemResults.length,
     });
     expect(experiment).toMatchObject({
       name: result.runName,
-      description: "Country capital experiment",
       datasetId: null,
     });
+    // The description is a root-span attribute, so check it on each item.
+    const experimentItems = await assertions.waitForExperimentItems(
+      result.experimentId,
+      {
+        fromStartTime,
+        count: result.itemResults.length,
+        fields: "core,experimentMetadata",
+      },
+    );
+    expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
+      result.itemResults.map(() => "Country capital experiment"),
+    );
 
     const items = await assertions.waitForExperimentItems(result.experimentId, {
       fromStartTime,
@@ -287,15 +296,24 @@ describe("Langfuse Datasets E2E", () => {
 
     const experiment = await assertions.waitForExperiment(result.experimentId, {
       fromStartTime,
-      until: (experiment) =>
-        experiment.description === "Country capital experiment",
       itemCount: result.itemResults.length,
     });
     expect(experiment).toMatchObject({
       name: result.runName,
-      description: "Country capital experiment",
       datasetId: fetchedDataset.id,
     });
+    // The description is a root-span attribute, so check it on each item.
+    const experimentItems = await assertions.waitForExperimentItems(
+      result.experimentId,
+      {
+        fromStartTime,
+        count: result.itemResults.length,
+        fields: "core,experimentMetadata",
+      },
+    );
+    expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
+      result.itemResults.map(() => "Country capital experiment"),
+    );
 
     // Each experiment item should correspond to one of our experiment results
     const items = await assertions.waitForExperimentItems(result.experimentId, {
@@ -359,15 +377,24 @@ describe("Langfuse Datasets E2E", () => {
 
     const experiment = await assertions.waitForExperiment(result.experimentId, {
       fromStartTime,
-      until: (experiment) =>
-        experiment.description === "Testing custom run name",
       itemCount: result.itemResults.length,
     });
     expect(experiment).toMatchObject({
       name: customRunName,
-      description: "Testing custom run name",
       datasetId: fetchedDataset.id,
     });
+    // The description is a root-span attribute, so check it on each item.
+    const experimentItems = await assertions.waitForExperimentItems(
+      result.experimentId,
+      {
+        fromStartTime,
+        count: result.itemResults.length,
+        fields: "core,experimentMetadata",
+      },
+    );
+    expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
+      result.itemResults.map(() => "Testing custom run name"),
+    );
   });
 
   it("should support custom runName with local datasets", async () => {
@@ -940,8 +967,6 @@ describe("Langfuse Datasets E2E", () => {
         result.experimentId,
         {
           fromStartTime,
-          until: (experiment) =>
-            experiment.description === "Testing metadata preservation",
           itemCount: result.itemResults.length,
           fields: "core,metadata",
         },
@@ -949,9 +974,20 @@ describe("Langfuse Datasets E2E", () => {
 
       expect(experiment).toMatchObject({
         name: result.runName,
-        description: "Testing metadata preservation",
         metadata: { testKey: "testValue", experimentVersion: "1.0" },
       });
+      // The description is a root-span attribute, so check it on each item.
+      const experimentItems = await assertions.waitForExperimentItems(
+        result.experimentId,
+        {
+          fromStartTime,
+          count: result.itemResults.length,
+          fields: "core,experimentMetadata",
+        },
+      );
+      expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
+        result.itemResults.map(() => "Testing metadata preservation"),
+      );
     });
   });
 
