@@ -23,6 +23,7 @@ import {
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 
+import { withDefaultHeaders } from "./headers.js";
 import { MediaService } from "./MediaService.js";
 import {
   SizeLimitedSpanExporter,
@@ -154,6 +155,8 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Additional HTTP headers to include with requests.
+   * Overrides default span export headers with the same name, such as
+   * `x-langfuse-ingestion-version` (default `"4"`).
    */
   additionalHeaders?: Record<string, string>;
 
@@ -321,13 +324,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
           maxBatchSizeBytes: resolveMaxBatchSizeBytesFromEnvironment(),
           delegate: new OTLPTraceExporter({
             url: `${baseUrl}/api/public/otel/v1/traces`,
-            headers: {
-              Authorization: `Basic ${authHeaderValue}`,
-              "x-langfuse-sdk-name": "javascript",
-              "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
-              "x-langfuse-public-key": publicKey ?? "<missing>",
-              ...params?.additionalHeaders,
-            },
+            headers: withDefaultHeaders(
+              {
+                Authorization: `Basic ${authHeaderValue}`,
+                "x-langfuse-sdk-name": "javascript",
+                "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+                "x-langfuse-public-key": publicKey ?? "<missing>",
+                "x-langfuse-ingestion-version": "4",
+              },
+              params?.additionalHeaders,
+            ),
             timeoutMillis: timeoutSeconds * 1_000,
             compression,
           }),
