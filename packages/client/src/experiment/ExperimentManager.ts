@@ -204,9 +204,19 @@ export class ExperimentManager {
       ),
     ];
     const datasetId = datasetIds[0];
+    const tracingEnabled = this.isOtelRegistered();
+    if (!tracingEnabled) {
+      this.logger.warn(
+        "OpenTelemetry has not been set up. Traces will not be sent to Langfuse.See our docs on how to set up OpenTelemetry: https://langfuse.com/docs/observability/sdk/typescript/setup#tracing-setup",
+      );
+    }
+
     // Only runs on Langfuse datasets need the project ID before items start;
-    // for local data it is only used for the URL afterwards.
-    const projectIdPromise = this.resolveProjectId();
+    // for local data it is only used for the URL afterwards. Without tracing
+    // nothing reaches Langfuse, so the lookup is skipped.
+    const projectIdPromise = tracingEnabled
+      ? this.resolveProjectId()
+      : Promise.resolve(undefined);
     const projectId = datasetId ? await projectIdPromise : undefined;
     const experimentIdsByDatasetId = new Map<string, string>();
     for (const id of datasetIds) {
@@ -229,16 +239,11 @@ export class ExperimentManager {
       );
     }
 
-    if (!this.isOtelRegistered()) {
-      this.logger.warn(
-        "OpenTelemetry has not been set up. Traces will not be sent to Langfuse.See our docs on how to set up OpenTelemetry: https://langfuse.com/docs/observability/sdk/typescript/setup#tracing-setup",
-      );
-    }
-
     const itemResultsByIndex: Array<
       ExperimentItemResult<Input, ExpectedOutput, Metadata> | undefined
     > = new Array(data.length);
     let nextIndex = 0;
+    let sampledItemCount = 0;
 
     const runNextItem = async () => {
       while (nextIndex < data.length) {
@@ -246,7 +251,7 @@ export class ExperimentManager {
         const item = data[index];
 
         try {
-          itemResultsByIndex[index] = await this.runItem({
+          const { itemResult, sampled } = await this.runItem({
             item,
             evaluators,
             task,
@@ -261,6 +266,8 @@ export class ExperimentManager {
               experimentId,
             datasetVersion: config.datasetVersion,
           });
+          itemResultsByIndex[index] = itemResult;
+          if (sampled) sampledItemCount++;
         } catch (reason) {
           const errorMessage =
             reason instanceof Error ? reason.message : String(reason);
@@ -318,13 +325,21 @@ export class ExperimentManager {
       );
 
       // Run-level scores attach to the experiment: on Langfuse the experiment
-      // ID is the dataset run ID, also for experiments on local data.
-      runEvaluations.forEach((runEval) =>
-        this.langfuseClient.score.create({
-          datasetRunId: experimentId,
-          ...runEval,
-        }),
-      );
+      // ID is the dataset run ID, also for experiments on local data. If no
+      // item was sampled, the experiment does not exist on Langfuse and the
+      // scores would be orphaned.
+      if (sampledItemCount > 0) {
+        runEvaluations.forEach((runEval) =>
+          this.langfuseClient.score.create({
+            datasetRunId: experimentId,
+            ...runEval,
+          }),
+        );
+      } else if (runEvaluations.length > 0) {
+        this.logger.debug(
+          "No experiment item was sampled. Skipping run-level scores.",
+        );
+      }
     }
 
     await this.langfuseClient.score.flush();
@@ -370,7 +385,8 @@ export class ExperimentManager {
    * @param params.task - The task function to execute
    * @param params.evaluators - Optional evaluators to run on the output
    *
-   * @returns Promise resolving to the item result with output, evaluations, and trace info
+   * @returns Promise resolving to the item result with output, evaluations, and trace info,
+   *   and whether the item's root span was sampled
    *
    * @throws {Error} When task execution fails (propagated from task function)
    *
@@ -398,10 +414,13 @@ export class ExperimentManager {
     task: ExperimentTask<Input, ExpectedOutput, Metadata>;
     evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
     datasetVersion?: string;
-  }): Promise<ExperimentItemResult<Input, ExpectedOutput, Metadata>> {
+  }): Promise<{
+    itemResult: ExperimentItemResult<Input, ExpectedOutput, Metadata>;
+    sampled: boolean;
+  }> {
     const { item, evaluators = [], task, experimentMetadata } = params;
 
-    const { output, traceId, observationId, datasetRunId } =
+    const { output, traceId, observationId, datasetRunId, sampled } =
       await startActiveObservation("experiment-item-run", async (span) => {
         // Extract experiment data
         const input = item.input;
@@ -490,6 +509,7 @@ export class ExperimentManager {
           traceId,
           observationId,
           datasetRunId,
+          sampled: span.otelSpan.isRecording(),
         };
       });
 
@@ -537,11 +557,14 @@ export class ExperimentManager {
     }
 
     return {
-      output,
-      evaluations: evals,
-      traceId,
-      datasetRunId,
-      item,
+      itemResult: {
+        output,
+        evaluations: evals,
+        traceId,
+        datasetRunId,
+        item,
+      },
+      sampled,
     };
   }
 

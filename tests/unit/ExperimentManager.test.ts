@@ -1,6 +1,13 @@
 import { ExperimentManager } from "@langfuse/client";
 import { createStableExperimentId, getGlobalLogger } from "@langfuse/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { trace } from "@opentelemetry/api";
+import {
+  AlwaysOffSampler,
+  AlwaysOnSampler,
+  BasicTracerProvider,
+  type Sampler,
+} from "@opentelemetry/sdk-trace-base";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -14,6 +21,11 @@ function deferred<T>(): Deferred<T> {
   });
 
   return { promise, resolve };
+}
+
+function registerTracerProvider(sampler: Sampler = new AlwaysOnSampler()) {
+  trace.disable();
+  trace.setGlobalTracerProvider(new BasicTracerProvider({ sampler }));
 }
 
 function createLangfuseClientMock(
@@ -119,7 +131,12 @@ describe("ExperimentManager concurrency", () => {
 });
 
 describe("ExperimentManager experiment ids", () => {
+  beforeEach(() => {
+    registerTracerProvider();
+  });
+
   afterEach(() => {
+    trace.disable();
     vi.restoreAllMocks();
   });
 
@@ -268,5 +285,47 @@ describe("ExperimentManager experiment ids", () => {
     expect(result.experimentUrl).toBe(
       `https://langfuse.test/project/project-1/experiments/results?baseline=${result.experimentId}`,
     );
+  });
+});
+
+describe("ExperimentManager without exported traces", () => {
+  afterEach(() => {
+    trace.disable();
+    vi.restoreAllMocks();
+  });
+
+  it("skips run-level scores when every item was sampled out", async () => {
+    registerTracerProvider(new AlwaysOffSampler());
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    const result = await createManager(langfuseClient).run({
+      name: "sampled-out-run",
+      data: [{ input: "a" }, { input: "b" }],
+      task: async ({ input }) => input,
+      runEvaluators: [async () => ({ name: "run-score", value: 1 })],
+    });
+
+    expect(result.runEvaluations).toEqual([{ name: "run-score", value: 1 }]);
+    expect(langfuseClient.score.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ datasetRunId: expect.anything() }),
+    );
+  });
+
+  it("does not look up the project id when tracing is disabled", async () => {
+    trace.disable();
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    const result = await createManager(langfuseClient).run({
+      name: "untraced-run",
+      runName: "my-run",
+      data: [datasetItem("item-1", "a")],
+      task: async ({ input }) => input,
+    });
+
+    expect(langfuseClient.getProjectId).not.toHaveBeenCalled();
+    expect(result.experimentUrl).toBeUndefined();
+    expect(result.itemResults).toHaveLength(1);
   });
 });
