@@ -76,7 +76,7 @@
     "zod": "^3.25.76"
   },
   "engines": {
-    "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
+    "node": "^22.13.0 || >=24.0.0"
   },
   "resolutions": {
     "@grpc/proto-loader@0.8.1>protobufjs": "7.6.4",

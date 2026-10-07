@@ -9,7 +9,7 @@
     "directory": "packages/otel"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "description": "Langfuse OpenTelemetry export helpers",
   "type": "module",
