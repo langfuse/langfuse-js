@@ -67,4 +67,39 @@ describe("OpenAI integration", () => {
       "gpt-test",
     );
   });
+
+  it("should still call OpenAI when generationMetadata exceeds the key limit", async () => {
+    const response = { id: "resp_2", model: "gpt-test", status: "completed" };
+    const client = {
+      responses: {
+        create: async (_params: unknown) => response,
+      },
+    };
+
+    const generationMetadata = Object.fromEntries(
+      Array.from({ length: MAX_OBSERVATION_METADATA_KEYS + 1 }, (_, i) => [
+        `key${i}`,
+        i,
+      ]),
+    );
+
+    const traced = observeOpenAI(client, {
+      generationName: "openai-config-metadata-limit",
+      generationMetadata,
+    });
+
+    await expect(
+      traced.responses.create({ model: "gpt-test", input: "hi" }),
+    ).resolves.toBe(response);
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const span = assertions.expectSpanWithName("openai-config-metadata-limit");
+    const metadata = JSON.parse(
+      span.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_METADATA
+      ] as string,
+    );
+    expect(metadata).toEqual({ status: "completed" });
+  });
 });

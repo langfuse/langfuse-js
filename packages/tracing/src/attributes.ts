@@ -124,6 +124,28 @@ const spanMetadata: WeakMap<Span, Record<string, unknown>> = ((
   Record<string, unknown>
 >;
 
+/**
+ * Reads metadata that was written to the span without going through
+ * {@link setObservationAttributes}, e.g. by `@langfuse/vercel-ai-sdk`, so it
+ * is merged instead of overwritten.
+ */
+function readSpanMetadata(span: Span): Record<string, unknown> | undefined {
+  // SDK spans expose their attributes, API-only spans don't
+  const value = (span as Partial<{ attributes: Attributes }>).attributes?.[
+    LangfuseOtelSpanAttributes.OBSERVATION_METADATA
+  ];
+
+  if (typeof value !== "string") return undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+
+    return isPlainObject(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -149,7 +171,7 @@ export function setObservationAttributes(
   options?: { omitType?: boolean },
 ): void {
   let metadata: unknown = attributes.metadata;
-  const previous = spanMetadata.get(span);
+  const previous = spanMetadata.get(span) ?? readSpanMetadata(span);
 
   if (previous && isPlainObject(metadata)) {
     metadata = {

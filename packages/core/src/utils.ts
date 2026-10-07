@@ -136,10 +136,33 @@ export function serializeValue(value: any): string | undefined {
 }
 
 /**
+ * Counts the top-level metadata keys that count towards
+ * {@link MAX_OBSERVATION_METADATA_KEYS}. Keys whose values are `null`,
+ * `undefined`, functions or symbols are not written, so they don't count.
+ *
+ * @param metadata - Metadata to count keys of
+ * @returns Number of keys that would be written
+ * @internal
+ */
+export function countObservationMetadataKeys(metadata: unknown): number {
+  if (typeof metadata !== "object" || metadata === null) return 0;
+  if (Array.isArray(metadata)) return 0;
+
+  return Object.values(metadata).filter(isWrittenMetadataValue).length;
+}
+
+function isWrittenMetadataValue(value: unknown): boolean {
+  return (
+    value != null && typeof value !== "function" && typeof value !== "symbol"
+  );
+}
+
+/**
  * Serializes observation metadata into the single JSON value written to the
  * `langfuse.observation.metadata` span attribute.
  *
- * Top-level keys with `null` or `undefined` values are skipped. Values are
+ * Top-level keys with `null`, `undefined`, function or symbol values are
+ * skipped. Values are
  * serialized one by one, so a value that fails to serialize is replaced with
  * `"<failed to serialize>"` instead of dropping the whole metadata object.
  *
@@ -161,7 +184,9 @@ export function serializeObservationMetadata(
     }
   }
 
-  const entries = Object.entries(metadata).filter(([_, v]) => v != null);
+  const entries = Object.entries(metadata).filter(([_, v]) =>
+    isWrittenMetadataValue(v),
+  );
 
   if (entries.length > MAX_OBSERVATION_METADATA_KEYS) {
     throw new Error(

@@ -1,4 +1,8 @@
-import { getGlobalLogger } from "@langfuse/core";
+import {
+  countObservationMetadataKeys,
+  getGlobalLogger,
+  MAX_OBSERVATION_METADATA_KEYS,
+} from "@langfuse/core";
 import {
   LangfuseGeneration,
   type LangfuseGenerationAttributes,
@@ -83,6 +87,17 @@ const wrapMethod = <T extends GenericMethod>(
             : undefined,
       };
 
+      // Too many keys would make startObservation throw before the OpenAI
+      // call is made
+      const metadataKeyCount = countObservationMetadataKeys(finalMetadata);
+      const metadataTooLarge = metadataKeyCount > MAX_OBSERVATION_METADATA_KEYS;
+
+      if (metadataTooLarge) {
+        getGlobalLogger().warn(
+          `Dropping observation metadata: it has ${metadataKeyCount} keys, which exceeds the maximum of ${MAX_OBSERVATION_METADATA_KEYS}.`,
+        );
+      }
+
       const generation = startObservation(
         config?.generationName ?? "OpenAI-completion",
         {
@@ -90,7 +105,7 @@ const wrapMethod = <T extends GenericMethod>(
           input,
           modelParameters: finalModelParams,
           prompt: config?.langfusePrompt,
-          metadata: finalMetadata,
+          metadata: metadataTooLarge ? undefined : finalMetadata,
         },
         {
           asType: "generation",

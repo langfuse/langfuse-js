@@ -117,6 +117,24 @@ describe("Observation metadata", () => {
     });
   });
 
+  it("should merge with metadata written directly to the span attribute", async () => {
+    // e.g. @langfuse/vercel-ai-sdk writes the attribute without the tracing SDK
+    await startActiveObservation("direct-attribute-span", async (span) => {
+      span.otelSpan.setAttribute(
+        LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
+        JSON.stringify({ feature: "chat" }),
+      );
+      updateActiveObservation({ metadata: { step: 2 } });
+    });
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("direct-attribute-span")).toEqual({
+      feature: "chat",
+      step: 2,
+    });
+  });
+
   it("should keep earlier values for keys updated with null or undefined", async () => {
     const span = startObservation("null-span", {
       metadata: { a: 1, b: 2 },
@@ -166,6 +184,22 @@ describe("Observation metadata", () => {
     expect(
       Object.keys(exportedMetadata("max-keys-span") as object),
     ).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
+  });
+
+  it("should not count function-valued keys towards the limit", async () => {
+    const span = startObservation("function-keys-span", {
+      metadata: {
+        ...manyKeys(MAX_OBSERVATION_METADATA_KEYS),
+        callback: () => "ignored",
+      },
+    });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const metadata = exportedMetadata("function-keys-span") as object;
+    expect(Object.keys(metadata)).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
+    expect(metadata).not.toHaveProperty("callback");
   });
 
   it(`should throw when metadata exceeds ${MAX_OBSERVATION_METADATA_KEYS} keys`, () => {
