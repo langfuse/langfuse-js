@@ -28,7 +28,7 @@ export interface Observation {
   /** The version of the observation */
   version: string | null;
   /** Additional metadata of the observation */
-  metadata?: unknown;
+  metadata: Record<string, unknown>;
   /** The output data of the observation */
   output?: unknown;
   /** (Deprecated. Use usageDetails and costDetails instead.) The usage data of the observation */
