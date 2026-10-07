@@ -21,8 +21,8 @@ export interface Trace {
   version: string | null;
   /** The user identifier associated with the trace */
   userId: string | null;
-  /** The metadata associated with the trace. Can be any JSON. */
-  metadata?: unknown;
+  /** The metadata associated with the trace. Values can be any JSON; non-object metadata sent at ingestion is returned under the `metadata` key. */
+  metadata?: Record<string, unknown>;
   /** The tags associated with the trace. */
   tags: string[];
   /** Public traces are accessible via url without login */
