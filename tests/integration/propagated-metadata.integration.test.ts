@@ -112,7 +112,6 @@ describe("propagateAttributes metadata serialization", () => {
       undefinedValue: undefined,
       fn: () => "x",
       symbol: Symbol("s"),
-      bigint: BigInt(1),
       circular,
       nan: Number.NaN,
       nestedInfinity: { score: Number.POSITIVE_INFINITY },
@@ -123,7 +122,6 @@ describe("propagateAttributes metadata serialization", () => {
       "undefinedValue",
       "fn",
       "symbol",
-      "bigint",
       "circular",
       "nan",
       "nestedInfinity",
@@ -133,6 +131,18 @@ describe("propagateAttributes metadata serialization", () => {
         expect.stringContaining(`'metadata.${key}' is not JSON-serializable`),
       );
     }
+  });
+
+  it("serializes BigInt values with their exact digits", async () => {
+    const { child } = await runWithMetadata({
+      big: 12345678901234567890n,
+      nested: { ids: [9007199254740993n] },
+    });
+
+    expect(child.attributes[metadataKey("big")]).toBe("12345678901234567890");
+    expect(child.attributes[metadataKey("nested")]).toBe(
+      '{"ids":[9007199254740993]}',
+    );
   });
 
   it("applies the 200 character limit after serialization", async () => {
