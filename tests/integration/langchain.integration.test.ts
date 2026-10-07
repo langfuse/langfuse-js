@@ -13,11 +13,13 @@ import {
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import {
   AIMessage,
+  AIMessageChunk,
   FunctionMessage,
   HumanMessage,
   ToolMessage,
 } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
+import type { ChatGeneration } from "@langchain/core/outputs";
 import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -425,5 +427,53 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       '{"content":"1874.32","additional_kwargs":{},"role":"function","name":"get_debt"}',
     );
+  });
+
+  it("should read usage and model name from streamed AIMessageChunk generations", async () => {
+    const handler = new CallbackHandler();
+    const runId = "generation-with-chunk-usage";
+
+    await handler.handleChatModelStart(
+      { id: ["ChatOpenAI"] } as any,
+      [[new HumanMessage("hi")]],
+      runId,
+      undefined,
+      { invocation_params: {} },
+    );
+    await handler.handleLLMEnd(
+      {
+        generations: [
+          [
+            {
+              text: "hello",
+              message: new AIMessageChunk({
+                content: "hello",
+                usage_metadata: {
+                  input_tokens: 10,
+                  output_tokens: 5,
+                  total_tokens: 15,
+                },
+                response_metadata: { model_name: "gpt-4.1-mini-2025-04-14" },
+              }),
+            } as ChatGeneration,
+          ],
+        ],
+      },
+      runId,
+    );
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const generation = assertions.expectSpanWithName("ChatOpenAI");
+    expect(
+      generation.attributes[LangfuseOtelSpanAttributes.OBSERVATION_MODEL],
+    ).toBe("gpt-4.1-mini-2025-04-14");
+    expect(
+      JSON.parse(
+        generation.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS
+        ] as string,
+      ),
+    ).toEqual({ input: 10, output: 5, total: 15 });
   });
 });

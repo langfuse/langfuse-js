@@ -4,7 +4,6 @@ import type { Document } from "@langchain/core/documents";
 import type { Serialized } from "@langchain/core/load/serializable";
 import {
   AIMessage,
-  AIMessageChunk,
   BaseMessage,
   type UsageMetadata,
   type BaseMessageFields,
@@ -145,7 +144,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof inputs === "object" &&
         "input" in inputs &&
         Array.isArray(inputs["input"]) &&
-        inputs["input"].every((m: unknown) => m instanceof BaseMessage)
+        inputs["input"].every((m: unknown) => BaseMessage.isInstance(m))
       ) {
         finalInput = inputs["input"].map((m: BaseMessage) =>
           this.extractChatMessageContent(m),
@@ -154,7 +153,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof inputs === "object" &&
         "messages" in inputs &&
         Array.isArray(inputs["messages"]) &&
-        inputs["messages"].every((m: unknown) => m instanceof BaseMessage)
+        inputs["messages"].every((m: unknown) => BaseMessage.isInstance(m))
       ) {
         finalInput = inputs["messages"].map((m: BaseMessage) =>
           this.extractChatMessageContent(m),
@@ -424,7 +423,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof outputs === "object" &&
         "messages" in outputs &&
         Array.isArray(outputs["messages"]) &&
-        outputs["messages"].every((m: unknown) => m instanceof BaseMessage)
+        outputs["messages"].every((m: unknown) => BaseMessage.isInstance(m))
       ) {
         finalOutput = {
           messages: outputs.messages.map((message: BaseMessage) =>
@@ -925,14 +924,9 @@ export class CallbackHandler extends BaseCallbackHandler {
     generation: Generation,
   ): UsageMetadata | undefined {
     try {
-      const usageMetadata =
-        "message" in generation &&
-        (generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk)
-          ? generation["message"].usage_metadata
-          : undefined;
-
-      return usageMetadata;
+      return "message" in generation && AIMessage.isInstance(generation.message)
+        ? generation.message.usage_metadata
+        : undefined;
     } catch (err) {
       this.logger.debug(`Error extracting usage metadata: ${err}`);
 
@@ -942,10 +936,8 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   private extractModelNameFromMetadata(generation: any): string | undefined {
     try {
-      return "message" in generation &&
-        (generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk)
-        ? generation["message"].response_metadata.model_name
+      return "message" in generation && AIMessage.isInstance(generation.message)
+        ? generation.message.response_metadata.model_name
         : undefined;
     } catch {}
   }
@@ -955,14 +947,14 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): LlmMessage | AnonymousLlmMessage | MessageContent {
     let response = undefined;
 
-    if (message.getType() === "human") {
+    if (message.type === "human") {
       response = { content: message.content, role: "user" };
-    } else if (message.getType() === "generic") {
+    } else if (message.type === "generic") {
       response = {
         content: message.content,
         role: "human",
       };
-    } else if (message.getType() === "ai") {
+    } else if (message.type === "ai") {
       response = { content: message.content, role: "assistant" };
 
       if (
@@ -979,16 +971,16 @@ export class CallbackHandler extends BaseCallbackHandler {
         (response as any)["tool_calls"] =
           message["additional_kwargs"]["tool_calls"];
       }
-    } else if (message.getType() === "system") {
+    } else if (message.type === "system") {
       response = { content: message.content, role: "system" };
-    } else if (message.getType() === "function") {
+    } else if (message.type === "function") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
         role: "function",
         name: message.name,
       };
-    } else if (message.getType() === "tool") {
+    } else if (message.type === "tool") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
