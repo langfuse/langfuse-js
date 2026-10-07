@@ -197,18 +197,11 @@ describe("Langfuse Datasets E2E", () => {
       name: result.runName,
       datasetId: null,
     });
-    // The description is a root-span attribute, so check it on each item.
-    const experimentItems = await assertions.waitForExperimentItems(
-      result.experimentId,
-      {
-        fromStartTime,
-        count: result.itemResults.length,
-        fields: "core,experimentMetadata",
-      },
-    );
-    expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
-      result.itemResults.map(() => "Country capital experiment"),
-    );
+    await assertions.waitForExperimentItemDescriptions(result.experimentId, {
+      fromStartTime,
+      count: result.itemResults.length,
+      description: "Country capital experiment",
+    });
 
     const items = await assertions.waitForExperimentItems(result.experimentId, {
       fromStartTime,
@@ -302,18 +295,11 @@ describe("Langfuse Datasets E2E", () => {
       name: result.runName,
       datasetId: fetchedDataset.id,
     });
-    // The description is a root-span attribute, so check it on each item.
-    const experimentItems = await assertions.waitForExperimentItems(
-      result.experimentId,
-      {
-        fromStartTime,
-        count: result.itemResults.length,
-        fields: "core,experimentMetadata",
-      },
-    );
-    expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
-      result.itemResults.map(() => "Country capital experiment"),
-    );
+    await assertions.waitForExperimentItemDescriptions(result.experimentId, {
+      fromStartTime,
+      count: result.itemResults.length,
+      description: "Country capital experiment",
+    });
 
     // Each experiment item should correspond to one of our experiment results
     const items = await assertions.waitForExperimentItems(result.experimentId, {
@@ -383,18 +369,11 @@ describe("Langfuse Datasets E2E", () => {
       name: customRunName,
       datasetId: fetchedDataset.id,
     });
-    // The description is a root-span attribute, so check it on each item.
-    const experimentItems = await assertions.waitForExperimentItems(
-      result.experimentId,
-      {
-        fromStartTime,
-        count: result.itemResults.length,
-        fields: "core,experimentMetadata",
-      },
-    );
-    expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
-      result.itemResults.map(() => "Testing custom run name"),
-    );
+    await assertions.waitForExperimentItemDescriptions(result.experimentId, {
+      fromStartTime,
+      count: result.itemResults.length,
+      description: "Testing custom run name",
+    });
   });
 
   it("should support custom runName with local datasets", async () => {
@@ -976,18 +955,11 @@ describe("Langfuse Datasets E2E", () => {
         name: result.runName,
         metadata: { testKey: "testValue", experimentVersion: "1.0" },
       });
-      // The description is a root-span attribute, so check it on each item.
-      const experimentItems = await assertions.waitForExperimentItems(
-        result.experimentId,
-        {
-          fromStartTime,
-          count: result.itemResults.length,
-          fields: "core,experimentMetadata",
-        },
-      );
-      expect(experimentItems.map((item) => item.experimentDescription)).toEqual(
-        result.itemResults.map(() => "Testing metadata preservation"),
-      );
+      await assertions.waitForExperimentItemDescriptions(result.experimentId, {
+        fromStartTime,
+        count: result.itemResults.length,
+        description: "Testing metadata preservation",
+      });
     });
   });
 

@@ -59,9 +59,13 @@ export async function pollUntil<T>(
   }
 }
 
-/** Observation and experiment IO is returned as raw strings; parse JSON when possible. */
+/**
+ * Observation and experiment IO is returned as raw strings; parse JSON objects
+ * and arrays. The SDK sends string IO unquoted, so text such as "2" or "true"
+ * stays a string.
+ */
 export function parseIO(value: unknown): unknown {
-  if (typeof value !== "string") return value;
+  if (typeof value !== "string" || !/^\s*[[{]/.test(value)) return value;
 
   try {
     return JSON.parse(value);
@@ -131,7 +135,23 @@ export class ServerAssertions {
       cursor = page.meta.cursor;
     } while (cursor);
 
-    return observations;
+    // The events table can briefly return several rows for one span until
+    // ClickHouse merges them; keep the most recently updated row per id.
+    const latestById = new Map<string, ObservationV2>();
+    for (const observation of observations) {
+      const current = latestById.get(observation.id);
+      if (
+        !current ||
+        (observation.updatedAt ?? observation.startTime) >=
+          (current.updatedAt ?? current.startTime)
+      ) {
+        latestById.set(observation.id, observation);
+      }
+    }
+
+    return [...latestById.values()].sort((a, b) =>
+      a.startTime.localeCompare(b.startTime),
+    );
   }
 
   /**
@@ -241,6 +261,36 @@ export class ServerAssertions {
     return experiments[0];
   }
 
+  /**
+   * Waits until `count` distinct items of the experiment carry `description`.
+   * The description is a root-span attribute, so it is checked per item; rows
+   * can be duplicated until ClickHouse merges them.
+   */
+  async waitForExperimentItemDescriptions(
+    experimentId: string,
+    options: {
+      fromStartTime: string;
+      count: number;
+      description: string;
+    } & PollOptions,
+  ): Promise<void> {
+    const { fromStartTime, count, description, timeoutMs } = options;
+    const describedItemCount = (items: ExperimentItem[]) =>
+      new Set(
+        items
+          .filter((item) => item.experimentDescription === description)
+          .map((item) => item.experimentItemId),
+      ).size;
+
+    await this.waitForExperimentItems(experimentId, {
+      fromStartTime,
+      count,
+      fields: "core,experimentMetadata",
+      until: (items) => describedItemCount(items) >= count,
+      timeoutMs,
+    });
+  }
+
   /** Waits until the experiment has at least `count` items (default 1). */
   async waitForExperimentItems(
     experimentId: string,
@@ -272,12 +322,17 @@ export class ServerAssertions {
       return items;
     };
 
-    return pollUntil(
+    const items = await pollUntil(
       listItems,
-      (items) => items.length >= count && (until?.(items) ?? true),
+      (items) =>
+        new Set(items.map((item) => item.id)).size >= count &&
+        (until?.(items) ?? true),
       `${count} item(s) in experiment ${experimentId}`,
       { timeoutMs },
     );
+
+    // Rows can be duplicated until ClickHouse merges them; keep one per id.
+    return [...new Map(items.map((item) => [item.id, item])).values()];
   }
 
   expectObservation(
