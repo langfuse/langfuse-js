@@ -164,10 +164,13 @@ export interface LangfuseSpanProcessorParams {
    * Compression for span export requests: `"gzip"` or `"none"`.
    * Can also be set via LANGFUSE_OTEL_COMPRESSION environment variable.
    * When unset, falls back to the OTEL_EXPORTER_OTLP_TRACES_COMPRESSION and
-   * OTEL_EXPORTER_OTLP_COMPRESSION environment variables, then to no compression.
+   * OTEL_EXPORTER_OTLP_COMPRESSION environment variables, then to `"gzip"`.
+   * Set any of them to `"none"` to disable compression.
    *
    * Ignored when a custom `exporter` is provided. Only takes effect on Node.js and Bun;
-   * browser and edge runtimes ignore it. Requires Langfuse server v3.30.0 or later.
+   * browser and edge runtimes ignore it. Every Langfuse v4 server accepts gzip.
+   *
+   * @defaultValue "gzip"
    */
   compression?: "gzip" | "none";
 
@@ -302,12 +305,15 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         ? !["false", "0"].includes(envMediaUploadEnabled.toLowerCase())
         : true);
     const compression =
-      params?.compression !== undefined
+      (params?.compression !== undefined
         ? resolveCompression(params.compression, "compression")
-        : resolveCompression(
-            getEnv("LANGFUSE_OTEL_COMPRESSION"),
-            "LANGFUSE_OTEL_COMPRESSION",
-          );
+        : undefined) ??
+      resolveCompression(
+        getEnv("LANGFUSE_OTEL_COMPRESSION"),
+        "LANGFUSE_OTEL_COMPRESSION",
+      ) ??
+      getOtelCompressionFromEnv() ??
+      CompressionAlgorithm.GZIP;
 
     const exporter = params?.exporter
       ? params.exporter
@@ -637,8 +643,28 @@ function resolveCompression(
   }
 
   getGlobalLogger().warn(
-    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the OTEL_EXPORTER_OTLP_*COMPRESSION environment variables.`,
+    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the next compression setting, then gzip.`,
   );
+
+  return undefined;
+}
+
+/**
+ * Reads the OpenTelemetry compression environment variables with the same
+ * precedence as the OTLP exporter, ignoring case. Returns undefined outside
+ * Node.js-like runtimes or when neither variable holds a valid value.
+ */
+function getOtelCompressionFromEnv(): CompressionAlgorithm | undefined {
+  if (typeof process === "undefined" || !process.env) return undefined;
+
+  for (const key of [
+    "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION",
+    "OTEL_EXPORTER_OTLP_COMPRESSION",
+  ]) {
+    const value = process.env[key]?.trim().toLowerCase();
+    if (value === CompressionAlgorithm.GZIP) return CompressionAlgorithm.GZIP;
+    if (value === CompressionAlgorithm.NONE) return CompressionAlgorithm.NONE;
+  }
 
   return undefined;
 }
