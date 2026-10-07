@@ -55,7 +55,7 @@ import * as LangfuseAPI from "../../../index.js";
  *         type: "stringObject",
  *         column: "metadata",
  *         key: "customerTier",
- *         operator: LangfuseAPI.EvaluationRuleStringFilterOperator.Equals,
+ *         operator: LangfuseAPI.EvaluationRuleStringObjectFilterOperator.Equals,
  *         value: "enterprise"
  *     }
  *
