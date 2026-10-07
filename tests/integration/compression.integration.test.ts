@@ -7,7 +7,7 @@ import {
   type LangfuseSpanProcessorParams,
 } from "@langfuse/otel";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type ExportRequest = { contentEncoding?: string; body: Buffer };
 
@@ -64,7 +64,19 @@ function exportedSpanName({ contentEncoding, body }: ExportRequest): string {
     .spans[0].name;
 }
 
+const COMPRESSION_ENV_VARS = [
+  "LANGFUSE_OTEL_COMPRESSION",
+  "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION",
+  "OTEL_EXPORTER_OTLP_COMPRESSION",
+];
+
 describe("LangfuseSpanProcessor export compression", () => {
+  beforeEach(() => {
+    for (const key of COMPRESSION_ENV_VARS) {
+      vi.stubEnv(key, "");
+    }
+  });
+
   afterEach(() => {
     vi.unstubAllEnvs();
   });
@@ -75,6 +87,62 @@ describe("LangfuseSpanProcessor export compression", () => {
     env?: Record<string, string>;
     expectedEncoding: string | undefined;
   }>([
+    {
+      name: "defaults to gzip when nothing is configured",
+      expectedEncoding: "gzip",
+    },
+    {
+      name: "invalid LANGFUSE_OTEL_COMPRESSION falls back to gzip",
+      env: { LANGFUSE_OTEL_COMPRESSION: "brotli" },
+      expectedEncoding: "gzip",
+    },
+    {
+      name: 'compression option "none" disables gzip',
+      params: { compression: "none" },
+      expectedEncoding: undefined,
+    },
+    {
+      name: 'LANGFUSE_OTEL_COMPRESSION "none" disables gzip',
+      env: { LANGFUSE_OTEL_COMPRESSION: " NONE " },
+      expectedEncoding: undefined,
+    },
+    {
+      name: 'OTEL_EXPORTER_OTLP_TRACES_COMPRESSION "none" disables gzip',
+      env: { OTEL_EXPORTER_OTLP_TRACES_COMPRESSION: "none" },
+      expectedEncoding: undefined,
+    },
+    {
+      name: 'OTEL_EXPORTER_OTLP_COMPRESSION "none" disables gzip',
+      env: { OTEL_EXPORTER_OTLP_COMPRESSION: "none" },
+      expectedEncoding: undefined,
+    },
+    {
+      name: "OTEL_EXPORTER_OTLP_COMPRESSION values are case-insensitive",
+      env: { OTEL_EXPORTER_OTLP_COMPRESSION: " NONE " },
+      expectedEncoding: undefined,
+    },
+    {
+      name: "an invalid compression option falls back to LANGFUSE_OTEL_COMPRESSION",
+      params: { compression: "brotli" as never },
+      env: { LANGFUSE_OTEL_COMPRESSION: "none" },
+      expectedEncoding: undefined,
+    },
+    {
+      name: "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION overrides OTEL_EXPORTER_OTLP_COMPRESSION",
+      env: {
+        OTEL_EXPORTER_OTLP_TRACES_COMPRESSION: "none",
+        OTEL_EXPORTER_OTLP_COMPRESSION: "gzip",
+      },
+      expectedEncoding: undefined,
+    },
+    {
+      name: "LANGFUSE_OTEL_COMPRESSION overrides OTEL_EXPORTER_OTLP_COMPRESSION",
+      env: {
+        LANGFUSE_OTEL_COMPRESSION: "gzip",
+        OTEL_EXPORTER_OTLP_COMPRESSION: "none",
+      },
+      expectedEncoding: "gzip",
+    },
     {
       name: "compression option enables gzip",
       params: { compression: "gzip" },
@@ -96,11 +164,6 @@ describe("LangfuseSpanProcessor export compression", () => {
       params: { compression: "none" },
       env: { OTEL_EXPORTER_OTLP_TRACES_COMPRESSION: "gzip" },
       expectedEncoding: undefined,
-    },
-    {
-      name: "unset falls back to OTEL_EXPORTER_OTLP_TRACES_COMPRESSION",
-      env: { OTEL_EXPORTER_OTLP_TRACES_COMPRESSION: "gzip" },
-      expectedEncoding: "gzip",
     },
   ])("$name", async ({ params, env = {}, expectedEncoding }) => {
     for (const [key, value] of Object.entries(env)) {

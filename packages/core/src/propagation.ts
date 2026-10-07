@@ -169,12 +169,17 @@ export interface PropagateAttributesParams {
 
   /**
    * Additional key-value metadata to propagate to all spans.
-   * - Keys and values must be strings
-   * - All values must be ≤200 characters
+   * - Values may be any JSON-serializable value. Strings are kept as-is;
+   *   all other values are serialized with `JSON.stringify` (e.g. `42` → `"42"`,
+   *   `null` → `"null"`, `[1, "a"]` → `'[1,"a"]'`)
+   * - Values that cannot be serialized (e.g. `undefined`, functions, circular
+   *   objects, NaN/Infinity) are dropped with a warning; BigInt keeps its exact
+   *   digits (e.g. `12345678901234567890n` → `"12345678901234567890"`)
+   * - Serialized values must be ≤200 characters, otherwise they are dropped with a warning
    * - Use for dimensions like internal correlating identifiers
-   * - AVOID: large payloads, sensitive data, non-string values (will be dropped with warning)
+   * - AVOID: large payloads, sensitive data
    */
-  metadata?: Record<string, string>;
+  metadata?: Record<string, unknown>;
 
   /**
    * Version identifier for parts of your application that are independently versioned, e.g. agents
@@ -359,8 +364,9 @@ export interface PropagateAttributesParams {
  * ```
  *
  * @remarks
- * - **Validation**: Attribute values (userId, sessionId, metadata values) must be
- *   strings ≤200 characters. Environment must be a lowercase alphanumeric string
+ * - **Validation**: Attribute values (userId, sessionId, version, traceName, tags)
+ *   must be strings ≤200 characters. Non-string metadata values are serialized
+ *   with `JSON.stringify` and must be ≤200 characters after serialization. Environment must be a lowercase alphanumeric string
  *   with optional hyphens or underscores, must be ≤40 characters, and must not start
  *   with `langfuse`. Invalid values will be dropped with a warning logged.
  * - **OpenTelemetry**: This uses OpenTelemetry context propagation under the hood,
@@ -492,17 +498,19 @@ export function propagateAttributes<
 
   // Validate and set metadata
   if (metadata) {
-    // Filter metadata to only include valid string values
     const validatedMetadata: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(metadata)) {
+      const serialized = serializePropagatedMetadataValue(key, value);
+
       if (
+        serialized !== undefined &&
         isValidPropagatedString({
-          value: value,
+          value: serialized,
           attributeName: `metadata.${key}`,
         })
       ) {
-        validatedMetadata[key] = value;
+        validatedMetadata[key] = serialized;
       }
     }
 
@@ -863,6 +871,48 @@ function getContextMergedMetadata(
   } else {
     return newMetadata;
   }
+}
+
+const rawJSON = (JSON as { rawJSON?: (text: string) => unknown }).rawJSON;
+
+function serializePropagatedMetadataValue(
+  key: string,
+  value: unknown,
+): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  let serialized: string | undefined;
+
+  try {
+    // JSON turns NaN and ±Infinity into null; treat them as unserializable
+    // instead so a computed NaN is not indistinguishable from a real null.
+    serialized = JSON.stringify(value, (_key, nested) => {
+      if (typeof nested === "number" && !Number.isFinite(nested)) {
+        throw new TypeError("Non-finite number");
+      }
+      // BigInt keeps its exact digits as an unquoted JSON number, matching
+      // the Python SDK. Runtimes without JSON.rawJSON drop the value.
+      if (typeof nested === "bigint" && rawJSON) {
+        return rawJSON(nested.toString());
+      }
+
+      return nested;
+    });
+  } catch {
+    serialized = undefined;
+  }
+
+  if (typeof serialized !== "string") {
+    getGlobalLogger().warn(
+      `Propagated attribute 'metadata.${key}' is not JSON-serializable. Dropping value.`,
+    );
+
+    return undefined;
+  }
+
+  return serialized;
 }
 
 function isValidPropagatedString(params: {
