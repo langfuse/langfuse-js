@@ -173,7 +173,8 @@ export interface PropagateAttributesParams {
    *   all other values are serialized with `JSON.stringify` (e.g. `42` → `"42"`,
    *   `null` → `"null"`, `[1, "a"]` → `'[1,"a"]'`)
    * - Values that cannot be serialized (e.g. `undefined`, functions, circular
-   *   objects, BigInt) are dropped with a warning
+   *   objects, NaN/Infinity) are dropped with a warning; BigInt keeps its exact
+   *   digits (e.g. `12345678901234567890n` → `"12345678901234567890"`)
    * - Serialized values must be ≤200 characters, otherwise they are dropped with a warning
    * - Use for dimensions like internal correlating identifiers
    * - AVOID: large payloads, sensitive data
@@ -872,6 +873,8 @@ function getContextMergedMetadata(
   }
 }
 
+const rawJSON = (JSON as { rawJSON?: (text: string) => unknown }).rawJSON;
+
 function serializePropagatedMetadataValue(
   key: string,
   value: unknown,
@@ -888,6 +891,11 @@ function serializePropagatedMetadataValue(
     serialized = JSON.stringify(value, (_key, nested) => {
       if (typeof nested === "number" && !Number.isFinite(nested)) {
         throw new TypeError("Non-finite number");
+      }
+      // BigInt keeps its exact digits as an unquoted JSON number, matching
+      // the Python SDK. Runtimes without JSON.rawJSON drop the value.
+      if (typeof nested === "bigint" && rawJSON) {
+        return rawJSON(nested.toString());
       }
 
       return nested;
