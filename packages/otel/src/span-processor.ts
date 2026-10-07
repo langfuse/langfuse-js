@@ -269,6 +269,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       getEnv("LANGFUSE_BASE_URL") ??
       "https://cloud.langfuse.com";
 
+    if (
+      !params?.baseUrl &&
+      !getEnv("LANGFUSE_BASE_URL") &&
+      getEnv("LANGFUSE_BASEURL")
+    ) {
+      logger.error(
+        "LANGFUSE_BASEURL is no longer supported and is ignored; rename it to LANGFUSE_BASE_URL. Falling back to https://cloud.langfuse.com.",
+      );
+    }
+
     if (!params?.exporter && !publicKey) {
       logger.warn(
         "No exporter configured and no public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Span exports will fail.",

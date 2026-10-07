@@ -209,6 +209,16 @@ export class LangfuseClient {
       getEnv("LANGFUSE_BASE_URL") ??
       "https://cloud.langfuse.com";
 
+    if (
+      !params?.baseUrl &&
+      !getEnv("LANGFUSE_BASE_URL") &&
+      getEnv("LANGFUSE_BASEURL")
+    ) {
+      logger.error(
+        "LANGFUSE_BASEURL is no longer supported and is ignored; rename it to LANGFUSE_BASE_URL. Falling back to https://cloud.langfuse.com.",
+      );
+    }
+
     if (!publicKey) {
       logger.warn(
         "No public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Client operations will fail.",

@@ -1,4 +1,5 @@
 import { LangfuseClient } from "@langfuse/client";
+import { getGlobalLogger } from "@langfuse/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("LangfuseClient", () => {
@@ -40,6 +41,9 @@ describe("LangfuseClient", () => {
   it("reads the base URL from LANGFUSE_BASE_URL and ignores LANGFUSE_BASEURL", () => {
     vi.stubEnv("LANGFUSE_BASEURL", "http://legacy.example.com");
     vi.stubEnv("LANGFUSE_BASE_URL", "");
+    const error = vi
+      .spyOn(getGlobalLogger(), "error")
+      .mockImplementation(() => {});
 
     const defaultClient = new LangfuseClient({
       publicKey: "pk-test",
@@ -48,6 +52,10 @@ describe("LangfuseClient", () => {
     expect((defaultClient as unknown as { baseUrl: string }).baseUrl).toBe(
       "https://cloud.langfuse.com",
     );
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining("LANGFUSE_BASEURL is no longer supported"),
+    );
+    error.mockClear();
 
     vi.stubEnv("LANGFUSE_BASE_URL", "http://current.example.com");
 
@@ -58,5 +66,7 @@ describe("LangfuseClient", () => {
     expect((envClient as unknown as { baseUrl: string }).baseUrl).toBe(
       "http://current.example.com",
     );
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 });
