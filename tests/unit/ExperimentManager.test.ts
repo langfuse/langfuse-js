@@ -41,10 +41,10 @@ function createManager(
   return new ExperimentManager({ langfuseClient: langfuseClient as never });
 }
 
-function datasetItem(id: string, input: string) {
+function datasetItem(id: string, input: string, datasetId = "dataset-1") {
   return {
     id,
-    datasetId: "dataset-1",
+    datasetId,
     input,
     expectedOutput: `${input}-expected`,
   } as never;
@@ -209,6 +209,64 @@ describe("ExperimentManager experiment ids", () => {
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining("Failed to fetch the Langfuse project ID"),
       expect.any(Error),
+    );
+  });
+
+  it("gives each dataset its own experiment id when data mixes datasets", async () => {
+    const warn = vi
+      .spyOn(getGlobalLogger(), "warn")
+      .mockImplementation(() => {});
+
+    const result = await createManager().run({
+      name: "mixed-run",
+      runName: "my-run",
+      data: [
+        datasetItem("item-1", "a", "dataset-1"),
+        datasetItem("item-2", "b", "dataset-2"),
+      ],
+      task: async ({ input }) => input,
+    });
+
+    const [first, second] = await Promise.all(
+      ["dataset-1", "dataset-2"].map((datasetId) =>
+        createStableExperimentId({
+          projectId: "project-1",
+          datasetId,
+          runName: "my-run",
+        }),
+      ),
+    );
+    expect(result.experimentId).toBe(first);
+    expect(result.itemResults.map((r) => r.datasetRunId)).toEqual([
+      first,
+      second,
+    ]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("items from 2 datasets"),
+    );
+  });
+
+  it("starts local-data items without waiting for the project id lookup", async () => {
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const lookup = deferred<string>();
+    const langfuseClient = createLangfuseClientMock(() => lookup.promise);
+    let taskStarted = false;
+
+    const runPromise = createManager(langfuseClient).run({
+      name: "local-run",
+      data: [{ input: "a" }],
+      task: async ({ input }) => {
+        taskStarted = true;
+        return input;
+      },
+    });
+
+    await vi.waitFor(() => expect(taskStarted).toBe(true));
+    lookup.resolve("project-1");
+    const result = await runPromise;
+
+    expect(result.experimentUrl).toBe(
+      `https://langfuse.test/project/project-1/experiments/results?baseline=${result.experimentId}`,
     );
   });
 });
