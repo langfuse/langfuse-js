@@ -312,15 +312,36 @@ export class LangfuseClient {
    * ```
    */
   public async getTraceUrl(traceId: string) {
-    let projectId = this.projectId;
-
-    if (!projectId) {
-      projectId = (await this.api.projects.get()).data[0].id;
-      this.projectId = projectId;
-    }
+    const projectId = await this.getProjectId();
 
     const traceUrl = `${this.baseUrl}/project/${projectId}/traces/${traceId}`;
 
     return traceUrl;
+  }
+
+  /**
+   * Generates a URL to view an experiment in the Langfuse UI.
+   *
+   * @param experimentId - The ID of the experiment, e.g. `ExperimentResult.experimentId`
+   * @returns Promise that resolves to the experiment results URL
+   */
+  public async getExperimentUrl(experimentId: string) {
+    const projectId = await this.getProjectId();
+
+    return `${this.baseUrl}/project/${projectId}/experiments/results?baseline=${encodeURIComponent(experimentId)}`;
+  }
+
+  /**
+   * Returns the ID of the project the API keys belong to. Cached after the
+   * first successful lookup.
+   *
+   * @internal
+   */
+  public async getProjectId(): Promise<string> {
+    if (!this.projectId) {
+      this.projectId = (await this.api.projects.get()).data[0].id;
+    }
+
+    return this.projectId;
   }
 }
