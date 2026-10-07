@@ -672,20 +672,20 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       let serialized: string | undefined;
 
       try {
+        // Returns undefined for undefined, functions and symbols
         serialized = JSON.stringify(value);
       } catch (err) {
         this.logger.warn(
           `Serializing masked metadata value failed, fully masking property. Error: ${err}`,
         );
-        serialized = JSON.stringify(
-          "<fully masked due to failed mask function>",
-        );
       }
 
-      // JSON.stringify returns undefined for functions and symbols
-      if (serialized !== undefined) {
-        parts.push(`${JSON.stringify(key)}:${serialized}`);
-      }
+      parts.push(
+        `${JSON.stringify(key)}:${
+          serialized ??
+          JSON.stringify("<fully masked due to failed mask function>")
+        }`,
+      );
     }
 
     return `{${parts.join(",")}}`;

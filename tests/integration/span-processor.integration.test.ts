@@ -117,14 +117,15 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
       testEnv = await setupTestEnvironment({
         spanProcessorConfig: {
-          mask: ({ data }) => (data === "secret" ? BigInt(1) : data),
+          mask: ({ data }) =>
+            data === "secret" ? BigInt(1) : data === "token" ? undefined : data,
         },
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
       const span = startObservation("bigint-masked-span", {
         input: "user input",
-        metadata: { tenant: "acme", password: "secret" },
+        metadata: { tenant: "acme", password: "secret", apiKey: "token" },
       });
       span.end();
 
@@ -143,6 +144,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       expect(metadata).toEqual({
         tenant: "acme",
         password: "<fully masked due to failed mask function>",
+        apiKey: "<fully masked due to failed mask function>",
       });
     });
 
