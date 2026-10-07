@@ -15,8 +15,8 @@ This is a monorepo containing the Langfuse TypeScript/JavaScript SDK packages:
 
 ### Prerequisites
 
-- Node.js 20+ for SDK runtime compatibility; Node.js 24 is recommended for
-  development and Codex/CI parity
+- Node.js 22+ for SDK runtime compatibility (22.13+ for repository development);
+  Node.js 24 is recommended for development and Codex/CI parity
 - pnpm 10.33.0 via Corepack
 
 ### Installing dependencies
