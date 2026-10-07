@@ -9,6 +9,7 @@ export * from "./PublicEvaluatorBooleanScore.js";
 export * from "./PublicEvaluatorCategoricalScore.js";
 export * from "./PublicEvaluatorOutputDefinition.js";
 export * from "./EvaluationRuleStringFilterOperator.js";
+export * from "./EvaluationRuleStringObjectFilterOperator.js";
 export * from "./EvaluationRuleNumberFilterOperator.js";
 export * from "./EvaluationRuleOptionsFilterOperator.js";
 export * from "./EvaluationRuleArrayOptionsFilterOperator.js";
