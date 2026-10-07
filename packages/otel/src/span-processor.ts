@@ -33,6 +33,11 @@ import { isDefaultExportSpan } from "./span-filter.js";
 /**
  * Function type for masking sensitive data in spans before export.
  *
+ * Applied to the input and output of observations and traces, and to each
+ * top-level metadata value. Metadata keys are never passed to the mask, so
+ * masked metadata keeps its keys. Non-string metadata values are passed as
+ * JSON strings and parsed back if the masked result is still valid JSON.
+ *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
  * @returns The masked data, or a promise resolving to it
@@ -584,13 +589,13 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
+    if (!this.mask) return;
+
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       LangfuseOtelSpanAttributes.TRACE_INPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-      LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
-      LangfuseOtelSpanAttributes.TRACE_METADATA,
     ];
 
     for (const maskCandidate of maskCandidates) {
@@ -600,6 +605,68 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         );
       }
     }
+
+    const metadataPrefixes = [
+      LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
+      LangfuseOtelSpanAttributes.TRACE_METADATA,
+    ];
+
+    for (const prefix of metadataPrefixes) {
+      for (const key of Object.keys(span.attributes)) {
+        if (key === prefix) {
+          span.attributes[key] = await this.applyMaskToMetadata(
+            span.attributes[key],
+          );
+        } else if (key.startsWith(`${prefix}.`)) {
+          // Per-key metadata, e.g. propagated trace metadata
+          span.attributes[key] = await this.applyMask(span.attributes[key]);
+        }
+      }
+    }
+  }
+
+  /**
+   * Masks a metadata JSON object one top-level value at a time, so the result
+   * stays a valid JSON object with the same keys whatever the mask returns.
+   * Values that were not strings are passed to the mask as JSON strings and
+   * parsed back if the masked result is still valid JSON.
+   */
+  private async applyMaskToMetadata<T>(data: T): Promise<T | string> {
+    let parsed: unknown;
+
+    try {
+      parsed = typeof data === "string" ? JSON.parse(data) : undefined;
+    } catch {
+      parsed = undefined;
+    }
+
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      return this.applyMask(data);
+    }
+
+    const maskedEntries = await Promise.all(
+      Object.entries(parsed).map(async ([key, value]) => {
+        if (typeof value === "string") {
+          return [key, await this.applyMask(value)];
+        }
+
+        const masked = await this.applyMask(JSON.stringify(value));
+
+        if (typeof masked !== "string") return [key, masked];
+
+        try {
+          return [key, JSON.parse(masked)];
+        } catch {
+          return [key, masked];
+        }
+      }),
+    );
+
+    return JSON.stringify(Object.fromEntries(maskedEntries));
   }
 
   private async applyMask<T>(data: T): Promise<T | string> {

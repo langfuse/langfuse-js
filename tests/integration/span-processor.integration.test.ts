@@ -9,7 +9,7 @@ import {
 import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { trace } from "@opentelemetry/api";
 import { NodeSDK } from "@opentelemetry/sdk-node";
-import { startObservation } from "@langfuse/tracing";
+import { propagateAttributes, startObservation } from "@langfuse/tracing";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
@@ -77,6 +77,100 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions.expectObservationMetadata("masked-span", {
         note: "*** note",
       });
+    });
+
+    it("should keep metadata keys when the mask replaces whole values", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: { mask: () => "REDACTED" },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("redacted-span", {
+        input: "user input",
+        metadata: { tenant: "acme", retries: 3, db: { host: "x" } },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "redacted-span",
+        "langfuse.observation.input",
+        "REDACTED",
+      );
+      const metadata = JSON.parse(
+        assertions.expectSpanWithName("redacted-span").attributes[
+          "langfuse.observation.metadata"
+        ] as string,
+      );
+      expect(metadata).toEqual({
+        tenant: "REDACTED",
+        retries: "REDACTED",
+        db: "REDACTED",
+      });
+    });
+
+    it("should keep nested metadata structure and types after masking", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) =>
+            typeof data === "string" ? data.replace(/secret/g, "***") : data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("nested-masked-span", {
+        metadata: {
+          db: { host: "localhost", password: "secret" },
+          retries: 3,
+          tags: ["secret", "public"],
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const metadata = JSON.parse(
+        assertions.expectSpanWithName("nested-masked-span").attributes[
+          "langfuse.observation.metadata"
+        ] as string,
+      );
+      expect(metadata).toEqual({
+        db: { host: "localhost", password: "***" },
+        retries: 3,
+        tags: ["***", "public"],
+      });
+    });
+
+    it("should mask propagated trace metadata", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) =>
+            typeof data === "string" ? data.replace(/secret/g, "***") : data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      await propagateAttributes(
+        { metadata: { tenant: "secret-co" } },
+        async () => {
+          startObservation("propagated-masked-span").end();
+        },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "propagated-masked-span",
+        "langfuse.trace.metadata.tenant",
+        "***-co",
+      );
     });
 
     it("should apply async mask function to span attributes", async () => {
