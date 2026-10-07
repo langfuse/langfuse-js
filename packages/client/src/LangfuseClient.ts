@@ -40,8 +40,14 @@ export interface LangfuseClientParams {
   baseUrl?: string;
 
   /**
-   * Request timeout in seconds.
+   * Request timeout in seconds for each HTTP request made by the SDK managers:
+   * score ingestion (`langfuse.score`), prompt management (`langfuse.prompt`,
+   * unless `fetchTimeoutMs` is passed to `get`) and media resolution
+   * (`langfuse.media`). Retried requests get the timeout per attempt.
    * Can also be provided via LANGFUSE_TIMEOUT environment variable.
+   *
+   * Direct `langfuse.api.*` calls do not use this value; pass
+   * `{ timeoutInSeconds }` as request options per call instead.
    *
    * @defaultValue 5
    */
@@ -220,8 +226,17 @@ export class LangfuseClient {
         "No secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Client operations will fail.",
       );
     }
-    const timeoutSeconds =
+    const configuredTimeoutSeconds =
       params?.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
+    const timeoutSeconds =
+      Number.isFinite(configuredTimeoutSeconds) && configuredTimeoutSeconds > 0
+        ? configuredTimeoutSeconds
+        : 5;
+    if (timeoutSeconds !== configuredTimeoutSeconds) {
+      logger.warn(
+        `Invalid timeout '${configuredTimeoutSeconds}'. Falling back to ${timeoutSeconds} seconds.`,
+      );
+    }
 
     this.api = new LangfuseAPIClient({
       baseUrl: this.baseUrl,
@@ -240,10 +255,10 @@ export class LangfuseClient {
       timeoutSeconds,
     });
 
-    this.prompt = new PromptManager({ apiClient: this.api });
+    this.prompt = new PromptManager({ apiClient: this.api, timeoutSeconds });
     this.dataset = new DatasetManager({ langfuseClient: this });
-    this.score = new ScoreManager({ apiClient: this.api });
-    this.media = new MediaManager({ apiClient: this.api });
+    this.score = new ScoreManager({ apiClient: this.api, timeoutSeconds });
+    this.media = new MediaManager({ apiClient: this.api, timeoutSeconds });
     this.experiment = new ExperimentManager({ langfuseClient: this });
   }
 

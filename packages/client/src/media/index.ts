@@ -31,15 +31,21 @@ export type LangfuseMediaResolveMediaReferencesParams<T> = {
  */
 export class MediaManager {
   private apiClient: LangfuseAPIClient;
+  private timeoutSeconds: number | undefined;
 
   /**
    * Creates a new MediaManager instance.
    *
-   * @param params - Configuration object containing the API client
+   * @param params - Configuration object containing the API client and the
+   *   per-request timeout in seconds for media API requests
    * @internal
    */
-  constructor(params: { apiClient: LangfuseAPIClient }) {
+  constructor(params: {
+    apiClient: LangfuseAPIClient;
+    timeoutSeconds?: number;
+  }) {
     this.apiClient = params.apiClient;
+    this.timeoutSeconds = params.timeoutSeconds;
   }
 
   /**
@@ -106,10 +112,14 @@ export class MediaManager {
                 MediaManager.parseReferenceString(referenceString);
               const mediaData = await this.apiClient.media.get(
                 parsedMediaReference.mediaId,
+                { timeoutInSeconds: this.timeoutSeconds },
               );
               const mediaContent = await fetch(mediaData.url, {
                 method: "GET",
                 headers: {},
+                ...(this.timeoutSeconds !== undefined && {
+                  signal: AbortSignal.timeout(this.timeoutSeconds * 1_000),
+                }),
               });
               if (mediaContent.status !== 200) {
                 throw new Error("Failed to fetch media content");
