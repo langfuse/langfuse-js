@@ -270,3 +270,34 @@ export function dropMetadataOverSpanAttributeLimit<
     return attributes;
   }
 }
+
+/**
+ * Serializes an observation metadata value into the JSON string written to
+ * its `langfuse.observation.metadata.<key>` span attribute.
+ *
+ * Every value is JSON-encoded, strings included (`"3"` becomes `"\"3\""`), so
+ * the server can tell the string `"3"` from the number `3` and the string
+ * `'{"a":1}'` from the object `{ a: 1 }`. A value that fails to serialize
+ * becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
+ * functions and symbols return undefined and are not written.
+ *
+ * @param value - Metadata value to serialize
+ * @returns JSON string, or undefined if the value is not written
+ * @internal
+ */
+export function serializeMetadataValue(value: unknown): string | undefined {
+  if (
+    value == null ||
+    typeof value === "function" ||
+    typeof value === "symbol"
+  ) {
+    return undefined;
+  }
+
+  try {
+    // JSON.stringify returns undefined if a toJSON method returns undefined
+    return JSON.stringify(value) as string | undefined;
+  } catch {
+    return JSON.stringify("<failed to serialize>");
+  }
+}
