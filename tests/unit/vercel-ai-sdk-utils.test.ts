@@ -1,5 +1,5 @@
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
-import { describe, expect, it } from "vitest";
+import { getGlobalLogger, LangfuseOtelSpanAttributes } from "@langfuse/core";
+import { describe, expect, it, vi } from "vitest";
 
 // Internal helper (not part of the public API)
 import { createLangfuseObservationAttributes } from "../../packages/vercel-ai-sdk/src/utils.js";
@@ -35,5 +35,26 @@ describe("vercel-ai-sdk createLangfuseObservationAttributes", () => {
       [`${PREFIX}.list`]: "[1,2]",
       [`${PREFIX}.circular`]: '"<failed to serialize>"',
     });
+  });
+
+  it("should debug-log metadata keys that are not written", () => {
+    const debug = vi.spyOn(getGlobalLogger(), "debug");
+
+    try {
+      createLangfuseObservationAttributes({
+        spanType: "languageModel",
+        runtimeContext: { nothing: null, kept: 1 },
+      });
+
+      const messages = debug.mock.calls.map(([message]) => message);
+      expect(messages).toContain(
+        'Observation metadata key "nothing" was not written because its value is null',
+      );
+      expect(messages.some((m) => String(m).includes('key "kept"'))).toBe(
+        false,
+      );
+    } finally {
+      debug.mockRestore();
+    }
   });
 });

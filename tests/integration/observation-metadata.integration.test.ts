@@ -1,3 +1,4 @@
+import { getGlobalLogger } from "@langfuse/core";
 import {
   propagateAttributes,
   startObservation,
@@ -464,6 +465,33 @@ describe("Observation metadata attributes", () => {
       [`${PREFIX}.b`]: "2",
       [`${PREFIX}.c`]: "3",
     });
+  });
+
+  it("should debug-log keys that are not written", async () => {
+    const debug = vi.spyOn(getGlobalLogger(), "debug");
+
+    try {
+      const span = startObservation("skipped-keys-span", {
+        metadata: { a: null, b: undefined, cb: () => "ignored", c: 3 },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const messages = debug.mock.calls.map(([message]) => message);
+      expect(messages).toContain(
+        'Observation metadata key "a" was not written because its value is null',
+      );
+      expect(messages).toContain(
+        'Observation metadata key "b" was not written because its value is undefined',
+      );
+      expect(messages).toContain(
+        'Observation metadata key "cb" was not written because its value is not JSON-serializable',
+      );
+      expect(messages.some((m) => String(m).includes('key "c"'))).toBe(false);
+    } finally {
+      debug.mockRestore();
+    }
   });
 
   it("should keep earlier values for keys updated with function values", async () => {

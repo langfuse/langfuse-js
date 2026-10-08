@@ -47,10 +47,13 @@ describe("serializeMetadataValue", () => {
     );
   });
 
-  it("should JSON-encode non-finite numbers like JSON.stringify", () => {
-    expect(serializeMetadataValue(NaN)).toBe("null");
-    expect(serializeMetadataValue(Infinity)).toBe("null");
-    expect(serializeMetadataValue(-Infinity)).toBe("null");
+  it("should JSON-encode non-finite numbers as strings, like the Python SDK", () => {
+    expect(serializeMetadataValue(NaN)).toBe('"NaN"');
+    expect(serializeMetadataValue(Infinity)).toBe('"Infinity"');
+    expect(serializeMetadataValue(-Infinity)).toBe('"-Infinity"');
+    expect(serializeMetadataValue({ a: [NaN, -Infinity] })).toBe(
+      '{"a":["NaN","-Infinity"]}',
+    );
   });
 
   it("should JSON-encode dates", () => {

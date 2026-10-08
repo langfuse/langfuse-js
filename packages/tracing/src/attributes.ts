@@ -1,5 +1,6 @@
 import {
   dropMetadataOverSpanAttributeLimit,
+  getGlobalLogger,
   LangfuseOtelSpanAttributes,
   serializeMetadataValue,
 } from "@langfuse/core";
@@ -177,12 +178,20 @@ function _flattenAndSerializeMetadata(
     const serialized = serializeMetadataValue(metadata);
     if (serialized !== undefined) {
       metadataAttributes[prefix] = serialized;
+    } else {
+      getGlobalLogger().debug(
+        "Observation metadata was not written because its value is not JSON-serializable",
+      );
     }
   } else {
     for (const [key, value] of Object.entries(metadata)) {
       const serialized = serializeMetadataValue(value);
       if (serialized !== undefined) {
         metadataAttributes[`${prefix}.${key}`] = serialized;
+      } else {
+        getGlobalLogger().debug(
+          `Observation metadata key "${key}" was not written because its value is ${value == null ? String(value) : "not JSON-serializable"}`,
+        );
       }
     }
   }

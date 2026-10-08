@@ -306,7 +306,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       );
     });
 
-    it("should keep observation metadata that encodes to null when the mask leaves it unchanged", async () => {
+    it("should keep non-finite observation metadata when the mask leaves it unchanged", async () => {
       await teardownTestEnvironment(testEnv);
 
       testEnv = await setupTestEnvironment({
@@ -331,10 +331,10 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         "metadata-null-encoded-mask-span",
       );
       expect(exported.attributes["langfuse.observation.metadata.nan"]).toBe(
-        "null",
+        '"NaN"',
       );
       expect(exported.attributes["langfuse.observation.metadata.inf"]).toBe(
-        "null",
+        '"Infinity"',
       );
       expect(
         exported.attributes["langfuse.observation.metadata.toJsonNull"],

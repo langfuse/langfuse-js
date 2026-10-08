@@ -680,8 +680,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     }
 
     const masked = await this.applyMask(decoded);
-    // NaN, Infinity and toJSON() returning null are written as "null", which
-    // decodes to null. That key was set by the user, so keep it.
+    // toJSON() returning null is written as "null", which decodes to null.
+    // That key was set by the user, so keep it.
     const serialized =
       decoded === null && masked === null
         ? "null"

@@ -280,7 +280,9 @@ export function dropMetadataOverSpanAttributeLimit<
  * `'{"a":1}'` from the object `{ a: 1 }`. Bigints, also nested ones, become
  * JSON numbers if they are in the JS-safe integer range (`10n` becomes `"10"`)
  * and JSON strings of their decimal digits otherwise (`2n ** 60n` becomes
- * `"\"1152921504606846976\""`), matching the Python SDK. A value that fails to serialize becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
+ * `"\"1152921504606846976\""`), matching the Python SDK. `NaN` and
+ * `±Infinity`, also nested, become the JSON strings `"NaN"`, `"Infinity"` and
+ * `"-Infinity"` instead of `null`, also matching the Python SDK. A value that fails to serialize becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
  * functions and symbols return undefined and are not written.
  *
  * @param value - Metadata value to serialize
@@ -299,6 +301,11 @@ export function serializeMetadataValue(value: unknown): string | undefined {
   try {
     // JSON.stringify returns undefined if a toJSON method returns undefined
     return JSON.stringify(value, (_, v) => {
+      if (typeof v === "number" && !Number.isFinite(v)) {
+        // JSON.stringify would write null
+        return String(v);
+      }
+
       if (typeof v !== "bigint") return v;
 
       return v >= BigInt(Number.MIN_SAFE_INTEGER) &&

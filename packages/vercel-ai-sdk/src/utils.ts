@@ -1,5 +1,6 @@
 import type { OpenTelemetrySpanType } from "@ai-sdk/otel";
 import {
+  getGlobalLogger,
   LangfuseOtelSpanAttributes,
   serializeMetadataValue,
 } from "@langfuse/core";
@@ -45,6 +46,10 @@ export function createLangfuseObservationAttributes(params: {
         attributes[
           `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.${key}`
         ] = serialized;
+      } else {
+        getGlobalLogger().debug(
+          `Observation metadata key "${key}" was not written because its value is ${value == null ? String(value) : "not JSON-serializable"}`,
+        );
       }
     }
   }
