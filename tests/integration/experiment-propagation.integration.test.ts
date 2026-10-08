@@ -39,6 +39,39 @@ describe("Experiment Attribute Propagation", () => {
   });
 
   describe("Basic Experiment Propagation", () => {
+    it("should keep experiment run metadata when item metadata exceeds the span attribute limit", async () => {
+      const itemMetadata = Object.fromEntries(
+        Array.from({ length: 200 }, (_, i) => [`key${i}`, i]),
+      );
+
+      await langfuse.experiment.run({
+        name: "limit-experiment",
+        runName: "limit-run",
+        data: [
+          {
+            input: "test-input",
+            metadata: { ...itemMetadata, experiment_name: "user-value" },
+          },
+        ],
+        task: async () => "output",
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+      const rootSpan = testEnv.mockExporter.exportedSpans.find(
+        (s) => s.name === "experiment-item-run",
+      );
+      const prefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+
+      expect(rootSpan?.attributes[`${prefix}experiment_name`]).toBe(
+        "limit-experiment",
+      );
+      expect(rootSpan?.attributes[`${prefix}experiment_run_name`]).toBe(
+        "limit-run",
+      );
+      expect(rootSpan?.attributes[`${prefix}key0`]).toBeDefined();
+      expect(rootSpan?.attributes[`${prefix}key199`]).toBeUndefined();
+    });
+
     it("should propagate experiment attributes to child spans", async () => {
       await langfuse.experiment.run({
         name: "test-experiment",
