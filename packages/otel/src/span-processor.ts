@@ -34,6 +34,11 @@ import { isDefaultExportSpan } from "./span-filter.js";
 /**
  * Function type for masking sensitive data in spans before export.
  *
+ * Applied to the input and output of observations and traces, and to each
+ * metadata value (observation metadata and propagated trace metadata), one
+ * attribute at a time. Metadata keys are never passed to the mask, so masked
+ * metadata keeps its keys.
+ *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
  * @returns The masked data, or a promise resolving to it
@@ -596,6 +601,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
+    if (!this.mask) return;
+
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       LangfuseOtelSpanAttributes.TRACE_INPUT,
@@ -610,6 +617,20 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         span.attributes[maskCandidate] = await this.applyMask(
           span.attributes[maskCandidate],
         );
+      }
+    }
+
+    // Object metadata is written as one attribute per top-level key, e.g.
+    // `langfuse.observation.metadata.<key>`. Mask each value separately so
+    // keys are kept and are never passed to the mask.
+    const metadataPrefixes = [
+      `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`,
+      `${LangfuseOtelSpanAttributes.TRACE_METADATA}.`,
+    ];
+
+    for (const key of Object.keys(span.attributes)) {
+      if (metadataPrefixes.some((prefix) => key.startsWith(prefix))) {
+        span.attributes[key] = await this.applyMask(span.attributes[key]);
       }
     }
   }
