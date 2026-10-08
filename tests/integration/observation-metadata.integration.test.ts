@@ -246,6 +246,64 @@ describe("Observation metadata span attribute limit", () => {
       expect(warnings[0]).toContain("span attribute limit of 40");
     });
 
+    it("should reserve generation attributes only for generation-like types", async () => {
+      startObservation("limit-span", { metadata: manyKeys(50) }).end();
+      startObservation(
+        "limit-generation",
+        { metadata: manyKeys(50) },
+        { asType: "generation" },
+      ).end();
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+
+      const spanKeys = metadataKeys(
+        assertions.expectSpanWithName("limit-span"),
+      );
+      const generationKeys = metadataKeys(
+        assertions.expectSpanWithName("limit-generation"),
+      );
+      // Model, usage, cost, completion start, model parameters and prompt
+      // name/version are only reserved for generations
+      expect(spanKeys.length).toBe(generationKeys.length + 7);
+    });
+
+    it("should keep room for generation attributes when the type is omitted", async () => {
+      await startActiveObservation(
+        "active-limit-generation",
+        async (generation) => {
+          updateActiveObservation({ metadata: manyKeys(50) });
+          generation.update({
+            model: "gpt-4o",
+            usageDetails: { input: 1, output: 2 },
+            costDetails: { total: 0.1 },
+            completionStartTime: new Date(),
+            modelParameters: { temperature: 0 },
+            prompt: { name: "prompt", version: 1, isFallback: false },
+          });
+        },
+        { asType: "generation" },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const exported = assertions.expectSpanWithName("active-limit-generation");
+      expect(exported.droppedAttributesCount).toBe(0);
+      expect(
+        exported.attributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE],
+      ).toBe("generation");
+      for (const key of [
+        LangfuseOtelSpanAttributes.OBSERVATION_MODEL,
+        LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
+        LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS,
+        LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME,
+        LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS,
+        LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME,
+        LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION,
+      ]) {
+        expect(exported.attributes[key]).toBeDefined();
+      }
+    });
+
     it("should count propagated trace attributes toward the limit", async () => {
       const traceMetadata = { t0: "0", t1: "1", t2: "2", t3: "3", t4: "4" };
 

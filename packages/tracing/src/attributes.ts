@@ -74,6 +74,13 @@ const RESERVED_OBSERVATION_ATTRIBUTE_KEYS: readonly string[] = [
   LangfuseOtelSpanAttributes.ENVIRONMENT,
   LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
   LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+];
+
+/**
+ * Reserved attributes that only generation-like observations can write.
+ */
+const RESERVED_GENERATION_ATTRIBUTE_KEYS: readonly string[] = [
+  ...RESERVED_OBSERVATION_ATTRIBUTE_KEYS,
   LangfuseOtelSpanAttributes.OBSERVATION_MODEL,
   LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
   LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS,
@@ -81,8 +88,6 @@ const RESERVED_OBSERVATION_ATTRIBUTE_KEYS: readonly string[] = [
   LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS,
   LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME,
   LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION,
-  LangfuseOtelSpanAttributes.TRACE_INPUT,
-  LangfuseOtelSpanAttributes.TRACE_OUTPUT,
 ];
 
 /**
@@ -111,12 +116,15 @@ export function setObservationAttributes(
     delete otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE];
   }
 
+  // With `omitType` the span's actual type is unknown, so it may still be a
+  // generation that writes model or usage attributes later.
+  const reservedKeys =
+    options?.omitType || type === "generation" || type === "embedding"
+      ? RESERVED_GENERATION_ATTRIBUTE_KEYS
+      : RESERVED_OBSERVATION_ATTRIBUTE_KEYS;
+
   span.setAttributes(
-    dropMetadataOverSpanAttributeLimit(
-      span,
-      otelAttributes,
-      RESERVED_OBSERVATION_ATTRIBUTE_KEYS,
-    ),
+    dropMetadataOverSpanAttributeLimit(span, otelAttributes, reservedKeys),
   );
 }
 
