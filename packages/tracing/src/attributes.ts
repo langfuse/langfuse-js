@@ -1,5 +1,8 @@
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
-import { type Attributes } from "@opentelemetry/api";
+import {
+  capObservationMetadataAttributes,
+  LangfuseOtelSpanAttributes,
+} from "@langfuse/core";
+import { type Attributes, type Span } from "@opentelemetry/api";
 
 import {
   LangfuseObservationAttributes,
@@ -56,6 +59,41 @@ export function createObservationAttributes(
   return Object.fromEntries(
     Object.entries(otelAttributes).filter(([_, v]) => v != null),
   );
+}
+
+/**
+ * Sets observation attributes on a span.
+ *
+ * New top-level metadata keys beyond the maximum number of keys (counting
+ * keys already on the span) are dropped with a warning, so that metadata
+ * cannot push other span attributes out of OpenTelemetry's attribute limit.
+ * Overwrites of keys already on the span are always kept.
+ *
+ * @param span - Span to update
+ * @param type - Observation type
+ * @param attributes - Observation attributes to set
+ * @param options - Set `omitType` to leave the observation type attribute unchanged
+ * @internal
+ */
+export function setObservationAttributes(
+  span: Span,
+  type: LangfuseObservationType,
+  attributes: LangfuseObservationAttributes,
+  options?: { omitType?: boolean },
+): void {
+  const otelAttributes = createObservationAttributes(type, attributes);
+
+  if (options?.omitType) {
+    delete otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE];
+  }
+
+  // SDK spans expose their attributes, API-only and non-recording spans don't
+  capObservationMetadataAttributes(
+    otelAttributes,
+    (span as Partial<{ attributes: Attributes }>).attributes,
+  );
+
+  span.setAttributes(otelAttributes);
 }
 
 /**

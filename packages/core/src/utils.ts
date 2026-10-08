@@ -1,3 +1,9 @@
+import {
+  LangfuseOtelSpanAttributes,
+  MAX_OBSERVATION_METADATA_KEYS,
+} from "./constants.js";
+import { getGlobalLogger } from "./logger/index.js";
+
 type LangfuseEnvVar =
   | "LANGFUSE_PUBLIC_KEY"
   | "LANGFUSE_SECRET_KEY"
@@ -163,4 +169,53 @@ export function serializeValue(value: any): string | undefined {
   if (typeof value === "string") return value;
 
   return JSON.stringify(value);
+}
+
+const OBSERVATION_METADATA_PREFIX = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+
+/**
+ * Drops new per-key observation metadata attributes
+ * (`langfuse.observation.metadata.<key>`) beyond
+ * {@link MAX_OBSERVATION_METADATA_KEYS}, so metadata cannot use up
+ * OpenTelemetry's span attribute limit and push out other attributes.
+ *
+ * Keys already present in `existingAttributes` are overwrites and always
+ * kept. Logs one warning if keys are dropped.
+ *
+ * @param attributes - Attributes about to be set on a span; modified in place
+ * @param existingAttributes - Attributes already on the span, if known
+ * @returns `attributes`
+ * @internal
+ */
+export function capObservationMetadataAttributes<
+  T extends Record<string, unknown>,
+>(attributes: T, existingAttributes?: Record<string, unknown>): T {
+  const existingKeys = new Set(
+    Object.keys(existingAttributes ?? {}).filter((key) =>
+      key.startsWith(OBSERVATION_METADATA_PREFIX),
+    ),
+  );
+  let keyCount = existingKeys.size;
+  let droppedKeys = 0;
+
+  for (const key of Object.keys(attributes)) {
+    if (!key.startsWith(OBSERVATION_METADATA_PREFIX) || existingKeys.has(key)) {
+      continue;
+    }
+
+    if (keyCount >= MAX_OBSERVATION_METADATA_KEYS) {
+      delete attributes[key];
+      droppedKeys++;
+    } else {
+      keyCount++;
+    }
+  }
+
+  if (droppedKeys > 0) {
+    getGlobalLogger().warn(
+      `Dropped ${droppedKeys} observation metadata keys: metadata can have at most ${MAX_OBSERVATION_METADATA_KEYS} top-level keys.`,
+    );
+  }
+
+  return attributes;
 }

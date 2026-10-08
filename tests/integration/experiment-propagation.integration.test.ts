@@ -9,10 +9,11 @@ import { LangfuseClient } from "@langfuse/client";
 import {
   LangfuseOtelSpanAttributes,
   LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+  MAX_OBSERVATION_METADATA_KEYS,
 } from "@langfuse/core";
 import { startObservation, startActiveObservation } from "@langfuse/tracing";
 import { trace as otelTrace } from "@opentelemetry/api";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import {
   setupTestEnvironment,
@@ -80,6 +81,43 @@ describe("Experiment Attribute Propagation", () => {
       ).toBe(
         rootSpan?.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_ID],
       );
+    });
+
+    it("should keep the item output when metadata exceeds the key limit", async () => {
+      vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+      const metadata = Object.fromEntries(
+        Array.from({ length: 150 }, (_, i) => [`key${i}`, i]),
+      );
+
+      try {
+        const result = await langfuse.experiment.run({
+          name: "metadata-limit-experiment",
+          data: [{ input: "test-input", metadata }],
+          task: async () => "output",
+        });
+
+        expect(result.itemResults).toHaveLength(1);
+        expect(result.itemResults[0].output).toBe("output");
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+        const rootSpan = testEnv.mockExporter.exportedSpans.find(
+          (s) => s.name === "experiment-item-run",
+        );
+
+        expect(
+          rootSpan?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT],
+        ).toBe("output");
+        const metadataKeys = Object.keys(rootSpan?.attributes ?? {}).filter(
+          (key) =>
+            key.startsWith(
+              `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`,
+            ),
+        );
+        expect(metadataKeys).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
+      } finally {
+        vi.restoreAllMocks();
+      }
     });
 
     it("should propagate experiment metadata to child spans", async () => {

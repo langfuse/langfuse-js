@@ -6,6 +6,9 @@ export const LANGFUSE_SDK_NAME = "javascript";
 
 export const LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT = "sdk-experiment";
 
+/** Maximum number of top-level observation metadata keys. Leaves room for Langfuse's own span attributes within OpenTelemetry's default limit of 128 attributes per span. */
+export const MAX_OBSERVATION_METADATA_KEYS = 96;
+
 // From Langfuse platform: web/src/features/otel/server/attributes.ts
 export enum LangfuseOtelSpanAttributes {
   // Langfuse-Trace attributes
