@@ -112,9 +112,11 @@ export function setObservationAttributes(
   }
 
   span.setAttributes(
-    dropMetadataOverSpanAttributeLimit(span, otelAttributes, {
-      reservedKeys: RESERVED_OBSERVATION_ATTRIBUTE_KEYS,
-    }),
+    dropMetadataOverSpanAttributeLimit(
+      span,
+      otelAttributes,
+      RESERVED_OBSERVATION_ATTRIBUTE_KEYS,
+    ),
   );
 }
 

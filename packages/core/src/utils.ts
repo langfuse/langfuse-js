@@ -206,17 +206,13 @@ function getSpanAttributeCountLimit(span: unknown): number | undefined {
  *
  * @param span - Span the attributes are about to be set on
  * @param attributes - Attributes about to be set on the span
- * @param options - `reservedKeys` keeps room for attributes written later
+ * @param reservedKeys - Keys to keep room for, because they are written later
  * @returns `attributes` without the dropped metadata keys
  * @internal
  */
 export function dropMetadataOverSpanAttributeLimit<
   T extends Record<string, unknown>,
->(
-  span: unknown,
-  attributes: T,
-  options?: { reservedKeys?: readonly string[] },
-): T {
+>(span: unknown, attributes: T, reservedKeys: readonly string[]): T {
   try {
     const limit = getSpanAttributeCountLimit(span);
     if (limit === undefined) {
@@ -233,9 +229,7 @@ export function dropMetadataOverSpanAttributeLimit<
     );
     const newKeySet = new Set(newKeys);
     const reservedCount = new Set(
-      (options?.reservedKeys ?? []).filter(
-        (key) => !isExisting(key) && !newKeySet.has(key),
-      ),
+      reservedKeys.filter((key) => !isExisting(key) && !newKeySet.has(key)),
     ).size;
     const usedCount = Object.keys(existing).length + reservedCount;
 
