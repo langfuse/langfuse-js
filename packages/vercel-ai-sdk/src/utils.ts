@@ -1,8 +1,5 @@
 import type { OpenTelemetrySpanType } from "@ai-sdk/otel";
-import {
-  capObservationMetadataAttributes,
-  LangfuseOtelSpanAttributes,
-} from "@langfuse/core";
+import { LangfuseOtelSpanAttributes } from "@langfuse/core";
 import type { Attributes } from "@opentelemetry/api";
 
 import type { LangfusePrompt } from "./types.js";
@@ -50,7 +47,7 @@ export function createLangfuseObservationAttributes(params: {
     }
   }
 
-  return capObservationMetadataAttributes(attributes);
+  return attributes;
 }
 
 function normalizePrompt(value: unknown): LangfusePrompt | undefined {

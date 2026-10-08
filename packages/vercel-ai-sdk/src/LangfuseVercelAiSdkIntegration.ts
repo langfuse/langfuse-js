@@ -25,6 +25,7 @@ import type {
   ToolSet,
 } from "ai";
 
+import { createMetadataDeferringTracer } from "./tracer.js";
 import type { LangfuseVercelAiSdkIntegrationOptions } from "./types.js";
 import { createLangfuseObservationAttributes } from "./utils.js";
 
@@ -87,7 +88,7 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
   constructor(options: LangfuseVercelAiSdkIntegrationOptions = {}) {
     const openTelemetryOptions: ConstructorParameters<typeof OpenTelemetry>[0] =
       {
-        tracer: options.tracer,
+        tracer: createMetadataDeferringTracer(options.tracer),
         enrichSpan: ({ spanType, runtimeContext }) =>
           createLangfuseObservationAttributes({
             spanType,

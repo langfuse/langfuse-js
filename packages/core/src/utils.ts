@@ -1,7 +1,4 @@
-import {
-  LangfuseOtelSpanAttributes,
-  MAX_OBSERVATION_METADATA_KEYS,
-} from "./constants.js";
+import { LangfuseOtelSpanAttributes } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
 
 type LangfuseEnvVar =
@@ -171,51 +168,111 @@ export function serializeValue(value: any): string | undefined {
   return JSON.stringify(value);
 }
 
-const OBSERVATION_METADATA_PREFIX = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+function isObservationMetadataKey(key: string): boolean {
+  const prefix = LangfuseOtelSpanAttributes.OBSERVATION_METADATA;
+
+  return key === prefix || key.startsWith(`${prefix}.`);
+}
 
 /**
- * Drops new per-key observation metadata attributes
- * (`langfuse.observation.metadata.<key>`) beyond
- * {@link MAX_OBSERVATION_METADATA_KEYS}, so metadata cannot use up
- * OpenTelemetry's span attribute limit and push out other attributes.
+ * Reads the attribute count limit of an OpenTelemetry SDK span. Returns
+ * `undefined` for spans without SDK limits, such as non-recording spans.
+ */
+function getSpanAttributeCountLimit(span: unknown): number | undefined {
+  // `_spanLimits` is private on the SDK span and has no public accessor
+  const limit = (
+    span as { _spanLimits?: { attributeCountLimit?: unknown } } | undefined
+  )?._spanLimits?.attributeCountLimit;
+
+  return typeof limit === "number" && Number.isFinite(limit)
+    ? limit
+    : undefined;
+}
+
+/**
+ * Drops new observation metadata attributes
+ * (`langfuse.observation.metadata.<key>`) that would exceed the span's
+ * attribute count limit (`spanLimits.attributeCountLimit`, default 128).
+ * OpenTelemetry JS silently drops new attributes once a span is full, so
+ * unbounded metadata would otherwise push out later attributes such as the
+ * output.
  *
- * Keys already present in `existingAttributes` are overwrites and always
- * kept. Logs one warning if keys are dropped.
+ * Counts the attributes already on the span, the new keys with non-null
+ * values, and `reservedKeys` that are not on the span yet. Excess new metadata
+ * keys are dropped from the tail. Other attributes are never dropped, and
+ * overwrites of keys already on the span are always kept. Spans without SDK
+ * limits are left alone. Logs one warning if keys are dropped and never
+ * throws.
  *
- * @param attributes - Attributes about to be set on a span; modified in place
- * @param existingAttributes - Attributes already on the span, if known
- * @returns `attributes`
+ * @param span - Span the attributes are about to be set on
+ * @param attributes - Attributes about to be set on the span
+ * @param options - `reservedKeys` keeps room for attributes written later
+ * @returns `attributes` without the dropped metadata keys
  * @internal
  */
-export function capObservationMetadataAttributes<
+export function dropMetadataOverSpanAttributeLimit<
   T extends Record<string, unknown>,
->(attributes: T, existingAttributes?: Record<string, unknown>): T {
-  const existingKeys = new Set(
-    Object.keys(existingAttributes ?? {}).filter((key) =>
-      key.startsWith(OBSERVATION_METADATA_PREFIX),
-    ),
-  );
-  let keyCount = existingKeys.size;
-  let droppedKeys = 0;
-
-  for (const key of Object.keys(attributes)) {
-    if (!key.startsWith(OBSERVATION_METADATA_PREFIX) || existingKeys.has(key)) {
-      continue;
+>(
+  span: unknown,
+  attributes: T,
+  options?: { reservedKeys?: readonly string[] },
+): T {
+  try {
+    const limit = getSpanAttributeCountLimit(span);
+    if (limit === undefined) {
+      return attributes;
     }
 
-    if (keyCount >= MAX_OBSERVATION_METADATA_KEYS) {
-      delete attributes[key];
-      droppedKeys++;
-    } else {
-      keyCount++;
-    }
-  }
+    const existing =
+      (span as { attributes?: Record<string, unknown> }).attributes ?? {};
+    const isExisting = (key: string) =>
+      Object.prototype.hasOwnProperty.call(existing, key);
 
-  if (droppedKeys > 0) {
-    getGlobalLogger().warn(
-      `Dropped ${droppedKeys} observation metadata keys: metadata can have at most ${MAX_OBSERVATION_METADATA_KEYS} top-level keys.`,
+    const newKeys = Object.keys(attributes).filter(
+      (key) => attributes[key] != null && !isExisting(key),
     );
-  }
+    const newKeySet = new Set(newKeys);
+    const reservedCount = new Set(
+      (options?.reservedKeys ?? []).filter(
+        (key) => !isExisting(key) && !newKeySet.has(key),
+      ),
+    ).size;
+    const usedCount = Object.keys(existing).length + reservedCount;
 
-  return attributes;
+    if (usedCount + newKeys.length <= limit) {
+      return attributes;
+    }
+
+    const newMetadataKeys = newKeys.filter(isObservationMetadataKey);
+    const freeSlots = Math.max(
+      0,
+      limit - usedCount - (newKeys.length - newMetadataKeys.length),
+    );
+    const dropped = newMetadataKeys.slice(freeSlots);
+    if (dropped.length === 0) {
+      return attributes;
+    }
+
+    const metadataPrefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+    getGlobalLogger().warn(
+      `Dropped ${dropped.length} metadata key(s) from observation '${(span as { name?: unknown }).name}' ` +
+        `to stay within the span attribute limit of ${limit} (spanLimits.attributeCountLimit / OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT). ` +
+        `Dropped keys include: ${dropped
+          .slice(0, 5)
+          .map((key) =>
+            key.startsWith(metadataPrefix)
+              ? key.slice(metadataPrefix.length)
+              : key,
+          )
+          .join(", ")}`,
+    );
+
+    const droppedKeys = new Set(dropped);
+
+    return Object.fromEntries(
+      Object.entries(attributes).filter(([key]) => !droppedKeys.has(key)),
+    ) as T;
+  } catch {
+    return attributes;
+  }
 }

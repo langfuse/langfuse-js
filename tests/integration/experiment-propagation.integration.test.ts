@@ -9,7 +9,6 @@ import { LangfuseClient } from "@langfuse/client";
 import {
   LangfuseOtelSpanAttributes,
   LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
-  MAX_OBSERVATION_METADATA_KEYS,
 } from "@langfuse/core";
 import { startObservation, startActiveObservation } from "@langfuse/tracing";
 import { trace as otelTrace } from "@opentelemetry/api";
@@ -83,7 +82,7 @@ describe("Experiment Attribute Propagation", () => {
       );
     });
 
-    it("should keep the item output when metadata exceeds the key limit", async () => {
+    it("should keep the item output when metadata exceeds the attribute limit", async () => {
       vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
       const metadata = Object.fromEntries(
@@ -108,13 +107,7 @@ describe("Experiment Attribute Propagation", () => {
         expect(
           rootSpan?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT],
         ).toBe("output");
-        const metadataKeys = Object.keys(rootSpan?.attributes ?? {}).filter(
-          (key) =>
-            key.startsWith(
-              `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`,
-            ),
-        );
-        expect(metadataKeys).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
+        expect(rootSpan?.droppedAttributesCount).toBe(0);
       } finally {
         vi.restoreAllMocks();
       }

@@ -21,7 +21,6 @@ import {
 import { DynamicTool } from "@langchain/core/tools";
 import type { ChatGeneration } from "@langchain/core/outputs";
 import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
-import { MAX_OBSERVATION_METADATA_KEYS } from "@langfuse/core";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
@@ -102,7 +101,7 @@ describe("LangChain callback handler integration tests", () => {
     );
   });
 
-  it("should keep the span when run metadata exceeds the key limit", async () => {
+  it("should keep the output when run metadata exceeds the attribute limit", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     const echoTool = new DynamicTool({
@@ -128,12 +127,12 @@ describe("LangChain callback handler integration tests", () => {
         LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
         "hi",
       );
-      const metadataKeys = Object.keys(
-        assertions.expectSpanWithName("echo").attributes,
-      ).filter((key) =>
-        key.startsWith(`${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`),
+      expect(assertions.expectSpanWithName("echo").droppedAttributesCount).toBe(
+        0,
       );
-      expect(metadataKeys).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("span attribute limit of 128"),
+      );
     } finally {
       warn.mockRestore();
     }

@@ -1,5 +1,5 @@
 import {
-  capObservationMetadataAttributes,
+  dropMetadataOverSpanAttributeLimit,
   LangfuseOtelSpanAttributes,
 } from "@langfuse/core";
 import { type Attributes, type Span } from "@opentelemetry/api";
@@ -62,12 +62,36 @@ export function createObservationAttributes(
 }
 
 /**
+ * Attributes the SDK may write in later updates of an observation. Metadata
+ * leaves room for them, because OpenTelemetry drops new attributes once a span
+ * reaches its attribute count limit.
+ */
+const RESERVED_OBSERVATION_ATTRIBUTE_KEYS: readonly string[] = [
+  LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+  LangfuseOtelSpanAttributes.OBSERVATION_LEVEL,
+  LangfuseOtelSpanAttributes.OBSERVATION_STATUS_MESSAGE,
+  LangfuseOtelSpanAttributes.VERSION,
+  LangfuseOtelSpanAttributes.ENVIRONMENT,
+  LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+  LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+  LangfuseOtelSpanAttributes.OBSERVATION_MODEL,
+  LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
+  LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS,
+  LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME,
+  LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS,
+  LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME,
+  LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION,
+  LangfuseOtelSpanAttributes.TRACE_INPUT,
+  LangfuseOtelSpanAttributes.TRACE_OUTPUT,
+];
+
+/**
  * Sets observation attributes on a span.
  *
- * New top-level metadata keys beyond the maximum number of keys (counting
- * keys already on the span) are dropped with a warning, so that metadata
- * cannot push other span attributes out of OpenTelemetry's attribute limit.
- * Overwrites of keys already on the span are always kept.
+ * New metadata keys that would exceed the span's attribute count limit are
+ * dropped with a warning. The limit counts all attributes already on the span
+ * and keeps room for the observation attributes written in later updates, such
+ * as the output. Overwrites of keys already on the span are always kept.
  *
  * @param span - Span to update
  * @param type - Observation type
@@ -87,13 +111,11 @@ export function setObservationAttributes(
     delete otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE];
   }
 
-  // SDK spans expose their attributes, API-only and non-recording spans don't
-  capObservationMetadataAttributes(
-    otelAttributes,
-    (span as Partial<{ attributes: Attributes }>).attributes,
+  span.setAttributes(
+    dropMetadataOverSpanAttributeLimit(span, otelAttributes, {
+      reservedKeys: RESERVED_OBSERVATION_ATTRIBUTE_KEYS,
+    }),
   );
-
-  span.setAttributes(otelAttributes);
 }
 
 /**

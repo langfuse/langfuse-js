@@ -1,4 +1,3 @@
-import { MAX_OBSERVATION_METADATA_KEYS } from "@langfuse/core";
 import { observeOpenAI } from "@langfuse/openai";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
@@ -41,7 +40,7 @@ describe("OpenAI integration", () => {
     await teardownTestEnvironment(testEnv);
   });
 
-  it("should return the response when response metadata exceeds the key limit", async () => {
+  it("should return the response when response metadata exceeds the attribute limit", async () => {
     const response = {
       id: "resp_1",
       model: "gpt-test",
@@ -56,7 +55,7 @@ describe("OpenAI integration", () => {
 
     const traced = observeOpenAI(client, {
       generationName: "openai-metadata-limit",
-      generationMetadata: manyKeys(MAX_OBSERVATION_METADATA_KEYS),
+      generationMetadata: manyKeys(150),
     });
 
     await expect(
@@ -66,15 +65,14 @@ describe("OpenAI integration", () => {
     await waitForSpanExport(testEnv.mockExporter, 1);
 
     const span = assertions.expectSpanWithName("openai-metadata-limit");
-    const keys = metadataKeys(span);
-    expect(keys).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
-    expect(keys).not.toContain("status");
+    expect(span.droppedAttributesCount).toBe(0);
+    expect(metadataKeys(span)).not.toContain("status");
     expect(span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_MODEL]).toBe(
       "gpt-test",
     );
   });
 
-  it("should keep the generation output when generationMetadata exceeds the key limit", async () => {
+  it("should keep the generation output when generationMetadata exceeds the attribute limit", async () => {
     const response = {
       id: "resp_2",
       model: "gpt-test-2024",
@@ -99,9 +97,8 @@ describe("OpenAI integration", () => {
     await waitForSpanExport(testEnv.mockExporter, 1);
 
     const span = assertions.expectSpanWithName("openai-config-metadata-limit");
-    const keys = metadataKeys(span);
-    expect(keys).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
-    expect(keys).not.toContain("status");
+    expect(span.droppedAttributesCount).toBe(0);
+    expect(metadataKeys(span)).not.toContain("status");
     expect(
       span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT],
     ).toBeDefined();

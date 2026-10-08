@@ -48,8 +48,9 @@ export type LangfuseSpanAttributes = {
   output?: unknown;
   /**
    * Additional metadata as key-value pairs. Updates merge into earlier
-   * metadata by top-level key. At most 96 top-level keys are kept; new keys
-   * beyond that are dropped with a warning.
+   * metadata by top-level key. Each top-level key is one span attribute; new
+   * keys that would exceed the span's attribute count limit
+   * (`spanLimits.attributeCountLimit`, default 128) are dropped with a warning.
    */
   metadata?: Record<string, unknown>;
   /** Severity level of the observation */
