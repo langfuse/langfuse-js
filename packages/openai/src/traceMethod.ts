@@ -1,11 +1,5 @@
 import {
-  countObservationMetadataKeys,
-  getGlobalLogger,
-  MAX_OBSERVATION_METADATA_KEYS,
-} from "@langfuse/core";
-import {
   LangfuseGeneration,
-  type LangfuseGenerationAttributes,
   startObservation,
   propagateAttributes,
 } from "@langfuse/tracing";
@@ -87,17 +81,6 @@ const wrapMethod = <T extends GenericMethod>(
             : undefined,
       };
 
-      // Too many keys would make startObservation throw before the OpenAI
-      // call is made
-      const metadataKeyCount = countObservationMetadataKeys(finalMetadata);
-      const metadataTooLarge = metadataKeyCount > MAX_OBSERVATION_METADATA_KEYS;
-
-      if (metadataTooLarge) {
-        getGlobalLogger().warn(
-          `Dropping observation metadata: it has ${metadataKeyCount} keys, which exceeds the maximum of ${MAX_OBSERVATION_METADATA_KEYS}.`,
-        );
-      }
-
       const generation = startObservation(
         config?.generationName ?? "OpenAI-completion",
         {
@@ -105,7 +88,7 @@ const wrapMethod = <T extends GenericMethod>(
           input,
           modelParameters: finalModelParams,
           prompt: config?.langfusePrompt,
-          metadata: metadataTooLarge ? undefined : finalMetadata,
+          metadata: finalMetadata,
         },
         {
           asType: "generation",
@@ -136,13 +119,15 @@ const wrapMethod = <T extends GenericMethod>(
                 metadata: metadataFromResponse,
               } = parseModelDataFromResponse(result);
 
-              updateGeneration(generation, {
-                output,
-                usageDetails,
-                model: modelFromResponse,
-                modelParameters: modelParametersFromResponse,
-                metadata: metadataFromResponse,
-              }).end();
+              generation
+                .update({
+                  output,
+                  usageDetails,
+                  model: modelFromResponse,
+                  modelParameters: modelParametersFromResponse,
+                  metadata: metadataFromResponse,
+                })
+                .end();
 
               return result;
             })
@@ -184,27 +169,6 @@ const wrapMethod = <T extends GenericMethod>(
     },
   );
 };
-
-/**
- * Updates a generation after a successful OpenAI call.
- *
- * If the merged metadata exceeds the key limit, the update is retried without
- * metadata, so the caller still gets the OpenAI response.
- *
- * @internal
- */
-function updateGeneration(
-  generation: LangfuseGeneration,
-  attributes: LangfuseGenerationAttributes,
-): LangfuseGeneration {
-  try {
-    return generation.update(attributes);
-  } catch (err) {
-    getGlobalLogger().warn(`Dropping observation metadata: ${err}`);
-
-    return generation.update({ ...attributes, metadata: undefined });
-  }
-}
 
 /**
  * Wraps an async iterable (streaming response) with Langfuse tracing.
@@ -252,7 +216,7 @@ function wrapAsyncIterable<R>(
           metadata: metadataFromResponse,
         } = parseModelDataFromResponse(result);
 
-        updateGeneration(generation, {
+        generation.update({
           model: modelFromResponse,
           modelParameters: modelParametersFromResponse,
           metadata: metadataFromResponse,

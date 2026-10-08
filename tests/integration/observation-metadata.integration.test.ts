@@ -5,8 +5,7 @@ import {
   LangfuseOtelSpanAttributes,
 } from "@langfuse/tracing";
 import { MAX_OBSERVATION_METADATA_KEYS } from "@langfuse/core";
-import { SpanStatusCode } from "@opentelemetry/api";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
 import {
@@ -32,6 +31,7 @@ describe("Observation metadata", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await teardownTestEnvironment(testEnv);
   });
 
@@ -217,38 +217,34 @@ describe("Observation metadata", () => {
     expect(metadata).not.toHaveProperty("callback");
   });
 
-  it(`should throw when metadata exceeds ${MAX_OBSERVATION_METADATA_KEYS} keys`, () => {
-    expect(() =>
-      startObservation("too-many-keys-span", {
-        metadata: manyKeys(MAX_OBSERVATION_METADATA_KEYS + 1),
-      }),
-    ).toThrow(/exceeds the maximum of 128/);
-  });
+  it(`should drop keys beyond ${MAX_OBSERVATION_METADATA_KEYS} and warn`, async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
-  it("should end the span when startObservation throws on too many keys", async () => {
-    expect(() =>
-      startObservation("too-many-keys-ended-span", {
-        metadata: manyKeys(MAX_OBSERVATION_METADATA_KEYS + 1),
-      }),
-    ).toThrow(/exceeds the maximum of 128/);
+    const span = startObservation("too-many-keys-span", {
+      metadata: manyKeys(MAX_OBSERVATION_METADATA_KEYS + 2),
+    });
+    span.end();
 
     await waitForSpanExport(testEnv.mockExporter, 1);
 
-    const span = assertions.expectSpanWithName("too-many-keys-ended-span");
-    expect(span.status.code).toBe(SpanStatusCode.ERROR);
+    const metadata = exportedMetadata("too-many-keys-span") as object;
+    expect(Object.keys(metadata)).toEqual(
+      Object.keys(manyKeys(MAX_OBSERVATION_METADATA_KEYS)),
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("Dropped 2 observation metadata keys"),
+    );
   });
 
-  it("should throw when merged metadata exceeds the limit and keep the earlier metadata", async () => {
+  it("should keep earlier keys and overwrites when merged metadata exceeds the limit", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
     const span = startObservation("merge-limit-span", {
       metadata: manyKeys(MAX_OBSERVATION_METADATA_KEYS, "first"),
     });
 
-    expect(() => span.update({ metadata: { extra: 1 } })).toThrow(
-      /exceeds the maximum of 128/,
-    );
-
     // Overwriting an existing key does not add a key
-    span.update({ metadata: { first0: "updated" } });
+    span.update({ metadata: { extra: 1, first0: "updated" } });
     span.end();
 
     await waitForSpanExport(testEnv.mockExporter, 1);
@@ -260,5 +256,8 @@ describe("Observation metadata", () => {
     expect(Object.keys(metadata)).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
     expect(metadata.first0).toBe("updated");
     expect(metadata).not.toHaveProperty("extra");
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("Dropped 1 observation metadata keys"),
+    );
   });
 });

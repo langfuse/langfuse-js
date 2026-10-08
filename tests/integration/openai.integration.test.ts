@@ -100,6 +100,7 @@ describe("OpenAI integration", () => {
         LangfuseOtelSpanAttributes.OBSERVATION_METADATA
       ] as string,
     );
-    expect(metadata).toEqual({ status: "completed" });
+    expect(Object.keys(metadata)).toHaveLength(MAX_OBSERVATION_METADATA_KEYS);
+    expect(metadata).not.toHaveProperty("status");
   });
 });

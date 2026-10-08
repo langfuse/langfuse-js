@@ -1,4 +1,5 @@
 import { MAX_OBSERVATION_METADATA_KEYS } from "./constants.js";
+import { getGlobalLogger } from "./logger/index.js";
 
 type LangfuseEnvVar =
   | "LANGFUSE_PUBLIC_KEY"
@@ -136,22 +137,6 @@ export function serializeValue(value: any): string | undefined {
 }
 
 /**
- * Counts the top-level metadata keys that count towards
- * {@link MAX_OBSERVATION_METADATA_KEYS}. Keys whose values are `null`,
- * `undefined`, functions or symbols are not written, so they don't count.
- *
- * @param metadata - Metadata to count keys of
- * @returns Number of keys that would be written
- * @internal
- */
-export function countObservationMetadataKeys(metadata: unknown): number {
-  if (typeof metadata !== "object" || metadata === null) return 0;
-  if (Array.isArray(metadata)) return 0;
-
-  return Object.values(metadata).filter(isWrittenMetadataValue).length;
-}
-
-/**
  * Whether a top-level metadata value is written to the metadata attribute.
  * `null`, `undefined`, functions and symbols are skipped.
  *
@@ -166,17 +151,86 @@ export function isWrittenMetadataValue(value: unknown): boolean {
 }
 
 /**
+ * Serializes top-level metadata values into `"key":value` JSON fragments and
+ * adds them to `entries`, overwriting fragments of existing keys.
+ *
+ * Keys with `null`, `undefined`, function or symbol values are skipped. Values
+ * are serialized one by one, so a value that fails to serialize is replaced
+ * with `"<failed to serialize>"` instead of dropping the whole metadata
+ * object. New keys beyond {@link MAX_OBSERVATION_METADATA_KEYS} are dropped
+ * with a warning.
+ *
+ * Callers can keep `entries` and pass it again on the next update, so only
+ * the keys of that update are serialized.
+ *
+ * @param metadata - Metadata to serialize
+ * @param entries - Fragments of earlier metadata, keyed by metadata key
+ * @returns `entries`, with the fragments of `metadata` added
+ * @internal
+ */
+export function serializeObservationMetadataEntries(
+  metadata: object,
+  entries: Map<string, string> = new Map(),
+): Map<string, string> {
+  let droppedKeys = 0;
+
+  for (const [key, value] of Object.entries(metadata)) {
+    if (!isWrittenMetadataValue(value)) continue;
+
+    if (!entries.has(key) && entries.size >= MAX_OBSERVATION_METADATA_KEYS) {
+      droppedKeys++;
+      continue;
+    }
+
+    let serialized: string | undefined;
+
+    try {
+      serialized = JSON.stringify(value);
+    } catch {
+      serialized = JSON.stringify("<failed to serialize>");
+    }
+
+    // JSON.stringify returns undefined for values with a toJSON method that
+    // returns undefined
+    if (serialized !== undefined) {
+      entries.set(key, `${JSON.stringify(key)}:${serialized}`);
+    }
+  }
+
+  if (droppedKeys > 0) {
+    getGlobalLogger().warn(
+      `Dropped ${droppedKeys} observation metadata keys: metadata can have at most ${MAX_OBSERVATION_METADATA_KEYS} top-level keys.`,
+    );
+  }
+
+  return entries;
+}
+
+/**
+ * Joins fragments from {@link serializeObservationMetadataEntries} into a
+ * JSON object.
+ *
+ * @param entries - Fragments keyed by metadata key
+ * @returns JSON string, or undefined if there are no fragments
+ * @internal
+ */
+export function joinObservationMetadataEntries(
+  entries: Map<string, string>,
+): string | undefined {
+  return entries.size > 0 ? `{${[...entries.values()].join(",")}}` : undefined;
+}
+
+/**
  * Serializes observation metadata into the single JSON value written to the
  * `langfuse.observation.metadata` span attribute.
  *
- * Top-level keys with `null`, `undefined`, function or symbol values are
- * skipped. Values are
- * serialized one by one, so a value that fails to serialize is replaced with
- * `"<failed to serialize>"` instead of dropping the whole metadata object.
+ * Object metadata is serialized with
+ * {@link serializeObservationMetadataEntries}: keys with `null`, `undefined`,
+ * function or symbol values are skipped, and keys beyond
+ * {@link MAX_OBSERVATION_METADATA_KEYS} are dropped with a warning.
  *
  * @param metadata - Metadata to serialize
  * @returns JSON string, or undefined if there is no metadata to write
- * @throws Error if metadata has more than {@link MAX_OBSERVATION_METADATA_KEYS} top-level keys
  * @internal
  */
 export function serializeObservationMetadata(
@@ -192,32 +246,7 @@ export function serializeObservationMetadata(
     }
   }
 
-  const entries = Object.entries(metadata).filter(([_, v]) =>
-    isWrittenMetadataValue(v),
+  return joinObservationMetadataEntries(
+    serializeObservationMetadataEntries(metadata),
   );
-
-  if (entries.length > MAX_OBSERVATION_METADATA_KEYS) {
-    throw new Error(
-      `Observation metadata has ${entries.length} keys, which exceeds the maximum of ${MAX_OBSERVATION_METADATA_KEYS}.`,
-    );
-  }
-
-  const parts: string[] = [];
-
-  for (const [key, value] of entries) {
-    let serialized: string | undefined;
-
-    try {
-      serialized = JSON.stringify(value);
-    } catch {
-      serialized = JSON.stringify("<failed to serialize>");
-    }
-
-    // JSON.stringify returns undefined for functions and symbols
-    if (serialized !== undefined) {
-      parts.push(`${JSON.stringify(key)}:${serialized}`);
-    }
-  }
-
-  return parts.length > 0 ? `{${parts.join(",")}}` : undefined;
 }

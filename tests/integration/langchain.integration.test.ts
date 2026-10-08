@@ -126,11 +126,14 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       "hi",
     );
-    expect(
+    const exportedMetadata = JSON.parse(
       assertions.expectSpanWithName("echo").attributes[
         LangfuseOtelSpanAttributes.OBSERVATION_METADATA
-      ],
-    ).toBeUndefined();
+      ] as string,
+    );
+    expect(Object.keys(exportedMetadata)).toHaveLength(
+      MAX_OBSERVATION_METADATA_KEYS,
+    );
   });
 
   it("should not mark LangGraph interrupts as errors", async () => {

@@ -108,9 +108,14 @@ describe("Experiment Attribute Propagation", () => {
       expect(
         rootSpan?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT],
       ).toBe("output");
-      expect(
-        rootSpan?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_METADATA],
-      ).toBeUndefined();
+      const exportedMetadata = JSON.parse(
+        rootSpan?.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_METADATA
+        ] as string,
+      );
+      expect(Object.keys(exportedMetadata)).toHaveLength(
+        MAX_OBSERVATION_METADATA_KEYS,
+      );
     });
 
     it("should propagate experiment metadata to child spans", async () => {

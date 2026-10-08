@@ -1,7 +1,8 @@
 import {
-  isWrittenMetadataValue,
+  joinObservationMetadataEntries,
   LangfuseOtelSpanAttributes,
   serializeObservationMetadata,
+  serializeObservationMetadataEntries,
 } from "@langfuse/core";
 import { type Attributes, type Span } from "@opentelemetry/api";
 
@@ -110,27 +111,25 @@ function _serialize(obj: unknown): string | undefined {
 }
 
 /**
- * Metadata already written to each span. Kept so that repeated updates merge
- * into a single `langfuse.observation.metadata` attribute instead of
- * overwriting it.
+ * Serialized metadata fragments already written to each span, keyed by
+ * metadata key. Kept so that repeated updates merge into a single
+ * `langfuse.observation.metadata` attribute instead of overwriting it, while
+ * only serializing the keys of each update.
  *
  * Stored on `globalThis` so that the ESM and CJS builds share it when both are
  * loaded in one process.
  */
 const SPAN_METADATA_KEY = Symbol.for("langfuse.tracing.spanMetadata");
-const spanMetadata: WeakMap<Span, Record<string, unknown>> = ((
+const spanMetadata: WeakMap<Span, Map<string, string>> = ((
   globalThis as Record<symbol, unknown>
-)[SPAN_METADATA_KEY] ??= new WeakMap()) as WeakMap<
-  Span,
-  Record<string, unknown>
->;
+)[SPAN_METADATA_KEY] ??= new WeakMap()) as WeakMap<Span, Map<string, string>>;
 
 /**
  * Reads metadata that was written to the span without going through
  * {@link setObservationAttributes}, e.g. by `@langfuse/vercel-ai-sdk`, so it
  * is merged instead of overwritten.
  */
-function readSpanMetadata(span: Span): Record<string, unknown> | undefined {
+function readSpanMetadata(span: Span): Map<string, string> | undefined {
   // SDK spans expose their attributes, API-only spans don't
   const value = (span as Partial<{ attributes: Attributes }>).attributes?.[
     LangfuseOtelSpanAttributes.OBSERVATION_METADATA
@@ -141,7 +140,9 @@ function readSpanMetadata(span: Span): Record<string, unknown> | undefined {
   try {
     const parsed: unknown = JSON.parse(value);
 
-    return isPlainObject(parsed) ? parsed : undefined;
+    return isPlainObject(parsed)
+      ? serializeObservationMetadataEntries(parsed)
+      : undefined;
   } catch {
     return undefined;
   }
@@ -157,13 +158,13 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  *
  * Top-level metadata keys from this update overwrite earlier values. Keys
  * with `null`, `undefined`, function or symbol values leave earlier values
- * untouched.
+ * untouched. New keys beyond the maximum number of keys are dropped with a
+ * warning.
  *
  * @param span - Span to update
  * @param type - Observation type
  * @param attributes - Observation attributes to set
  * @param options - Set `omitType` to leave the observation type attribute unchanged
- * @throws Error if the merged metadata exceeds the maximum number of keys
  * @internal
  */
 export function setObservationAttributes(
@@ -172,40 +173,34 @@ export function setObservationAttributes(
   attributes: LangfuseObservationAttributes,
   options?: { omitType?: boolean },
 ): void {
-  let metadata: unknown = attributes.metadata;
-  const previous = spanMetadata.get(span) ?? readSpanMetadata(span);
-
-  if (previous && isPlainObject(metadata)) {
-    metadata = {
-      ...previous,
-      ...Object.fromEntries(
-        Object.entries(metadata).filter(([_, v]) => isWrittenMetadataValue(v)),
-      ),
-    };
-  }
-
-  // Throws before any state changes if the merged metadata is too large
-  const otelAttributes = createObservationAttributes(type, {
-    ...attributes,
-    metadata: metadata as LangfuseObservationAttributes["metadata"],
-  });
+  const { metadata, ...rest } = attributes;
+  const otelAttributes = createObservationAttributes(type, rest);
 
   if (options?.omitType) {
     delete otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE];
   }
 
-  if (isPlainObject(metadata)) {
-    // Keep a parsed copy of what was written, not the caller's object, so
-    // later changes to that object don't leak into future updates
-    const serialized =
-      otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_METADATA];
+  let serializedMetadata: string | undefined;
 
-    spanMetadata.set(
-      span,
-      typeof serialized === "string" ? JSON.parse(serialized) : {},
+  if (isPlainObject(metadata)) {
+    // Only the keys of this update are serialized. The cached fragments are
+    // strings, so later changes to the caller's object don't leak into
+    // future updates.
+    const entries = serializeObservationMetadataEntries(
+      metadata,
+      spanMetadata.get(span) ?? readSpanMetadata(span),
     );
+
+    spanMetadata.set(span, entries);
+    serializedMetadata = joinObservationMetadataEntries(entries);
   } else if (metadata != null) {
     spanMetadata.delete(span);
+    serializedMetadata = serializeObservationMetadata(metadata);
+  }
+
+  if (serializedMetadata !== undefined) {
+    otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_METADATA] =
+      serializedMetadata;
   }
 
   span.setAttributes(otelAttributes);

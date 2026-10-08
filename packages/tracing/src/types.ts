@@ -48,7 +48,8 @@ export type LangfuseSpanAttributes = {
   output?: unknown;
   /**
    * Additional metadata as key-value pairs. Updates merge into earlier
-   * metadata by top-level key. At most 128 top-level keys are allowed.
+   * metadata by top-level key. At most 128 top-level keys are kept; new keys
+   * beyond that are dropped with a warning.
    */
   metadata?: Record<string, unknown>;
   /** Severity level of the observation */
