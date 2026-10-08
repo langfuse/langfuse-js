@@ -39,6 +39,16 @@ import { isDefaultExportSpan } from "./span-filter.js";
  * attribute at a time. Metadata keys are never passed to the mask, so masked
  * metadata keeps its keys.
  *
+ * Masking runs at export, after propagation, which has these consequences for
+ * propagated trace metadata:
+ * - The mask runs once for each span that carries a propagated value, so it
+ *   should be cheap and return the same output for the same input.
+ * - The 200 character limit is checked on the unmasked value when
+ *   `propagateAttributes` runs, so a value over the limit is dropped even if
+ *   the mask would shorten it.
+ * - Values propagated as baggage (`asBaggage: true`) are sent to downstream
+ *   services unmasked.
+ *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
  * @returns The masked data, or a promise resolving to it

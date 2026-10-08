@@ -229,17 +229,25 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
 
       testEnv = await setupTestEnvironment({
         spanProcessorConfig: {
-          mask: () => {
-            throw new Error("Mask function error");
+          mask: ({ data }) => {
+            if (data === "one" || data === "trace-one") {
+              throw new Error("Mask function error");
+            }
+            return typeof data === "string" ? `masked-${data}` : data;
           },
         },
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      const span = startObservation("metadata-error-mask-span", {
-        metadata: { a: "one", b: "two" },
-      });
-      span.end();
+      propagateAttributes(
+        { metadata: { traceA: "trace-one", traceB: "trace-two" } },
+        () => {
+          const span = startObservation("metadata-error-mask-span", {
+            metadata: { a: "one", b: "two" },
+          });
+          span.end();
+        },
+      );
 
       await waitForSpanExport(testEnv.mockExporter, 1);
 
@@ -252,7 +260,17 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       assertions.expectSpanAttribute(
         "metadata-error-mask-span",
         "langfuse.observation.metadata.b",
+        "masked-two",
+      );
+      assertions.expectSpanAttribute(
+        "metadata-error-mask-span",
+        "langfuse.trace.metadata.traceA",
         failed,
+      );
+      assertions.expectSpanAttribute(
+        "metadata-error-mask-span",
+        "langfuse.trace.metadata.traceB",
+        "masked-trace-two",
       );
       assertions.expectSpanAttribute(
         "metadata-error-mask-span",
