@@ -661,7 +661,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * JSON-encode the result again, so the mask never sees the encoding and the
    * attribute stays valid JSON. If the masked value is not written by
    * `serializeMetadataValue` (e.g. the mask returns null or undefined), the
-   * attribute is removed, as if the metadata value had been null.
+   * attribute is removed, as if the metadata value had been null. A stored
+   * `"null"` that the mask returns as null is kept.
    */
   private async applyMaskToObservationMetadata(
     span: ReadableSpan,
@@ -678,7 +679,13 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       }
     }
 
-    const serialized = serializeMetadataValue(await this.applyMask(decoded));
+    const masked = await this.applyMask(decoded);
+    // NaN, Infinity and toJSON() returning null are written as "null", which
+    // decodes to null. That key was set by the user, so keep it.
+    const serialized =
+      decoded === null && masked === null
+        ? "null"
+        : serializeMetadataValue(masked);
 
     if (serialized === undefined) {
       delete span.attributes[key];

@@ -306,6 +306,41 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       );
     });
 
+    it("should keep observation metadata that encodes to null when the mask leaves it unchanged", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) => data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("metadata-null-encoded-mask-span", {
+        metadata: {
+          nan: NaN,
+          inf: Infinity,
+          toJsonNull: { toJSON: () => null },
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const exported = assertions.expectSpanWithName(
+        "metadata-null-encoded-mask-span",
+      );
+      expect(exported.attributes["langfuse.observation.metadata.nan"]).toBe(
+        "null",
+      );
+      expect(exported.attributes["langfuse.observation.metadata.inf"]).toBe(
+        "null",
+      );
+      expect(
+        exported.attributes["langfuse.observation.metadata.toJsonNull"],
+      ).toBe("null");
+    });
+
     it("should mask propagated trace metadata values", async () => {
       await teardownTestEnvironment(testEnv);
 
