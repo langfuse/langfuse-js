@@ -66,8 +66,12 @@ describe("serializeMetadataValue", () => {
     expect(serializeMetadataValue(circular)).toBe(FAILED);
   });
 
-  it("should return a JSON placeholder for bigints", () => {
-    expect(serializeMetadataValue(BigInt(1))).toBe(FAILED);
+  it("should JSON-encode bigints as strings of their decimal digits", () => {
+    expect(serializeMetadataValue(BigInt(10))).toBe('"10"');
+    expect(serializeMetadataValue(BigInt("9007199254740993"))).toBe(
+      '"9007199254740993"',
+    );
+    expect(serializeMetadataValue({ id: BigInt(-1) })).toBe('{"id":"-1"}');
   });
 
   it("should return undefined if toJSON returns undefined", () => {

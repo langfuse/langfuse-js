@@ -277,8 +277,9 @@ export function dropMetadataOverSpanAttributeLimit<
  *
  * Every value is JSON-encoded, strings included (`"3"` becomes `"\"3\""`), so
  * the server can tell the string `"3"` from the number `3` and the string
- * `'{"a":1}'` from the object `{ a: 1 }`. A value that fails to serialize
- * becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
+ * `'{"a":1}'` from the object `{ a: 1 }`. Bigints, also nested ones, become
+ * JSON strings of their decimal digits (`10n` becomes `"\"10\""`), as JSON
+ * has no bigint type. A value that fails to serialize becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
  * functions and symbols return undefined and are not written.
  *
  * @param value - Metadata value to serialize
@@ -296,7 +297,9 @@ export function serializeMetadataValue(value: unknown): string | undefined {
 
   try {
     // JSON.stringify returns undefined if a toJSON method returns undefined
-    return JSON.stringify(value) as string | undefined;
+    return JSON.stringify(value, (_, v) =>
+      typeof v === "bigint" ? v.toString() : v,
+    ) as string | undefined;
   } catch {
     return JSON.stringify("<failed to serialize>");
   }
