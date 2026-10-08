@@ -66,12 +66,27 @@ describe("serializeMetadataValue", () => {
     expect(serializeMetadataValue(circular)).toBe(FAILED);
   });
 
-  it("should JSON-encode bigints as strings of their decimal digits", () => {
-    expect(serializeMetadataValue(BigInt(10))).toBe('"10"');
-    expect(serializeMetadataValue(BigInt("9007199254740993"))).toBe(
-      '"9007199254740993"',
+  it("should JSON-encode bigints in the JS-safe range as numbers", () => {
+    expect(serializeMetadataValue(BigInt(10))).toBe("10");
+    expect(serializeMetadataValue(BigInt(Number.MAX_SAFE_INTEGER))).toBe(
+      "9007199254740991",
     );
-    expect(serializeMetadataValue({ id: BigInt(-1) })).toBe('{"id":"-1"}');
+    expect(serializeMetadataValue(BigInt(Number.MIN_SAFE_INTEGER))).toBe(
+      "-9007199254740991",
+    );
+    expect(serializeMetadataValue({ id: BigInt(-1) })).toBe('{"id":-1}');
+  });
+
+  it("should JSON-encode bigints outside the JS-safe range as strings of their decimal digits", () => {
+    expect(serializeMetadataValue(BigInt("9007199254740992"))).toBe(
+      '"9007199254740992"',
+    );
+    expect(serializeMetadataValue(BigInt("-9007199254740992"))).toBe(
+      '"-9007199254740992"',
+    );
+    expect(serializeMetadataValue({ id: BigInt(2) ** BigInt(70) })).toBe(
+      '{"id":"1180591620717411303424"}',
+    );
   });
 
   it("should return undefined if toJSON returns undefined", () => {

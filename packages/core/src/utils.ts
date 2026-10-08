@@ -278,8 +278,9 @@ export function dropMetadataOverSpanAttributeLimit<
  * Every value is JSON-encoded, strings included (`"3"` becomes `"\"3\""`), so
  * the server can tell the string `"3"` from the number `3` and the string
  * `'{"a":1}'` from the object `{ a: 1 }`. Bigints, also nested ones, become
- * JSON strings of their decimal digits (`10n` becomes `"\"10\""`), as JSON
- * has no bigint type. A value that fails to serialize becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
+ * JSON numbers if they are in the JS-safe integer range (`10n` becomes `"10"`)
+ * and JSON strings of their decimal digits otherwise (`2n ** 60n` becomes
+ * `"\"1152921504606846976\""`), matching the Python SDK. A value that fails to serialize becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
  * functions and symbols return undefined and are not written.
  *
  * @param value - Metadata value to serialize
@@ -297,9 +298,14 @@ export function serializeMetadataValue(value: unknown): string | undefined {
 
   try {
     // JSON.stringify returns undefined if a toJSON method returns undefined
-    return JSON.stringify(value, (_, v) =>
-      typeof v === "bigint" ? v.toString() : v,
-    ) as string | undefined;
+    return JSON.stringify(value, (_, v) => {
+      if (typeof v !== "bigint") return v;
+
+      return v >= BigInt(Number.MIN_SAFE_INTEGER) &&
+        v <= BigInt(Number.MAX_SAFE_INTEGER)
+        ? Number(v)
+        : v.toString();
+    }) as string | undefined;
   } catch {
     return JSON.stringify("<failed to serialize>");
   }
