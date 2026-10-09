@@ -48,6 +48,7 @@ import {
 } from "./types.js";
 
 export type {
+  LangfuseSkillReference,
   LangfuseObservationType,
   ObservationLevel,
   LangfuseSpanAttributes,

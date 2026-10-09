@@ -363,6 +363,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       ];
     }
 
+    if (
+      span.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+      ] != null
+    ) {
+      delete propagatedAttributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+      ];
+    }
+
     // Set propagated attributes, environment and release attributes
     span.setAttributes({
       [LangfuseOtelSpanAttributes.ENVIRONMENT]: this.environment,

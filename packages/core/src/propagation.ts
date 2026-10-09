@@ -19,6 +19,7 @@ import {
   LangfuseOtelSpanAttributes,
 } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
+import { LangfuseSkillReference } from "./types.js";
 
 type CorrelatedKey =
   | "userId"
@@ -28,6 +29,7 @@ type CorrelatedKey =
   | "tags"
   | "traceName"
   | "environment"
+  | "skillsAvailable"
   | "promptName"
   | "promptVersion";
 
@@ -61,6 +63,7 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   tags: createContextKey("langfuse_tags"),
   traceName: createContextKey("langfuse_trace_name"),
   environment: createContextKey("langfuse_environment"),
+  skillsAvailable: createContextKey("langfuse_skills_available"),
   promptName: createContextKey("langfuse_prompt_name"),
   promptVersion: createContextKey("langfuse_prompt_version"),
 
@@ -220,6 +223,17 @@ export interface PropagateAttributesParams {
    * set directly on an observation takes precedence over the propagated one.
    */
   prompt?: PropagatedPromptInput;
+
+  /**
+   * Skills available to generations in this scope. Accepts a reference array
+   * or the manifest map returned by `langfuse.skills.listManifests()`.
+   * Map values are reduced to skill IDs, names, and versions.
+   * Nested catalogs replace the outer catalog; an empty array or map clears it.
+   * Direct observation attributes take precedence.
+   */
+  skillsAvailable?:
+    | LangfuseSkillReference[]
+    | ReadonlyMap<string, { id: string; name: string; version: number }>;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -389,6 +403,7 @@ export function propagateAttributes<
     traceName,
     environment,
     prompt,
+    skillsAvailable,
     _internalExperiment,
   } = params;
 
@@ -539,6 +554,19 @@ export function propagateAttributes<
     }
   }
 
+  if (skillsAvailable !== undefined) {
+    const serialized = serializeSkillsAvailable(skillsAvailable);
+    if (serialized !== null) {
+      context = setPropagatedAttribute({
+        key: "skillsAvailable",
+        value: serialized,
+        context,
+        span,
+        asBaggage,
+      });
+    }
+  }
+
   // Handle experiment attributes
   if (_internalExperiment) {
     for (const [key, value] of Object.entries(_internalExperiment)) {
@@ -605,6 +633,53 @@ function extractPropagatedPrompt(
   return { name, version };
 }
 
+function serializeSkillsAvailable(value: unknown): string | null {
+  if (value instanceof Map) {
+    value = Array.from(value.values(), (skill) => {
+      if (skill === null || typeof skill !== "object") return skill;
+      return {
+        langfuseSkillId: skill.id,
+        skillName: skill.name,
+        langfuseSkillVersion: skill.version,
+      };
+    });
+  }
+
+  if (
+    !Array.isArray(value) ||
+    !value.every(
+      (skill) =>
+        skill !== null &&
+        typeof skill === "object" &&
+        (skill.langfuseSkillId == null ||
+          (typeof skill.langfuseSkillId === "string" &&
+            skill.langfuseSkillId.length > 0 &&
+            skill.langfuseSkillId.length <= 256)) &&
+        typeof skill.skillName === "string" &&
+        skill.skillName.length > 0 &&
+        skill.skillName.length <= 128 &&
+        (skill.langfuseSkillVersion == null ||
+          (typeof skill.langfuseSkillVersion === "number" &&
+            Number.isInteger(skill.langfuseSkillVersion) &&
+            skill.langfuseSkillVersion > 0 &&
+            skill.langfuseSkillVersion <= 4294967295)),
+    )
+  ) {
+    getGlobalLogger().warn(
+      "Propagated 'skillsAvailable' must resolve to an array of skill references with an optional Langfuse ID and an optional positive UInt32 Langfuse version. Dropping value.",
+    );
+    return null;
+  }
+
+  return JSON.stringify(
+    value.map(({ langfuseSkillId, skillName, langfuseSkillVersion }) => ({
+      langfuseSkillId,
+      skillName,
+      langfuseSkillVersion,
+    })),
+  );
+}
+
 export function getPropagatedAttributesFromContext(
   context: Context,
 ): Record<string, string | string[] | number> {
@@ -621,6 +696,22 @@ export function getPropagatedAttributesFromContext(
         const spanKey = getSpanKeyFromBaggageKey(baggageKey);
 
         if (spanKey) {
+          if (
+            spanKey === LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+          ) {
+            try {
+              const serialized = serializeSkillsAvailable(
+                JSON.parse(baggageEntry.value),
+              );
+              if (serialized !== null)
+                propagatedAttributes[spanKey] = serialized;
+            } catch {
+              getGlobalLogger().warn(
+                "Invalid skillsAvailable baggage JSON. Dropping value.",
+              );
+            }
+            return;
+          }
           if (spanKey === LangfuseOtelSpanAttributes.ENVIRONMENT) {
             if (isValidEnvironment(baggageEntry.value)) {
               propagatedAttributes[spanKey] = baggageEntry.value;
@@ -709,6 +800,14 @@ export function getPropagatedAttributesFromContext(
   }
 
   const metadata = context.getValue(LangfuseOtelContextKeys["metadata"]);
+  const skillsAvailable = context.getValue(
+    LangfuseOtelContextKeys["skillsAvailable"],
+  );
+  if (typeof skillsAvailable === "string") {
+    propagatedAttributes[
+      LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+    ] = skillsAvailable;
+  }
   if (metadata && typeof metadata === "object" && metadata !== null) {
     for (const [k, v] of Object.entries(metadata)) {
       const spanKey = `${LangfuseOtelSpanAttributes.TRACE_METADATA}.${k}`;
@@ -754,6 +853,7 @@ type SetPropagatedAttributeParams = {
         | "traceName"
         | "environment"
         | "promptName"
+        | "skillsAvailable"
         | ExperimentKey;
       value: string;
     }
@@ -940,6 +1040,8 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.TRACE_NAME;
     case "environment":
       return LangfuseOtelSpanAttributes.ENVIRONMENT;
+    case "skillsAvailable":
+      return LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
     case "metadata":
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
     case "tags":
@@ -984,6 +1086,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}trace_name`;
     case "environment":
       return `${LANGFUSE_BAGGAGE_PREFIX}environment`;
+    case "skillsAvailable":
+      return `${LANGFUSE_BAGGAGE_PREFIX}skills_available`;
     case "metadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
     case "tags":
@@ -1037,6 +1141,8 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
       return getSpanKeyForPropagatedKey("traceName");
     case "environment":
       return getSpanKeyForPropagatedKey("environment");
+    case "skills_available":
+      return getSpanKeyForPropagatedKey("skillsAvailable");
     case "tags":
       return getSpanKeyForPropagatedKey("tags");
     case "prompt_name":

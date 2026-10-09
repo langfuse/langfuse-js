@@ -10,6 +10,7 @@ import { ExperimentManager } from "./experiment/ExperimentManager.js";
 import { MediaManager } from "./media/index.js";
 import { PromptManager } from "./prompt/index.js";
 import { ScoreManager } from "./score/index.js";
+import { SkillManager, type SkillManagerOptions } from "./skill/index.js";
 
 /**
  * Configuration parameters for initializing a LangfuseClient instance.
@@ -51,6 +52,9 @@ export interface LangfuseClientParams {
    * Additional HTTP headers to include with API requests.
    */
   additionalHeaders?: Record<string, string>;
+
+  /** Skill file content cache configuration. */
+  skills?: SkillManagerOptions;
 }
 
 /**
@@ -59,6 +63,7 @@ export interface LangfuseClientParams {
  * The LangfuseClient provides access to all non-tracing Langfuse
  * functionality:
  * - Prompt management (`langfuse.prompt`) — fetch, cache, compile, and version prompts
+ * - Skills (`langfuse.skills`) — resolve managed versions and fetch skill files
  * - Datasets (`langfuse.dataset`) — manage test datasets and link items to runs
  * - Experiments (`langfuse.experiment`) — run tasks + evaluators over datasets
  * - Scores (`langfuse.score`) — create evaluation/feedback scores for traces and observations
@@ -104,6 +109,9 @@ export class LangfuseClient {
    * Manager for prompt operations including creation, retrieval, and caching.
    */
   public prompt: PromptManager;
+
+  /** Manager for managed skill versions and their files. */
+  public skills: SkillManager;
 
   /**
    * Manager for dataset operations including retrieval and item linking.
@@ -313,6 +321,7 @@ export class LangfuseClient {
     });
 
     this.prompt = new PromptManager({ apiClient: this.api });
+    this.skills = new SkillManager(this.api, params?.skills);
     this.dataset = new DatasetManager({ langfuseClient: this });
     this.score = new ScoreManager({ apiClient: this.api });
     this.media = new MediaManager({ apiClient: this.api });
