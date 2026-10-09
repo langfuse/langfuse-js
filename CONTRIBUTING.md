@@ -123,7 +123,7 @@ pnpm ci
 
 ## Publishing
 
-This project uses lockstep versioning - all packages are released together with the same version number. Releases are managed using [release-it](https://github.com/release-it/release-it) with conventional commits and automated changelog generation.
+This project uses lockstep versioning - all packages are released together with the same version number. Releases are managed using [release-it](https://github.com/release-it/release-it) with conventional commits; release notes are generated automatically on the GitHub release.
 
 ### Automated Releases via GitHub Actions (Recommended)
 
@@ -146,7 +146,6 @@ The automated workflow will:
 
 - Verify release is triggered from main branch
 - Update versions in all package.json files across the monorepo
-- Generate a changelog based on conventional commits
 - Create a git commit and tag
 - Build all packages
 - Verify build artifacts and check for suspicious files
@@ -211,7 +210,7 @@ Pre-release versions (alpha, beta, rc):
 - Won't be installed by default with `npm install @langfuse/client`
 - Must be explicitly installed: `npm install @langfuse/client@alpha`
 - Are tagged in git for full traceability
-- Generate pre-release entries in the changelog
+- Get their own GitHub release with auto-generated release notes
 
 ### Provenance Attestations
 
