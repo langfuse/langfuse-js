@@ -5,6 +5,6 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export type CreateScoresResponse =
+  | LangfuseAPI.CreateScoreBatchResults
   | LangfuseAPI.CreateScoreResponse
-  | LangfuseAPI.CreateScoreBatchResponse
-  | LangfuseAPI.CreateScoreBatchResults;
+  | LangfuseAPI.CreateScoreBatchResponse;
