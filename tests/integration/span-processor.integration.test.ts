@@ -9,7 +9,7 @@ import {
 import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { trace } from "@opentelemetry/api";
 import { NodeSDK } from "@opentelemetry/sdk-node";
-import { startObservation } from "@langfuse/tracing";
+import { propagateAttributes, startObservation } from "@langfuse/tracing";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
@@ -197,6 +197,30 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         "langfuse.observation.metadata.password": "REDACTED",
         "langfuse.observation.metadata.nested": "REDACTED",
       });
+    });
+
+    it("should not mask propagated trace metadata values", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      const mask = vi.fn(() => "REDACTED");
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: { mask },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      propagateAttributes({ metadata: { apiKey: "secret-key" } }, () => {
+        const span = startObservation("propagated-metadata-span");
+        span.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "propagated-metadata-span",
+        "langfuse.trace.metadata.apiKey",
+        "secret-key",
+      );
+      expect(mask).not.toHaveBeenCalledWith({ data: "secret-key" });
     });
 
     it("should only replace metadata values when the mask throws", async () => {
