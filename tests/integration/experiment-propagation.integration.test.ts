@@ -12,7 +12,7 @@ import {
 } from "@langfuse/core";
 import { startObservation, startActiveObservation } from "@langfuse/tracing";
 import { trace as otelTrace } from "@opentelemetry/api";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import {
   setupTestEnvironment,
@@ -39,6 +39,148 @@ describe("Experiment Attribute Propagation", () => {
   });
 
   describe("Basic Experiment Propagation", () => {
+    it("should keep experiment run metadata when item metadata exceeds the span attribute limit", async () => {
+      const itemMetadata = Object.fromEntries(
+        Array.from({ length: 200 }, (_, i) => [`key${i}`, i]),
+      );
+
+      await langfuse.experiment.run({
+        name: "limit-experiment",
+        runName: "limit-run",
+        data: [
+          {
+            input: "test-input",
+            metadata: { ...itemMetadata, experiment_name: "user-value" },
+          },
+        ],
+        task: async () => "output",
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+      const rootSpan = testEnv.mockExporter.exportedSpans.find(
+        (s) => s.name === "experiment-item-run",
+      );
+      const prefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+
+      expect(rootSpan?.attributes[`${prefix}experiment_name`]).toBe(
+        "limit-experiment",
+      );
+      expect(rootSpan?.attributes[`${prefix}experiment_run_name`]).toBe(
+        "limit-run",
+      );
+      expect(rootSpan?.attributes[`${prefix}key0`]).toBeDefined();
+      expect(rootSpan?.attributes[`${prefix}key199`]).toBeUndefined();
+    });
+
+    it("should propagate large item metadata as one attribute and keep the output", async () => {
+      vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+      const itemMetadata = {
+        ...Object.fromEntries(
+          Array.from({ length: 150 }, (_, i) => [`key${i}`, `value${i}`]),
+        ),
+        nested: { a: 1, b: { c: [1, 2, 3] } },
+      };
+      const experimentMetadata = { model: "gpt-4", temperature: "0.7" };
+
+      try {
+        const result = await langfuse.experiment.run({
+          name: "large-item-metadata",
+          runName: "large-item-metadata-run",
+          metadata: experimentMetadata,
+          data: [
+            {
+              input: "test-input",
+              id: "dataset-item-large",
+              datasetId: "dataset-large",
+              metadata: itemMetadata,
+            } as any,
+          ],
+          task: async ({ input }) => {
+            startObservation("child-operation", { input }).end();
+            return "output";
+          },
+        });
+
+        expect(result.itemResults[0].output).toBe("output");
+
+        await waitForSpanExport(testEnv.mockExporter, 2);
+        const spans = testEnv.mockExporter.exportedSpans;
+        const rootSpan = spans.find((s) => s.name === "experiment-item-run");
+        const childSpan = spans.find((s) => s.name === "child-operation");
+        expect(rootSpan).toBeDefined();
+        expect(childSpan).toBeDefined();
+
+        const itemMetadataKey =
+          LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_METADATA;
+        const metadataPrefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+
+        expect(
+          rootSpan!.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT],
+        ).toBe("output");
+        expect(rootSpan!.droppedAttributesCount).toBe(0);
+
+        // Item metadata is propagated as one JSON attribute, not per key
+        const rootItemMetadata = rootSpan!.attributes[itemMetadataKey];
+        expect(typeof rootItemMetadata).toBe("string");
+        expect(JSON.parse(rootItemMetadata as string)).toEqual(itemMetadata);
+        expect(
+          Object.keys(rootSpan!.attributes).filter((key) =>
+            key.startsWith(`${itemMetadataKey}.`),
+          ),
+        ).toEqual([]);
+
+        expect(
+          JSON.parse(
+            rootSpan!.attributes[
+              LangfuseOtelSpanAttributes.EXPERIMENT_METADATA
+            ] as string,
+          ),
+        ).toEqual(experimentMetadata);
+        expect(
+          rootSpan!.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ID],
+        ).toBeDefined();
+        expect(
+          rootSpan!.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_NAME],
+        ).toBe("large-item-metadata-run");
+        expect(
+          rootSpan!.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_ID],
+        ).toBe("dataset-item-large");
+        expect(
+          rootSpan!.attributes[
+            LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_ROOT_OBSERVATION_ID
+          ],
+        ).toBe(rootSpan!.spanContext().spanId);
+
+        // Experiment run keys survive the metadata cap
+        expect(rootSpan!.attributes[`${metadataPrefix}experiment_name`]).toBe(
+          "large-item-metadata",
+        );
+        expect(
+          rootSpan!.attributes[`${metadataPrefix}experiment_run_name`],
+        ).toBe("large-item-metadata-run");
+        expect(rootSpan!.attributes[`${metadataPrefix}dataset_id`]).toBe(
+          "dataset-large",
+        );
+        expect(rootSpan!.attributes[`${metadataPrefix}dataset_item_id`]).toBe(
+          "dataset-item-large",
+        );
+
+        expect(childSpan!.droppedAttributesCount).toBe(0);
+        expect(childSpan!.attributes[itemMetadataKey]).toBe(rootItemMetadata);
+        expect(
+          childSpan!.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_METADATA],
+        ).toBe(
+          rootSpan!.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_METADATA],
+        );
+        expect(
+          childSpan!.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ID],
+        ).toBe(rootSpan!.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ID]);
+      } finally {
+        vi.restoreAllMocks();
+      }
+    });
+
     it("should propagate experiment attributes to child spans", async () => {
       await langfuse.experiment.run({
         name: "test-experiment",
@@ -80,6 +222,37 @@ describe("Experiment Attribute Propagation", () => {
       ).toBe(
         rootSpan?.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ITEM_ID],
       );
+    });
+
+    it("should keep the item output when metadata exceeds the attribute limit", async () => {
+      vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+      const metadata = Object.fromEntries(
+        Array.from({ length: 150 }, (_, i) => [`key${i}`, i]),
+      );
+
+      try {
+        const result = await langfuse.experiment.run({
+          name: "metadata-limit-experiment",
+          data: [{ input: "test-input", metadata }],
+          task: async () => "output",
+        });
+
+        expect(result.itemResults).toHaveLength(1);
+        expect(result.itemResults[0].output).toBe("output");
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+        const rootSpan = testEnv.mockExporter.exportedSpans.find(
+          (s) => s.name === "experiment-item-run",
+        );
+
+        expect(
+          rootSpan?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT],
+        ).toBe("output");
+        expect(rootSpan?.droppedAttributesCount).toBe(0);
+      } finally {
+        vi.restoreAllMocks();
+      }
     });
 
     it("should propagate experiment metadata to child spans", async () => {

@@ -24,7 +24,7 @@ import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
 import {
@@ -99,6 +99,43 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       "The result is: 100",
     );
+  });
+
+  it("should keep the output when run metadata exceeds the attribute limit", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    const echoTool = new DynamicTool({
+      name: "echo",
+      description: "Echoes the input",
+      func: async (input: string) => input,
+    });
+
+    const metadata = Object.fromEntries(
+      Array.from({ length: 150 }, (_, i) => [`key${i}`, i]),
+    );
+
+    try {
+      await echoTool.invoke("hi", {
+        callbacks: [new CallbackHandler()],
+        metadata,
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "echo",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        "hi",
+      );
+      expect(assertions.expectSpanWithName("echo").droppedAttributesCount).toBe(
+        0,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("span attribute limit of 128"),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("should not mark LangGraph interrupts as errors", async () => {

@@ -487,20 +487,27 @@ export class ExperimentManager {
           async () => await task(item),
         );
 
+        const experimentRunMetadata = {
+          experiment_name: params.experimentName,
+          experiment_run_name: params.experimentRunName,
+          ...(datasetId && datasetItemId
+            ? {
+                dataset_id: datasetId,
+                dataset_item_id: datasetItemId,
+              }
+            : {}),
+        };
+
         span.update({
           input,
           output,
+          // Experiment run keys go first so the span attribute limit drops user
+          // metadata before them, and last so they still win over user keys.
           metadata: {
+            ...experimentRunMetadata,
             ...(itemMetadata ?? {}),
             ...experimentMetadata,
-            experiment_name: params.experimentName,
-            experiment_run_name: params.experimentRunName,
-            ...(datasetId && datasetItemId
-              ? {
-                  dataset_id: datasetId,
-                  dataset_item_id: datasetItemId,
-                }
-              : {}),
+            ...experimentRunMetadata,
           },
         });
 

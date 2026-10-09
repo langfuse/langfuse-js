@@ -1,5 +1,8 @@
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
-import { type Attributes } from "@opentelemetry/api";
+import {
+  dropMetadataOverSpanAttributeLimit,
+  LangfuseOtelSpanAttributes,
+} from "@langfuse/core";
+import { type Attributes, type Span } from "@opentelemetry/api";
 
 import {
   LangfuseObservationAttributes,
@@ -55,6 +58,73 @@ export function createObservationAttributes(
 
   return Object.fromEntries(
     Object.entries(otelAttributes).filter(([_, v]) => v != null),
+  );
+}
+
+/**
+ * Attributes the SDK may write in later updates of an observation. Metadata
+ * leaves room for them, because OpenTelemetry drops new attributes once a span
+ * reaches its attribute count limit.
+ */
+const RESERVED_OBSERVATION_ATTRIBUTE_KEYS: readonly string[] = [
+  LangfuseOtelSpanAttributes.OBSERVATION_TYPE,
+  LangfuseOtelSpanAttributes.OBSERVATION_LEVEL,
+  LangfuseOtelSpanAttributes.OBSERVATION_STATUS_MESSAGE,
+  LangfuseOtelSpanAttributes.VERSION,
+  LangfuseOtelSpanAttributes.ENVIRONMENT,
+  LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+  LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+];
+
+/**
+ * Reserved attributes that only generation-like observations can write.
+ */
+const RESERVED_GENERATION_ATTRIBUTE_KEYS: readonly string[] = [
+  ...RESERVED_OBSERVATION_ATTRIBUTE_KEYS,
+  LangfuseOtelSpanAttributes.OBSERVATION_MODEL,
+  LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS,
+  LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS,
+  LangfuseOtelSpanAttributes.OBSERVATION_COMPLETION_START_TIME,
+  LangfuseOtelSpanAttributes.OBSERVATION_MODEL_PARAMETERS,
+  LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_NAME,
+  LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION,
+];
+
+/**
+ * Sets observation attributes on a span.
+ *
+ * New metadata keys that would exceed the span's attribute count limit are
+ * dropped with a warning. The limit counts all attributes already on the span
+ * and keeps room for the observation attributes written in later updates, such
+ * as the output. Overwrites of keys already on the span are always kept.
+ *
+ * @param span - Span to update
+ * @param type - Observation type
+ * @param attributes - Observation attributes to set
+ * @param options - Set `omitType` to leave the observation type attribute unchanged
+ * @internal
+ */
+export function setObservationAttributes(
+  span: Span,
+  type: LangfuseObservationType,
+  attributes: LangfuseObservationAttributes,
+  options?: { omitType?: boolean },
+): void {
+  const otelAttributes = createObservationAttributes(type, attributes);
+
+  if (options?.omitType) {
+    delete otelAttributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE];
+  }
+
+  // With `omitType` the span's actual type is unknown, so it may still be a
+  // generation that writes model or usage attributes later.
+  const reservedKeys =
+    options?.omitType || type === "generation" || type === "embedding"
+      ? RESERVED_GENERATION_ATTRIBUTE_KEYS
+      : RESERVED_OBSERVATION_ATTRIBUTE_KEYS;
+
+  span.setAttributes(
+    dropMetadataOverSpanAttributeLimit(span, otelAttributes, reservedKeys),
   );
 }
 
