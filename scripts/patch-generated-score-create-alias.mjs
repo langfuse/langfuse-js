@@ -94,7 +94,7 @@ function patchLegacyAlias(legacyPath) {
   );
   contents = addMethodAfterConstructor(
     contents,
-    `  /**\n   * Create a score (supports both trace and session scores)\n   *\n   * @deprecated Use \`client.scores.create()\` instead.\n   * ${PATCH_MARKER}\n   */\n  public create(\n    request: LangfuseAPI.CreateScoreRequest,\n    requestOptions?: ScoreV1.RequestOptions,\n  ): core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse> {\n    return new Scores(this._options).create(request, requestOptions);\n  }\n`,
+    `  /**\n   * Create a score (supports both trace and session scores)\n   *\n   * @deprecated Use \`client.scores.create()\` instead.\n   * ${PATCH_MARKER}\n   */\n  public create(\n    request: LangfuseAPI.CreateScoreRequest,\n    requestOptions?: ScoreV1.RequestOptions,\n  ): core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse> {\n    // A single score request returns a single CreateScoreResponse; the\n    // canonical method is typed with the batch union.\n    return new Scores(this._options).create(\n      request,\n      requestOptions,\n    ) as core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse>;\n  }\n`,
     legacyPath,
   );
   write(legacyPath, contents);
