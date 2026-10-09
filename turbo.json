@@ -10,8 +10,7 @@
         "!**/node_modules/**",
         "!**/dist/**",
         "!build/**",
-        "!coverage/**",
-        "!CHANGELOG.md"
+        "!coverage/**"
       ]
     },
     "//#check:lint": {
