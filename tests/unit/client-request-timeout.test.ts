@@ -1,5 +1,6 @@
 import { LangfuseClient, ScoreManager } from "@langfuse/client";
 import {
+  fetchWithIdleTimeout,
   getGlobalLogger,
   LangfuseAPIClient,
   resetGlobalLogger,
@@ -327,5 +328,76 @@ describe("configured client timeout", () => {
     expect(Date.now() - startedAt).toBeLessThan(2_000);
     expect(resolved).toEqual({ image: reference });
     expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("does not read the body of a failed media download", async () => {
+    const client = makeClient(0.05);
+    client.api.media.get = vi
+      .fn()
+      .mockResolvedValue({ url: "http://localhost:3000/media.png" });
+    // The error body never ends; only the status must be needed.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(new ReadableStream<Uint8Array>({ start() {} }), {
+            status: 403,
+          }),
+      ),
+    );
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const reference =
+      "@@@langfuseMedia:type=image/png|id=media-id|source=base64_data_uri@@@";
+
+    const resolved = await client.media.resolveReferences({
+      obj: { image: reference },
+      resolveWith: "base64DataUri",
+    });
+
+    expect(resolved).toEqual({ image: reference });
+  });
+});
+
+describe("fetchWithIdleTimeout", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function pendingFetch() {
+    return vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init.signal?.addEventListener("abort", () =>
+            reject(init.signal?.reason),
+          );
+        }),
+    );
+  }
+
+  it("keeps signed query parameters out of the timeout error", async () => {
+    vi.stubGlobal("fetch", pendingFetch());
+
+    const error = await fetchWithIdleTimeout(
+      "https://bucket.example/media.png?X-Amz-Signature=secret",
+      {},
+      0.02,
+    ).catch((err: unknown) => err);
+
+    expect(String(error)).toContain("made no progress");
+    expect(String(error)).not.toContain("secret");
+  });
+
+  it("honors the caller's abort signal", async () => {
+    vi.stubGlobal("fetch", pendingFetch());
+    const caller = new AbortController();
+
+    const pending = fetchWithIdleTimeout(
+      "https://bucket.example/media.png",
+      { signal: caller.signal },
+      undefined,
+    );
+    caller.abort(new Error("caller cancelled"));
+
+    await expect(pending).rejects.toThrow("caller cancelled");
   });
 });

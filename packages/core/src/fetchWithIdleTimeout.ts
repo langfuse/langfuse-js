@@ -6,6 +6,10 @@
  * Python SDK's HTTP client. Without `timeoutSeconds`, the request is not
  * bounded.
  *
+ * Non-2xx responses are returned as soon as their headers arrive, with an
+ * empty body; their body is not read. An abort signal in `init` still cancels
+ * the request.
+ *
  * @internal
  */
 export async function fetchWithIdleTimeout(
@@ -14,16 +18,23 @@ export async function fetchWithIdleTimeout(
   timeoutSeconds: number | undefined,
 ): Promise<{ response: Response; body: Uint8Array }> {
   const controller = new AbortController();
+  const callerSignal = init.signal;
+  const abortFromCaller = () => controller.abort(callerSignal?.reason);
+  if (callerSignal?.aborted) {
+    abortFromCaller();
+  } else {
+    callerSignal?.addEventListener("abort", abortFromCaller, { once: true });
+  }
+
   let timer: ReturnType<typeof setTimeout> | undefined;
   const resetTimer = () => {
     if (timer !== undefined) clearTimeout(timer);
     if (timeoutSeconds === undefined) return;
+    // The URL is left out of the error: it can carry signed query parameters.
     timer = setTimeout(
       () =>
         controller.abort(
-          new Error(
-            `Request made no progress for ${timeoutSeconds} seconds: ${url}`,
-          ),
+          new Error(`Request made no progress for ${timeoutSeconds} seconds`),
         ),
       timeoutSeconds * 1_000,
     );
@@ -33,6 +44,11 @@ export async function fetchWithIdleTimeout(
   try {
     const response = await fetch(url, { ...init, signal: controller.signal });
     resetTimer();
+
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => {});
+      return { response, body: new Uint8Array() };
+    }
 
     if (!response.body) {
       return { response, body: new Uint8Array(await response.arrayBuffer()) };
@@ -59,5 +75,6 @@ export async function fetchWithIdleTimeout(
     return { response, body };
   } finally {
     if (timer !== undefined) clearTimeout(timer);
+    callerSignal?.removeEventListener("abort", abortFromCaller);
   }
 }

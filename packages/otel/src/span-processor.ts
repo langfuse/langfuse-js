@@ -313,8 +313,17 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
 
     const authHeaderValue = base64Encode(`${publicKey}:${secretKey}`);
-    const timeoutSeconds =
+    const configuredTimeoutSeconds =
       params?.timeout ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
+    const timeoutSeconds =
+      Number.isFinite(configuredTimeoutSeconds) && configuredTimeoutSeconds > 0
+        ? configuredTimeoutSeconds
+        : 5;
+    if (timeoutSeconds !== configuredTimeoutSeconds) {
+      logger.warn(
+        `Invalid timeout '${configuredTimeoutSeconds}'. Falling back to ${timeoutSeconds} seconds.`,
+      );
+    }
     const envMediaUploadEnabled = getEnv("LANGFUSE_MEDIA_UPLOAD_ENABLED");
     const mediaUploadEnabled =
       params?.mediaUploadEnabled ??
