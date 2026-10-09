@@ -340,6 +340,7 @@ export class Comments {
    * Get a comment by id
    *
    * @param {string} commentId - The unique langfuse identifier of a comment
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Comments.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -353,6 +354,7 @@ export class Comments {
    */
   public getById(
     commentId: string,
+    request: Record<string, never> = {},
     requestOptions?: Comments.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Comment> {
     return core.HttpResponsePromise.fromPromise(

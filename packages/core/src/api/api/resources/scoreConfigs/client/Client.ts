@@ -329,6 +329,7 @@ export class ScoreConfigs {
    * Get a score config
    *
    * @param {string} configId - The unique langfuse identifier of a score config
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {ScoreConfigs.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -342,6 +343,7 @@ export class ScoreConfigs {
    */
   public getById(
     configId: string,
+    request: Record<string, never> = {},
     requestOptions?: ScoreConfigs.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.ScoreConfig> {
     return core.HttpResponsePromise.fromPromise(

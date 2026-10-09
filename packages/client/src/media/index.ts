@@ -112,6 +112,7 @@ export class MediaManager {
                 MediaManager.parseReferenceString(referenceString);
               const mediaData = await this.apiClient.media.get(
                 parsedMediaReference.mediaId,
+                {},
                 { timeoutInSeconds: this.timeoutSeconds },
               );
               const mediaContent = await fetch(mediaData.url, {

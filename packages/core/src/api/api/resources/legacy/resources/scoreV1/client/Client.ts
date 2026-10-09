@@ -78,6 +78,7 @@ export class ScoreV1 {
    * Delete a score (supports both trace and session scores)
    *
    * @param {string} scoreId - The unique langfuse identifier of a score
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {ScoreV1.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -91,6 +92,7 @@ export class ScoreV1 {
    */
   public delete(
     scoreId: string,
+    request: Record<string, never> = {},
     requestOptions?: ScoreV1.RequestOptions,
   ): core.HttpResponsePromise<void> {
     return core.HttpResponsePromise.fromPromise(

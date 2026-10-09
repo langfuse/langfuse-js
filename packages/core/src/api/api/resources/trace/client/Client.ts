@@ -199,6 +199,7 @@ export class Trace {
    * Delete a specific trace
    *
    * @param {string} traceId - The unique langfuse identifier of the trace to delete
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Trace.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -212,6 +213,7 @@ export class Trace {
    */
   public delete(
     traceId: string,
+    request: Record<string, never> = {},
     requestOptions?: Trace.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DeleteTraceResponse> {
     return core.HttpResponsePromise.fromPromise(

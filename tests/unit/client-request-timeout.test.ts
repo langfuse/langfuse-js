@@ -170,7 +170,7 @@ describe("configured client timeout", () => {
       resolveWith: "base64DataUri",
     });
 
-    expect(get).toHaveBeenCalledWith("media-id", { timeoutInSeconds: 4 });
+    expect(get).toHaveBeenCalledWith("media-id", {}, { timeoutInSeconds: 4 });
   });
 
   it("aborts a stalled media download after the timeout", async () => {

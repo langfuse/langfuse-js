@@ -447,6 +447,7 @@ export class Scores {
    * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v3/scores` with the `id` filter instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
    *
    * @param {string} scoreId - The unique langfuse identifier of a score
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -460,6 +461,7 @@ export class Scores {
    */
   public getById(
     scoreId: string,
+    request: Record<string, never> = {},
     requestOptions?: Scores.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Score> {
     return core.HttpResponsePromise.fromPromise(

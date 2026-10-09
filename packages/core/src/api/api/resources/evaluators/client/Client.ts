@@ -424,6 +424,7 @@ export class Evaluators {
    * The response includes the evaluator's latest definition and version metadata flattened into the evaluator object, plus associated evaluation rules. Use the version-history endpoint when older definitions are needed.
    *
    * @param {string} evaluatorId - Stable evaluator identifier returned by the evaluator endpoints.
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.EvaluationUnauthorizedError}
@@ -443,6 +444,7 @@ export class Evaluators {
    */
   public get(
     evaluatorId: string,
+    request: Record<string, never> = {},
     requestOptions?: Evaluators.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Evaluator> {
     return core.HttpResponsePromise.fromPromise(
@@ -773,6 +775,7 @@ export class Evaluators {
    * Associated evaluation-rule assignments are also removed. Scores already produced by the evaluator are preserved.
    *
    * @param {string} evaluatorId - Stable evaluator identifier returned by the evaluator endpoints.
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Evaluators.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.EvaluationUnauthorizedError}
@@ -792,6 +795,7 @@ export class Evaluators {
    */
   public delete(
     evaluatorId: string,
+    request: Record<string, never> = {},
     requestOptions?: Evaluators.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DeletedEvaluator> {
     return core.HttpResponsePromise.fromPromise(

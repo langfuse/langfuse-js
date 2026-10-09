@@ -63,6 +63,7 @@ export class Organizations {
   /**
    * Get all memberships for the organization associated with the API key (requires organization-scoped API key)
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -75,6 +76,7 @@ export class Organizations {
    *     await client.organizations.getOrganizationMemberships()
    */
   public getOrganizationMemberships(
+    request: Record<string, never> = {},
     requestOptions?: Organizations.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.MembershipsResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -435,6 +437,7 @@ export class Organizations {
    * Get all memberships for a specific project (requires organization-scoped API key)
    *
    * @param {string} projectId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -448,6 +451,7 @@ export class Organizations {
    */
   public getProjectMemberships(
     projectId: string,
+    request: Record<string, never> = {},
     requestOptions?: Organizations.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.MembershipsResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -814,6 +818,7 @@ export class Organizations {
   /**
    * Get all projects for the organization associated with the API key (requires organization-scoped API key)
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -826,6 +831,7 @@ export class Organizations {
    *     await client.organizations.getOrganizationProjects()
    */
   public getOrganizationProjects(
+    request: Record<string, never> = {},
     requestOptions?: Organizations.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.OrganizationProjectsResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -932,6 +938,7 @@ export class Organizations {
   /**
    * Get all API keys for the organization associated with the API key (requires organization-scoped API key)
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Organizations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -944,6 +951,7 @@ export class Organizations {
    *     await client.organizations.getOrganizationApiKeys()
    */
   public getOrganizationApiKeys(
+    request: Record<string, never> = {},
     requestOptions?: Organizations.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.OrganizationApiKeysResponse> {
     return core.HttpResponsePromise.fromPromise(

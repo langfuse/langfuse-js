@@ -63,6 +63,7 @@ export class BlobStorageIntegrations {
   /**
    * Get all blob storage integrations for the organization (requires organization-scoped API key)
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {BlobStorageIntegrations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -75,6 +76,7 @@ export class BlobStorageIntegrations {
    *     await client.blobStorageIntegrations.getBlobStorageIntegrations()
    */
   public getBlobStorageIntegrations(
+    request: Record<string, never> = {},
     requestOptions?: BlobStorageIntegrations.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.BlobStorageIntegrationsResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -326,6 +328,7 @@ export class BlobStorageIntegrations {
    * Get the sync status of a blob storage integration by integration ID (requires organization-scoped API key)
    *
    * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {BlobStorageIntegrations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -339,6 +342,7 @@ export class BlobStorageIntegrations {
    */
   public getBlobStorageIntegrationStatus(
     id: string,
+    request: Record<string, never> = {},
     requestOptions?: BlobStorageIntegrations.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.BlobStorageIntegrationStatusResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -449,6 +453,7 @@ export class BlobStorageIntegrations {
    * Delete a blob storage integration by ID (requires organization-scoped API key)
    *
    * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {BlobStorageIntegrations.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -462,6 +467,7 @@ export class BlobStorageIntegrations {
    */
   public deleteBlobStorageIntegration(
     id: string,
+    request: Record<string, never> = {},
     requestOptions?: BlobStorageIntegrations.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.BlobStorageIntegrationDeletionResponse> {
     return core.HttpResponsePromise.fromPromise(
