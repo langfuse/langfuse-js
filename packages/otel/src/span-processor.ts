@@ -40,11 +40,10 @@ import { isDefaultExportSpan } from "./span-filter.js";
  * attribute at a time. Metadata keys are never passed to the mask, so masked
  * metadata keeps its keys.
  *
- * Observation metadata values are passed decoded, e.g. the string `"prod"`,
- * the number `3` or an object, not their JSON encoding. The masked value is
- * JSON-encoded again before export; if it is `null` or `undefined`, the
- * metadata key is dropped. Propagated trace metadata values are passed as the
- * raw attribute strings.
+ * Metadata values are passed decoded, e.g. the string `"prod"`, the number
+ * `3` or an object, not their JSON encoding. The masked value is JSON-encoded
+ * again before export; if it is `null` or `undefined`, the metadata key is
+ * dropped.
  *
  * Masking runs at export, after propagation, which has these consequences for
  * propagated trace metadata:
@@ -645,18 +644,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     for (const key of Object.keys(span.attributes)) {
       if (
         key === LangfuseOtelSpanAttributes.OBSERVATION_METADATA ||
-        key.startsWith(observationMetadataPrefix)
+        key.startsWith(observationMetadataPrefix) ||
+        key.startsWith(traceMetadataPrefix)
       ) {
-        await this.applyMaskToObservationMetadata(span, key);
-      } else if (key.startsWith(traceMetadataPrefix)) {
-        // Propagated trace metadata is not JSON-encoded; mask the raw value.
-        span.attributes[key] = await this.applyMask(span.attributes[key]);
+        await this.applyMaskToMetadata(span, key);
       }
     }
   }
 
   /**
-   * Observation metadata values are JSON-encoded (see
+   * Observation and propagated trace metadata values are JSON-encoded (see
    * `serializeMetadataValue`). Decode the value, mask the decoded value and
    * JSON-encode the result again, so the mask never sees the encoding and the
    * attribute stays valid JSON. If the masked value is not written by
@@ -664,7 +661,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * attribute is removed, as if the metadata value had been null. A stored
    * `"null"` that the mask returns as null is kept.
    */
-  private async applyMaskToObservationMetadata(
+  private async applyMaskToMetadata(
     span: ReadableSpan,
     key: string,
   ): Promise<void> {
@@ -675,7 +672,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       try {
         decoded = JSON.parse(raw);
       } catch {
-        // Not written by the SDK; mask the raw string
+        // Not written by the SDK, e.g. inbound baggage; mask the raw string
       }
     }
 

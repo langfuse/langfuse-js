@@ -341,28 +341,42 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       ).toBe("null");
     });
 
-    it("should mask propagated trace metadata values", async () => {
+    it("should pass decoded propagated trace metadata values to the mask and re-encode the result", async () => {
       await teardownTestEnvironment(testEnv);
 
+      const received: unknown[] = [];
       testEnv = await setupTestEnvironment({
         spanProcessorConfig: {
-          mask: ({ data }) =>
-            typeof data === "string" ? data.replace(/secret/g, "***") : data,
+          mask: ({ data }) => {
+            received.push(data);
+            return typeof data === "string"
+              ? data.replace(/secret/g, "***")
+              : data;
+          },
         },
       });
       assertions = new SpanAssertions(testEnv.mockExporter);
 
-      propagateAttributes({ metadata: { apiKey: "secret-key" } }, () => {
-        const span = startObservation("propagated-metadata-span");
-        span.end();
-      });
+      propagateAttributes(
+        { metadata: { apiKey: "secret-key", count: "123" } },
+        () => {
+          const span = startObservation("propagated-metadata-span");
+          span.end();
+        },
+      );
 
       await waitForSpanExport(testEnv.mockExporter, 1);
 
+      expect(received).toEqual(expect.arrayContaining(["secret-key", "123"]));
       assertions.expectSpanAttribute(
         "propagated-metadata-span",
         "langfuse.trace.metadata.apiKey",
-        "***-key",
+        '"***-key"',
+      );
+      assertions.expectSpanAttribute(
+        "propagated-metadata-span",
+        "langfuse.trace.metadata.count",
+        '"123"',
       );
     });
 
@@ -404,16 +418,15 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         "langfuse.observation.metadata.b",
         JSON.stringify("masked-two"),
       );
-      // Propagated trace metadata is not JSON-encoded, so its values are raw
       assertions.expectSpanAttribute(
         "metadata-error-mask-span",
         "langfuse.trace.metadata.traceA",
-        fallback,
+        JSON.stringify(fallback),
       );
       assertions.expectSpanAttribute(
         "metadata-error-mask-span",
         "langfuse.trace.metadata.traceB",
-        "masked-trace-two",
+        JSON.stringify("masked-trace-two"),
       );
       assertions.expectSpanAttribute(
         "metadata-error-mask-span",

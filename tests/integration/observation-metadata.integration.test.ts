@@ -343,7 +343,9 @@ describe("Observation metadata span attribute limit", () => {
       for (const key of Object.keys(traceMetadata)) {
         expect(
           attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.${key}`],
-        ).toBe(traceMetadata[key as keyof typeof traceMetadata]);
+        ).toBe(
+          JSON.stringify(traceMetadata[key as keyof typeof traceMetadata]),
+        );
       }
       expect(attributes[LangfuseOtelSpanAttributes.OBSERVATION_INPUT]).toBe(
         "in",

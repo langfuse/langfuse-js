@@ -19,6 +19,7 @@ import {
   LangfuseOtelSpanAttributes,
 } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
+import { serializeMetadataValue } from "./utils.js";
 
 type CorrelatedKey =
   | "userId"
@@ -169,13 +170,12 @@ export interface PropagateAttributesParams {
 
   /**
    * Additional key-value metadata to propagate to all spans.
-   * - Values may be any JSON-serializable value. Strings are kept as-is;
-   *   all other values are serialized with `JSON.stringify` (e.g. `42` → `"42"`,
-   *   `null` → `"null"`, `[1, "a"]` → `'[1,"a"]'`)
-   * - Values that cannot be serialized (e.g. `undefined`, functions, circular
-   *   objects, NaN/Infinity) are dropped with a warning; BigInt keeps its exact
-   *   digits (e.g. `12345678901234567890n` → `"12345678901234567890"`)
-   * - Serialized values must be ≤200 characters, otherwise they are dropped with a warning
+   * - Every value is JSON-encoded, strings included, the same way as
+   *   observation metadata (e.g. `"prod"` → `'"prod"'`, `"123"` → `'"123"'`,
+   *   `42` → `"42"`, `[1, "a"]` → `'[1,"a"]'`), so the server keeps the
+   *   string `"123"` apart from the number `123`
+   * - `null`, `undefined`, functions and symbols are dropped with a warning
+   * - Encoded values must be ≤200 characters, otherwise they are dropped with a warning
    * - Use for dimensions like internal correlating identifiers
    * - AVOID: large payloads, sensitive data
    */
@@ -365,8 +365,8 @@ export interface PropagateAttributesParams {
  *
  * @remarks
  * - **Validation**: Attribute values (userId, sessionId, version, traceName, tags)
- *   must be strings ≤200 characters. Non-string metadata values are serialized
- *   with `JSON.stringify` and must be ≤200 characters after serialization. Environment must be a lowercase alphanumeric string
+ *   must be strings ≤200 characters. Metadata values are JSON-encoded, strings
+ *   included, and must be ≤200 characters after encoding. Environment must be a lowercase alphanumeric string
  *   with optional hyphens or underscores, must be ≤40 characters, and must not start
  *   with `langfuse`. Invalid values will be dropped with a warning logged.
  * - **OpenTelemetry**: This uses OpenTelemetry context propagation under the hood,
@@ -873,43 +873,16 @@ function getContextMergedMetadata(
   }
 }
 
-const rawJSON = (JSON as { rawJSON?: (text: string) => unknown }).rawJSON;
-
 function serializePropagatedMetadataValue(
   key: string,
   value: unknown,
 ): string | undefined {
-  if (typeof value === "string") {
-    return value;
-  }
+  const serialized = serializeMetadataValue(value);
 
-  let serialized: string | undefined;
-
-  try {
-    // JSON turns NaN and ±Infinity into null; treat them as unserializable
-    // instead so a computed NaN is not indistinguishable from a real null.
-    serialized = JSON.stringify(value, (_key, nested) => {
-      if (typeof nested === "number" && !Number.isFinite(nested)) {
-        throw new TypeError("Non-finite number");
-      }
-      // BigInt keeps its exact digits as an unquoted JSON number, matching
-      // the Python SDK. Runtimes without JSON.rawJSON drop the value.
-      if (typeof nested === "bigint" && rawJSON) {
-        return rawJSON(nested.toString());
-      }
-
-      return nested;
-    });
-  } catch {
-    serialized = undefined;
-  }
-
-  if (typeof serialized !== "string") {
+  if (serialized === undefined) {
     getGlobalLogger().warn(
-      `Propagated attribute 'metadata.${key}' is not JSON-serializable. Dropping value.`,
+      `Propagated attribute 'metadata.${key}' is ${value == null ? String(value) : "not JSON-serializable"}. Dropping value.`,
     );
-
-    return undefined;
   }
 
   return serialized;

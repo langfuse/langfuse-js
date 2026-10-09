@@ -611,7 +611,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "event-parent",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".platform",
-        "web",
+        '"web"',
       );
     });
 
@@ -1096,7 +1096,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "active-span",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".execution_context",
-        "active",
+        '"active"',
       );
 
       // Verify nested span attributes
@@ -3049,12 +3049,12 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "ai-workflow",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".platform",
-        "web",
+        '"web"',
       );
       assertions.expectSpanAttribute(
         "ai-workflow",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".version",
-        "2.1.0",
+        '"2.1.0"',
       );
 
       // Verify level attributes across different observations
