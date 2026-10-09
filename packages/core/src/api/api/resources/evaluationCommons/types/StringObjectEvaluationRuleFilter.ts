@@ -9,6 +9,8 @@ export interface StringObjectEvaluationRuleFilter {
   column: string;
   /** Top-level key inside the object-valued column to filter on. */
   key: string;
-  operator: LangfuseAPI.EvaluationRuleStringFilterOperator;
+  /** Use `is set` / `is not set` to filter on key presence. */
+  operator: LangfuseAPI.EvaluationRuleStringObjectFilterOperator;
+  /** Value to compare against. Ignored for `is set` / `is not set`; send `""`. */
   value: string;
 }

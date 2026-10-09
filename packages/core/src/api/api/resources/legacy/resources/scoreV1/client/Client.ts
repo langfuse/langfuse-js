@@ -71,7 +71,12 @@ export class ScoreV1 {
     request: LangfuseAPI.CreateScoreRequest,
     requestOptions?: ScoreV1.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse> {
-    return new Scores(this._options).create(request, requestOptions);
+    // A single score request returns a single CreateScoreResponse; the
+    // canonical method is typed with the batch union.
+    return new Scores(this._options).create(
+      request,
+      requestOptions,
+    ) as core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse>;
   }
 
   /**

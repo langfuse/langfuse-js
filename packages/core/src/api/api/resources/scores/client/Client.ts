@@ -61,9 +61,9 @@ export class Scores {
   }
 
   /**
-   * Create a score (supports trace, observation, session, and dataset run scores)
+   * Create scores asynchronously. Single score: 200 with ID. Batch: 202 if accepted, or 207 with accepted/rejected counts and error messages. Do not automatically retry a 207 batch. The generated reference shows only 200; batches return 202 or 207.
    *
-   * @param {LangfuseAPI.CreateScoreRequest} request
+   * @param {LangfuseAPI.CreateScoresRequest} request
    * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -91,18 +91,18 @@ export class Scores {
    *     })
    */
   public create(
-    request: LangfuseAPI.CreateScoreRequest,
+    request: LangfuseAPI.CreateScoresRequest,
     requestOptions?: Scores.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse> {
+  ): core.HttpResponsePromise<LangfuseAPI.CreateScoresResponse> {
     return core.HttpResponsePromise.fromPromise(
       this.__create(request, requestOptions),
     );
   }
 
   private async __create(
-    request: LangfuseAPI.CreateScoreRequest,
+    request: LangfuseAPI.CreateScoresRequest,
     requestOptions?: Scores.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.CreateScoreResponse>> {
+  ): Promise<core.WithRawResponse<LangfuseAPI.CreateScoresResponse>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -139,7 +139,7 @@ export class Scores {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.CreateScoreResponse,
+        data: _response.body as LangfuseAPI.CreateScoresResponse,
         rawResponse: _response.rawResponse,
       };
     }
@@ -190,373 +190,6 @@ export class Scores {
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
           "Timeout exceeded when calling POST /api/public/scores.",
-        );
-      case "unknown":
-        throw new errors.LangfuseAPIError({
-          message: _response.error.errorMessage,
-          rawResponse: _response.rawResponse,
-        });
-    }
-  }
-
-  /**
-   * Get a list of scores (supports both trace and session scores)
-   *
-   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v3/scores` instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
-   *
-   * @param {LangfuseAPI.GetScoresRequest} request
-   * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
-   *
-   * @throws {@link LangfuseAPI.Error}
-   * @throws {@link LangfuseAPI.UnauthorizedError}
-   * @throws {@link LangfuseAPI.AccessDeniedError}
-   * @throws {@link LangfuseAPI.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.NotFoundError}
-   *
-   * @example
-   *     await client.scores.getMany()
-   */
-  public getMany(
-    request: LangfuseAPI.GetScoresRequest = {},
-    requestOptions?: Scores.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.GetScoresResponse> {
-    return core.HttpResponsePromise.fromPromise(
-      this.__getMany(request, requestOptions),
-    );
-  }
-
-  private async __getMany(
-    request: LangfuseAPI.GetScoresRequest = {},
-    requestOptions?: Scores.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.GetScoresResponse>> {
-    const {
-      page,
-      limit,
-      userId,
-      name,
-      fromTimestamp,
-      toTimestamp,
-      environment,
-      source,
-      operator,
-      value,
-      scoreIds,
-      configId,
-      sessionId,
-      datasetRunId,
-      traceId,
-      observationId,
-      queueId,
-      dataType,
-      traceTags,
-      fields,
-      filter,
-    } = request;
-    const _queryParams: Record<
-      string,
-      string | string[] | object | object[] | null
-    > = {};
-    if (page != null) {
-      _queryParams["page"] = page.toString();
-    }
-
-    if (limit != null) {
-      _queryParams["limit"] = limit.toString();
-    }
-
-    if (userId != null) {
-      _queryParams["userId"] = userId;
-    }
-
-    if (name != null) {
-      _queryParams["name"] = name;
-    }
-
-    if (fromTimestamp != null) {
-      _queryParams["fromTimestamp"] = fromTimestamp;
-    }
-
-    if (toTimestamp != null) {
-      _queryParams["toTimestamp"] = toTimestamp;
-    }
-
-    if (environment != null) {
-      if (Array.isArray(environment)) {
-        _queryParams["environment"] = environment.map((item) => item);
-      } else {
-        _queryParams["environment"] = environment;
-      }
-    }
-
-    if (source != null) {
-      _queryParams["source"] = source;
-    }
-
-    if (operator != null) {
-      _queryParams["operator"] = operator;
-    }
-
-    if (value != null) {
-      _queryParams["value"] = value.toString();
-    }
-
-    if (scoreIds != null) {
-      _queryParams["scoreIds"] = scoreIds;
-    }
-
-    if (configId != null) {
-      _queryParams["configId"] = configId;
-    }
-
-    if (sessionId != null) {
-      _queryParams["sessionId"] = sessionId;
-    }
-
-    if (datasetRunId != null) {
-      _queryParams["datasetRunId"] = datasetRunId;
-    }
-
-    if (traceId != null) {
-      _queryParams["traceId"] = traceId;
-    }
-
-    if (observationId != null) {
-      _queryParams["observationId"] = observationId;
-    }
-
-    if (queueId != null) {
-      _queryParams["queueId"] = queueId;
-    }
-
-    if (dataType != null) {
-      _queryParams["dataType"] = dataType;
-    }
-
-    if (traceTags != null) {
-      if (Array.isArray(traceTags)) {
-        _queryParams["traceTags"] = traceTags.map((item) => item);
-      } else {
-        _queryParams["traceTags"] = traceTags;
-      }
-    }
-
-    if (fields != null) {
-      _queryParams["fields"] = fields;
-    }
-
-    if (filter != null) {
-      _queryParams["filter"] = filter;
-    }
-
-    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
-      this._options?.headers,
-      mergeOnlyDefinedHeaders({
-        Authorization: await this._getAuthorizationHeader(),
-        "X-Langfuse-Sdk-Name":
-          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
-        "X-Langfuse-Sdk-Version":
-          requestOptions?.xLangfuseSdkVersion ??
-          this._options?.xLangfuseSdkVersion,
-        "X-Langfuse-Public-Key":
-          requestOptions?.xLangfusePublicKey ??
-          this._options?.xLangfusePublicKey,
-      }),
-      requestOptions?.headers,
-    );
-    const _response = await core.fetcher({
-      url: core.url.join(
-        (await core.Supplier.get(this._options.baseUrl)) ??
-          (await core.Supplier.get(this._options.environment)),
-        "/api/public/v2/scores",
-      ),
-      method: "GET",
-      headers: _headers,
-      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
-      timeoutMs:
-        requestOptions?.timeoutInSeconds != null
-          ? requestOptions.timeoutInSeconds * 1000
-          : 60000,
-      maxRetries: requestOptions?.maxRetries,
-      abortSignal: requestOptions?.abortSignal,
-    });
-    if (_response.ok) {
-      return {
-        data: _response.body as LangfuseAPI.GetScoresResponse,
-        rawResponse: _response.rawResponse,
-      };
-    }
-
-    if (_response.error.reason === "status-code") {
-      switch (_response.error.statusCode) {
-        case 400:
-          throw new LangfuseAPI.Error(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 401:
-          throw new LangfuseAPI.UnauthorizedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 403:
-          throw new LangfuseAPI.AccessDeniedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 405:
-          throw new LangfuseAPI.MethodNotAllowedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 404:
-          throw new LangfuseAPI.NotFoundError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        default:
-          throw new errors.LangfuseAPIError({
-            statusCode: _response.error.statusCode,
-            body: _response.error.body,
-            rawResponse: _response.rawResponse,
-          });
-      }
-    }
-
-    switch (_response.error.reason) {
-      case "non-json":
-        throw new errors.LangfuseAPIError({
-          statusCode: _response.error.statusCode,
-          body: _response.error.rawBody,
-          rawResponse: _response.rawResponse,
-        });
-      case "timeout":
-        throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/v2/scores.",
-        );
-      case "unknown":
-        throw new errors.LangfuseAPIError({
-          message: _response.error.errorMessage,
-          rawResponse: _response.rawResponse,
-        });
-    }
-  }
-
-  /**
-   * Get a score (supports both trace and session scores)
-   *
-   * @deprecated On Langfuse Cloud, Langfuse v3 is deprecated and this endpoint will be removed on November 16, 2026. Use `GET /api/public/v3/scores` with the `id` filter instead. Self-hosted deployments are unaffected by this date; the endpoint becomes unavailable when they upgrade to Langfuse v4.
-   *
-   * @param {string} scoreId - The unique langfuse identifier of a score
-   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
-   * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
-   *
-   * @throws {@link LangfuseAPI.Error}
-   * @throws {@link LangfuseAPI.UnauthorizedError}
-   * @throws {@link LangfuseAPI.AccessDeniedError}
-   * @throws {@link LangfuseAPI.MethodNotAllowedError}
-   * @throws {@link LangfuseAPI.NotFoundError}
-   *
-   * @example
-   *     await client.scores.getById("scoreId")
-   */
-  public getById(
-    scoreId: string,
-    request: Record<string, never> = {},
-    requestOptions?: Scores.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.Score> {
-    return core.HttpResponsePromise.fromPromise(
-      this.__getById(scoreId, requestOptions),
-    );
-  }
-
-  private async __getById(
-    scoreId: string,
-    requestOptions?: Scores.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.Score>> {
-    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
-      this._options?.headers,
-      mergeOnlyDefinedHeaders({
-        Authorization: await this._getAuthorizationHeader(),
-        "X-Langfuse-Sdk-Name":
-          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
-        "X-Langfuse-Sdk-Version":
-          requestOptions?.xLangfuseSdkVersion ??
-          this._options?.xLangfuseSdkVersion,
-        "X-Langfuse-Public-Key":
-          requestOptions?.xLangfusePublicKey ??
-          this._options?.xLangfusePublicKey,
-      }),
-      requestOptions?.headers,
-    );
-    const _response = await core.fetcher({
-      url: core.url.join(
-        (await core.Supplier.get(this._options.baseUrl)) ??
-          (await core.Supplier.get(this._options.environment)),
-        `/api/public/v2/scores/${encodeURIComponent(scoreId)}`,
-      ),
-      method: "GET",
-      headers: _headers,
-      queryParameters: requestOptions?.queryParams,
-      timeoutMs:
-        requestOptions?.timeoutInSeconds != null
-          ? requestOptions.timeoutInSeconds * 1000
-          : 60000,
-      maxRetries: requestOptions?.maxRetries,
-      abortSignal: requestOptions?.abortSignal,
-    });
-    if (_response.ok) {
-      return {
-        data: _response.body as LangfuseAPI.Score,
-        rawResponse: _response.rawResponse,
-      };
-    }
-
-    if (_response.error.reason === "status-code") {
-      switch (_response.error.statusCode) {
-        case 400:
-          throw new LangfuseAPI.Error(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 401:
-          throw new LangfuseAPI.UnauthorizedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 403:
-          throw new LangfuseAPI.AccessDeniedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 405:
-          throw new LangfuseAPI.MethodNotAllowedError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        case 404:
-          throw new LangfuseAPI.NotFoundError(
-            _response.error.body as unknown,
-            _response.rawResponse,
-          );
-        default:
-          throw new errors.LangfuseAPIError({
-            statusCode: _response.error.statusCode,
-            body: _response.error.body,
-            rawResponse: _response.rawResponse,
-          });
-      }
-    }
-
-    switch (_response.error.reason) {
-      case "non-json":
-        throw new errors.LangfuseAPIError({
-          statusCode: _response.error.statusCode,
-          body: _response.error.rawBody,
-          rawResponse: _response.rawResponse,
-        });
-      case "timeout":
-        throw new errors.LangfuseAPITimeoutError(
-          "Timeout exceeded when calling GET /api/public/v2/scores/{scoreId}.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({

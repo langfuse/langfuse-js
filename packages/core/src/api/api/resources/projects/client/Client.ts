@@ -698,7 +698,9 @@ export class Projects {
    *
    * @example
    *     await client.projects.createApiKey("projectId", {
+   *         name: undefined,
    *         note: undefined,
+   *         expiresAt: undefined,
    *         publicKey: undefined,
    *         secretKey: undefined
    *     })

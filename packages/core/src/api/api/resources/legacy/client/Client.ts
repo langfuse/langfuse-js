@@ -3,8 +3,6 @@
  */
 
 import * as core from "../../../../core/index.js";
-import { MetricsV1 } from "../resources/metricsV1/client/Client.js";
-import { ObservationsV1 } from "../resources/observationsV1/client/Client.js";
 import { ScoreV1 } from "../resources/scoreV1/client/Client.js";
 
 export declare namespace Legacy {
@@ -30,20 +28,10 @@ export declare namespace Legacy {
 
 export class Legacy {
   protected readonly _options: Legacy.Options;
-  protected _metricsV1: MetricsV1 | undefined;
-  protected _observationsV1: ObservationsV1 | undefined;
   protected _scoreV1: ScoreV1 | undefined;
 
   constructor(_options: Legacy.Options) {
     this._options = _options;
-  }
-
-  public get metricsV1(): MetricsV1 {
-    return (this._metricsV1 ??= new MetricsV1(this._options));
-  }
-
-  public get observationsV1(): ObservationsV1 {
-    return (this._observationsV1 ??= new ObservationsV1(this._options));
   }
 
   public get scoreV1(): ScoreV1 {
