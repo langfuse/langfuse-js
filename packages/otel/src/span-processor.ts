@@ -35,19 +35,9 @@ import { isDefaultExportSpan } from "./span-filter.js";
  * Function type for masking sensitive data in spans before export.
  *
  * Applied to the input and output of observations and traces, and to each
- * metadata value (observation metadata and propagated trace metadata), one
- * attribute at a time. Metadata keys are never passed to the mask, so masked
- * metadata keeps its keys.
- *
- * Masking runs at export, after propagation, which has these consequences for
- * propagated trace metadata:
- * - The mask runs once for each span that carries a propagated value, so it
- *   should be cheap and return the same output for the same input.
- * - The 200 character limit is checked on the unmasked value when
- *   `propagateAttributes` runs, so a value over the limit is dropped even if
- *   the mask would shorten it.
- * - Values propagated as baggage (`asBaggage: true`) are sent to downstream
- *   services unmasked.
+ * observation metadata value, one attribute at a time. Metadata keys are never
+ * passed to the mask, so masked metadata keeps its keys. Trace metadata
+ * propagated with `propagateAttributes` is not masked.
  *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
@@ -633,13 +623,10 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     // Object metadata is written as one attribute per top-level key, e.g.
     // `langfuse.observation.metadata.<key>`. Mask each value separately so
     // keys are kept and are never passed to the mask.
-    const metadataPrefixes = [
-      `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`,
-      `${LangfuseOtelSpanAttributes.TRACE_METADATA}.`,
-    ];
+    const metadataPrefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
 
     for (const key of Object.keys(span.attributes)) {
-      if (metadataPrefixes.some((prefix) => key.startsWith(prefix))) {
+      if (key.startsWith(metadataPrefix)) {
         span.attributes[key] = await this.applyMask(span.attributes[key]);
       }
     }
