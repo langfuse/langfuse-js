@@ -8,7 +8,6 @@ import { AnnotationQueues } from "./api/resources/annotationQueues/client/Client
 import { BlobStorageIntegrations } from "./api/resources/blobStorageIntegrations/client/Client.js";
 import { Comments } from "./api/resources/comments/client/Client.js";
 import { DatasetItems } from "./api/resources/datasetItems/client/Client.js";
-import { DatasetRunItems } from "./api/resources/datasetRunItems/client/Client.js";
 import { Datasets } from "./api/resources/datasets/client/Client.js";
 import { EvaluationRules } from "./api/resources/evaluationRules/client/Client.js";
 import { Evaluators } from "./api/resources/evaluators/client/Client.js";
@@ -31,7 +30,6 @@ import { Scim } from "./api/resources/scim/client/Client.js";
 import { ScoreConfigs } from "./api/resources/scoreConfigs/client/Client.js";
 import { ScoresV3 } from "./api/resources/scoresV3/client/Client.js";
 import { Scores } from "./api/resources/scores/client/Client.js";
-import { Sessions } from "./api/resources/sessions/client/Client.js";
 import { Trace } from "./api/resources/trace/client/Client.js";
 import { Unstable } from "./api/resources/unstable/client/Client.js";
 
@@ -84,7 +82,6 @@ export class LangfuseAPIClient {
   protected _blobStorageIntegrations: BlobStorageIntegrations | undefined;
   protected _comments: Comments | undefined;
   protected _datasetItems: DatasetItems | undefined;
-  protected _datasetRunItems: DatasetRunItems | undefined;
   protected _datasets: Datasets | undefined;
   protected _evaluationRules: EvaluationRules | undefined;
   protected _evaluators: Evaluators | undefined;
@@ -107,7 +104,6 @@ export class LangfuseAPIClient {
   protected _scoreConfigs: ScoreConfigs | undefined;
   protected _scoresV3: ScoresV3 | undefined;
   protected _scores: Scores | undefined;
-  protected _sessions: Sessions | undefined;
   protected _trace: Trace | undefined;
   protected _unstable: Unstable | undefined;
 
@@ -141,10 +137,6 @@ export class LangfuseAPIClient {
 
   public get datasetItems(): DatasetItems {
     return (this._datasetItems ??= new DatasetItems(this._options));
-  }
-
-  public get datasetRunItems(): DatasetRunItems {
-    return (this._datasetRunItems ??= new DatasetRunItems(this._options));
   }
 
   public get datasets(): Datasets {
@@ -233,10 +225,6 @@ export class LangfuseAPIClient {
 
   public get scores(): Scores {
     return (this._scores ??= new Scores(this._options));
-  }
-
-  public get sessions(): Sessions {
-    return (this._sessions ??= new Sessions(this._options));
   }
 
   public get trace(): Trace {

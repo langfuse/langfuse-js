@@ -21,6 +21,8 @@ export interface DatasetItem {
   datasetName: string;
   createdAt: string;
   updatedAt: string;
+  /** When this version of the dataset item became current. Listing dataset items with a `version` at or after this timestamp returns this item version, until the item is changed again. Self-hosted deployments that set `LANGFUSE_DATASET_SERVICE_WRITE_TO_VERSIONED_IMPLEMENTATION=false` update items in place, so there it stays at the item's first write. */
+  version?: string;
   /** Resolved Langfuse media references found in input, expectedOutput, and metadata. */
   mediaReferences: LangfuseAPI.DatasetItemMediaReference[];
 }
