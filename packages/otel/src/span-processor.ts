@@ -9,6 +9,7 @@ import {
   base64Encode,
   getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
+  registerMediaReferenceOwner,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
@@ -230,6 +231,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
   private mediaService: MediaService;
+  private mediaReferenceOwnerReleasers: Map<object, () => void> = new Map();
   private spanExportExpectationById: Map<string, boolean> = new Map();
 
   /**
@@ -383,6 +385,17 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onStart(span: Span, parentContext: Context): void {
+    const isRecording =
+      typeof (span as { isRecording?: unknown }).isRecording !== "function" ||
+      span.isRecording();
+
+    if (isRecording) {
+      const releaseOwner = registerMediaReferenceOwner(span, {
+        useMediaReferences: this.mask === undefined,
+      });
+      this.mediaReferenceOwnerReleasers.set(span, releaseOwner);
+    }
+
     const propagatedAttributes =
       getPropagatedAttributesFromContext(parentContext);
 
@@ -435,6 +448,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onEnd(span: ReadableSpan): void {
+    this.releaseMediaReferenceOwner(span);
     this.spanExportExpectationById.delete(span.spanContext().spanId);
 
     const processEndedSpanPromise = this.processEndedSpan(span).catch((err) => {
@@ -475,9 +489,13 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public async shutdown(): Promise<void> {
-    await this.flush();
+    try {
+      await this.flush();
 
-    return this.processor.shutdown();
+      return await this.processor.shutdown();
+    } finally {
+      this.releaseAllMediaReferenceOwners();
+    }
   }
 
   private async processEndedSpan(span: ReadableSpan) {
@@ -487,6 +505,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
           spanName: span.name,
           instrumentationScope: span.instrumentationScope.name,
         });
+
+        this.mediaService.releaseMediaReferences(span);
 
         return;
       }
@@ -500,13 +520,23 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         err,
       );
 
+      this.mediaService.releaseMediaReferences(span);
+
       return;
     }
 
-    await this.applyMaskInPlace(span);
+    const mediaReferences = this.mediaService.getMediaReferences(span);
 
-    if (this.mediaUploadEnabled) {
-      await this.mediaService.process(span);
+    try {
+      await this.applyMaskInPlace(span);
+
+      if (this.mediaUploadEnabled) {
+        await this.mediaService.process(span, mediaReferences);
+      } else {
+        this.mediaService.restoreMediaReferences(span, mediaReferences);
+      }
+    } finally {
+      this.mediaService.releaseMediaReferenceSet(mediaReferences);
     }
 
     if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
@@ -533,6 +563,21 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     }
 
     this.processor.onEnd(span);
+  }
+
+  private releaseMediaReferenceOwner(owner: object): void {
+    const releaseOwner = this.mediaReferenceOwnerReleasers.get(owner);
+
+    releaseOwner?.();
+    this.mediaReferenceOwnerReleasers.delete(owner);
+  }
+
+  private releaseAllMediaReferenceOwners(): void {
+    for (const releaseOwner of this.mediaReferenceOwnerReleasers.values()) {
+      releaseOwner();
+    }
+
+    this.mediaReferenceOwnerReleasers.clear();
   }
 
   private markAppRootCandidate(span: Span, parentContext: Context): void {
