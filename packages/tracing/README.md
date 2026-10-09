@@ -144,6 +144,36 @@ Key exports:
 - `createTraceId()` — deterministic trace IDs for correlating external IDs
 - `updateActiveObservation`, `getActiveTraceId`, `setActiveTraceAsPublic`
 
+## Skill availability
+
+Report available skills for generations in an agent scope:
+
+```typescript
+await propagateAttributes(
+  {
+    skillsAvailable: [
+      {
+        langfuseSkillId: "managed-version-id",
+        skillName: "refund-policy",
+        langfuseSkillVersion: 3,
+      },
+      { skillName: "local-style-guide" },
+    ],
+  },
+  () => runAgent(),
+);
+```
+
+You can also pass the manifest map returned by `langfuse.skills.listManifests()`:
+
+```typescript
+const manifests = await langfuse.skills.listManifests({
+  tag: "customer-support",
+  label: "production",
+});
+await propagateAttributes({ skillsAvailable: manifests }, () => runAgent());
+```
+
 ## Serverless checklist
 
 1. Consider `new LangfuseSpanProcessor({ exportMode: "immediate" })` so spans are not held in a batch.

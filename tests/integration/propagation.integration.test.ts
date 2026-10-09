@@ -6,7 +6,11 @@
  * automatically propagate to all child spans within the context.
  */
 
-import { TextPromptClient } from "@langfuse/client";
+import {
+  LangfuseClient,
+  TextPromptClient,
+  type SkillManifest,
+} from "@langfuse/client";
 import {
   LangfuseOtelContextKeys,
   LangfuseOtelSpanAttributes,
@@ -19,7 +23,7 @@ import {
   propagation,
   ROOT_CONTEXT,
 } from "@opentelemetry/api";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import {
   setupTestEnvironment,
@@ -2092,6 +2096,204 @@ describe("propagateAttributes", () => {
           LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
         ],
       ).toBe(3);
+    });
+  });
+
+  describe("Skill availability propagation", () => {
+    const attribute = LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
+    const outer = [{ skillName: "outer-skill" }];
+    const inner = [{ skillName: "inner-skill" }];
+
+    it("propagates listManifests maps as canonical references and clears empty maps", async () => {
+      const client = new LangfuseClient({
+        publicKey: "pk-test",
+        secretKey: "sk-test",
+      });
+      vi.spyOn(client.api.unstable.skills, "get").mockResolvedValue({
+        id: "managed-version-id",
+        name: "managed-skill",
+        version: 3,
+        description: "Manifest description must not enter tracing attributes",
+        tags: ["internal-tag"],
+        files: [
+          {
+            id: "file-id",
+            path: "SKILL.md",
+            blobId: "blob-id",
+            sha256Hash: "content-hash",
+            contentType: "text/markdown",
+            contentLength: 10,
+          },
+        ],
+        createdAt: "2026-10-09T00:00:00.000Z",
+        updatedAt: "2026-10-09T00:00:00.000Z",
+        projectId: "project-id",
+        createdBy: "user-id",
+        labels: ["production"],
+        commitMessage: null,
+      });
+      const manifests = await client.skills.listManifests([
+        { name: "managed-skill", version: 3 },
+      ]);
+      const emptyManifests = await client.skills.listManifests([]);
+      const references = [
+        {
+          langfuseSkillId: "managed-version-id",
+          skillName: "managed-skill",
+          langfuseSkillVersion: 3,
+        },
+      ];
+      const baggageCatalogs: unknown[] = [];
+      const record = (name: string) => {
+        startObservation(name).end();
+        const baggage = propagation.getBaggage(otelContext.active());
+        const serialized = baggage?.getEntry(
+          "langfuse_skills_available",
+        )?.value;
+        baggageCatalogs.push(
+          serialized === undefined ? undefined : JSON.parse(serialized),
+        );
+      };
+
+      propagateAttributes(
+        { skillsAvailable: manifests, asBaggage: true },
+        () => {
+          record("manifest");
+          propagateAttributes(
+            { skillsAvailable: emptyManifests, asBaggage: true },
+            () => {
+              record("cleared-map");
+            },
+          );
+          record("restored-map");
+        },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      expect(baggageCatalogs).toEqual([references, [], references]);
+      expect(
+        Object.fromEntries(
+          testEnv.mockExporter.exportedSpans.map((span) => [
+            span.name,
+            JSON.parse(span.attributes[attribute] as string),
+          ]),
+        ),
+      ).toEqual({
+        manifest: references,
+        "cleared-map": [],
+        "restored-map": references,
+      });
+    });
+
+    it("ignores malformed manifest maps without clearing the inherited catalog", () => {
+      const malformed = new Map([["invalid", null]]) as unknown as Map<
+        string,
+        SkillManifest
+      >;
+      propagateAttributes({ skillsAvailable: outer }, () => {
+        propagateAttributes({ skillsAvailable: malformed }, () => {
+          expect(
+            getPropagatedAttributesFromContext(otelContext.active())[attribute],
+          ).toBe(JSON.stringify(outer));
+        });
+      });
+    });
+
+    it("replaces and clears nested catalogs, then restores the outer catalog", async () => {
+      propagateAttributes({ skillsAvailable: outer }, () => {
+        startObservation("outer-before").end();
+        propagateAttributes({ skillsAvailable: inner }, () => {
+          startObservation("inner").end();
+          propagateAttributes({ skillsAvailable: [] }, () => {
+            startObservation("cleared").end();
+          });
+          startObservation("inner-after").end();
+        });
+        startObservation("outer-after").end();
+      });
+      startObservation("outside").end();
+
+      await waitForSpanExport(testEnv.mockExporter, 6);
+      const catalogs = Object.fromEntries(
+        testEnv.mockExporter.exportedSpans.map((span) => [
+          span.name,
+          span.attributes[attribute],
+        ]),
+      );
+      expect(catalogs).toEqual({
+        "outer-before": JSON.stringify(outer),
+        inner: JSON.stringify(inner),
+        cleared: "[]",
+        "inner-after": JSON.stringify(inner),
+        "outer-after": JSON.stringify(outer),
+        outside: undefined,
+      });
+    });
+
+    it("preserves explicit SDK and creation-time catalogs without changing siblings", async () => {
+      propagateAttributes({ skillsAvailable: outer }, () => {
+        startObservation("explicit", { skillsAvailable: inner }).end();
+        otelTrace
+          .getTracer("langfuse-sdk")
+          .startSpan("explicit-empty", { attributes: { [attribute]: "[]" } })
+          .end();
+        startObservation("inherited").end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 3);
+      const catalogs = Object.fromEntries(
+        testEnv.mockExporter.exportedSpans.map((span) => [
+          span.name,
+          span.attributes[attribute],
+        ]),
+      );
+      expect(catalogs).toEqual({
+        explicit: JSON.stringify(inner),
+        "explicit-empty": "[]",
+        inherited: JSON.stringify(outer),
+      });
+    });
+
+    it("restores managed and external skills from baggage without local context", () => {
+      const skillsAvailable = [
+        {
+          langfuseSkillId: "managed-version-id",
+          skillName: "managed-skill",
+          langfuseSkillVersion: 3,
+        },
+        {
+          skillName: "external-skill",
+          langfuseSkillId: null,
+          langfuseSkillVersion: null,
+        },
+      ];
+      propagateAttributes({ skillsAvailable, asBaggage: true }, () => {
+        const baggage = propagation.getBaggage(otelContext.active());
+        expect(baggage).toBeDefined();
+        const remoteContext = propagation.setBaggage(ROOT_CONTEXT, baggage!);
+        const attributes = getPropagatedAttributesFromContext(remoteContext);
+
+        expect(JSON.parse(attributes[attribute] as string)).toEqual(
+          skillsAvailable,
+        );
+      });
+    });
+
+    it.each([
+      "not-json",
+      JSON.stringify({ skillName: "not-an-array" }),
+      JSON.stringify([
+        { skillName: "invalid-version", langfuseSkillVersion: 0 },
+      ]),
+    ])("drops malformed skill baggage: %s", (value) => {
+      const baggage = propagation
+        .createBaggage()
+        .setEntry("langfuse_skills_available", { value });
+      const remoteContext = propagation.setBaggage(ROOT_CONTEXT, baggage);
+
+      expect(
+        getPropagatedAttributesFromContext(remoteContext)[attribute],
+      ).toBeUndefined();
     });
   });
 

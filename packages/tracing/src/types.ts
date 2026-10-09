@@ -1,4 +1,6 @@
-import { OpenAiUsage } from "@langfuse/core";
+import { OpenAiUsage, LangfuseSkillReference } from "@langfuse/core";
+
+export type { LangfuseSkillReference } from "@langfuse/core";
 
 /**
  * Types of observations that can be created in Langfuse.
@@ -33,6 +35,7 @@ export type LangfuseObservationType =
  * @public
  */
 export type ObservationLevel = "DEBUG" | "DEFAULT" | "WARNING" | "ERROR";
+
 /**
  * Attributes for Langfuse span observations.
  *
@@ -56,6 +59,8 @@ export type LangfuseSpanAttributes = {
   version?: string;
   /** Environment where the operation is running (e.g., 'production', 'staging') */
   environment?: string;
+  /** Skills available to this generation; overrides a propagated catalog */
+  skillsAvailable?: LangfuseSkillReference[];
 };
 
 /**

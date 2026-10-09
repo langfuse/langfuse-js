@@ -54,6 +54,36 @@ console.log(await result.format());
 const trace = await langfuse.api.trace.get("trace-id");
 ```
 
+## Skills (unstable API)
+
+Resolve managed skill versions and read their files in universal JavaScript
+environments:
+
+```typescript
+import { LangfuseClient } from "@langfuse/client";
+import { propagateAttributes } from "@langfuse/tracing";
+
+const langfuse = new LangfuseClient();
+const manifests = await langfuse.skills.listManifests({
+  names: ["refund-policy", "shipping-policy"],
+  label: "production",
+});
+// Or: { tag: "customer-support", label: "production" }
+// Or: [{ name: "refund-policy", version: 7 }]
+
+await langfuse.skills.preloadContent(manifests); // all files
+// Or: preloadContent(manifests, { files: "entrypoints" }) for SKILL.md only
+async function readSkillResource(skillName: string, path: string) {
+  const manifest = manifests.get(skillName);
+  if (!manifest)
+    throw new Error(`Skill ${skillName} is unavailable in this run.`);
+  return langfuse.skills.getFileContent(manifest, path);
+}
+
+const content = await readSkillResource("refund-policy", "SKILL.md");
+await propagateAttributes({ skillsAvailable: manifests }, () => runAgent());
+```
+
 ## Packages
 
 | Package                                                                                             | NPM                                                                                                                       | Description                                                       | Environments |
