@@ -163,7 +163,9 @@ export interface LangfuseSpanProcessorParams {
   release?: string;
 
   /**
-   * Request timeout in seconds. Can also be set via LANGFUSE_TIMEOUT environment variable.
+   * Request timeout in seconds for span exports and for the media API calls
+   * made when uploading media found in spans. Can also be set via
+   * LANGFUSE_TIMEOUT environment variable.
    * @defaultValue 5
    */
   timeout?: number;
@@ -382,7 +384,10 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       headers: params?.additionalHeaders,
     });
 
-    this.mediaService = new MediaService({ apiClient: this.apiClient });
+    this.mediaService = new MediaService({
+      apiClient: this.apiClient,
+      timeoutSeconds,
+    });
 
     logger.debug("Initialized LangfuseSpanProcessor with params:", {
       publicKey,

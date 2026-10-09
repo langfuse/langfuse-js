@@ -13,9 +13,14 @@ import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 export class MediaService {
   private pendingMediaUploads: Set<Promise<void>> = new Set();
   private apiClient: LangfuseAPIClient;
+  private timeoutSeconds: number | undefined;
 
-  constructor(params: { apiClient: LangfuseAPIClient }) {
+  constructor(params: {
+    apiClient: LangfuseAPIClient;
+    timeoutSeconds?: number;
+  }) {
     this.apiClient = params.apiClient;
+    this.timeoutSeconds = params.timeoutSeconds;
   }
 
   get logger(): Logger {
@@ -311,6 +316,7 @@ export class MediaService {
         observationId,
         field,
         logger: this.logger,
+        timeoutSeconds: this.timeoutSeconds,
       });
     } catch (err) {
       this.logger.error(`Error processing media item: ${err}`);

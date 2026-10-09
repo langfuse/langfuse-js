@@ -4,6 +4,7 @@ import {
   MediaContentType,
   getGlobalLogger,
   bytesToBase64,
+  fetchWithIdleTimeout,
 } from "@langfuse/core";
 
 /**
@@ -115,20 +116,15 @@ export class MediaManager {
                 {},
                 { timeoutInSeconds: this.timeoutSeconds },
               );
-              const mediaContent = await fetch(mediaData.url, {
-                method: "GET",
-                headers: {},
-                ...(this.timeoutSeconds !== undefined && {
-                  signal: AbortSignal.timeout(this.timeoutSeconds * 1_000),
-                }),
-              });
+              const { response: mediaContent, body: uint8Content } =
+                await fetchWithIdleTimeout(
+                  mediaData.url,
+                  { method: "GET", headers: {} },
+                  this.timeoutSeconds,
+                );
               if (mediaContent.status !== 200) {
                 throw new Error("Failed to fetch media content");
               }
-
-              const uint8Content = new Uint8Array(
-                await mediaContent.arrayBuffer(),
-              );
 
               const base64MediaContent = bytesToBase64(uint8Content);
               const base64DataUri = `data:${mediaData.contentType};base64,${base64MediaContent}`;

@@ -209,4 +209,123 @@ describe("configured client timeout", () => {
       expect.anything(),
     );
   });
+
+  it("defaults prompt fetches and media lookups to 5 seconds, like the Python SDK", async () => {
+    const client = makeClient();
+    const promptGet = vi.fn().mockResolvedValue({
+      name: "p",
+      version: 1,
+      type: "text",
+      prompt: "hi",
+      config: {},
+      labels: [],
+      tags: [],
+    });
+    client.api.prompts.get = promptGet;
+    const mediaGet = vi
+      .fn()
+      .mockResolvedValue({ url: "http://localhost:3000/media.png" });
+    client.api.media.get = mediaGet;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(new Uint8Array([1, 2, 3]))),
+    );
+
+    await client.prompt.get("p");
+    await client.media.resolveReferences({
+      obj: {
+        image:
+          "@@@langfuseMedia:type=image/png|id=media-id|source=base64_data_uri@@@",
+      },
+      resolveWith: "base64DataUri",
+    });
+
+    expect(promptGet.mock.calls[0][2]).toMatchObject({ timeoutInSeconds: 5 });
+    expect(mediaGet).toHaveBeenCalledWith(
+      "media-id",
+      {},
+      { timeoutInSeconds: 5 },
+    );
+  });
+
+  it("does not cut off a media download that keeps receiving data", async () => {
+    const client = makeClient(0.1);
+    client.api.media.get = vi.fn().mockResolvedValue({
+      url: "http://localhost:3000/media.png",
+      contentType: "image/png",
+    });
+    // 6 chunks, 50ms apart: 300ms in total, longer than the 100ms timeout,
+    // but never idle for 100ms.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async (_url: string, init: RequestInit) =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              async start(controller) {
+                init.signal?.addEventListener("abort", () =>
+                  controller.error(init.signal?.reason),
+                );
+                for (let i = 0; i < 6; i++) {
+                  if (init.signal?.aborted) return;
+                  await new Promise((resolve) => setTimeout(resolve, 50));
+                  controller.enqueue(new Uint8Array([i]));
+                }
+                controller.close();
+              },
+            }),
+          ),
+      ),
+    );
+
+    const resolved = await client.media.resolveReferences({
+      obj: {
+        image:
+          "@@@langfuseMedia:type=image/png|id=media-id|source=base64_data_uri@@@",
+      },
+      resolveWith: "base64DataUri",
+    });
+
+    expect(resolved).toEqual({
+      image: "data:image/png;base64,AAECAwQF",
+    });
+  });
+
+  it("aborts a media download that stalls mid-body", async () => {
+    const client = makeClient(0.05);
+    client.api.media.get = vi
+      .fn()
+      .mockResolvedValue({ url: "http://localhost:3000/media.png" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async (_url: string, init: RequestInit) =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                controller.enqueue(new Uint8Array([1]));
+                init.signal?.addEventListener("abort", () =>
+                  controller.error(init.signal?.reason),
+                );
+              },
+            }),
+          ),
+      ),
+    );
+    const warnSpy = vi
+      .spyOn(getGlobalLogger(), "warn")
+      .mockImplementation(() => {});
+    const reference =
+      "@@@langfuseMedia:type=image/png|id=media-id|source=base64_data_uri@@@";
+
+    const startedAt = Date.now();
+    const resolved = await client.media.resolveReferences({
+      obj: { image: reference },
+      resolveWith: "base64DataUri",
+    });
+
+    expect(Date.now() - startedAt).toBeLessThan(2_000);
+    expect(resolved).toEqual({ image: reference });
+    expect(warnSpy).toHaveBeenCalled();
+  });
 });

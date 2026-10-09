@@ -169,6 +169,7 @@ export type FetchedDataset = Dataset & {
  */
 export class DatasetManager {
   private langfuseClient: LangfuseClient;
+  private timeoutSeconds: number | undefined;
 
   /**
    * Creates a new DatasetManager instance.
@@ -176,8 +177,12 @@ export class DatasetManager {
    * @param params - Configuration object containing the API client
    * @internal
    */
-  constructor(params: { langfuseClient: LangfuseClient }) {
+  constructor(params: {
+    langfuseClient: LangfuseClient;
+    timeoutSeconds?: number;
+  }) {
     this.langfuseClient = params.langfuseClient;
+    this.timeoutSeconds = params.timeoutSeconds;
   }
 
   /**
@@ -374,6 +379,7 @@ export class DatasetManager {
             datasetId,
             datasetItemId,
             field,
+            timeoutSeconds: this.timeoutSeconds,
           }),
         ),
       );

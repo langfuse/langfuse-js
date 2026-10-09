@@ -42,8 +42,10 @@ export interface LangfuseClientParams {
   /**
    * Request timeout in seconds for each HTTP request made by the SDK managers:
    * score ingestion (`langfuse.score`), prompt management (`langfuse.prompt`,
-   * unless `fetchTimeoutMs` is passed to `get`) and media resolution
-   * (`langfuse.media`). Retried requests get the timeout per attempt.
+   * unless `fetchTimeoutMs` is passed to `get`), media resolution
+   * (`langfuse.media`) and the media API calls of `langfuse.dataset.createItem`.
+   * Retried requests get the timeout per attempt. Media content downloads time
+   * out only when no data arrives for this long, so large files are not cut off.
    * Can also be provided via LANGFUSE_TIMEOUT environment variable.
    *
    * Direct `langfuse.api.*` calls do not use this value; pass
@@ -256,7 +258,7 @@ export class LangfuseClient {
     });
 
     this.prompt = new PromptManager({ apiClient: this.api, timeoutSeconds });
-    this.dataset = new DatasetManager({ langfuseClient: this });
+    this.dataset = new DatasetManager({ langfuseClient: this, timeoutSeconds });
     this.score = new ScoreManager({ apiClient: this.api, timeoutSeconds });
     this.media = new MediaManager({ apiClient: this.api, timeoutSeconds });
     this.experiment = new ExperimentManager({ langfuseClient: this });

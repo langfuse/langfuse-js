@@ -37,6 +37,11 @@ export type UploadMediaParams = {
   maxRetries?: number;
   /** Base delay in milliseconds for exponential backoff. Defaults to 1000. */
   baseDelay?: number;
+  /**
+   * Per-request timeout in seconds for the media API calls (upload URL and
+   * upload status). Defaults to the API client's default.
+   */
+  timeoutSeconds?: number;
 };
 
 /**
@@ -65,7 +70,9 @@ export async function uploadMedia(params: UploadMediaParams): Promise<void> {
     field,
     maxRetries = 3,
     baseDelay = 1000,
+    timeoutSeconds,
   } = params;
+  const requestOptions = { timeoutInSeconds: timeoutSeconds };
   const logger = params.logger ?? getGlobalLogger();
 
   const contentSha256Hash = await media.getSha256Hash();
@@ -79,16 +86,19 @@ export async function uploadMedia(params: UploadMediaParams): Promise<void> {
     throw new Error("Cannot upload media: media content is incomplete.");
   }
 
-  const { uploadUrl, mediaId } = await apiClient.media.getUploadUrl({
-    contentLength: media.contentLength,
-    traceId,
-    observationId,
-    datasetId,
-    datasetItemId,
-    field,
-    contentType: media._contentType,
-    sha256Hash: contentSha256Hash,
-  });
+  const { uploadUrl, mediaId } = await apiClient.media.getUploadUrl(
+    {
+      contentLength: media.contentLength,
+      traceId,
+      observationId,
+      datasetId,
+      datasetItemId,
+      field,
+      contentType: media._contentType,
+      sha256Hash: contentSha256Hash,
+    },
+    requestOptions,
+  );
 
   if (!uploadUrl) {
     logger.debug(
@@ -127,12 +137,16 @@ export async function uploadMedia(params: UploadMediaParams): Promise<void> {
   const uploadSucceeded =
     uploadResponse.status === 200 || uploadResponse.status === 201;
 
-  await apiClient.media.patch(mediaId, {
-    uploadedAt: new Date().toISOString(),
-    uploadHttpStatus: uploadResponse.status,
-    uploadHttpError: await uploadResponse.text(),
-    uploadTimeMs: Date.now() - startTime,
-  });
+  await apiClient.media.patch(
+    mediaId,
+    {
+      uploadedAt: new Date().toISOString(),
+      uploadHttpStatus: uploadResponse.status,
+      uploadHttpError: await uploadResponse.text(),
+      uploadTimeMs: Date.now() - startTime,
+    },
+    requestOptions,
+  );
 
   logger.debug(`Media upload status reported for ${mediaId}`);
 

@@ -80,4 +80,23 @@ describe("uploadMedia", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(apiClient.media.patch).not.toHaveBeenCalled();
   });
+
+  it("passes timeoutSeconds to the media API calls", async () => {
+    const { media, apiClient } = await setup(200);
+
+    await uploadMedia({
+      apiClient: apiClient as never,
+      media,
+      field: "input",
+      maxRetries: 0,
+      timeoutSeconds: 5,
+    });
+
+    expect(apiClient.media.getUploadUrl.mock.calls[0][1]).toEqual({
+      timeoutInSeconds: 5,
+    });
+    expect(apiClient.media.patch.mock.calls[0][2]).toEqual({
+      timeoutInSeconds: 5,
+    });
+  });
 });

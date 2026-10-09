@@ -184,6 +184,33 @@ describe("DatasetManager.createItem media processing", () => {
   });
 });
 
+describe("DatasetManager.createItem media timeout", () => {
+  beforeEach(() => {
+    vi.mocked(uploadMedia).mockClear();
+  });
+
+  it("passes the client timeout to media uploads", async () => {
+    const manager = new DatasetManager({
+      langfuseClient: {
+        api: {
+          datasets: { get: vi.fn().mockResolvedValue({ id: "ds-id" }) },
+          datasetItems: { create: vi.fn().mockResolvedValue({ id: "x" }) },
+        },
+      } as never,
+      timeoutSeconds: 7,
+    });
+
+    await manager.createItem({
+      datasetName: "ds",
+      input: { image: makeMedia() },
+    });
+
+    expect(vi.mocked(uploadMedia)).toHaveBeenCalledWith(
+      expect.objectContaining({ timeoutSeconds: 7 }),
+    );
+  });
+});
+
 describe("DatasetManager.get media resolution", () => {
   function managerReturning(item: Record<string, unknown>) {
     const list = vi
