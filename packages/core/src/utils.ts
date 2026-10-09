@@ -270,3 +270,50 @@ export function dropMetadataOverSpanAttributeLimit<
     return attributes;
   }
 }
+
+/**
+ * Serializes an observation metadata value into the JSON string written to
+ * its `langfuse.observation.metadata.<key>` span attribute.
+ *
+ * Every value is JSON-encoded, strings included (`"3"` becomes `"\"3\""`), so
+ * the server can tell the string `"3"` from the number `3` and the string
+ * `'{"a":1}'` from the object `{ a: 1 }`. Bigints, also nested ones, become
+ * JSON numbers if they are in the JS-safe integer range (`10n` becomes `"10"`)
+ * and JSON strings of their decimal digits otherwise (`2n ** 60n` becomes
+ * `"\"1152921504606846976\""`), matching the Python SDK. `NaN` and
+ * `±Infinity`, also nested, become the JSON strings `"NaN"`, `"Infinity"` and
+ * `"-Infinity"` instead of `null`, also matching the Python SDK. A value that fails to serialize becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
+ * functions and symbols return undefined and are not written.
+ *
+ * @param value - Metadata value to serialize
+ * @returns JSON string, or undefined if the value is not written
+ * @internal
+ */
+export function serializeMetadataValue(value: unknown): string | undefined {
+  if (
+    value == null ||
+    typeof value === "function" ||
+    typeof value === "symbol"
+  ) {
+    return undefined;
+  }
+
+  try {
+    // JSON.stringify returns undefined if a toJSON method returns undefined
+    return JSON.stringify(value, (_, v) => {
+      if (typeof v === "number" && !Number.isFinite(v)) {
+        // JSON.stringify would write null
+        return String(v);
+      }
+
+      if (typeof v !== "bigint") return v;
+
+      return v >= BigInt(Number.MIN_SAFE_INTEGER) &&
+        v <= BigInt(Number.MAX_SAFE_INTEGER)
+        ? Number(v)
+        : v.toString();
+    }) as string | undefined;
+  } catch {
+    return JSON.stringify("<failed to serialize>");
+  }
+}

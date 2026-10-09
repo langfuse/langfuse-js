@@ -1,5 +1,5 @@
 /**
- * Tests for serialization of non-string metadata values passed to
+ * Tests for the JSON encoding of metadata values passed to
  * propagateAttributes.
  */
 
@@ -7,6 +7,7 @@ import {
   LangfuseOtelSpanAttributes,
   getGlobalLogger,
   getPropagatedAttributesFromContext,
+  serializeMetadataValue,
 } from "@langfuse/core";
 import { propagateAttributes, startObservation } from "@langfuse/tracing";
 import {
@@ -62,32 +63,58 @@ describe("propagateAttributes metadata serialization", () => {
     };
   }
 
-  it("keeps strings unchanged and JSON-serializes all other values", async () => {
+  it("JSON-encodes every value, strings included", async () => {
     const { parent, child } = await runWithMetadata({
       str: "plain",
+      numericString: "123",
+      boolString: "true",
+      nullString: "null",
+      emptyString: "",
       jsonLikeString: '{"already":"serialized"}',
       int: 3,
       float: 1.5,
       boolTrue: true,
       boolFalse: false,
-      nullValue: null,
       list: [1, "a"],
       obj: { nested: { a: 1 } },
     });
 
     for (const span of [parent, child]) {
-      expect(span.attributes[metadataKey("str")]).toBe("plain");
+      expect(span.attributes[metadataKey("str")]).toBe('"plain"');
+      expect(span.attributes[metadataKey("numericString")]).toBe('"123"');
+      expect(span.attributes[metadataKey("boolString")]).toBe('"true"');
+      expect(span.attributes[metadataKey("nullString")]).toBe('"null"');
+      expect(span.attributes[metadataKey("emptyString")]).toBe('""');
       expect(span.attributes[metadataKey("jsonLikeString")]).toBe(
-        '{"already":"serialized"}',
+        JSON.stringify('{"already":"serialized"}'),
       );
       expect(span.attributes[metadataKey("int")]).toBe("3");
       expect(span.attributes[metadataKey("float")]).toBe("1.5");
       expect(span.attributes[metadataKey("boolTrue")]).toBe("true");
       expect(span.attributes[metadataKey("boolFalse")]).toBe("false");
-      expect(span.attributes[metadataKey("nullValue")]).toBe("null");
       expect(span.attributes[metadataKey("list")]).toBe('[1,"a"]');
       expect(span.attributes[metadataKey("obj")]).toBe('{"nested":{"a":1}}');
     }
+  });
+
+  it("encodes values the same way as observation metadata", async () => {
+    const values: Record<string, unknown> = {
+      str: "123",
+      nan: Number.NaN,
+      nestedInfinity: { score: Number.POSITIVE_INFINITY },
+      safeBig: 10n,
+      big: 2n ** 60n,
+    };
+
+    const { child } = await runWithMetadata(values);
+
+    for (const [key, value] of Object.entries(values)) {
+      expect(child.attributes[metadataKey(key)]).toBe(
+        serializeMetadataValue(value),
+      );
+    }
+    expect(child.attributes[metadataKey("nan")]).toBe('"NaN"');
+    expect(child.attributes[metadataKey("big")]).toBe('"1152921504606846976"');
   });
 
   it("keeps LangGraph-style step and trigger metadata", async () => {
@@ -102,46 +129,49 @@ describe("propagateAttributes metadata serialization", () => {
     );
   });
 
-  it("drops values that cannot be JSON-serialized without throwing", async () => {
+  it("drops values without a JSON encoding without throwing", async () => {
     const warn = vi.spyOn(getGlobalLogger(), "warn");
-    const circular: Record<string, unknown> = {};
-    circular.self = circular;
 
     const { child } = await runWithMetadata({
       valid: 1,
+      nullValue: null,
       undefinedValue: undefined,
       fn: () => "x",
       symbol: Symbol("s"),
-      circular,
-      nan: Number.NaN,
-      nestedInfinity: { score: Number.POSITIVE_INFINITY },
     });
 
     expect(child.attributes[metadataKey("valid")]).toBe("1");
-    for (const key of [
-      "undefinedValue",
-      "fn",
-      "symbol",
-      "circular",
-      "nan",
-      "nestedInfinity",
-    ]) {
+    for (const key of ["nullValue", "undefinedValue", "fn", "symbol"]) {
       expect(child.attributes[metadataKey(key)]).toBeUndefined();
       expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(`'metadata.${key}' is not JSON-serializable`),
+        expect.stringContaining(`'metadata.${key}' is`),
       );
     }
   });
 
-  it("serializes BigInt values with their exact digits", async () => {
-    const { child } = await runWithMetadata({
-      big: 12345678901234567890n,
-      nested: { ids: [9007199254740993n] },
-    });
+  it("replaces circular values with a placeholder", async () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
 
-    expect(child.attributes[metadataKey("big")]).toBe("12345678901234567890");
-    expect(child.attributes[metadataKey("nested")]).toBe(
-      '{"ids":[9007199254740993]}',
+    const { child } = await runWithMetadata({ circular });
+
+    expect(child.attributes[metadataKey("circular")]).toBe(
+      '"<failed to serialize>"',
+    );
+  });
+
+  it("applies the 200 character limit to strings after encoding", async () => {
+    const warn = vi.spyOn(getGlobalLogger(), "warn");
+    // 198 chars plus 2 quotes = 200, 199 chars plus 2 quotes = 201
+    const fits = "a".repeat(198);
+    const tooLong = "a".repeat(199);
+
+    const { child } = await runWithMetadata({ fits, tooLong });
+
+    expect(child.attributes[metadataKey("fits")]).toBe(`"${fits}"`);
+    expect(child.attributes[metadataKey("tooLong")]).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("'metadata.tooLong' value is over 200"),
     );
   });
 
@@ -165,7 +195,7 @@ describe("propagateAttributes metadata serialization", () => {
     const tracer = otelTrace.getTracer("langfuse-sdk");
 
     await tracer.startActiveSpan("parent", async (parentSpan) => {
-      propagateAttributes({ metadata: { outer: 1, shared: "a" } }, () => {
+      propagateAttributes({ metadata: { outer: "x", shared: "a" } }, () => {
         propagateAttributes({ metadata: { inner: [true], shared: 2 } }, () => {
           const child = startObservation("child");
           child.end();
@@ -179,7 +209,7 @@ describe("propagateAttributes metadata serialization", () => {
       (s) => s.name === "child",
     )!;
 
-    expect(child.attributes[metadataKey("outer")]).toBe("1");
+    expect(child.attributes[metadataKey("outer")]).toBe('"x"');
     expect(child.attributes[metadataKey("inner")]).toBe("[true]");
     expect(child.attributes[metadataKey("shared")]).toBe("2");
   });
@@ -190,7 +220,12 @@ describe("propagateAttributes metadata serialization", () => {
 
     propagateAttributes(
       {
-        metadata: { step: 2, triggers: ["a,b", "c=d"], obj: { k: "v w" } },
+        metadata: {
+          step: 2,
+          name: "a b",
+          triggers: ["a,b", "c=d"],
+          obj: { k: "v w" },
+        },
         asBaggage: true,
       },
       () => {
@@ -214,6 +249,7 @@ describe("propagateAttributes metadata serialization", () => {
     const attributes = getPropagatedAttributesFromContext(extracted);
 
     expect(attributes[metadataKey("step")]).toBe("2");
+    expect(attributes[metadataKey("name")]).toBe('"a b"');
     expect(attributes[metadataKey("triggers")]).toBe('["a,b","c=d"]');
     expect(attributes[metadataKey("obj")]).toBe('{"k":"v w"}');
   });

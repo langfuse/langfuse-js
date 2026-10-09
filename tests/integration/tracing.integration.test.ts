@@ -82,7 +82,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "test-span",
         LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".key",
-        "value",
+        JSON.stringify("value"),
       );
       assertions.expectSpanAttribute(
         "test-span",
@@ -449,7 +449,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "test-generation",
         LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".version",
-        "1.0",
+        JSON.stringify("1.0"),
       );
 
       // Verify trace attributes
@@ -586,7 +586,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "test-event",
         LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".element",
-        "button",
+        JSON.stringify("button"),
       );
       assertions.expectSpanAttributeContains(
         "test-event",
@@ -611,7 +611,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "event-parent",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".platform",
-        "web",
+        '"web"',
       );
     });
 
@@ -682,7 +682,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "timestamped-event",
         LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".source",
-        "test-suite",
+        JSON.stringify("test-suite"),
       );
       assertions.expectSpanAttributeContains(
         "timestamped-event",
@@ -1096,7 +1096,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "active-span",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".execution_context",
-        "active",
+        '"active"',
       );
 
       // Verify nested span attributes
@@ -3049,12 +3049,12 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
       assertions.expectSpanAttribute(
         "ai-workflow",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".platform",
-        "web",
+        '"web"',
       );
       assertions.expectSpanAttribute(
         "ai-workflow",
         LangfuseOtelSpanAttributes.TRACE_METADATA + ".version",
-        "2.1.0",
+        '"2.1.0"',
       );
 
       // Verify level attributes across different observations
@@ -4771,7 +4771,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions.expectSpanAttribute(
           "test-span",
           LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".key",
-          "updated value",
+          JSON.stringify("updated value"),
         );
       });
 
@@ -4804,7 +4804,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions.expectSpanAttribute(
           "testFunc",
           LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".executionStep",
-          "processing",
+          JSON.stringify("processing"),
         );
         // The observe function captures the return value as output, overriding updateActiveSpan
         assertions.expectSpanAttribute(
@@ -4972,7 +4972,7 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
         assertions.expectSpanAttribute(
           "llmFunc",
           LangfuseOtelSpanAttributes.OBSERVATION_METADATA + ".provider",
-          "openai",
+          JSON.stringify("openai"),
         );
       });
     });

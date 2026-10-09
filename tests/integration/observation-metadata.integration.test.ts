@@ -1,3 +1,4 @@
+import { getGlobalLogger } from "@langfuse/core";
 import {
   propagateAttributes,
   startObservation,
@@ -16,6 +17,7 @@ import {
   type TestEnvironment,
 } from "./helpers/testSetup.js";
 
+const PREFIX = LangfuseOtelSpanAttributes.OBSERVATION_METADATA;
 const METADATA_PREFIX = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
 
 function manyKeys(count: number, prefix = "key"): Record<string, number> {
@@ -183,7 +185,7 @@ describe("Observation metadata span attribute limit", () => {
       expect(exported.droppedAttributesCount).toBe(0);
       expect(keys).not.toContain("extra0");
       expect(keys).not.toContain("extra1");
-      expect(exported.attributes[`${METADATA_PREFIX}first0`]).toBe("updated");
+      expect(exported.attributes[`${METADATA_PREFIX}first0`]).toBe('"updated"');
 
       const warnings = limitWarnings(warn);
       expect(warnings).toHaveLength(2);
@@ -202,7 +204,7 @@ describe("Observation metadata span attribute limit", () => {
 
       const exported = assertions.expectSpanWithName("active-limit-span");
       expect(exported.droppedAttributesCount).toBe(0);
-      expect(exported.attributes[`${METADATA_PREFIX}key0`]).toBe("updated");
+      expect(exported.attributes[`${METADATA_PREFIX}key0`]).toBe('"updated"');
       expect(exported.attributes[`${METADATA_PREFIX}late`]).toBeUndefined();
       expect(
         exported.attributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE],
@@ -341,7 +343,9 @@ describe("Observation metadata span attribute limit", () => {
       for (const key of Object.keys(traceMetadata)) {
         expect(
           attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.${key}`],
-        ).toBe(traceMetadata[key as keyof typeof traceMetadata]);
+        ).toBe(
+          JSON.stringify(traceMetadata[key as keyof typeof traceMetadata]),
+        );
       }
       expect(attributes[LangfuseOtelSpanAttributes.OBSERVATION_INPUT]).toBe(
         "in",
@@ -352,5 +356,181 @@ describe("Observation metadata span attribute limit", () => {
       // The 7 propagated attributes use up part of the budget
       expect(metadataKeys(exported).length).toBe(withoutPropagation - 7);
     });
+  });
+});
+
+describe("Observation metadata attributes", () => {
+  let testEnv: TestEnvironment;
+  let assertions: SpanAssertions;
+
+  beforeEach(async () => {
+    testEnv = await setupTestEnvironment();
+    assertions = new SpanAssertions(testEnv.mockExporter);
+  });
+
+  afterEach(async () => {
+    await teardownTestEnvironment(testEnv);
+  });
+
+  function exportedMetadata(spanName: string): Record<string, unknown> {
+    const span = assertions.expectSpanWithName(spanName);
+
+    return Object.fromEntries(
+      Object.entries(span.attributes).filter(
+        ([key]) => key === PREFIX || key.startsWith(`${PREFIX}.`),
+      ),
+    );
+  }
+
+  it("should write one JSON-encoded attribute per key", async () => {
+    const metadata = {
+      n: 3,
+      s: "3",
+      b: true,
+      empty: "",
+      json: '{"a":1}',
+      nested: { host: "localhost", port: 5432 },
+      list: [1, "a", true],
+    };
+    const span = startObservation("json-span", {
+      metadata: {
+        ...metadata,
+        nothing: null,
+        missing: undefined,
+        callback: () => "ignored",
+      },
+    });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const exported = exportedMetadata("json-span");
+    expect(exported).toStrictEqual({
+      [`${PREFIX}.n`]: "3",
+      [`${PREFIX}.s`]: '"3"',
+      [`${PREFIX}.b`]: "true",
+      [`${PREFIX}.empty`]: '""',
+      [`${PREFIX}.json`]: '"{\\"a\\":1}"',
+      [`${PREFIX}.nested`]: '{"host":"localhost","port":5432}',
+      [`${PREFIX}.list`]: '[1,"a",true]',
+    });
+
+    for (const [key, value] of Object.entries(metadata)) {
+      expect(JSON.parse(exported[`${PREFIX}.${key}`] as string)).toStrictEqual(
+        value,
+      );
+    }
+  });
+
+  it("should JSON-encode non-object metadata to the bare metadata key", async () => {
+    const span = startObservation("string-metadata-span", {
+      metadata: "foo" as unknown as Record<string, unknown>,
+    });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("string-metadata-span")).toStrictEqual({
+      [PREFIX]: '"foo"',
+    });
+  });
+
+  it("should only replace values that fail to serialize", async () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    const span = startObservation("circular-span", {
+      metadata: { ok: "yes", count: 1, circular },
+    });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("circular-span")).toStrictEqual({
+      [`${PREFIX}.ok`]: '"yes"',
+      [`${PREFIX}.count`]: "1",
+      [`${PREFIX}.circular`]: '"<failed to serialize>"',
+    });
+  });
+
+  it("should keep earlier values for keys updated with null or undefined", async () => {
+    const span = startObservation("null-span", {
+      metadata: { a: 1, b: 2 },
+    });
+    span.update({ metadata: { a: null, b: undefined, c: 3 } });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("null-span")).toStrictEqual({
+      [`${PREFIX}.a`]: "1",
+      [`${PREFIX}.b`]: "2",
+      [`${PREFIX}.c`]: "3",
+    });
+  });
+
+  it("should debug-log keys that are not written", async () => {
+    const debug = vi.spyOn(getGlobalLogger(), "debug");
+
+    try {
+      const span = startObservation("skipped-keys-span", {
+        metadata: { a: null, b: undefined, cb: () => "ignored", c: 3 },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const messages = debug.mock.calls.map(([message]) => message);
+      expect(messages).toContain(
+        'Observation metadata key "a" was not written because its value is null',
+      );
+      expect(messages).toContain(
+        'Observation metadata key "b" was not written because its value is undefined',
+      );
+      expect(messages).toContain(
+        'Observation metadata key "cb" was not written because its value is not JSON-serializable',
+      );
+      expect(messages.some((m) => String(m).includes('key "c"'))).toBe(false);
+    } finally {
+      debug.mockRestore();
+    }
+  });
+
+  it("should keep earlier values for keys updated with function values", async () => {
+    const span = startObservation("function-update-span", {
+      metadata: { cb: { x: 1 } },
+    });
+    span.update({ metadata: { cb: () => "ignored", other: "a" } });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("function-update-span")).toStrictEqual({
+      [`${PREFIX}.cb`]: '{"x":1}',
+      [`${PREFIX}.other`]: '"a"',
+    });
+  });
+
+  it("should JSON-encode updateActiveObservation metadata", async () => {
+    await startActiveObservation("active-span", async () => {
+      updateActiveObservation({ metadata: { step: 2, done: false, tag: "" } });
+    });
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("active-span")).toStrictEqual({
+      [`${PREFIX}.step`]: "2",
+      [`${PREFIX}.done`]: "false",
+      [`${PREFIX}.tag`]: '""',
+    });
+  });
+
+  it("should not write any attribute for empty metadata", async () => {
+    const span = startObservation("empty-span", { metadata: {} });
+    span.end();
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    expect(exportedMetadata("empty-span")).toStrictEqual({});
   });
 });

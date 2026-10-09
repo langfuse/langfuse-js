@@ -1,5 +1,9 @@
 import type { OpenTelemetrySpanType } from "@ai-sdk/otel";
-import { LangfuseOtelSpanAttributes } from "@langfuse/core";
+import {
+  getGlobalLogger,
+  LangfuseOtelSpanAttributes,
+  serializeMetadataValue,
+} from "@langfuse/core";
 import type { Attributes } from "@opentelemetry/api";
 
 import type { LangfusePrompt } from "./types.js";
@@ -36,13 +40,16 @@ export function createLangfuseObservationAttributes(params: {
   // Handle metadata
   if (metadata) {
     for (const [key, value] of Object.entries(metadata)) {
-      const serialized =
-        typeof value === "string" ? value : safeSerialize(value);
+      const serialized = serializeMetadataValue(value);
 
-      if (serialized != null) {
+      if (serialized !== undefined) {
         attributes[
           `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.${key}`
         ] = serialized;
+      } else {
+        getGlobalLogger().debug(
+          `Observation metadata key "${key}" was not written because its value is ${value == null ? String(value) : "not JSON-serializable"}`,
+        );
       }
     }
   }
@@ -69,16 +76,4 @@ function normalizePrompt(value: unknown): LangfusePrompt | undefined {
 
 function isPlainObject(value: unknown): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function safeSerialize(value: unknown): string | undefined {
-  try {
-    if (value == null) {
-      return;
-    }
-
-    return JSON.stringify(value);
-  } catch {
-    return "<failed to serialize>";
-  }
 }
