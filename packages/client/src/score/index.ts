@@ -30,15 +30,21 @@ export class ScoreManager {
   private flushTimer: any = null;
   private flushAtCount: number;
   private flushIntervalSeconds: number;
+  private timeoutSeconds: number;
 
   /**
    * Creates a new ScoreManager instance.
    *
-   * @param params - Configuration object containing the API client
+   * @param params - Configuration object containing the API client and request timeout
    * @internal
    */
-  constructor(params: { apiClient: LangfuseAPIClient }) {
+  constructor(params: {
+    apiClient: LangfuseAPIClient;
+    timeoutSeconds?: number;
+  }) {
     this.apiClient = params.apiClient;
+    this.timeoutSeconds =
+      params.timeoutSeconds ?? Number(getEnv("LANGFUSE_TIMEOUT") ?? 5);
 
     const envFlushAtCount = getEnv("LANGFUSE_FLUSH_AT");
     const envFlushIntervalSeconds = getEnv("LANGFUSE_FLUSH_INTERVAL");
@@ -283,7 +289,7 @@ export class ScoreManager {
 
         promises.push(
           this.apiClient.ingestion
-            .batch({ batch })
+            .batch({ batch }, { timeoutInSeconds: this.timeoutSeconds })
             .then((res) => {
               if (res.errors?.length > 0) {
                 this.logger.error("Error ingesting scores:", res.errors);
