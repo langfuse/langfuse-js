@@ -55,3 +55,5 @@ pnpm ci         # Run full CI suite
 ## License
 
 [MIT](LICENSE)
+
+Portions of this codebase are derived from [posthog/posthog-js-lite](https://github.com/PostHog/posthog-js-lite) by PostHog, which is also licensed under the MIT License.
