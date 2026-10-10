@@ -19,6 +19,7 @@ import {
 } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
+import { ChatOpenAI } from "@langchain/openai";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
@@ -43,6 +44,31 @@ function getObservationStatusMessage(span: ReadableSpan): string | undefined {
     span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_STATUS_MESSAGE];
 
   return typeof statusMessage === "string" ? statusMessage : undefined;
+}
+
+/** A streamed OpenAI chat completion whose chunks name `model`. */
+function fakeOpenAIStream(model: string): typeof fetch {
+  return async () => {
+    const chunks = [
+      { delta: { role: "assistant", content: "Hi!" }, finish_reason: null },
+      { delta: {}, finish_reason: "stop" },
+    ].map((choice) =>
+      JSON.stringify({
+        id: "chatcmpl-1",
+        object: "chat.completion.chunk",
+        created: 1,
+        model,
+        choices: [{ index: 0, ...choice }],
+      }),
+    );
+    const body = [...chunks, "[DONE]"]
+      .map((data) => `data: ${data}\n\n`)
+      .join("");
+
+    return new Response(body, {
+      headers: { "content-type": "text/event-stream" },
+    });
+  };
 }
 
 describe("LangChain callback handler integration tests", () => {
@@ -378,6 +404,33 @@ describe("LangChain callback handler integration tests", () => {
     await handler.handleLLMError(new Error("stream failed"), runId);
 
     expect(completionStartTimes).not.toHaveProperty(runId);
+  });
+
+  it("should record the response model name when a streaming handler is attached", async () => {
+    class StreamingPreferringHandler extends BaseCallbackHandler {
+      name = "StreamingPreferringHandler";
+      lc_prefer_streaming = true;
+    }
+
+    const model = new ChatOpenAI({
+      model: "gpt-4.1-mini",
+      apiKey: "sk-test",
+      configuration: { fetch: fakeOpenAIStream("gpt-4.1-mini-2025-04-14") },
+    });
+
+    const result = await model.invoke([new HumanMessage("Hello")], {
+      callbacks: [new CallbackHandler(), new StreamingPreferringHandler()],
+    });
+
+    expect(result.text).toBe("Hi!");
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanAttribute(
+      "ChatOpenAI",
+      LangfuseOtelSpanAttributes.OBSERVATION_MODEL,
+      "gpt-4.1-mini-2025-04-14",
+    );
   });
 
   it("should serialize tool and function messages with role, name and tool_call_id", async () => {

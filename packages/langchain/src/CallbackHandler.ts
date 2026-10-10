@@ -949,13 +949,23 @@ export class CallbackHandler extends BaseCallbackHandler {
     }
   }
 
+  /**
+   * The response model is usually on the message. A chat model invoked with a
+   * streaming handler attached (e.g. `streamEvents`) leaves it only in
+   * generationInfo, so that is the fallback.
+   */
   private extractModelNameFromMetadata(generation: any): string | undefined {
     try {
-      return "message" in generation &&
+      const hasChatMessage =
+        "message" in generation &&
         (generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk)
-        ? generation["message"].response_metadata.model_name
+          generation["message"] instanceof AIMessageChunk);
+      const modelNameOnMessage = hasChatMessage
+        ? generation["message"].response_metadata?.model_name
         : undefined;
+      const modelNameInGenerationInfo = generation.generationInfo?.model_name;
+
+      return modelNameOnMessage ?? modelNameInGenerationInfo;
     } catch {}
   }
 
