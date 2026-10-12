@@ -7,4 +7,5 @@ import * as LangfuseAPI from "../../../index.js";
 export interface IngestionResponse {
   successes: LangfuseAPI.IngestionSuccess[];
   errors: LangfuseAPI.IngestionError[];
+  _deprecation?: LangfuseAPI.Deprecation;
 }

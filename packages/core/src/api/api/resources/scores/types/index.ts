@@ -1,5 +1,9 @@
+export * from "./CreateScoresRequest.js";
+export * from "./CreateScoreBatchRequest.js";
 export * from "./CreateScoreRequest.js";
 export * from "./CreateScoreSource.js";
+export * from "./CreateScoresResponse.js";
+export * from "./CreateScoreBatchResponse.js";
 export * from "./CreateScoreResponse.js";
 export * from "./GetScoresResponseTraceData.js";
 export * from "./GetScoresResponseDataNumeric.js";
@@ -9,3 +13,5 @@ export * from "./GetScoresResponseDataCorrection.js";
 export * from "./GetScoresResponseDataText.js";
 export * from "./GetScoresResponseData.js";
 export * from "./GetScoresResponse.js";
+export * from "./CreateScoreBatchResults.js";
+export * from "./CreateScoreBatchError.js";
