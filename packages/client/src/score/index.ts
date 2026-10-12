@@ -102,10 +102,10 @@ export class ScoreManager {
     }
 
     if (this.eventQueue.length >= this.flushAtCount) {
-      this.flushPromise = this.flush();
+      void this.startFlush();
     } else if (!this.flushTimer) {
       this.flushTimer = safeSetTimeout(() => {
-        this.flushPromise = this.flush();
+        void this.startFlush();
       }, this.flushIntervalSeconds * 1_000);
     }
   }
@@ -269,6 +269,26 @@ export class ScoreManager {
     });
   }
 
+  /**
+   * Starts a flush of the events currently in the queue, or returns the flush
+   * that is already in flight. Only one flush runs at a time.
+   *
+   * The returned promise never rejects. Events queued after the in-flight
+   * flush took its snapshot of the queue are not part of it.
+   */
+  private startFlush(): Promise<void> {
+    if (this.flushPromise) return this.flushPromise;
+
+    const promise: Promise<void> = this.handleFlush().finally(() => {
+      if (this.flushPromise === promise) {
+        this.flushPromise = null;
+      }
+    });
+    this.flushPromise = promise;
+
+    return promise;
+  }
+
   private async handleFlush() {
     try {
       if (this.flushTimer) {
@@ -298,8 +318,6 @@ export class ScoreManager {
       await Promise.all(promises);
     } catch (err) {
       this.logger.error("Error flushing Score Manager: ", err);
-    } finally {
-      this.flushPromise = null;
     }
   }
 
@@ -317,8 +335,12 @@ export class ScoreManager {
    * await langfuse.score.flush(); // Ensures the score is sent immediately
    * ```
    */
-  public async flush() {
-    return this.flushPromise ?? this.handleFlush();
+  public async flush(): Promise<void> {
+    // A flush that is already in flight only covers the events that were
+    // queued when it started, so keep going until the queue is drained.
+    while (this.flushPromise || this.eventQueue.length > 0) {
+      await this.startFlush();
+    }
   }
 
   /**
