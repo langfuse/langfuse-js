@@ -1,6 +1,5 @@
 import {
   LangfuseAPIClient,
-  LangfuseAPIError,
   getEnv,
   generateUUID,
   ScoreBody,
@@ -17,10 +16,6 @@ import { Span, trace } from "@opentelemetry/api";
 const MAX_QUEUE_SIZE = 100_000; // prevent memory leaks
 const MAX_BATCH_SIZE = 100;
 const MAX_BATCH_ATTEMPTS_ON_TIMEOUT = 2;
-const MIN_SERVER_VERSION_FOR_SCORE_BATCHES = "v4.55.0";
-// Logged at error level once per process; later occurrences go to debug.
-let hasLoggedScoreBatchServerVersionError = false;
-
 function isPartialBatchResult(
   response: CreateScoresResponse | undefined,
 ): response is CreateScoreBatchResults {
@@ -372,18 +367,6 @@ export class ScoreManager {
         ) {
           this.logger.warn("Score batch request timed out. Retrying once.");
           continue;
-        }
-
-        if (err instanceof LangfuseAPIError && err.statusCode === 400) {
-          const message = `Batch score creation requires a Langfuse server ${MIN_SERVER_VERSION_FOR_SCORE_BATCHES} or later. The server rejected the batch and ${batch.length === 1 ? "1 score was" : `${batch.length} scores were`} dropped. Upgrade your Langfuse server to keep recording scores.`;
-          if (hasLoggedScoreBatchServerVersionError) {
-            this.logger.debug(message, err);
-          } else {
-            hasLoggedScoreBatchServerVersionError = true;
-            this.logger.error(message, err);
-          }
-
-          return;
         }
 
         this.logger.error("Failed to export score batch:", err);
