@@ -210,8 +210,8 @@ describe("configured client timeout", () => {
     );
   });
 
-  it("does not abort a media body that downloads for longer than the timeout", async () => {
-    const client = makeClient(0.05);
+  it("does not abort a media body that keeps streaming for longer than the timeout", async () => {
+    const client = makeClient(0.1);
     client.api.media.get = vi.fn().mockResolvedValue({
       url: "http://localhost:3000/media.png",
       contentType: "image/png",
@@ -224,10 +224,13 @@ describe("configured client timeout", () => {
             init.signal?.addEventListener("abort", () =>
               streamController.error(init.signal?.reason),
             );
-            setTimeout(() => {
-              streamController.enqueue(new Uint8Array([1, 2, 3]));
-              streamController.close();
-            }, 200);
+            [1, 2, 3].forEach((byte, index) =>
+              setTimeout(
+                () => streamController.enqueue(new Uint8Array([byte])),
+                50 * (index + 1),
+              ),
+            );
+            setTimeout(() => streamController.close(), 200);
           },
         });
 
@@ -243,5 +246,40 @@ describe("configured client timeout", () => {
     });
 
     expect(resolved).toEqual({ image: "data:image/png;base64,AQID" });
+  });
+
+  it("aborts a media body that stalls after the response headers", async () => {
+    const client = makeClient(0.05);
+    client.api.media.get = vi.fn().mockResolvedValue({
+      url: "http://localhost:3000/media.png",
+      contentType: "image/png",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        const body = new ReadableStream<Uint8Array>({
+          start(streamController) {
+            init.signal?.addEventListener("abort", () =>
+              streamController.error(init.signal?.reason),
+            );
+            streamController.enqueue(new Uint8Array([1]));
+          },
+        });
+
+        return new Response(body, { status: 200 });
+      }),
+    );
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const reference =
+      "@@@langfuseMedia:type=image/png|id=media-id|source=base64_data_uri@@@";
+
+    const startedAt = Date.now();
+    const resolved = await client.media.resolveReferences({
+      obj: { image: reference },
+      resolveWith: "base64DataUri",
+    });
+
+    expect(Date.now() - startedAt).toBeLessThan(2_000);
+    expect(resolved).toEqual({ image: reference });
   });
 });
