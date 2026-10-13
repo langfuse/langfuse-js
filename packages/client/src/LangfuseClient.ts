@@ -104,7 +104,13 @@ export class LangfuseClient {
    * Direct access to the underlying Langfuse API client.
    * Use this for advanced API operations not covered by the high-level managers.
    */
-  public api: LangfuseAPIClient;
+  public api: LangfuseAPIClient & {
+    /** @deprecated Use `api.scores` instead. */
+    readonly scoresV3: {
+      /** @deprecated Use `api.scores.getMany` instead; it takes the same arguments. */
+      getManyV3: LangfuseAPIClient["scores"]["getMany"];
+    };
+  };
 
   /**
    * Manager for prompt operations including creation, retrieval, and caching.
@@ -238,7 +244,7 @@ export class LangfuseClient {
       );
     }
 
-    this.api = new LangfuseAPIClient({
+    const api = new LangfuseAPIClient({
       baseUrl: this.baseUrl,
       username: publicKey,
       password: secretKey,
@@ -247,6 +253,20 @@ export class LangfuseClient {
       xLangfuseSdkName: "javascript",
       environment: "", // noop as baseUrl is set
       headers: params?.additionalHeaders,
+    });
+    let warnedScoresV3 = false;
+    this.api = Object.assign(api, {
+      scoresV3: {
+        getManyV3: (...args: Parameters<typeof api.scores.getMany>) => {
+          if (!warnedScoresV3) {
+            warnedScoresV3 = true;
+            logger.warn(
+              "`api.scoresV3.getManyV3` is deprecated and will be removed in a future major release. Use `api.scores.getMany` instead.",
+            );
+          }
+          return api.scores.getMany(...args);
+        },
+      },
     });
 
     logger.debug("Initialized LangfuseClient with params:", {
