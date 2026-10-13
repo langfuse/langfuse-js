@@ -320,6 +320,250 @@ export class Scores {
     }
   }
 
+  /**
+   * Get a list of scores with a polymorphic `value` field (v3).
+   *
+   * The `value` field type depends on `dataType`:
+   * - `NUMERIC` → number
+   * - `BOOLEAN` → boolean
+   * - `CATEGORICAL`, `TEXT`, `CORRECTION` → string
+   *
+   * The response always includes the core fields: id, projectId, name,
+   * value, dataType, source, timestamp, environment, createdAt, updatedAt.
+   *
+   * Additional field groups can be requested via the `fields` parameter:
+   * - `details` — adds comment, configId, metadata
+   * - `subject` — adds the subject object describing the entity the score
+   *   is attached to: kind (trace, observation, session, or experiment),
+   *   id, and traceId for observation-level scores
+   * - `annotation` — adds authorUserId, queueId
+   *
+   * Unknown group names return HTTP 400.
+   *
+   * @param {LangfuseAPI.GetScoresV3Request} request
+   * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.scores.getMany()
+   */
+  public getMany(
+    request: LangfuseAPI.GetScoresV3Request = {},
+    requestOptions?: Scores.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.GetScoresV3Response> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__getMany(request, requestOptions),
+    );
+  }
+
+  private async __getMany(
+    request: LangfuseAPI.GetScoresV3Request = {},
+    requestOptions?: Scores.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.GetScoresV3Response>> {
+    const {
+      limit,
+      cursor,
+      fields,
+      id,
+      name,
+      source,
+      dataType,
+      environment,
+      configId,
+      queueId,
+      authorUserId,
+      value,
+      valueMin,
+      valueMax,
+      traceId,
+      sessionId,
+      observationId,
+      experimentId,
+      fromTimestamp,
+      toTimestamp,
+    } = request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (limit != null) {
+      _queryParams["limit"] = limit.toString();
+    }
+
+    if (cursor != null) {
+      _queryParams["cursor"] = cursor;
+    }
+
+    if (fields != null) {
+      _queryParams["fields"] = fields;
+    }
+
+    if (id != null) {
+      _queryParams["id"] = id;
+    }
+
+    if (name != null) {
+      _queryParams["name"] = name;
+    }
+
+    if (source != null) {
+      _queryParams["source"] = source;
+    }
+
+    if (dataType != null) {
+      _queryParams["dataType"] = dataType;
+    }
+
+    if (environment != null) {
+      _queryParams["environment"] = environment;
+    }
+
+    if (configId != null) {
+      _queryParams["configId"] = configId;
+    }
+
+    if (queueId != null) {
+      _queryParams["queueId"] = queueId;
+    }
+
+    if (authorUserId != null) {
+      _queryParams["authorUserId"] = authorUserId;
+    }
+
+    if (value != null) {
+      _queryParams["value"] = value;
+    }
+
+    if (valueMin != null) {
+      _queryParams["valueMin"] = valueMin.toString();
+    }
+
+    if (valueMax != null) {
+      _queryParams["valueMax"] = valueMax.toString();
+    }
+
+    if (traceId != null) {
+      _queryParams["traceId"] = traceId;
+    }
+
+    if (sessionId != null) {
+      _queryParams["sessionId"] = sessionId;
+    }
+
+    if (observationId != null) {
+      _queryParams["observationId"] = observationId;
+    }
+
+    if (experimentId != null) {
+      _queryParams["experimentId"] = experimentId;
+    }
+
+    if (fromTimestamp != null) {
+      _queryParams["fromTimestamp"] = fromTimestamp;
+    }
+
+    if (toTimestamp != null) {
+      _queryParams["toTimestamp"] = toTimestamp;
+    }
+
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/v3/scores",
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.GetScoresV3Response,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/v3/scores.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
   protected async _getAuthorizationHeader(): Promise<string | undefined> {
     const username = await core.Supplier.get(this._options.username);
     const password = await core.Supplier.get(this._options.password);
