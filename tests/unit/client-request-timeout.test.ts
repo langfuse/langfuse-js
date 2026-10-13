@@ -209,4 +209,39 @@ describe("configured client timeout", () => {
       expect.anything(),
     );
   });
+
+  it("does not abort a media body that downloads for longer than the timeout", async () => {
+    const client = makeClient(0.05);
+    client.api.media.get = vi.fn().mockResolvedValue({
+      url: "http://localhost:3000/media.png",
+      contentType: "image/png",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        const body = new ReadableStream<Uint8Array>({
+          start(streamController) {
+            init.signal?.addEventListener("abort", () =>
+              streamController.error(init.signal?.reason),
+            );
+            setTimeout(() => {
+              streamController.enqueue(new Uint8Array([1, 2, 3]));
+              streamController.close();
+            }, 200);
+          },
+        });
+
+        return new Response(body, { status: 200 });
+      }),
+    );
+    const reference =
+      "@@@langfuseMedia:type=image/png|id=media-id|source=base64_data_uri@@@";
+
+    const resolved = await client.media.resolveReferences({
+      obj: { image: reference },
+      resolveWith: "base64DataUri",
+    });
+
+    expect(resolved).toEqual({ image: "data:image/png;base64,AQID" });
+  });
 });

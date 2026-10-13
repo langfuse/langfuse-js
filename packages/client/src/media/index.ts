@@ -115,13 +115,31 @@ export class MediaManager {
                 {},
                 { timeoutInSeconds: this.timeoutSeconds },
               );
-              const mediaContent = await fetch(mediaData.url, {
-                method: "GET",
-                headers: {},
-                ...(this.timeoutSeconds !== undefined && {
-                  signal: AbortSignal.timeout(this.timeoutSeconds * 1_000),
-                }),
-              });
+              // The timeout bounds the wait for the storage response, not
+              // the body download, so large media is not cut off.
+              const controller = new AbortController();
+              const timer =
+                this.timeoutSeconds !== undefined
+                  ? setTimeout(
+                      () =>
+                        controller.abort(
+                          new Error(
+                            `Media download timed out after ${this.timeoutSeconds}s`,
+                          ),
+                        ),
+                      this.timeoutSeconds * 1_000,
+                    )
+                  : undefined;
+              let mediaContent: Response;
+              try {
+                mediaContent = await fetch(mediaData.url, {
+                  method: "GET",
+                  headers: {},
+                  signal: controller.signal,
+                });
+              } finally {
+                clearTimeout(timer);
+              }
               if (mediaContent.status !== 200) {
                 throw new Error("Failed to fetch media content");
               }
