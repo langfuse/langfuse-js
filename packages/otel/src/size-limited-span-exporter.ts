@@ -1,14 +1,44 @@
 import { getEnv, getGlobalLogger } from "@langfuse/core";
+import type { Attributes } from "@opentelemetry/api";
 import { ExportResultCode } from "@opentelemetry/core";
-import { JsonTraceSerializer } from "@opentelemetry/otlp-transformer";
 import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
 
 export const DEFAULT_MAX_BATCH_SIZE_BYTES = 64 * 1024 * 1024;
 
-export function getSerializedBatchSizeBytes(
-  spans: ReadableSpan[],
-): number | undefined {
-  return JsonTraceSerializer.serializeRequest(spans)?.byteLength;
+// Every UTF-16 code unit of a serialized string becomes at least one byte of
+// the UTF-8 OTLP JSON body, so summing the lengths of strings that always
+// appear in the request never exceeds the request size.
+export function getBatchSizeLowerBoundBytes(spans: ReadableSpan[]): number {
+  let bytes = 0;
+  for (const span of spans) {
+    bytes +=
+      span.name.length +
+      (span.status.message?.length ?? 0) +
+      getAttributesLowerBoundBytes(span.attributes);
+    for (const event of span.events) {
+      bytes +=
+        event.name.length + getAttributesLowerBoundBytes(event.attributes);
+    }
+    for (const link of span.links) {
+      bytes += getAttributesLowerBoundBytes(link.attributes);
+    }
+  }
+  return bytes;
+}
+
+function getAttributesLowerBoundBytes(attributes: Attributes = {}): number {
+  let bytes = 0;
+  for (const [key, value] of Object.entries(attributes)) {
+    bytes += key.length;
+    if (typeof value === "string") {
+      bytes += value.length;
+    } else if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === "string") bytes += item.length;
+      }
+    }
+  }
+  return bytes;
 }
 
 export function resolveMaxBatchSizeBytes(rawValue: string | undefined): number {
@@ -36,60 +66,31 @@ export function resolveMaxBatchSizeBytesFromEnvironment(): number {
 export class SizeLimitedSpanExporter implements SpanExporter {
   private readonly delegate: SpanExporter;
   private readonly maxBatchSizeBytes: number;
-  private readonly serializeRequest: (
-    spans: ReadableSpan[],
-  ) => { byteLength: number } | undefined;
 
-  constructor(params: {
-    delegate: SpanExporter;
-    maxBatchSizeBytes: number;
-    serializeRequest?: (
-      spans: ReadableSpan[],
-    ) => { byteLength: number } | undefined;
-  }) {
+  constructor(params: { delegate: SpanExporter; maxBatchSizeBytes: number }) {
     this.delegate = params.delegate;
     this.maxBatchSizeBytes = params.maxBatchSizeBytes;
-    this.serializeRequest =
-      params.serializeRequest ?? JsonTraceSerializer.serializeRequest;
   }
 
   export(
     spans: ReadableSpan[],
     resultCallback: Parameters<SpanExporter["export"]>[1],
   ): void {
-    let serializedSizeBytes: number | undefined;
+    const sizeLowerBoundBytes = getBatchSizeLowerBoundBytes(spans);
 
-    try {
-      serializedSizeBytes = this.serializeRequest(spans)?.byteLength;
-    } catch (error) {
-      resultCallback({
-        code: ExportResultCode.FAILED,
-        error: error instanceof Error ? error : new Error(String(error)),
-      });
-      return;
-    }
-
-    if (serializedSizeBytes === undefined) {
-      resultCallback({
-        code: ExportResultCode.FAILED,
-        error: new Error("Failed to serialize OpenTelemetry span batch."),
-      });
-      return;
-    }
-
-    if (serializedSizeBytes > this.maxBatchSizeBytes) {
+    if (sizeLowerBoundBytes > this.maxBatchSizeBytes) {
       getGlobalLogger().warn(
-        "Dropping OpenTelemetry span batch because its serialized request exceeds the configured byte limit.",
+        "Dropping OpenTelemetry span batch because it exceeds the configured byte limit.",
         {
           maxBatchSizeBytes: this.maxBatchSizeBytes,
-          serializedSizeBytes,
+          sizeLowerBoundBytes,
           spanCount: spans.length,
         },
       );
       resultCallback({
         code: ExportResultCode.FAILED,
         error: new Error(
-          `Serialized OpenTelemetry span batch size ${serializedSizeBytes} bytes exceeds the configured limit of ${this.maxBatchSizeBytes} bytes.`,
+          `OpenTelemetry span batch size of at least ${sizeLowerBoundBytes} bytes exceeds the configured limit of ${this.maxBatchSizeBytes} bytes.`,
         ),
       });
       return;

@@ -1,12 +1,13 @@
 import { getGlobalLogger } from "@langfuse/core";
 import { ExportResultCode } from "@opentelemetry/core";
+import { JsonTraceSerializer } from "@opentelemetry/otlp-transformer";
 import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_MAX_BATCH_SIZE_BYTES,
   SizeLimitedSpanExporter,
-  getSerializedBatchSizeBytes,
+  getBatchSizeLowerBoundBytes,
   resolveMaxBatchSizeBytes,
   resolveMaxBatchSizeBytesFromEnvironment,
 } from "../../packages/otel/src/size-limited-span-exporter.js";
@@ -53,43 +54,46 @@ describe("SizeLimitedSpanExporter", () => {
   });
 
   it.each([
-    ["below", 1],
-    ["at", 0],
+    ["drops", "below", -1],
+    ["forwards", "at", 0],
+    ["forwards", "above", 1],
   ])(
-    "forwards a serialized batch %s the byte limit",
-    (_position, extraBytes) => {
+    "%s a batch when the byte limit is %s its size lower bound",
+    (action, _position, extraBytes) => {
+      vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => undefined);
       const delegate = createDelegate();
       const spans = [createSpan("span-1", "héllo")];
-      const serializedSize = getSerializedBatchSizeBytes(spans)!;
       const callback = vi.fn();
       const exporter = new SizeLimitedSpanExporter({
         delegate,
-        maxBatchSizeBytes: serializedSize + extraBytes,
+        maxBatchSizeBytes: getBatchSizeLowerBoundBytes(spans) + extraBytes,
       });
 
       exporter.export(spans, callback);
 
-      expect(delegate.export).toHaveBeenCalledOnce();
-      expect(delegate.export).toHaveBeenCalledWith(spans, callback);
+      const forwarded = action === "forwards";
+      expect(vi.mocked(delegate.export).mock.calls).toEqual(
+        forwarded ? [[spans, callback]] : [],
+      );
       expect(callback).toHaveBeenCalledOnce();
-      expect(callback).toHaveBeenCalledWith({ code: ExportResultCode.SUCCESS });
+      expect(callback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: forwarded ? ExportResultCode.SUCCESS : ExportResultCode.FAILED,
+        }),
+      );
     },
   );
 
   it("drops a combined oversized batch without splitting or delegating", () => {
     vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => undefined);
     const delegate = createDelegate();
-    const sensitivePayload = "payload-that-must-not-be-logged";
+    const sensitivePayload = "x".repeat(1_000);
     const spans = [
       createSpan("span-1", sensitivePayload),
-      createSpan("span-2", "two"),
+      createSpan("span-2", sensitivePayload),
     ];
-    const individualSizes = spans.map(
-      (span) => getSerializedBatchSizeBytes([span])!,
-    );
-    const combinedSize = getSerializedBatchSizeBytes(spans)!;
-    const maxBatchSizeBytes = Math.max(...individualSizes);
-    expect(combinedSize).toBeGreaterThan(maxBatchSizeBytes);
+    // Each span fits alone; together they exceed the limit.
+    const maxBatchSizeBytes = 1_500;
     const callback = vi.fn();
     const exporter = new SizeLimitedSpanExporter({
       delegate,
@@ -107,7 +111,7 @@ describe("SizeLimitedSpanExporter", () => {
       expect.stringContaining("Dropping OpenTelemetry span batch"),
       {
         maxBatchSizeBytes,
-        serializedSizeBytes: combinedSize,
+        sizeLowerBoundBytes: getBatchSizeLowerBoundBytes(spans),
         spanCount: spans.length,
       },
     );
@@ -116,30 +120,58 @@ describe("SizeLimitedSpanExporter", () => {
     ).not.toContain(sensitivePayload);
   });
 
-  it.each(["undefined", "throw"])(
-    "fails once without delegating when serialization returns %s",
-    (failureMode) => {
-      const delegate = createDelegate();
-      const serializationError = new Error("serialization failed");
-      const callback = vi.fn();
-      const exporter = new SizeLimitedSpanExporter({
-        delegate,
-        maxBatchSizeBytes: DEFAULT_MAX_BATCH_SIZE_BYTES,
-        serializeRequest: () => {
-          if (failureMode === "throw") throw serializationError;
-          return undefined;
+  it("keeps the size lower bound within the serialized OTLP JSON request size and close to it for ASCII", () => {
+    const samples = [
+      "plain ascii text",
+      JSON.stringify({
+        role: "assistant",
+        content: JSON.stringify({ quote: '"', backslash: "\\" }),
+      }),
+      "\u0000\u0001\b\t\n\f\r\u001f\u007f",
+      "汉字かな한글",
+      "😀👍🏽",
+      "\ud800",
+      "\udfff",
+    ];
+    const spans = samples.map((sample, index) => {
+      const text = sample.repeat(10_000);
+      const span = createSpan(`span-${index}`, text);
+      return {
+        ...span,
+        name: text,
+        attributes: {
+          ...span.attributes,
+          [text]: text,
+          array: [text, null, undefined, text],
+          // Each serializes as `{}`, so counting them as text exceeds the request.
+          nulls: Array(10_000).fill(null),
+          missing: undefined,
+          number: 1,
         },
-      });
+        status: { code: 2, message: text },
+        events: [
+          { name: text, time: [0, 0], attributes: { [text]: [text] } },
+          { name: text, time: [0, 0] },
+        ],
+        links: [{ context: span.spanContext(), attributes: { [text]: text } }],
+      } as ReadableSpan;
+    });
 
-      exporter.export([createSpan("span-1", "output")], callback);
+    const serializedBytes = (span: ReadableSpan) =>
+      JsonTraceSerializer.serializeRequest([span])!.byteLength;
 
-      expect(delegate.export).not.toHaveBeenCalled();
-      expect(callback).toHaveBeenCalledOnce();
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({ code: ExportResultCode.FAILED }),
+    for (const span of spans) {
+      expect(getBatchSizeLowerBoundBytes([span])).toBeLessThanOrEqual(
+        serializedBytes(span),
       );
-    },
-  );
+    }
+    // ASCII serializes one byte per character, so the bound is nearly exact,
+    // and skipping any counted field drops it below 95%.
+    const asciiSpan = spans[0];
+    expect(getBatchSizeLowerBoundBytes([asciiSpan])).toBeGreaterThan(
+      0.95 * serializedBytes(asciiSpan),
+    );
+  });
 
   it("delegates forceFlush and shutdown", async () => {
     const delegate = createDelegate();
