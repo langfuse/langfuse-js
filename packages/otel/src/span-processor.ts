@@ -222,8 +222,10 @@ export interface LangfuseSpanProcessorParams {
  *       baseUrl: 'https://cloud.langfuse.com',
  *       environment: 'production',
  *       mask: ({ data }) => {
- *         // Mask sensitive data
- *         return data.replace(/api_key=\w+/g, 'api_key=***');
+ *         // Metadata values reach the mask decoded, so data is not always a string
+ *         return typeof data === 'string'
+ *           ? data.replace(/api_key=\w+/g, 'api_key=***')
+ *           : data;
  *       }
  *     })
  *   ]

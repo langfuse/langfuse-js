@@ -17,7 +17,9 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 >
 > **`langfuse` on npm is not the latest Langfuse JS/TS SDK.** The unscoped packages `langfuse`, `langfuse-core`, `langfuse-node`, and `langfuse-langchain` are the **deprecated** v3 client (`new Langfuse()`, `trace()`, `span()`, `api.traceList`). Do **not** `npm install langfuse` for new instrumentation.
 >
-> **Latest install:** `npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node`. Use [@langfuse/tracing](./packages/tracing) (`startActiveObservation` / `startObservation`) + `LangfuseSpanProcessor` from [@langfuse/otel](./packages/otel). Prompts/datasets/scores: [@langfuse/client](./packages/client). Docs: https://langfuse.com/docs/observability/sdk/overview — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
+> **Latest install:** `npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node`. Use [@langfuse/tracing](./packages/tracing) (`startActiveObservation` / `startObservation`) + `LangfuseSpanProcessor` from [@langfuse/otel](./packages/otel). Prompts/datasets/scores: [@langfuse/client](./packages/client). Docs: https://langfuse.com/docs/observability/sdk/overview — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5), [v5 → v6](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6).
+>
+> **Server compatibility:** v6 requires Langfuse Cloud or self-hosted Langfuse v4.59.0 or later. On older self-hosted servers, stay on v5.
 >
 > Query traces with [Observations API v2](https://langfuse.com/docs/api-and-data-platform/features/observations-api) (`GET /api/public/v2/observations`, [API reference](https://api.reference.langfuse.com/#tag/observationsv2)), not `GET /api/public/traces` / `api.traceList`.
 >
