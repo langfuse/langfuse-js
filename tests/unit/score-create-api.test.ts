@@ -60,11 +60,20 @@ describe("score create API", () => {
     });
   });
 
-  it("no longer exposes the legacy scoreV1.create alias", () => {
-    const client = makeApiClient();
+  it("deletes a score via DELETE /api/public/scores/{scoreId}", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
 
-    expect("create" in client.legacy.scoreV1).toBe(false);
-    expect(typeof client.legacy.scoreV1.delete).toBe("function");
+    const client = makeApiClient();
+    await expect(client.scores.delete("score-id")).resolves.toBeUndefined();
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe("https://cloud.langfuse.com/api/public/scores/score-id");
+    expect(init).toMatchObject({ method: "DELETE" });
+    expect("legacy" in client).toBe(false);
   });
 });
 
