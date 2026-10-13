@@ -61,7 +61,7 @@ import * as LangfuseAPI from "../../../../index.js";
  *     }
  */
 export interface IngestionRequest {
-  /** Batch of tracing events to be ingested. Discriminated by attribute `type`. */
+  /** Batch of events to be ingested, discriminated by attribute `type`. From November 16, 2026 on Langfuse Cloud, only `score-create` events are accepted; all other event types are rejected. */
   batch: LangfuseAPI.IngestionEvent[];
   /** Optional. Metadata field used by the Langfuse SDKs for debugging. */
   metadata?: unknown;

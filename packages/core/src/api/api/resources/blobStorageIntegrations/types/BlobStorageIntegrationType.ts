@@ -5,9 +5,11 @@
 export type BlobStorageIntegrationType =
   | "S3"
   | "S3_COMPATIBLE"
-  | "AZURE_BLOB_STORAGE";
+  | "AZURE_BLOB_STORAGE"
+  | "GOOGLE_CLOUD_STORAGE";
 export const BlobStorageIntegrationType = {
   S3: "S3",
   S3Compatible: "S3_COMPATIBLE",
   AzureBlobStorage: "AZURE_BLOB_STORAGE",
+  GoogleCloudStorage: "GOOGLE_CLOUD_STORAGE",
 } as const;
