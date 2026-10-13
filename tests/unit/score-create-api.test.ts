@@ -139,6 +139,27 @@ describe("ScoreManager over POST /api/public/scores", () => {
     ]);
   });
 
+  it("keeps a caller-supplied timestamp so an existing score can be updated", async () => {
+    const { fetchMock, scoreManager } = setup(() =>
+      jsonResponse({ message: "Accepted" }, 202),
+    );
+
+    scoreManager.create({
+      id: "s1",
+      name: "quality",
+      value: 0.5,
+      timestamp: "2026-10-01T12:00:00.000Z",
+    });
+    await scoreManager.flush();
+
+    expect(sentBatches(fetchMock)[0]).toEqual([
+      expect.objectContaining({
+        id: "s1",
+        timestamp: "2026-10-01T12:00:00.000Z",
+      }),
+    ]);
+  });
+
   it("logs rejected scores on 207 without retrying the batch", async () => {
     const errors = [{ message: "Invalid score value for config" }];
     const { fetchMock, errorSpy, scoreManager } = setup(() =>

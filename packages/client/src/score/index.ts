@@ -13,6 +13,15 @@ import {
 } from "@langfuse/core";
 import { Span, trace } from "@opentelemetry/api";
 
+type ScoreInput = ScoreBody & {
+  /**
+   * ISO 8601 timestamp of the score. Defaults to the time the score is queued.
+   * To update an existing score, send it again with the same `id` and
+   * `timestamp`.
+   */
+  timestamp?: string;
+};
+
 const MAX_QUEUE_SIZE = 100_000; // prevent memory leaks
 const MAX_BATCH_SIZE = 100;
 const MAX_BATCH_ATTEMPTS_ON_TIMEOUT = 2;
@@ -115,7 +124,7 @@ export class ScoreManager {
    * });
    * ```
    */
-  public create(data: ScoreBody): void {
+  public create(data: ScoreInput): void {
     try {
       this.enqueue(data);
     } catch (err) {
@@ -123,7 +132,7 @@ export class ScoreManager {
     }
   }
 
-  private enqueue(data: ScoreBody): void {
+  private enqueue(data: ScoreInput): void {
     const validationError = getScoreValidationError(data);
     if (validationError) {
       this.logger.error(`Invalid score: ${validationError}. Dropping score.`);
@@ -135,7 +144,7 @@ export class ScoreManager {
       ...data,
       id: data.id ?? generateUUID(),
       environment: data.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT"),
-      timestamp: new Date().toISOString(),
+      timestamp: data.timestamp ?? new Date().toISOString(),
     } as CreateScoreRequest;
 
     if (this.scoreQueue.length >= MAX_QUEUE_SIZE) {
@@ -185,7 +194,7 @@ export class ScoreManager {
   public observation(
     observation: { otelSpan: Span },
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
@@ -225,7 +234,7 @@ export class ScoreManager {
   public trace(
     observation: { otelSpan: Span },
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
@@ -265,7 +274,7 @@ export class ScoreManager {
    */
   public activeObservation(
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
@@ -317,7 +326,7 @@ export class ScoreManager {
    */
   public activeTrace(
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {

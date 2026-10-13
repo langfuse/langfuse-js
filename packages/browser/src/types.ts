@@ -35,7 +35,14 @@ export interface LangfuseBrowserClientOptions {
   fetch?: LangfuseFetch;
 }
 
-export type LangfuseBrowserScoreBody = ScoreBody;
+export type LangfuseBrowserScoreBody = ScoreBody & {
+  /**
+   * ISO 8601 timestamp of the score. Defaults to the time the score is sent.
+   * To update an existing score, send it again with the same `id` and
+   * `timestamp`.
+   */
+  timestamp?: string;
+};
 
 export interface LangfuseBrowserScoreResult {
   id: string;

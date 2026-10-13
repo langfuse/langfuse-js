@@ -77,6 +77,31 @@ describe("LangfuseBrowserClient", () => {
     });
   });
 
+  it("keeps a caller-supplied timestamp so an existing score can be updated", async () => {
+    const fetchMock = vi.fn(async () => createJsonResponse({ id: "score-id" }));
+    const langfuse = new LangfuseBrowserClient({
+      publicKey: "pk-lf-test",
+      fetch: fetchMock,
+    });
+
+    await langfuse.score({
+      id: "score-id",
+      traceId: "trace-id",
+      name: "user_feedback",
+      value: 0,
+      timestamp: "2026-06-01T09:00:00.000Z",
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      id: "score-id",
+      timestamp: "2026-06-01T09:00:00.000Z",
+    });
+  });
+
   it("generates a score id when none is provided", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, init?: RequestInit) => {
