@@ -60,7 +60,6 @@ export * from "./commons/errors/index.js";
 export * from "./evaluationErrors/errors/index.js";
 export * from "./feedback/errors/index.js";
 export * from "./health/errors/index.js";
-export * as legacy from "./legacy/index.js";
 export * as promptVersion from "./promptVersion/index.js";
 export * from "./annotationQueues/client/requests/index.js";
 export * from "./comments/client/requests/index.js";
