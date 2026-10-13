@@ -4,6 +4,6 @@
 
 import * as LangfuseAPI from "../../../index.js";
 
-export interface SdkLogEvent extends LangfuseAPI.BaseEvent {
-  body: LangfuseAPI.SdkLogBody;
-}
+export type CreateScoresRequest =
+  | LangfuseAPI.CreateScoreRequest
+  | LangfuseAPI.CreateScoreBatchRequest;

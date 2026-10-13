@@ -61,9 +61,9 @@ export class Scores {
   }
 
   /**
-   * Create a score (supports trace, observation, session, and dataset run scores)
+   * Create scores asynchronously. Single score: 200 with ID. Batch: 202 if accepted, or 207 with accepted/rejected counts and error messages. Do not automatically retry a 207 batch. The generated reference shows only 200; batches return 202 or 207.
    *
-   * @param {LangfuseAPI.CreateScoreRequest} request
+   * @param {LangfuseAPI.CreateScoresRequest} request
    * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -91,18 +91,18 @@ export class Scores {
    *     })
    */
   public create(
-    request: LangfuseAPI.CreateScoreRequest,
+    request: LangfuseAPI.CreateScoresRequest,
     requestOptions?: Scores.RequestOptions,
-  ): core.HttpResponsePromise<LangfuseAPI.CreateScoreResponse> {
+  ): core.HttpResponsePromise<LangfuseAPI.CreateScoresResponse> {
     return core.HttpResponsePromise.fromPromise(
       this.__create(request, requestOptions),
     );
   }
 
   private async __create(
-    request: LangfuseAPI.CreateScoreRequest,
+    request: LangfuseAPI.CreateScoresRequest,
     requestOptions?: Scores.RequestOptions,
-  ): Promise<core.WithRawResponse<LangfuseAPI.CreateScoreResponse>> {
+  ): Promise<core.WithRawResponse<LangfuseAPI.CreateScoresResponse>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
       this._options?.headers,
       mergeOnlyDefinedHeaders({
@@ -139,7 +139,7 @@ export class Scores {
     });
     if (_response.ok) {
       return {
-        data: _response.body as LangfuseAPI.CreateScoreResponse,
+        data: _response.body as LangfuseAPI.CreateScoresResponse,
         rawResponse: _response.rawResponse,
       };
     }

@@ -5,14 +5,24 @@
 /**
  * @example
  *     {
+ *         name: undefined,
  *         note: undefined,
+ *         expiresAt: undefined,
  *         publicKey: undefined,
  *         secretKey: undefined
  *     }
  */
 export interface CreateApiKeyRequest {
-  /** Optional note for the API key */
+  /** Optional name for the API key. Cannot be provided together with note, even if either value is an empty string. */
+  name?: string;
+  /**
+   * Deprecated alias for name. Cannot be provided together with name, even if either value is an empty string.
+   *
+   * @deprecated Use name instead.
+   */
   note?: string;
+  /** Optional expiration timestamp in ISO 8601 format. Must be in the future. Omit or set to null for a key that does not expire. */
+  expiresAt?: string | null;
   /** Optional predefined public key. Must start with 'pk-lf-'. If provided, secretKey must also be provided. */
   publicKey?: string;
   /** Optional predefined secret key. Must start with 'sk-lf-'. If provided, publicKey must also be provided. */
