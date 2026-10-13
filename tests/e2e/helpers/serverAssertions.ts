@@ -188,7 +188,7 @@ export class ServerAssertions {
     let cursor: string | undefined;
 
     do {
-      const page = await this.api.scoresV3.getManyV3({
+      const page = await this.api.scores.getMany({
         fields: "details,subject",
         limit: 100,
         ...filter,
