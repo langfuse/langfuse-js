@@ -10,7 +10,7 @@ import {
   LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
 } from "@langfuse/core";
 import { startActiveObservation } from "@langfuse/tracing";
-import { ProxyTracerProvider, trace } from "@opentelemetry/api";
+import { ProxyTracerProvider, TraceFlags, trace } from "@opentelemetry/api";
 
 import { LangfuseClient } from "../LangfuseClient.js";
 
@@ -251,7 +251,7 @@ export class ExperimentManager {
         const item = data[index];
 
         try {
-          const { itemResult, sampled } = await this.runItem({
+          const itemResult = await this.runItem({
             item,
             evaluators,
             task,
@@ -265,9 +265,9 @@ export class ExperimentManager {
                 experimentIdsByDatasetId.get(item.datasetId)) ||
               experimentId,
             datasetVersion: config.datasetVersion,
+            onRootSpanSampled: () => sampledItemCount++,
           });
           itemResultsByIndex[index] = itemResult;
-          if (sampled) sampledItemCount++;
         } catch (reason) {
           const errorMessage =
             reason instanceof Error ? reason.message : String(reason);
@@ -385,8 +385,11 @@ export class ExperimentManager {
    * @param params.task - The task function to execute
    * @param params.evaluators - Optional evaluators to run on the output
    *
-   * @returns Promise resolving to the item result with output, evaluations, and trace info,
-   *   and whether the item's root span was sampled
+   * @param params.onRootSpanSampled - Called once the item's root span is
+   *   started with the sampled flag, before the task runs. The span is
+   *   exported even if the task fails.
+   *
+   * @returns Promise resolving to the item result with output, evaluations, and trace info
    *
    * @throws {Error} When task execution fails (propagated from task function)
    *
@@ -414,13 +417,11 @@ export class ExperimentManager {
     task: ExperimentTask<Input, ExpectedOutput, Metadata>;
     evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
     datasetVersion?: string;
-  }): Promise<{
-    itemResult: ExperimentItemResult<Input, ExpectedOutput, Metadata>;
-    sampled: boolean;
-  }> {
+    onRootSpanSampled?: () => void;
+  }): Promise<ExperimentItemResult<Input, ExpectedOutput, Metadata>> {
     const { item, evaluators = [], task, experimentMetadata } = params;
 
-    const { output, traceId, observationId, datasetRunId, sampled } =
+    const { output, traceId, observationId, datasetRunId } =
       await startActiveObservation("experiment-item-run", async (span) => {
         // Extract experiment data
         const input = item.input;
@@ -471,6 +472,10 @@ export class ExperimentManager {
 
         span.otelSpan.setAttributes(rootSpanAttributes);
 
+        if (span.otelSpan.spanContext().traceFlags & TraceFlags.SAMPLED) {
+          params.onRootSpanSampled?.();
+        }
+
         // Propagate experiment context to all child spans
         const output = await propagateAttributes(
           {
@@ -516,7 +521,6 @@ export class ExperimentManager {
           traceId,
           observationId,
           datasetRunId,
-          sampled: span.otelSpan.isRecording(),
         };
       });
 
@@ -564,14 +568,11 @@ export class ExperimentManager {
     }
 
     return {
-      itemResult: {
-        output,
-        evaluations: evals,
-        traceId,
-        datasetRunId,
-        item,
-      },
-      sampled,
+      output,
+      evaluations: evals,
+      traceId,
+      datasetRunId,
+      item,
     };
   }
 

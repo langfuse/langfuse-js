@@ -60,7 +60,7 @@ export class LangfuseBrowserClient {
       ...body,
       id: body.id ?? generateUUID(globalThis),
       environment: body.environment ?? this.environment,
-      timestamp: new Date().toISOString(),
+      timestamp: body.timestamp ?? new Date().toISOString(),
     } as CreateScoreRequest;
 
     let response: Response;

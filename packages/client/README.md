@@ -51,7 +51,9 @@ const result = await dataset.runExperiment({
 console.log(await result.format());
 
 // Full REST API
-const trace = await langfuse.api.trace.get("trace-id");
+const observations = await langfuse.api.observations.getMany({
+  traceId: "trace-id",
+});
 ```
 
 ## Packages

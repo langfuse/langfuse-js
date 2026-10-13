@@ -21,6 +21,34 @@ export type LangfuseMediaResolveMediaReferencesParams<T> = {
   maxDepth?: number;
 };
 
+async function readBody(
+  response: Response,
+  onProgress: () => void,
+): Promise<Uint8Array> {
+  if (!response.body) {
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    length += value.byteLength;
+    onProgress();
+  }
+
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
 /**
  * Manager for media operations in Langfuse.
  *
@@ -115,20 +143,41 @@ export class MediaManager {
                 {},
                 { timeoutInSeconds: this.timeoutSeconds },
               );
-              const mediaContent = await fetch(mediaData.url, {
-                method: "GET",
-                headers: {},
-                ...(this.timeoutSeconds !== undefined && {
-                  signal: AbortSignal.timeout(this.timeoutSeconds * 1_000),
-                }),
-              });
-              if (mediaContent.status !== 200) {
-                throw new Error("Failed to fetch media content");
-              }
+              // The timeout is an idle timeout: it bounds the wait for the
+              // response and for each body chunk, so large media that keeps
+              // streaming is not cut off but a stalled download is.
+              const controller = new AbortController();
+              const timeoutSeconds = this.timeoutSeconds;
+              let timer: ReturnType<typeof setTimeout> | undefined;
+              const armTimer = () => {
+                if (timeoutSeconds === undefined) return;
+                clearTimeout(timer);
+                timer = setTimeout(
+                  () =>
+                    controller.abort(
+                      new Error(
+                        `Media download timed out after ${timeoutSeconds}s without progress`,
+                      ),
+                    ),
+                  timeoutSeconds * 1_000,
+                );
+              };
 
-              const uint8Content = new Uint8Array(
-                await mediaContent.arrayBuffer(),
-              );
+              let uint8Content: Uint8Array;
+              try {
+                armTimer();
+                const mediaContent = await fetch(mediaData.url, {
+                  method: "GET",
+                  headers: {},
+                  signal: controller.signal,
+                });
+                if (mediaContent.status !== 200) {
+                  throw new Error("Failed to fetch media content");
+                }
+                uint8Content = await readBody(mediaContent, armTimer);
+              } finally {
+                clearTimeout(timer);
+              }
 
               const base64MediaContent = bytesToBase64(uint8Content);
               const base64DataUri = `data:${mediaData.contentType};base64,${base64MediaContent}`;
