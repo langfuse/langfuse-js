@@ -102,10 +102,32 @@ describe("ScoreManager over POST /api/public/scores", () => {
     const batches = sentBatches(fetchMock);
     expect(batches).toHaveLength(1);
     expect(batches[0]).toEqual([
-      { id: "s1", name: "quality", value: 1 },
-      { id: "s2", name: "label", value: "good" },
+      { id: "s1", name: "quality", value: 1, timestamp: expect.any(String) },
+      {
+        id: "s2",
+        name: "label",
+        value: "good",
+        timestamp: expect.any(String),
+      },
     ]);
     expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("stamps each score with the time it was queued, not the flush time", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-14T08:00:00.000Z"));
+    const { fetchMock, scoreManager } = setup(() =>
+      jsonResponse({ message: "Accepted" }, 202),
+    );
+
+    scoreManager.create({ name: "quality", value: 1 });
+    vi.setSystemTime(new Date("2026-10-14T08:00:05.000Z"));
+    await scoreManager.flush();
+    vi.useRealTimers();
+
+    expect(sentBatches(fetchMock)[0]).toEqual([
+      expect.objectContaining({ timestamp: "2026-10-14T08:00:00.000Z" }),
+    ]);
   });
 
   it("logs rejected scores on 207 without retrying the batch", async () => {

@@ -802,6 +802,7 @@ describe("ScoreManager Integration Tests", () => {
         value: 0.8,
         comment: "Testing request structure",
         environment: undefined,
+        timestamp: expect.any(String),
       });
       expect(batch[0]).not.toHaveProperty("type");
       expect(batch[0]).not.toHaveProperty("body");

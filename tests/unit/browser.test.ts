@@ -73,6 +73,7 @@ describe("LangfuseBrowserClient", () => {
       comment: "Helpful",
       metadata: { source: "button" },
       environment: "production",
+      timestamp: "2026-06-16T12:00:00.000Z",
     });
   });
 

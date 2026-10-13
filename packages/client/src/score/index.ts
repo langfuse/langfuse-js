@@ -138,6 +138,7 @@ export class ScoreManager {
       ...data,
       id: data.id ?? generateUUID(),
       environment: data.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT"),
+      timestamp: new Date().toISOString(),
     } as CreateScoreRequest;
 
     if (this.scoreQueue.length >= MAX_QUEUE_SIZE) {
