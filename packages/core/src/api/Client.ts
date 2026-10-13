@@ -15,7 +15,6 @@ import { Experiments } from "./api/resources/experiments/client/Client.js";
 import { Feedback } from "./api/resources/feedback/client/Client.js";
 import { Health } from "./api/resources/health/client/Client.js";
 import { Ingestion } from "./api/resources/ingestion/client/Client.js";
-import { Legacy } from "./api/resources/legacy/client/Client.js";
 import { LlmConnections } from "./api/resources/llmConnections/client/Client.js";
 import { Media } from "./api/resources/media/client/Client.js";
 import { Metrics } from "./api/resources/metrics/client/Client.js";
@@ -89,7 +88,6 @@ export class LangfuseAPIClient {
   protected _feedback: Feedback | undefined;
   protected _health: Health | undefined;
   protected _ingestion: Ingestion | undefined;
-  protected _legacy: Legacy | undefined;
   protected _llmConnections: LlmConnections | undefined;
   protected _media: Media | undefined;
   protected _metrics: Metrics | undefined;
@@ -165,10 +163,6 @@ export class LangfuseAPIClient {
 
   public get ingestion(): Ingestion {
     return (this._ingestion ??= new Ingestion(this._options));
-  }
-
-  public get legacy(): Legacy {
-    return (this._legacy ??= new Legacy(this._options));
   }
 
   public get llmConnections(): LlmConnections {
