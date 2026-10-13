@@ -61,7 +61,7 @@ export class Scores {
   }
 
   /**
-   * Create scores asynchronously. Single score: 200 with ID. Batch: 202 if accepted, or 207 with accepted/rejected counts and error messages. Do not automatically retry a 207 batch. The generated reference shows only 200; batches return 202 or 207.
+   * Create scores asynchronously from a list of scores. Returns 202 if all scores are accepted, or 207 with accepted/rejected counts and error messages. Do not automatically retry a 207 batch. The generated reference shows only 200; the endpoint returns 202 or 207.
    *
    * @param {LangfuseAPI.CreateScoresRequest} request
    * @param {Scores.RequestOptions} requestOptions - Request-specific configuration.
@@ -73,23 +73,39 @@ export class Scores {
    * @throws {@link LangfuseAPI.NotFoundError}
    *
    * @example
-   *     await client.scores.create({
-   *         id: undefined,
-   *         traceId: undefined,
-   *         sessionId: undefined,
-   *         observationId: undefined,
-   *         datasetRunId: undefined,
-   *         name: "name",
-   *         value: 1.1,
-   *         comment: undefined,
-   *         metadata: undefined,
-   *         environment: undefined,
-   *         queueId: undefined,
-   *         dataType: undefined,
-   *         configId: undefined,
-   *         source: undefined,
-   *         timestamp: undefined
-   *     })
+   *     await client.scores.create([{
+   *             id: undefined,
+   *             traceId: undefined,
+   *             sessionId: undefined,
+   *             observationId: undefined,
+   *             datasetRunId: undefined,
+   *             name: "name",
+   *             value: 1.1,
+   *             comment: undefined,
+   *             metadata: undefined,
+   *             environment: undefined,
+   *             queueId: undefined,
+   *             dataType: undefined,
+   *             configId: undefined,
+   *             source: undefined,
+   *             timestamp: undefined
+   *         }, {
+   *             id: undefined,
+   *             traceId: undefined,
+   *             sessionId: undefined,
+   *             observationId: undefined,
+   *             datasetRunId: undefined,
+   *             name: "name",
+   *             value: 1.1,
+   *             comment: undefined,
+   *             metadata: undefined,
+   *             environment: undefined,
+   *             queueId: undefined,
+   *             dataType: undefined,
+   *             configId: undefined,
+   *             source: undefined,
+   *             timestamp: undefined
+   *         }])
    */
   public create(
     request: LangfuseAPI.CreateScoresRequest,

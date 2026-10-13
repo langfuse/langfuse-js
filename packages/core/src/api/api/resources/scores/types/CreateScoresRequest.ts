@@ -4,6 +4,17 @@
 
 import * as LangfuseAPI from "../../../index.js";
 
-export type CreateScoresRequest =
-  | LangfuseAPI.CreateScoreRequest
-  | LangfuseAPI.CreateScoreBatchRequest;
+/**
+ * @example
+ *     [{
+ *             name: "accuracy",
+ *             value: 0.9,
+ *             traceId: "cdef-1234-5678-90ab"
+ *         }, {
+ *             name: "helpfulness",
+ *             value: 1,
+ *             dataType: LangfuseAPI.ScoreDataType.Boolean,
+ *             traceId: "cdef-1234-5678-90ab"
+ *         }]
+ */
+export type CreateScoresRequest = LangfuseAPI.CreateScoreRequest[];
