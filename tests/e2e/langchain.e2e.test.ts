@@ -28,6 +28,10 @@ describe("Langchain integration E2E tests", () => {
     assertions = new ServerAssertions();
   });
 
+  afterEach(async () => {
+    await teardownServerTestEnvironment(testEnv);
+  });
+
   /**
    * The handler propagates trace-level attributes onto the root chain run;
    * `version` is set on every observation.
