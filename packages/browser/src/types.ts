@@ -1,8 +1,5 @@
 import {
   ScoreDataType as CoreScoreDataType,
-  type IngestionError,
-  type IngestionResponse,
-  type IngestionSuccess,
   type ScoreBody,
   type ScoreDataType,
 } from "@langfuse/core";
@@ -28,7 +25,7 @@ export interface LangfuseBrowserClientOptions {
    */
   environment?: string;
   /**
-   * Additional HTTP headers sent with ingestion requests. SDK auth and
+   * Additional HTTP headers sent with score requests. SDK auth and
    * telemetry headers take precedence over these values.
    */
   additionalHeaders?: Record<string, string>;
@@ -43,7 +40,3 @@ export type LangfuseBrowserScoreBody = ScoreBody;
 export interface LangfuseBrowserScoreResult {
   id: string;
 }
-
-export type LangfuseIngestionError = IngestionError;
-export type LangfuseIngestionSuccess = IngestionSuccess;
-export type LangfuseIngestionResponse = IngestionResponse;

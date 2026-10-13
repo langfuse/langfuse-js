@@ -8,7 +8,7 @@ import {
 
 const createJsonResponse = (body: unknown, init?: ResponseInit) =>
   new Response(JSON.stringify(body), {
-    status: 207,
+    status: 200,
     headers: { "Content-Type": "application/json" },
     ...init,
   });
@@ -23,16 +23,12 @@ describe("LangfuseBrowserClient", () => {
     vi.useRealTimers();
   });
 
-  it("sends a score as a single ingestion batch", async () => {
+  it("sends a score to POST /api/public/scores", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, init?: RequestInit) => {
-        const request = JSON.parse(init?.body as string);
-        const eventId = request.batch[0].id;
+        const score = JSON.parse(init?.body as string);
 
-        return createJsonResponse({
-          successes: [{ id: eventId, status: 201 }],
-          errors: [],
-        });
+        return createJsonResponse({ id: score.id });
       },
     );
     const langfuse = new LangfuseBrowserClient({
@@ -57,7 +53,7 @@ describe("LangfuseBrowserClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://cloud.langfuse.com/api/public/ingestion");
+    expect(url).toBe("https://cloud.langfuse.com/api/public/scores");
     expect(init?.method).toBe("POST");
     expect(init?.headers).toMatchObject({
       "Content-Type": "application/json",
@@ -67,45 +63,25 @@ describe("LangfuseBrowserClient", () => {
       "X-Langfuse-Sdk-Integration": "browser",
     });
 
-    const payload = JSON.parse(init?.body as string);
-    expect(payload).toMatchObject({
-      metadata: {
-        batch_size: 1,
-        sdk_name: "javascript",
-        sdk_integration: "browser",
-        public_key: "pk-lf-test",
-      },
+    expect(JSON.parse(init?.body as string)).toEqual({
+      id: "score-id",
+      traceId: "trace-id",
+      observationId: "observation-id",
+      name: "user_feedback",
+      value: 1,
+      dataType: "NUMERIC",
+      comment: "Helpful",
+      metadata: { source: "button" },
+      environment: "production",
     });
-    expect(payload.metadata.sdk_version).toEqual(expect.any(String));
-    expect(payload.batch).toHaveLength(1);
-    expect(payload.batch[0]).toMatchObject({
-      type: "score-create",
-      timestamp: "2026-06-16T12:00:00.000Z",
-      body: {
-        id: "score-id",
-        traceId: "trace-id",
-        observationId: "observation-id",
-        name: "user_feedback",
-        value: 1,
-        dataType: "NUMERIC",
-        comment: "Helpful",
-        metadata: { source: "button" },
-        environment: "production",
-      },
-    });
-    expect(payload.batch[0].id).toEqual(expect.any(String));
   });
 
   it("generates a score id when none is provided", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, init?: RequestInit) => {
-        const request = JSON.parse(init?.body as string);
-        const eventId = request.batch[0].id;
+        const score = JSON.parse(init?.body as string);
 
-        return createJsonResponse({
-          successes: [{ id: eventId, status: 201 }],
-          errors: [],
-        });
+        return createJsonResponse({ id: score.id });
       },
     );
     const langfuse = new LangfuseBrowserClient({
@@ -122,20 +98,12 @@ describe("LangfuseBrowserClient", () => {
     expect(result.id).toEqual(expect.any(String));
 
     const payload = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
-    expect(payload.batch[0].body.id).toBe(result.id);
+    expect(payload.id).toBe(result.id);
   });
 
-  it("preserves an explicitly provided empty score id", async () => {
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, init?: RequestInit) => {
-        const request = JSON.parse(init?.body as string);
-        const eventId = request.batch[0].id;
-
-        return createJsonResponse({
-          successes: [{ id: eventId, status: 201 }],
-          errors: [],
-        });
-      },
+  it("sends an explicitly provided empty score id and returns the server-assigned id", async () => {
+    const fetchMock = vi.fn(async () =>
+      createJsonResponse({ id: "server-assigned-id" }),
     );
     const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
@@ -149,25 +117,21 @@ describe("LangfuseBrowserClient", () => {
       value: 0,
     });
 
-    expect(result).toEqual({ id: "" });
+    expect(result).toEqual({ id: "server-assigned-id" });
 
-    const payload = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
-    expect(payload.batch[0].body.id).toBe("");
+    const payload = JSON.parse(
+      (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1]
+        .body as string,
+    );
+    expect(payload.id).toBe("");
   });
 
-  it("rejects when ingestion returns item errors", async () => {
+  it("rejects validation errors with the server message", async () => {
     const fetchMock = vi.fn(async () =>
-      createJsonResponse({
-        successes: [],
-        errors: [
-          {
-            id: "event-id",
-            status: 400,
-            message: "Invalid request data",
-            error: "traceId is required",
-          },
-        ],
-      }),
+      createJsonResponse(
+        { message: "Invalid score value for config" },
+        { status: 400 },
+      ),
     );
     const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",
@@ -178,13 +142,26 @@ describe("LangfuseBrowserClient", () => {
       langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 }),
     ).rejects.toMatchObject({
       name: "LangfuseBrowserError",
-      errors: [
-        {
-          id: "event-id",
-          status: 400,
-          error: "traceId is required",
-        },
-      ],
+      message: "Langfuse score request failed with status 400.",
+      status: 400,
+      response: { message: "Invalid score value for config" },
+    });
+  });
+
+  it("rejects success responses without a score id", async () => {
+    const fetchMock = vi.fn(async () =>
+      createJsonResponse({ message: "Accepted" }, { status: 202 }),
+    );
+    const langfuse = new LangfuseBrowserClient({
+      publicKey: "pk-lf-test",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 }),
+    ).rejects.toMatchObject({
+      name: "LangfuseBrowserError",
+      message: "Langfuse score response had an unexpected shape.",
     });
   });
 
@@ -204,7 +181,7 @@ describe("LangfuseBrowserClient", () => {
       langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 }),
     ).rejects.toMatchObject({
       name: "LangfuseBrowserError",
-      message: "Langfuse ingestion request failed with status 401.",
+      message: "Langfuse score request failed with status 401.",
       status: 401,
       response: { error: "Unauthorized", message: "Invalid public key" },
     });
@@ -227,7 +204,7 @@ describe("LangfuseBrowserClient", () => {
       langfuse.score({ traceId: "trace-id", name: "feedback", value: 1 }),
     ).rejects.toMatchObject({
       name: "LangfuseBrowserError",
-      message: "Langfuse ingestion request failed with status 401.",
+      message: "Langfuse score request failed with status 401.",
       status: 401,
       response: "<html>Unauthorized</html>",
     });
@@ -242,13 +219,9 @@ describe("LangfuseBrowserClient", () => {
   it("keeps SDK auth headers authoritative over additional headers", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, init?: RequestInit) => {
-        const request = JSON.parse(init?.body as string);
-        const eventId = request.batch[0].id;
+        const score = JSON.parse(init?.body as string);
 
-        return createJsonResponse({
-          successes: [{ id: eventId, status: 201 }],
-          errors: [],
-        });
+        return createJsonResponse({ id: score.id });
       },
     );
     const langfuse = new LangfuseBrowserClient({
@@ -280,15 +253,9 @@ describe("LangfuseBrowserClient", () => {
       init?: RequestInit,
     ) {
       expect(this).toBeUndefined();
-      const request = JSON.parse(init?.body as string);
-      const eventId = request.batch[0].id;
+      const score = JSON.parse(init?.body as string);
 
-      return Promise.resolve(
-        createJsonResponse({
-          successes: [{ id: eventId, status: 201 }],
-          errors: [],
-        }),
-      );
+      return Promise.resolve(createJsonResponse({ id: score.id }));
     });
     const langfuse = new LangfuseBrowserClient({
       publicKey: "pk-lf-test",

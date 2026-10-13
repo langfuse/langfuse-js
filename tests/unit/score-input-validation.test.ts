@@ -17,16 +17,16 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("ScoreManager input handling", () => {
-  let batch: ReturnType<typeof vi.fn>;
+  let create: ReturnType<typeof vi.fn>;
   let scoreManager: ScoreManager;
   let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     resetGlobalLogger();
     errorSpy = vi.spyOn(getGlobalLogger(), "error");
-    batch = vi.fn().mockResolvedValue({ successes: [], errors: [] });
+    create = vi.fn().mockResolvedValue({ message: "Accepted" });
     scoreManager = new ScoreManager({
-      apiClient: { ingestion: { batch } } as unknown as LangfuseAPIClient,
+      apiClient: { scores: { create } } as unknown as LangfuseAPIClient,
     });
   });
 
@@ -40,9 +40,7 @@ describe("ScoreManager input handling", () => {
   async function sentScores(): Promise<ScoreBody[]> {
     await scoreManager.flush();
 
-    return batch.mock.calls.flatMap(([request]) =>
-      request.batch.map((event: { body: ScoreBody }) => event.body),
-    );
+    return create.mock.calls.flatMap(([batch]) => batch as ScoreBody[]);
   }
 
   it.each([

@@ -26,10 +26,10 @@ describe("configured client timeout", () => {
     vi.restoreAllMocks();
   });
 
-  it("passes the timeout to score ingestion requests", async () => {
+  it("passes the timeout to score requests", async () => {
     const client = makeClient(7);
-    const batch = vi.fn().mockResolvedValue({ successes: [], errors: [] });
-    client.api.ingestion.batch = batch;
+    const batch = vi.fn().mockResolvedValue({ message: "Accepted" });
+    client.api.scores.create = batch;
 
     client.score.create({ name: "quality", value: 1, traceId: "t" });
     await client.score.flush();
@@ -40,16 +40,16 @@ describe("configured client timeout", () => {
 
   it("defaults to 5 seconds and honors LANGFUSE_TIMEOUT", async () => {
     const defaultClient = makeClient();
-    const defaultBatch = vi.fn().mockResolvedValue({ errors: [] });
-    defaultClient.api.ingestion.batch = defaultBatch;
+    const defaultBatch = vi.fn().mockResolvedValue({ message: "Accepted" });
+    defaultClient.api.scores.create = defaultBatch;
     defaultClient.score.create({ name: "quality", value: 1 });
     await defaultClient.score.flush();
     expect(defaultBatch.mock.calls[0][1]).toEqual({ timeoutInSeconds: 5 });
 
     vi.stubEnv("LANGFUSE_TIMEOUT", "12");
     const envClient = makeClient();
-    const envBatch = vi.fn().mockResolvedValue({ errors: [] });
-    envClient.api.ingestion.batch = envBatch;
+    const envBatch = vi.fn().mockResolvedValue({ message: "Accepted" });
+    envClient.api.scores.create = envBatch;
     envClient.score.create({ name: "quality", value: 1 });
     await envClient.score.flush();
     expect(envBatch.mock.calls[0][1]).toEqual({ timeoutInSeconds: 12 });
@@ -58,8 +58,8 @@ describe("configured client timeout", () => {
   it("falls back to 5 seconds for an invalid LANGFUSE_TIMEOUT", async () => {
     vi.stubEnv("LANGFUSE_TIMEOUT", "not-a-number");
     const client = makeClient();
-    const batch = vi.fn().mockResolvedValue({ errors: [] });
-    client.api.ingestion.batch = batch;
+    const batch = vi.fn().mockResolvedValue({ message: "Accepted" });
+    client.api.scores.create = batch;
 
     client.score.create({ name: "quality", value: 1 });
     await client.score.flush();
@@ -67,7 +67,7 @@ describe("configured client timeout", () => {
     expect(batch.mock.calls[0][1]).toEqual({ timeoutInSeconds: 5 });
   });
 
-  it("aborts a never-resolving score ingestion request near the timeout and retries it once", async () => {
+  it("aborts a never-resolving score request near the timeout and retries it once", async () => {
     const fetchMock = vi.fn(
       (_url: string, init: RequestInit) =>
         new Promise<Response>((_, reject) => {
