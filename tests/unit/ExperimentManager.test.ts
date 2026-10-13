@@ -5,6 +5,7 @@ import {
   AlwaysOffSampler,
   AlwaysOnSampler,
   BasicTracerProvider,
+  SamplingDecision,
   type Sampler,
 } from "@opentelemetry/sdk-trace-base";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -288,6 +289,40 @@ describe("ExperimentManager experiment ids", () => {
   });
 });
 
+describe("ExperimentManager run-level scores", () => {
+  afterEach(() => {
+    trace.disable();
+    vi.restoreAllMocks();
+  });
+
+  it("writes run-level scores when every sampled task fails", async () => {
+    registerTracerProvider();
+    vi.spyOn(getGlobalLogger(), "error").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    const result = await createManager(langfuseClient).run({
+      name: "failing-run",
+      data: [{ input: "a" }, { input: "b" }],
+      task: async () => {
+        throw new Error("task failed");
+      },
+      runEvaluators: [
+        async ({ itemResults }) => ({
+          name: "success-rate",
+          value: itemResults.length / 2,
+        }),
+      ],
+    });
+
+    expect(result.itemResults).toHaveLength(0);
+    expect(langfuseClient.score.create).toHaveBeenCalledWith({
+      datasetRunId: result.experimentId,
+      name: "success-rate",
+      value: 0,
+    });
+  });
+});
+
 describe("ExperimentManager without exported traces", () => {
   afterEach(() => {
     trace.disable();
@@ -307,6 +342,26 @@ describe("ExperimentManager without exported traces", () => {
     });
 
     expect(result.runEvaluations).toEqual([{ name: "run-score", value: 1 }]);
+    expect(langfuseClient.score.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ datasetRunId: expect.anything() }),
+    );
+  });
+
+  it("skips run-level scores when items are recorded but not sampled", async () => {
+    registerTracerProvider({
+      shouldSample: () => ({ decision: SamplingDecision.RECORD }),
+      toString: () => "RecordOnlySampler",
+    });
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    await createManager(langfuseClient).run({
+      name: "record-only-run",
+      data: [{ input: "a" }],
+      task: async ({ input }) => input,
+      runEvaluators: [async () => ({ name: "run-score", value: 1 })],
+    });
+
     expect(langfuseClient.score.create).not.toHaveBeenCalledWith(
       expect.objectContaining({ datasetRunId: expect.anything() }),
     );
