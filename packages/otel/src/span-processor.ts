@@ -9,6 +9,7 @@ import {
   base64Encode,
   getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
+  serializeMetadataValue,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
@@ -35,19 +36,14 @@ import { isDefaultExportSpan } from "./span-filter.js";
  * Function type for masking sensitive data in spans before export.
  *
  * Applied to the input and output of observations and traces, and to each
- * metadata value (observation metadata and propagated trace metadata), one
- * attribute at a time. Metadata keys are never passed to the mask, so masked
- * metadata keeps its keys.
+ * observation metadata value, one attribute at a time. Metadata keys are never
+ * passed to the mask, so masked metadata keeps its keys. Trace metadata
+ * propagated with `propagateAttributes` is not masked.
  *
- * Masking runs at export, after propagation, which has these consequences for
- * propagated trace metadata:
- * - The mask runs once for each span that carries a propagated value, so it
- *   should be cheap and return the same output for the same input.
- * - The 200 character limit is checked on the unmasked value when
- *   `propagateAttributes` runs, so a value over the limit is dropped even if
- *   the mask would shorten it.
- * - Values propagated as baggage (`asBaggage: true`) are sent to downstream
- *   services unmasked.
+ * Observation metadata values are passed decoded, e.g. the string `"prod"`,
+ * the number `3` or an object, not their JSON encoding. The masked value is
+ * JSON-encoded again before export; if it is `null` or `undefined`, the
+ * metadata key is dropped.
  *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
@@ -618,7 +614,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       LangfuseOtelSpanAttributes.TRACE_INPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-      LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
       LangfuseOtelSpanAttributes.TRACE_METADATA,
     ];
 
@@ -633,15 +628,54 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     // Object metadata is written as one attribute per top-level key, e.g.
     // `langfuse.observation.metadata.<key>`. Mask each value separately so
     // keys are kept and are never passed to the mask.
-    const metadataPrefixes = [
-      `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`,
-      `${LangfuseOtelSpanAttributes.TRACE_METADATA}.`,
-    ];
+    const observationMetadataPrefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
 
     for (const key of Object.keys(span.attributes)) {
-      if (metadataPrefixes.some((prefix) => key.startsWith(prefix))) {
-        span.attributes[key] = await this.applyMask(span.attributes[key]);
+      if (
+        key === LangfuseOtelSpanAttributes.OBSERVATION_METADATA ||
+        key.startsWith(observationMetadataPrefix)
+      ) {
+        await this.applyMaskToObservationMetadata(span, key);
       }
+    }
+  }
+
+  /**
+   * Observation metadata values are JSON-encoded (see
+   * `serializeMetadataValue`). Decode the value, mask the decoded value and
+   * JSON-encode the result again, so the mask never sees the encoding and the
+   * attribute stays valid JSON. If the masked value is not written by
+   * `serializeMetadataValue` (e.g. the mask returns null or undefined), the
+   * attribute is removed, as if the metadata value had been null. A stored
+   * `"null"` that the mask returns as null is kept.
+   */
+  private async applyMaskToObservationMetadata(
+    span: ReadableSpan,
+    key: string,
+  ): Promise<void> {
+    const raw = span.attributes[key];
+    let decoded: unknown = raw;
+
+    if (typeof raw === "string") {
+      try {
+        decoded = JSON.parse(raw);
+      } catch {
+        // Not written by the SDK; mask the raw string
+      }
+    }
+
+    const masked = await this.applyMask(decoded);
+    // toJSON() returning null is written as "null", which decodes to null.
+    // That key was set by the user, so keep it.
+    const serialized =
+      decoded === null && masked === null
+        ? "null"
+        : serializeMetadataValue(masked);
+
+    if (serialized === undefined) {
+      delete span.attributes[key];
+    } else {
+      span.attributes[key] = serialized;
     }
   }
 

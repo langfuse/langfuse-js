@@ -63,10 +63,10 @@ describe("Experiment Attribute Propagation", () => {
       const prefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
 
       expect(rootSpan?.attributes[`${prefix}experiment_name`]).toBe(
-        "limit-experiment",
+        JSON.stringify("limit-experiment"),
       );
       expect(rootSpan?.attributes[`${prefix}experiment_run_name`]).toBe(
-        "limit-run",
+        JSON.stringify("limit-run"),
       );
       expect(rootSpan?.attributes[`${prefix}key0`]).toBeDefined();
       expect(rootSpan?.attributes[`${prefix}key199`]).toBeUndefined();
@@ -154,16 +154,16 @@ describe("Experiment Attribute Propagation", () => {
 
         // Experiment run keys survive the metadata cap
         expect(rootSpan!.attributes[`${metadataPrefix}experiment_name`]).toBe(
-          "large-item-metadata",
+          JSON.stringify("large-item-metadata"),
         );
         expect(
           rootSpan!.attributes[`${metadataPrefix}experiment_run_name`],
-        ).toBe("large-item-metadata-run");
+        ).toBe(JSON.stringify("large-item-metadata-run"));
         expect(rootSpan!.attributes[`${metadataPrefix}dataset_id`]).toBe(
-          "dataset-large",
+          JSON.stringify("dataset-large"),
         );
         expect(rootSpan!.attributes[`${metadataPrefix}dataset_item_id`]).toBe(
-          "dataset-item-large",
+          JSON.stringify("dataset-item-large"),
         );
 
         expect(childSpan!.droppedAttributesCount).toBe(0);
@@ -341,17 +341,17 @@ describe("Experiment Attribute Propagation", () => {
         rootSpan?.attributes[
           `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.shared`
         ],
-      ).toBe("run");
+      ).toBe(JSON.stringify("run"));
       expect(
         rootSpan?.attributes[
           `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.experiment_run_name`
         ],
-      ).toBe("run-name");
+      ).toBe(JSON.stringify("run-name"));
       expect(
         rootSpan?.attributes[
           `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.itemOnly`
         ],
-      ).toBe("item");
+      ).toBe(JSON.stringify("item"));
     });
   });
 

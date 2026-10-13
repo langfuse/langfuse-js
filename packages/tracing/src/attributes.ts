@@ -1,6 +1,8 @@
 import {
   dropMetadataOverSpanAttributeLimit,
+  getGlobalLogger,
   LangfuseOtelSpanAttributes,
+  serializeMetadataValue,
 } from "@langfuse/core";
 import { type Attributes, type Span } from "@opentelemetry/api";
 
@@ -173,15 +175,23 @@ function _flattenAndSerializeMetadata(
   }
 
   if (typeof metadata !== "object" || Array.isArray(metadata)) {
-    const serialized = _serialize(metadata);
-    if (serialized) {
+    const serialized = serializeMetadataValue(metadata);
+    if (serialized !== undefined) {
       metadataAttributes[prefix] = serialized;
+    } else {
+      getGlobalLogger().debug(
+        "Observation metadata was not written because its value is not JSON-serializable",
+      );
     }
   } else {
     for (const [key, value] of Object.entries(metadata)) {
-      const serialized = typeof value === "string" ? value : _serialize(value);
-      if (serialized) {
+      const serialized = serializeMetadataValue(value);
+      if (serialized !== undefined) {
         metadataAttributes[`${prefix}.${key}`] = serialized;
+      } else {
+        getGlobalLogger().debug(
+          `Observation metadata key "${key}" was not written because its value is ${value == null ? String(value) : "not JSON-serializable"}`,
+        );
       }
     }
   }
