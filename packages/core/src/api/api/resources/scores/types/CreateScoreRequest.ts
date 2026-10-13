@@ -104,4 +104,6 @@ export interface CreateScoreRequest {
   configId?: string;
   /** The source of the score. Defaults to API. Set to ANNOTATION to prefill scores (e.g. from an LLM) for a human reviewer to verify in an annotation queue. When source is ANNOTATION, a configId is required unless dataType is CORRECTION. EVAL is reserved for internal evaluator outputs and is not accepted on this endpoint. */
   source?: LangfuseAPI.CreateScoreSource;
+  /** Datetime (ISO 8601) of the score. Defaults to the time the server receives the score. */
+  timestamp?: string;
 }

@@ -1,6 +1,5 @@
 import {
   LangfuseAPIClient,
-  IngestionEvent,
   getEnv,
   generateUUID,
   ScoreBody,
@@ -8,12 +7,25 @@ import {
   LogLevel,
   safeSetTimeout,
   LangfuseAPITimeoutError,
+  type CreateScoreRequest,
+  type CreateScoresResponse,
+  type CreateScoreBatchResults,
 } from "@langfuse/core";
 import { Span, trace } from "@opentelemetry/api";
 
 const MAX_QUEUE_SIZE = 100_000; // prevent memory leaks
 const MAX_BATCH_SIZE = 100;
 const MAX_BATCH_ATTEMPTS_ON_TIMEOUT = 2;
+function isPartialBatchResult(
+  response: CreateScoresResponse | undefined,
+): response is CreateScoreBatchResults {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "rejected" in response &&
+    "errors" in response
+  );
+}
 
 function getScoreValidationError(data: unknown): string | undefined {
   if (typeof data !== "object" || data === null) {
@@ -36,9 +48,9 @@ function getScoreValidationError(data: unknown): string | undefined {
 }
 
 /**
- * Manager for creating and batching score events in Langfuse.
+ * Manager for creating and batching scores in Langfuse.
  *
- * The ScoreManager handles automatic batching and flushing of score events
+ * The ScoreManager handles automatic batching and flushing of scores
  * to optimize API usage. Scores are automatically sent when the queue reaches
  * a certain size or after a time interval.
  *
@@ -46,7 +58,7 @@ function getScoreValidationError(data: unknown): string | undefined {
  */
 export class ScoreManager {
   private apiClient: LangfuseAPIClient;
-  private eventQueue: IngestionEvent[] = [];
+  private scoreQueue: CreateScoreRequest[] = [];
   private flushPromise: Promise<void> | null = null;
   private flushTimer: any = null;
   private flushAtCount: number;
@@ -57,7 +69,7 @@ export class ScoreManager {
    * Creates a new ScoreManager instance.
    *
    * @param params - Configuration object containing the API client and the
-   *   per-request timeout in seconds for score ingestion requests
+   *   per-request timeout in seconds for score requests
    * @internal
    */
   constructor(params: {
@@ -81,7 +93,7 @@ export class ScoreManager {
   }
 
   /**
-   * Creates a new score event and adds it to the processing queue.
+   * Creates a new score and adds it to the processing queue.
    *
    * Scores are queued and sent in batches for efficiency. The score will be
    * automatically sent when the queue reaches the flush threshold or after
@@ -119,20 +131,14 @@ export class ScoreManager {
       return;
     }
 
-    const scoreData: ScoreBody = {
+    const score = {
       ...data,
       id: data.id ?? generateUUID(),
       environment: data.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT"),
-    };
-
-    const scoreIngestionEvent: IngestionEvent = {
-      id: generateUUID(),
-      type: "score-create",
       timestamp: new Date().toISOString(),
-      body: scoreData,
-    };
+    } as CreateScoreRequest;
 
-    if (this.eventQueue.length >= MAX_QUEUE_SIZE) {
+    if (this.scoreQueue.length >= MAX_QUEUE_SIZE) {
       this.logger.error(
         `Score queue is at max size ${MAX_QUEUE_SIZE}. Dropping score.`,
       );
@@ -141,13 +147,13 @@ export class ScoreManager {
 
     if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
       this.logger.debug(
-        "Adding score event to queue:\n",
-        JSON.stringify(scoreIngestionEvent, null, 2),
+        "Adding score to queue:\n",
+        JSON.stringify(score, null, 2),
       );
     }
-    this.eventQueue.push(scoreIngestionEvent);
+    this.scoreQueue.push(score);
 
-    if (this.eventQueue.length >= this.flushAtCount) {
+    if (this.scoreQueue.length >= this.flushAtCount) {
       this.flushPromise = this.flush();
     } else if (!this.flushTimer) {
       this.flushTimer = safeSetTimeout(() => {
@@ -335,18 +341,22 @@ export class ScoreManager {
   }
 
   /**
-   * Sends one batch. The API client does not retry requests that time out,
-   * so a timed-out batch is sent once more before its scores are dropped.
+   * Sends one batch to `POST /api/public/scores`. The API client does not
+   * retry requests that time out, so a timed-out batch is sent once more
+   * before its scores are dropped. A partially accepted batch (HTTP 207) is
+   * not retried: the rejected scores failed validation and would fail again.
    */
-  private async sendBatch(batch: IngestionEvent[]): Promise<void> {
+  private async sendBatch(batch: CreateScoreRequest[]): Promise<void> {
     for (let attempt = 1; ; attempt++) {
       try {
-        const res = await this.apiClient.ingestion.batch(
-          { batch },
-          { timeoutInSeconds: this.timeoutSeconds },
-        );
-        if (res.errors?.length > 0) {
-          this.logger.error("Error ingesting scores:", res.errors);
+        const res = await this.apiClient.scores.create(batch, {
+          timeoutInSeconds: this.timeoutSeconds,
+        });
+        if (isPartialBatchResult(res) && res.rejected > 0) {
+          this.logger.error(
+            `Langfuse rejected ${res.rejected} of ${batch.length} scores in batch:`,
+            res.errors,
+          );
         }
 
         return;
@@ -375,8 +385,8 @@ export class ScoreManager {
 
       const promises: Promise<void>[] = [];
 
-      while (this.eventQueue.length > 0) {
-        const batch = this.eventQueue.splice(0, MAX_BATCH_SIZE);
+      while (this.scoreQueue.length > 0) {
+        const batch = this.scoreQueue.splice(0, MAX_BATCH_SIZE);
 
         promises.push(this.sendBatch(batch));
       }
@@ -390,7 +400,7 @@ export class ScoreManager {
   }
 
   /**
-   * Flushes all pending score events to the Langfuse API.
+   * Flushes all pending scores to the Langfuse API.
    *
    * This method ensures all queued scores are sent immediately rather than
    * waiting for the automatic flush interval or batch size threshold.

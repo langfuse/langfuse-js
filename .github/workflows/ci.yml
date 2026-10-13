@@ -106,7 +106,7 @@ jobs:
           QUEUE_CONSUMER_EVENT_PROPAGATION_QUEUE_IS_ENABLED=true \
           LANGFUSE_ENABLE_EVENTS_TABLE_V2_APIS=true \
           LANGFUSE_ENABLE_EVENTS_TABLE_OBSERVATIONS=true \
-          docker compose up -d
+          docker compose up -d --pull always
           echo "::endgroup::"
 
       - run: pnpm install --frozen-lockfile
