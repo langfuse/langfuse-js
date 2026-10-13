@@ -367,6 +367,24 @@ describe("ExperimentManager without exported traces", () => {
     );
   });
 
+  it("skips run-level scores when every item is skipped for missing input", async () => {
+    registerTracerProvider();
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    vi.spyOn(getGlobalLogger(), "error").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    await createManager(langfuseClient).run({
+      name: "missing-input-run",
+      data: [{}],
+      task: async ({ input }) => input,
+      runEvaluators: [async () => ({ name: "run-score", value: 1 })],
+    });
+
+    expect(langfuseClient.score.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ datasetRunId: expect.anything() }),
+    );
+  });
+
   it("does not look up the project id when tracing is disabled", async () => {
     trace.disable();
     vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});

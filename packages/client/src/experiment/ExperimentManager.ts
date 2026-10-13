@@ -423,10 +423,6 @@ export class ExperimentManager {
 
     const { output, traceId, observationId, datasetRunId } =
       await startActiveObservation("experiment-item-run", async (span) => {
-        if (span.otelSpan.spanContext().traceFlags & TraceFlags.SAMPLED) {
-          params.onRootSpanSampled?.();
-        }
-
         // Extract experiment data
         const input = item.input;
         const expectedOutput = item.expectedOutput;
@@ -475,6 +471,10 @@ export class ExperimentManager {
         }
 
         span.otelSpan.setAttributes(rootSpanAttributes);
+
+        if (span.otelSpan.spanContext().traceFlags & TraceFlags.SAMPLED) {
+          params.onRootSpanSampled?.();
+        }
 
         // Propagate experiment context to all child spans
         const output = await propagateAttributes(
