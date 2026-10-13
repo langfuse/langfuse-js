@@ -10,7 +10,7 @@ import {
   LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
 } from "@langfuse/core";
 import { startActiveObservation } from "@langfuse/tracing";
-import { ProxyTracerProvider, TraceFlags, trace } from "@opentelemetry/api";
+import { ProxyTracerProvider, trace } from "@opentelemetry/api";
 
 import { LangfuseClient } from "../LangfuseClient.js";
 
@@ -243,7 +243,6 @@ export class ExperimentManager {
       ExperimentItemResult<Input, ExpectedOutput, Metadata> | undefined
     > = new Array(data.length);
     let nextIndex = 0;
-    let sampledItemCount = 0;
 
     const runNextItem = async () => {
       while (nextIndex < data.length) {
@@ -265,7 +264,6 @@ export class ExperimentManager {
                 experimentIdsByDatasetId.get(item.datasetId)) ||
               experimentId,
             datasetVersion: config.datasetVersion,
-            onRootSpanSampled: () => sampledItemCount++,
           });
           itemResultsByIndex[index] = itemResult;
         } catch (reason) {
@@ -325,21 +323,13 @@ export class ExperimentManager {
       );
 
       // Run-level scores attach to the experiment: on Langfuse the experiment
-      // ID is the dataset run ID, also for experiments on local data. If no
-      // item was sampled, the experiment does not exist on Langfuse and the
-      // scores would be orphaned.
-      if (sampledItemCount > 0) {
-        runEvaluations.forEach((runEval) =>
-          this.langfuseClient.score.create({
-            datasetRunId: experimentId,
-            ...runEval,
-          }),
-        );
-      } else if (runEvaluations.length > 0) {
-        this.logger.debug(
-          "No experiment item was sampled. Skipping run-level scores.",
-        );
-      }
+      // ID is the dataset run ID, also for experiments on local data.
+      runEvaluations.forEach((runEval) =>
+        this.langfuseClient.score.create({
+          datasetRunId: experimentId,
+          ...runEval,
+        }),
+      );
     }
 
     await this.langfuseClient.score.flush();
@@ -385,10 +375,6 @@ export class ExperimentManager {
    * @param params.task - The task function to execute
    * @param params.evaluators - Optional evaluators to run on the output
    *
-   * @param params.onRootSpanSampled - Called once the item's root span is
-   *   started with the sampled flag, before the task runs. The span is
-   *   exported even if the task fails.
-   *
    * @returns Promise resolving to the item result with output, evaluations, and trace info
    *
    * @throws {Error} When task execution fails (propagated from task function)
@@ -417,7 +403,6 @@ export class ExperimentManager {
     task: ExperimentTask<Input, ExpectedOutput, Metadata>;
     evaluators?: Evaluator<Input, ExpectedOutput, Metadata>[];
     datasetVersion?: string;
-    onRootSpanSampled?: () => void;
   }): Promise<ExperimentItemResult<Input, ExpectedOutput, Metadata>> {
     const { item, evaluators = [], task, experimentMetadata } = params;
 
@@ -471,10 +456,6 @@ export class ExperimentManager {
         }
 
         span.otelSpan.setAttributes(rootSpanAttributes);
-
-        if (span.otelSpan.spanContext().traceFlags & TraceFlags.SAMPLED) {
-          params.onRootSpanSampled?.();
-        }
 
         // Propagate experiment context to all child spans
         const output = await propagateAttributes(
