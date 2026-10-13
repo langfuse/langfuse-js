@@ -1,11 +1,12 @@
-const TIMEOUT = "timeout";
-
 export function getTimeoutSignal(timeoutMs: number): {
   signal: AbortSignal;
   abortId: NodeJS.Timeout;
 } {
   const controller = new AbortController();
-  const abortId = setTimeout(() => controller.abort(TIMEOUT), timeoutMs);
+  // fetch rejects with the abort reason. Only the default "AbortError"
+  // DOMException is mapped to LangfuseAPITimeoutError by fetcherImpl; a custom
+  // reason such as a string would surface as an unknown error.
+  const abortId = setTimeout(() => controller.abort(), timeoutMs);
   return { signal: controller.signal, abortId };
 }
 

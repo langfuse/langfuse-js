@@ -2,9 +2,20 @@ import { LangfuseClient, ScoreManager } from "@langfuse/client";
 import {
   getGlobalLogger,
   LangfuseAPIClient,
+  LangfuseAPITimeoutError,
   resetGlobalLogger,
 } from "@langfuse/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Like the WHATWG fetch spec, rejects with the signal's abort reason.
+function neverResolvingFetch(
+  _url: string,
+  init: RequestInit,
+): Promise<Response> {
+  return new Promise<Response>((_, reject) => {
+    init.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+  });
+}
 
 function makeClient(timeout?: number): LangfuseClient {
   return new LangfuseClient({
@@ -67,17 +78,22 @@ describe("configured client timeout", () => {
     expect(batch.mock.calls[0][1]).toEqual({ timeoutInSeconds: 5 });
   });
 
+  it("throws LangfuseAPITimeoutError when a request exceeds its timeout", async () => {
+    vi.stubGlobal("fetch", vi.fn(neverResolvingFetch));
+    const apiClient = new LangfuseAPIClient({
+      baseUrl: "http://localhost:3000",
+      environment: "",
+      username: "pk-test",
+      password: "sk-test",
+    });
+
+    await expect(
+      apiClient.health.health({}, { timeoutInSeconds: 0.01, maxRetries: 0 }),
+    ).rejects.toBeInstanceOf(LangfuseAPITimeoutError);
+  });
+
   it("aborts a never-resolving score request near the timeout and retries it once", async () => {
-    const fetchMock = vi.fn(
-      (_url: string, init: RequestInit) =>
-        new Promise<Response>((_, reject) => {
-          init.signal?.addEventListener("abort", () => {
-            const error = new Error("The operation was aborted");
-            error.name = "AbortError";
-            reject(error);
-          });
-        }),
-    );
+    const fetchMock = vi.fn(neverResolvingFetch);
     vi.stubGlobal("fetch", fetchMock);
     const errorSpy = vi.spyOn(getGlobalLogger(), "error");
     const scoreManager = new ScoreManager({
