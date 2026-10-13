@@ -163,17 +163,26 @@ describe("ScoreManager over POST /api/public/scores", () => {
     ]);
   });
 
-  it("points to the minimum server version when the server rejects the list body", async () => {
+  it("logs the minimum server version error once per process when the server rejects the list body", async () => {
     const { fetchMock, errorSpy, scoreManager } = setup(() =>
       jsonResponse({ message: "Invalid request data" }, 400),
     );
+    const debugSpy = vi.spyOn(getGlobalLogger(), "debug");
 
     scoreManager.create({ name: "quality", value: 1 });
+    scoreManager.create({ name: "quality", value: 2 });
+    await scoreManager.flush();
+    scoreManager.create({ name: "quality", value: 3 });
     await scoreManager.flush();
 
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(errorSpy).toHaveBeenCalledOnce();
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("requires Langfuse server v4.55.0 or later"),
+      "Batch score creation requires a Langfuse server v4.55.0 or later. The server rejected the batch and 2 scores were dropped. Upgrade your Langfuse server to keep recording scores.",
+      expect.objectContaining({ statusCode: 400 }),
+    );
+    expect(debugSpy).toHaveBeenCalledWith(
+      expect.stringContaining("1 score was dropped"),
       expect.objectContaining({ statusCode: 400 }),
     );
   });
