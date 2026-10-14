@@ -11,7 +11,7 @@ import { trace } from "@opentelemetry/api";
 import { ScoreManager } from "@langfuse/client";
 import {
   LangfuseAPIClient,
-  IngestionEvent,
+  type CreateScoreRequest,
   resetGlobalLogger,
 } from "@langfuse/core";
 import { startObservation } from "@langfuse/tracing";
@@ -25,32 +25,32 @@ import {
 
 // Mock the API client
 class MockAPIClient {
-  public ingestion = {
-    batch: vi.fn(),
+  public scores = {
+    create: vi.fn(),
   };
 
   constructor() {
-    this.ingestion.batch.mockResolvedValue({ success: true });
+    this.scores.create.mockResolvedValue({ message: "Accepted" });
   }
 
   reset() {
-    this.ingestion.batch.mockClear();
-    this.ingestion.batch.mockResolvedValue({ success: true });
+    this.scores.create.mockClear();
+    this.scores.create.mockResolvedValue({ message: "Accepted" });
   }
 
   setFailure(shouldFail: boolean = true) {
     if (shouldFail) {
-      this.ingestion.batch.mockRejectedValue(new Error("API Error"));
+      this.scores.create.mockRejectedValue(new Error("API Error"));
     } else {
-      this.ingestion.batch.mockResolvedValue({ success: true });
+      this.scores.create.mockResolvedValue({ message: "Accepted" });
     }
   }
 
   setDelay(delayMs: number) {
-    this.ingestion.batch.mockImplementation(
+    this.scores.create.mockImplementation(
       () =>
         new Promise((resolve) =>
-          setTimeout(() => resolve({ success: true }), delayMs),
+          setTimeout(() => resolve({ message: "Accepted" }), delayMs),
         ),
     );
   }
@@ -95,17 +95,16 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush(); // Force flush for testing
       await waitFor(50);
 
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
 
-      const callArgs = mockAPIClient.ingestion.batch.mock.calls[0][0];
-      expect(callArgs.batch).toHaveLength(1);
+      const callArgs = mockAPIClient.scores.create.mock.calls[0][0];
+      expect(callArgs).toHaveLength(1);
 
-      const event = callArgs.batch[0] as IngestionEvent;
-      expect(event.type).toBe("score-create");
-      expect(event.body.name).toBe("test-score");
-      expect(event.body.value).toBe(0.8);
-      expect(event.body.comment).toBe("Good performance");
-      expect(event.body.id).toBeDefined();
+      const event = callArgs[0] as CreateScoreRequest;
+      expect(event.name).toBe("test-score");
+      expect(event.value).toBe(0.8);
+      expect(event.comment).toBe("Good performance");
+      expect(event.id).toBeDefined();
     });
 
     it("should auto-generate ID when not provided", async () => {
@@ -115,9 +114,9 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.id).toBeDefined();
-      expect(typeof event.body.id).toBe("string");
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.id).toBeDefined();
+      expect(typeof event.id).toBe("string");
     });
 
     it("should use provided ID when given", async () => {
@@ -128,8 +127,8 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.id).toBe(customId);
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.id).toBe(customId);
     });
 
     it("should set environment from environment variable", async () => {
@@ -140,8 +139,8 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.environment).toBe("test-env");
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.environment).toBe("test-env");
 
       delete process.env.LANGFUSE_TRACING_ENVIRONMENT;
     });
@@ -163,10 +162,10 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.traceId).toBe(traceId);
-      expect(event.body.observationId).toBe(spanId);
-      expect(event.body.name).toBe("quality-score");
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.traceId).toBe(traceId);
+      expect(event.observationId).toBe(spanId);
+      expect(event.name).toBe("quality-score");
     });
 
     it("should score a trace with span context", async () => {
@@ -184,10 +183,10 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.traceId).toBe(traceId);
-      expect(event.body.observationId).toBeUndefined();
-      expect(event.body.name).toBe("trace-score");
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.traceId).toBe(traceId);
+      expect(event.observationId).toBeUndefined();
+      expect(event.name).toBe("trace-score");
     });
 
     it("should score active observation in context", async () => {
@@ -207,10 +206,10 @@ describe("ScoreManager Integration Tests", () => {
           await scoreManager.flush();
           await waitFor(50);
 
-          const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-          expect(event.body.traceId).toBe(traceId);
-          expect(event.body.observationId).toBe(spanId);
-          expect(event.body.name).toBe("active-score");
+          const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+          expect(event.traceId).toBe(traceId);
+          expect(event.observationId).toBe(spanId);
+          expect(event.name).toBe("active-score");
 
           activeSpan.end();
         });
@@ -235,10 +234,10 @@ describe("ScoreManager Integration Tests", () => {
           await scoreManager.flush();
           await waitFor(50);
 
-          const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-          expect(event.body.traceId).toBe(traceId);
-          expect(event.body.observationId).toBeUndefined(); // Should not have observationId for trace scoring
-          expect(event.body.name).toBe("active-trace-score");
+          const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+          expect(event.traceId).toBe(traceId);
+          expect(event.observationId).toBeUndefined(); // Should not have observationId for trace scoring
+          expect(event.name).toBe("active-trace-score");
 
           activeSpan.end();
         });
@@ -260,7 +259,7 @@ describe("ScoreManager Integration Tests", () => {
       expect(loggerSpy).toHaveBeenCalledWith(
         "No active span in context to score.",
       );
-      expect(mockAPIClient.ingestion.batch).not.toHaveBeenCalled();
+      expect(mockAPIClient.scores.create).not.toHaveBeenCalled();
     });
 
     it("should handle missing active span gracefully for activeTrace", async () => {
@@ -277,7 +276,7 @@ describe("ScoreManager Integration Tests", () => {
       expect(loggerSpy).toHaveBeenCalledWith(
         "No active span in context to score trace.",
       );
-      expect(mockAPIClient.ingestion.batch).not.toHaveBeenCalled();
+      expect(mockAPIClient.scores.create).not.toHaveBeenCalled();
     });
   });
 
@@ -291,15 +290,15 @@ describe("ScoreManager Integration Tests", () => {
       scoreManager.create({ name: "score2", value: 2 });
 
       await waitFor(50);
-      expect(mockAPIClient.ingestion.batch).not.toHaveBeenCalled();
+      expect(mockAPIClient.scores.create).not.toHaveBeenCalled();
 
       // Add 3rd score - should trigger flush
       scoreManager.create({ name: "score3", value: 3 });
 
       await waitFor(100);
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
 
-      const batch = mockAPIClient.ingestion.batch.mock.calls[0][0].batch;
+      const batch = mockAPIClient.scores.create.mock.calls[0][0];
       expect(batch).toHaveLength(3);
 
       delete process.env.LANGFUSE_FLUSH_AT;
@@ -313,7 +312,7 @@ describe("ScoreManager Integration Tests", () => {
 
       // Should flush after timer expires
       await waitFor(200);
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
 
       delete process.env.LANGFUSE_FLUSH_INTERVAL;
     });
@@ -332,10 +331,10 @@ describe("ScoreManager Integration Tests", () => {
       await waitFor(100);
 
       // Should make 2 API calls: 100 + 50 (batched within single flush)
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(2);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(2);
 
-      const firstBatch = mockAPIClient.ingestion.batch.mock.calls[0][0].batch;
-      const secondBatch = mockAPIClient.ingestion.batch.mock.calls[1][0].batch;
+      const firstBatch = mockAPIClient.scores.create.mock.calls[0][0];
+      const secondBatch = mockAPIClient.scores.create.mock.calls[1][0];
 
       expect(firstBatch).toHaveLength(100);
       expect(secondBatch).toHaveLength(50);
@@ -362,7 +361,7 @@ describe("ScoreManager Integration Tests", () => {
       await waitFor(100);
 
       // Should only make one API call due to promise deduplication
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -379,7 +378,7 @@ describe("ScoreManager Integration Tests", () => {
         callCount++;
         // Simulate queue being at max size after 3 calls
         if (callCount > 3) {
-          if ((this as any).eventQueue.length >= 100_000) {
+          if ((this as any).scoreQueue.length >= 100_000) {
             this.logger.error(
               `Score queue is at max size 100000. Dropping score.`,
             );
@@ -411,10 +410,10 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(100);
 
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(2);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(2);
 
-      const firstCall = mockAPIClient.ingestion.batch.mock.calls[0][0].batch;
-      const secondCall = mockAPIClient.ingestion.batch.mock.calls[1][0].batch;
+      const firstCall = mockAPIClient.scores.create.mock.calls[0][0];
+      const secondCall = mockAPIClient.scores.create.mock.calls[1][0];
 
       expect(firstCall).toHaveLength(2);
       expect(secondCall).toHaveLength(1);
@@ -431,7 +430,7 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(100);
 
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
       expect(loggerSpy).toHaveBeenCalledWith(
         "Failed to export score batch:",
         expect.any(Error),
@@ -450,12 +449,12 @@ describe("ScoreManager Integration Tests", () => {
 
       // Make first batch fail, second succeed
       let callCount = 0;
-      mockAPIClient.ingestion.batch.mockImplementation(() => {
+      mockAPIClient.scores.create.mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
           return Promise.reject(new Error("First batch failed"));
         }
-        return Promise.resolve({ success: true });
+        return Promise.resolve({ message: "Accepted" });
       });
 
       const loggerSpy = vi.spyOn(scoreManager.logger, "error");
@@ -463,7 +462,7 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(100);
 
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(2);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(2);
       expect(loggerSpy).toHaveBeenCalledWith(
         "Failed to export score batch:",
         expect.any(Error),
@@ -505,11 +504,11 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(100);
 
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
 
       // Wait for original timer duration to ensure it doesn't fire again
       await waitFor(1100);
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
 
       delete process.env.LANGFUSE_FLUSH_INTERVAL;
     });
@@ -527,10 +526,8 @@ describe("ScoreManager Integration Tests", () => {
       await waitFor(300);
 
       // Should only flush once via timer
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
-      expect(mockAPIClient.ingestion.batch.mock.calls[0][0].batch).toHaveLength(
-        3,
-      );
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create.mock.calls[0][0]).toHaveLength(3);
 
       delete process.env.LANGFUSE_FLUSH_INTERVAL;
     });
@@ -546,10 +543,8 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.shutdown();
       await waitFor(100);
 
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
-      expect(mockAPIClient.ingestion.batch.mock.calls[0][0].batch).toHaveLength(
-        2,
-      );
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create.mock.calls[0][0]).toHaveLength(2);
     });
 
     it("should wait for ongoing flush before shutdown", async () => {
@@ -567,7 +562,7 @@ describe("ScoreManager Integration Tests", () => {
       await Promise.all([flushPromise, shutdownPromise]);
 
       // Should only make one API call
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -608,11 +603,11 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(100);
 
-      const batch = mockAPIClient.ingestion.batch.mock.calls[0][0].batch;
+      const batch = mockAPIClient.scores.create.mock.calls[0][0];
       expect(batch).toHaveLength(3);
-      expect(batch[0].body.value).toBe(0.85);
-      expect(batch[1].body.value).toBe(1);
-      expect(batch[2].body.value).toBe("excellent");
+      expect(batch[0].value).toBe(0.85);
+      expect(batch[1].value).toBe(1);
+      expect(batch[2].value).toBe("excellent");
     });
 
     it("should handle complex metadata", async () => {
@@ -635,8 +630,8 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(100);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.metadata).toEqual(complexMetadata);
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.metadata).toEqual(complexMetadata);
     });
 
     it("should preserve all score fields", async () => {
@@ -657,8 +652,8 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(100);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body).toMatchObject(completeScore);
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event).toMatchObject(completeScore);
     });
   });
 
@@ -676,8 +671,8 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.environment).toBe("custom-env");
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.environment).toBe("custom-env");
 
       delete process.env.LANGFUSE_TRACING_ENVIRONMENT;
     });
@@ -697,7 +692,7 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      expect(mockAPIClient.ingestion.batch).toHaveBeenCalledTimes(1);
+      expect(mockAPIClient.scores.create).toHaveBeenCalledTimes(1);
 
       delete process.env.LANGFUSE_FLUSH_AT;
       delete process.env.LANGFUSE_FLUSH_INTERVAL;
@@ -713,8 +708,8 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const batch = mockAPIClient.ingestion.batch.mock.calls[0][0].batch;
-      const ids = batch.map((event: IngestionEvent) => event.body.id);
+      const batch = mockAPIClient.scores.create.mock.calls[0][0];
+      const ids = batch.map((score: CreateScoreRequest) => score.id);
 
       // All IDs should be unique
       expect(new Set(ids).size).toBe(3);
@@ -723,25 +718,6 @@ describe("ScoreManager Integration Tests", () => {
         expect(typeof id).toBe("string");
         expect(id.length).toBeGreaterThan(0);
       });
-    });
-
-    it("should preserve timestamp format in ingestion events", async () => {
-      const scoreManager = createScoreManager(mockAPIClient);
-      const beforeTime = new Date();
-
-      scoreManager.create({ name: "timestamp-test", value: 1 });
-      await scoreManager.flush();
-      await waitFor(50);
-
-      const afterTime = new Date();
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-
-      expect(event.timestamp).toBeDefined();
-      expect(typeof event.timestamp).toBe("string");
-
-      const eventTime = new Date(event.timestamp);
-      expect(eventTime.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
-      expect(eventTime.getTime()).toBeLessThanOrEqual(afterTime.getTime());
     });
 
     it("should handle zero and negative score values", async () => {
@@ -753,9 +729,9 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const batch = mockAPIClient.ingestion.batch.mock.calls[0][0].batch;
-      expect(batch[0].body.value).toBe(0);
-      expect(batch[1].body.value).toBe(-0.5);
+      const batch = mockAPIClient.scores.create.mock.calls[0][0];
+      expect(batch[0].value).toBe(0);
+      expect(batch[1].value).toBe(-0.5);
     });
 
     it("should handle empty string values in optional fields", async () => {
@@ -771,9 +747,9 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-      expect(event.body.comment).toBe("");
-      expect(event.body.configId).toBe("");
+      const event = mockAPIClient.scores.create.mock.calls[0][0][0];
+      expect(event.comment).toBe("");
+      expect(event.configId).toBe("");
     });
 
     it("should handle flush with empty queue gracefully", async () => {
@@ -783,7 +759,7 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.flush();
       await waitFor(50);
 
-      expect(mockAPIClient.ingestion.batch).not.toHaveBeenCalled();
+      expect(mockAPIClient.scores.create).not.toHaveBeenCalled();
     });
 
     it("should handle shutdown with empty queue gracefully", async () => {
@@ -793,7 +769,7 @@ describe("ScoreManager Integration Tests", () => {
       await scoreManager.shutdown();
       await waitFor(50);
 
-      expect(mockAPIClient.ingestion.batch).not.toHaveBeenCalled();
+      expect(mockAPIClient.scores.create).not.toHaveBeenCalled();
     });
 
     it("should properly handle logger getter", async () => {
@@ -806,37 +782,31 @@ describe("ScoreManager Integration Tests", () => {
       expect(typeof logger.error).toBe("function");
     });
 
-    it("should handle ingestion event structure correctly", async () => {
+    it("should send plain score bodies without ingestion event wrappers", async () => {
       const scoreManager = createScoreManager(mockAPIClient);
 
       scoreManager.create({
         name: "structure-test",
         value: 0.8,
-        comment: "Testing event structure",
+        comment: "Testing request structure",
       });
 
       await scoreManager.flush();
       await waitFor(50);
 
-      const event = mockAPIClient.ingestion.batch.mock.calls[0][0].batch[0];
-
-      // Verify top-level event structure
-      expect(event).toHaveProperty("id");
-      expect(event).toHaveProperty("type");
-      expect(event).toHaveProperty("timestamp");
-      expect(event).toHaveProperty("body");
-
-      expect(event.type).toBe("score-create");
-      expect(typeof event.id).toBe("string");
-      expect(typeof event.timestamp).toBe("string");
-
-      // Verify body structure contains all score fields
-      const body = event.body;
-      expect(body).toHaveProperty("id");
-      expect(body).toHaveProperty("name");
-      expect(body).toHaveProperty("value");
-      expect(body.name).toBe("structure-test");
-      expect(body.value).toBe(0.8);
+      const [batch, requestOptions] = mockAPIClient.scores.create.mock.calls[0];
+      expect(Array.isArray(batch)).toBe(true);
+      expect(batch[0]).toEqual({
+        id: expect.any(String),
+        name: "structure-test",
+        value: 0.8,
+        comment: "Testing request structure",
+        environment: undefined,
+        timestamp: expect.any(String),
+      });
+      expect(batch[0]).not.toHaveProperty("type");
+      expect(batch[0]).not.toHaveProperty("body");
+      expect(requestOptions).toEqual({ timeoutInSeconds: undefined });
     });
   });
 });

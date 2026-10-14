@@ -19,6 +19,7 @@ import {
   LangfuseOtelSpanAttributes,
 } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
+import { serializeMetadataValue } from "./utils.js";
 
 type CorrelatedKey =
   | "userId"
@@ -169,12 +170,16 @@ export interface PropagateAttributesParams {
 
   /**
    * Additional key-value metadata to propagate to all spans.
-   * - Keys and values must be strings
-   * - All values must be ≤200 characters
+   * - Every value is JSON-encoded, strings included, the same way as
+   *   observation metadata (e.g. `"prod"` → `'"prod"'`, `"123"` → `'"123"'`,
+   *   `42` → `"42"`, `[1, "a"]` → `'[1,"a"]'`), so the server keeps the
+   *   string `"123"` apart from the number `123`
+   * - `null`, `undefined`, functions and symbols are dropped with a warning
+   * - Encoded values must be ≤200 characters, otherwise they are dropped with a warning
    * - Use for dimensions like internal correlating identifiers
-   * - AVOID: large payloads, sensitive data, non-string values (will be dropped with warning)
+   * - AVOID: large payloads, sensitive data
    */
-  metadata?: Record<string, string>;
+  metadata?: Record<string, unknown>;
 
   /**
    * Version identifier for parts of your application that are independently versioned, e.g. agents
@@ -359,8 +364,9 @@ export interface PropagateAttributesParams {
  * ```
  *
  * @remarks
- * - **Validation**: Attribute values (userId, sessionId, metadata values) must be
- *   strings ≤200 characters. Environment must be a lowercase alphanumeric string
+ * - **Validation**: Attribute values (userId, sessionId, version, traceName, tags)
+ *   must be strings ≤200 characters. Metadata values are JSON-encoded, strings
+ *   included, and must be ≤200 characters after encoding. Environment must be a lowercase alphanumeric string
  *   with optional hyphens or underscores, must be ≤40 characters, and must not start
  *   with `langfuse`. Invalid values will be dropped with a warning logged.
  * - **OpenTelemetry**: This uses OpenTelemetry context propagation under the hood,
@@ -492,17 +498,19 @@ export function propagateAttributes<
 
   // Validate and set metadata
   if (metadata) {
-    // Filter metadata to only include valid string values
     const validatedMetadata: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(metadata)) {
+      const serialized = serializePropagatedMetadataValue(key, value);
+
       if (
+        serialized !== undefined &&
         isValidPropagatedString({
-          value: value,
+          value: serialized,
           attributeName: `metadata.${key}`,
         })
       ) {
-        validatedMetadata[key] = value;
+        validatedMetadata[key] = serialized;
       }
     }
 
@@ -863,6 +871,21 @@ function getContextMergedMetadata(
   } else {
     return newMetadata;
   }
+}
+
+function serializePropagatedMetadataValue(
+  key: string,
+  value: unknown,
+): string | undefined {
+  const serialized = serializeMetadataValue(value);
+
+  if (serialized === undefined) {
+    getGlobalLogger().warn(
+      `Propagated attribute 'metadata.${key}' is ${value == null ? String(value) : "not JSON-serializable"}. Dropping value.`,
+    );
+  }
+
+  return serialized;
 }
 
 function isValidPropagatedString(params: {

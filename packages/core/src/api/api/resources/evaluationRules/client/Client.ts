@@ -430,6 +430,7 @@ export class EvaluationRules {
    * Get one evaluation rule, including a legacy trace or dataset rule, by its stable identifier.
    *
    * @param {string} evaluationRuleId - Stable evaluation-rule identifier returned by the evaluation-rule endpoints.
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.EvaluationUnauthorizedError}
@@ -449,6 +450,7 @@ export class EvaluationRules {
    */
   public get(
     evaluationRuleId: string,
+    request: Record<string, never> = {},
     requestOptions?: EvaluationRules.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.EvaluationRule> {
     return core.HttpResponsePromise.fromPromise(
@@ -776,6 +778,7 @@ export class EvaluationRules {
    * Legacy trace and dataset rules can also be deleted. Their evaluators and previously produced scores are preserved.
    *
    * @param {string} evaluationRuleId - Stable evaluation-rule identifier returned by the evaluation-rule endpoints.
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {EvaluationRules.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.EvaluationUnauthorizedError}
@@ -795,6 +798,7 @@ export class EvaluationRules {
    */
   public delete(
     evaluationRuleId: string,
+    request: Record<string, never> = {},
     requestOptions?: EvaluationRules.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DeletedEvaluationRule> {
     return core.HttpResponsePromise.fromPromise(

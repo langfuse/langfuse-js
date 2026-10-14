@@ -1,1 +1,1 @@
-export { type GetScoresRequest } from "./GetScoresRequest.js";
+export { type GetScoresV3Request } from "./GetScoresV3Request.js";

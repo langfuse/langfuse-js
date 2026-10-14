@@ -34,6 +34,9 @@
     "url": "https://github.com/langfuse/langfuse-js.git",
     "directory": "packages/core"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "dist"
   ],

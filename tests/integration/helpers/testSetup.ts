@@ -4,6 +4,7 @@ import {
 } from "@langfuse/otel";
 import { trace } from "@opentelemetry/api";
 import { NodeSDK } from "@opentelemetry/sdk-node";
+import type { SpanLimits } from "@opentelemetry/sdk-trace-base";
 
 import { MockSpanExporter } from "./MockSpanExporter.js";
 
@@ -26,6 +27,7 @@ export interface TestSetupOptions {
   };
   enableInstrumentation?: boolean;
   timeout?: number;
+  spanLimits?: SpanLimits;
 }
 
 /**
@@ -58,6 +60,7 @@ export async function setupTestEnvironment(
 
   const sdk = new NodeSDK({
     spanProcessor,
+    spanLimits: options.spanLimits,
     instrumentations: options.enableInstrumentation ? undefined : [], // No auto-instrumentation by default
   });
 

@@ -326,6 +326,7 @@ export class AnnotationQueues {
    * Get an annotation queue by ID
    *
    * @param {string} queueId - The unique identifier of the annotation queue
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {AnnotationQueues.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -339,6 +340,7 @@ export class AnnotationQueues {
    */
   public getQueue(
     queueId: string,
+    request: Record<string, never> = {},
     requestOptions?: AnnotationQueues.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.AnnotationQueue> {
     return core.HttpResponsePromise.fromPromise(
@@ -589,6 +591,7 @@ export class AnnotationQueues {
    *
    * @param {string} queueId - The unique identifier of the annotation queue
    * @param {string} itemId - The unique identifier of the annotation queue item
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {AnnotationQueues.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -603,6 +606,7 @@ export class AnnotationQueues {
   public getQueueItem(
     queueId: string,
     itemId: string,
+    request: Record<string, never> = {},
     requestOptions?: AnnotationQueues.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.AnnotationQueueItem> {
     return core.HttpResponsePromise.fromPromise(
@@ -976,6 +980,7 @@ export class AnnotationQueues {
    *
    * @param {string} queueId - The unique identifier of the annotation queue
    * @param {string} itemId - The unique identifier of the annotation queue item
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {AnnotationQueues.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -990,6 +995,7 @@ export class AnnotationQueues {
   public deleteQueueItem(
     queueId: string,
     itemId: string,
+    request: Record<string, never> = {},
     requestOptions?: AnnotationQueues.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.DeleteAnnotationQueueItemResponse> {
     return core.HttpResponsePromise.fromPromise(

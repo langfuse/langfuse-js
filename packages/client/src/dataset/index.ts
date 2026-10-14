@@ -1,6 +1,5 @@
 import {
   Dataset,
-  DatasetRunItem,
   DatasetItem,
   CreateDatasetItemRequest,
   LangfuseMedia,
@@ -9,7 +8,6 @@ import {
   getGlobalLogger,
   uploadMedia,
 } from "@langfuse/core";
-import { Span } from "@opentelemetry/api";
 
 import { ExperimentResult, ExperimentParams } from "../experiment/types.js";
 import { LangfuseClient } from "../LangfuseClient.js";
@@ -121,10 +119,9 @@ export type RunExperimentOnDataset = (
 ) => Promise<ExperimentResult<any, any, Record<string, any>>>;
 
 /**
- * Enhanced dataset object with additional methods for linking and experiments.
+ * Enhanced dataset object with additional methods for experiments.
  *
  * This type extends the base Dataset with functionality for:
- * - Linking dataset items to traces/observations
  * - Running experiments directly on the dataset
  *
  * @example Working with a fetched dataset
@@ -152,10 +149,7 @@ export type RunExperimentOnDataset = (
  */
 export type FetchedDataset = Dataset & {
   /** Dataset items fetched from this dataset. */
-  items: (DatasetItem & {
-    /** @deprecated Use `runExperiment()` instead. */
-    link: LinkDatasetItemFunction;
-  })[];
+  items: DatasetItem[];
   /** ISO 8601 timestamp (RFC 3339, Section 5.6) in UTC (e.g., "2026-01-21T14:35:42Z").
    * If provided, returns state of dataset at this timestamp.
    * If not provided, returns the latest version.
@@ -166,28 +160,10 @@ export type FetchedDataset = Dataset & {
 };
 
 /**
- * Function type for linking dataset items to OpenTelemetry spans.
- *
- * @deprecated Use `runExperiment()` instead.
- * @see {@link https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk#experiment-runner-sdk}
- * @public
- */
-export type LinkDatasetItemFunction = (
-  obj: { otelSpan: Span },
-  runName: string,
-  runArgs?: {
-    /** Description of the dataset run */
-    description?: string;
-    /** Additional metadata for the dataset run */
-    metadata?: any;
-  },
-) => Promise<DatasetRunItem>;
-
-/**
  * Manager for dataset operations in Langfuse.
  *
  * Provides methods to retrieve datasets and their items, with automatic
- * pagination handling and convenient linking functionality for experiments.
+ * pagination handling and experiment functionality.
  *
  * @public
  */
@@ -209,13 +185,13 @@ export class DatasetManager {
    *
    * This method fetches a dataset and all its associated items, with support
    * for automatic pagination to handle large datasets efficiently. The returned
-   * dataset object includes enhanced functionality for linking items to traces
-   * and running experiments directly on the dataset.
+   * dataset object includes functionality for running experiments directly
+   * on the dataset.
    *
    * @param name - The name of the dataset to retrieve
    * @param options - Optional configuration for data fetching
    * @param options.fetchItemsPageSize - Number of items to fetch per page (default: 50)
-   * @returns Promise resolving to enhanced dataset with items, linking, and experiment capabilities
+   * @returns Promise resolving to enhanced dataset with items and experiment capabilities
    *
    * @example Basic dataset retrieval
    * ```typescript
@@ -312,11 +288,6 @@ export class DatasetManager {
       page++;
     }
 
-    const itemsWithLinkMethod = items.map((item) => ({
-      ...item,
-      link: this.createDatasetItemLinkFunction(item),
-    }));
-
     const runExperiment: RunExperimentOnDataset = (params) => {
       return this.langfuseClient.experiment.run({
         data: items,
@@ -327,7 +298,7 @@ export class DatasetManager {
 
     const returnDataset = {
       ...dataset,
-      items: itemsWithLinkMethod,
+      items,
       version: options?.version,
       runExperiment,
     };
@@ -415,37 +386,6 @@ export class DatasetManager {
       expectedOutput,
       metadata,
     });
-  }
-
-  /**
-   * Creates a link function for a specific dataset item.
-   * @deprecated Use `runExperiment()` instead.
-   * @internal
-   */
-  private createDatasetItemLinkFunction(
-    item: DatasetItem,
-  ): LinkDatasetItemFunction {
-    const linkFunction = async (
-      obj: { otelSpan: Span },
-      runName: string,
-      runArgs?: {
-        description?: string;
-        metadata?: any;
-      },
-    ): Promise<DatasetRunItem> => {
-      const { traceId, spanId } = obj.otelSpan.spanContext();
-
-      return await this.langfuseClient.api.datasetRunItems.create({
-        runName,
-        datasetItemId: item.id,
-        traceId,
-        observationId: spanId,
-        runDescription: runArgs?.description,
-        metadata: runArgs?.metadata,
-      });
-    };
-
-    return linkFunction;
   }
 }
 

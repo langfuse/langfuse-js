@@ -5,6 +5,7 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export interface CreateTextPromptRequest {
+  /** The full prompt name, including any folder path, with at most 255 characters. */
   name: string;
   prompt: string;
   config?: unknown;

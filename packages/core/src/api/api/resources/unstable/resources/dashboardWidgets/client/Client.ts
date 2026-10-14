@@ -431,6 +431,7 @@ export class DashboardWidgets {
    * The response may use `view: traces` for legacy widgets.
    *
    * @param {string} widgetId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {DashboardWidgets.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
@@ -451,6 +452,7 @@ export class DashboardWidgets {
    */
   public get(
     widgetId: string,
+    request: Record<string, never> = {},
     requestOptions?: DashboardWidgets.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.unstable.DashboardWidget> {
     return core.HttpResponsePromise.fromPromise(
@@ -783,6 +785,7 @@ export class DashboardWidgets {
    * Remove those placements first.
    *
    * @param {string} widgetId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {DashboardWidgets.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
@@ -804,6 +807,7 @@ export class DashboardWidgets {
    */
   public delete(
     widgetId: string,
+    request: Record<string, never> = {},
     requestOptions?: DashboardWidgets.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteDashboardWidgetResponse> {
     return core.HttpResponsePromise.fromPromise(

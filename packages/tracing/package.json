@@ -9,7 +9,7 @@
     "directory": "packages/tracing"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "description": "Langfuse instrumentation methods based on OpenTelemetry",
   "type": "module",
