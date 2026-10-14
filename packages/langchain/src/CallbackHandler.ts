@@ -22,6 +22,7 @@ import {
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
   propagateAttributes,
+  type PropagateAttributesParams,
 } from "@langfuse/tracing";
 
 const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
@@ -76,6 +77,9 @@ export class CallbackHandler extends BaseCallbackHandler {
   private completionStartTimes: Record<string, Date> = {};
   private promptToParentRunMap;
   private runMap: Map<string, TrackedObservation> = new Map();
+  // Child runs start in later callbacks, outside the root's propagation context
+  private traceAttributesMap: Map<string, PropagateAttributesParams> =
+    new Map();
 
   public last_trace_id: string | null = null;
 
@@ -186,39 +190,25 @@ export class CallbackHandler extends BaseCallbackHandler {
             ? metadata["langfuseSessionId"]
             : this.sessionId;
 
-        propagateAttributes(
-          {
-            tags: traceTags,
-            userId: traceUserId,
-            sessionId: traceSessionId,
-            metadata: this.traceMetadata,
-            version: this.version,
-          },
-          () => {
-            this.startAndRegisterOtelSpan({
-              runName,
-              parentRunId,
-              runId,
-              tags,
-              metadata,
-              attributes: {
-                input: finalInput,
-              },
-            });
-          },
-        );
-      } else {
-        this.startAndRegisterOtelSpan({
-          runName,
-          parentRunId,
-          runId,
-          tags,
-          metadata,
-          attributes: {
-            input: finalInput,
-          },
+        this.traceAttributesMap.set(runId, {
+          tags: traceTags,
+          userId: traceUserId,
+          sessionId: traceSessionId,
+          metadata: this.traceMetadata,
+          version: this.version,
         });
       }
+
+      this.startAndRegisterOtelSpan({
+        runName,
+        parentRunId,
+        runId,
+        tags,
+        metadata,
+        attributes: {
+          input: finalInput,
+        },
+      });
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
     }
@@ -794,7 +784,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
       : undefined;
 
-    const observation =
+    const traceAttributes =
+      this.traceAttributesMap.get(runId) ??
+      (parentRunId ? this.traceAttributesMap.get(parentRunId) : undefined);
+    if (traceAttributes) {
+      this.traceAttributesMap.set(runId, traceAttributes);
+    }
+
+    const observation = propagateAttributes(traceAttributes ?? {}, () =>
       type === "generation"
         ? startActiveObservation(
             runName,
@@ -831,7 +828,8 @@ export class CallbackHandler extends BaseCallbackHandler {
                 parentSpanContext,
                 endOnExit: false,
               },
-            );
+            ),
+    );
     this.runMap.set(runId, observation);
 
     return observation;
@@ -865,6 +863,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     this.last_trace_id = span.traceId;
     this.runMap.delete(runId);
+    this.traceAttributesMap.delete(runId);
   }
   private parseAzureRefusalError(err: any): string {
     // Azure has the refusal status for harmful messages in the error property
