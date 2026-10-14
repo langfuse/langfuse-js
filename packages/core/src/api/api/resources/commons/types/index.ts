@@ -36,3 +36,4 @@ export * from "./DatasetStatus.js";
 export * from "./ScoreSource.js";
 export * from "./ScoreConfigDataType.js";
 export * from "./ScoreDataType.js";
+export * from "./OpenAiUsage.js";

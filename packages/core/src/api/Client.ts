@@ -14,7 +14,6 @@ import { Evaluators } from "./api/resources/evaluators/client/Client.js";
 import { Experiments } from "./api/resources/experiments/client/Client.js";
 import { Feedback } from "./api/resources/feedback/client/Client.js";
 import { Health } from "./api/resources/health/client/Client.js";
-import { Ingestion } from "./api/resources/ingestion/client/Client.js";
 import { LlmConnections } from "./api/resources/llmConnections/client/Client.js";
 import { Media } from "./api/resources/media/client/Client.js";
 import { Metrics } from "./api/resources/metrics/client/Client.js";
@@ -86,7 +85,6 @@ export class LangfuseAPIClient {
   protected _experiments: Experiments | undefined;
   protected _feedback: Feedback | undefined;
   protected _health: Health | undefined;
-  protected _ingestion: Ingestion | undefined;
   protected _llmConnections: LlmConnections | undefined;
   protected _media: Media | undefined;
   protected _metrics: Metrics | undefined;
@@ -157,10 +155,6 @@ export class LangfuseAPIClient {
 
   public get health(): Health {
     return (this._health ??= new Health(this._options));
-  }
-
-  public get ingestion(): Ingestion {
-    return (this._ingestion ??= new Ingestion(this._options));
   }
 
   public get llmConnections(): LlmConnections {
