@@ -19,3 +19,4 @@ export * from "./CorrectionScoreV3.js";
 export * from "./ScoreV3.js";
 export * from "./GetScoresV3Meta.js";
 export * from "./GetScoresV3Response.js";
+export * from "./ScoreBody.js";
