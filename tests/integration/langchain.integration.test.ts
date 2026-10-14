@@ -20,6 +20,7 @@ import {
 } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import type { ChatGeneration } from "@langchain/core/outputs";
+import { RunnableLambda } from "@langchain/core/runnables";
 import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -364,6 +365,49 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       '[{"role":"user","content":"hi"}]',
     );
+  });
+
+  it("should propagate trace attributes to child observations", async () => {
+    const handler = new CallbackHandler({
+      sessionId: "session-1",
+      userId: "user-1",
+      tags: ["handler-tag"],
+      traceMetadata: { team: "core" },
+    });
+    const model = new FakeStreamingChatModel({
+      responses: [new AIMessage("Hi!")],
+    });
+    const chain = RunnableLambda.from((input: string) => [
+      new HumanMessage(input),
+    ]).pipe(model);
+
+    await chain.invoke("Hello", { callbacks: [handler] });
+
+    await waitForSpanExport(testEnv.mockExporter, 2);
+
+    const spans = testEnv.mockExporter.exportedSpans;
+    expect(
+      spans.some(
+        (span) =>
+          span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE] ===
+          "generation",
+      ),
+    ).toBe(true);
+
+    for (const span of spans) {
+      expect(span.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID]).toBe(
+        "session-1",
+      );
+      expect(span.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user-1",
+      );
+      expect(span.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual([
+        "handler-tag",
+      ]);
+      expect(
+        span.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.team`],
+      ).toBe('"core"');
+    }
   });
 
   it("should record completion start time from chat model stream events", async () => {
