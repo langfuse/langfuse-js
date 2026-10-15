@@ -86,7 +86,7 @@ export type LangfuseGenerationAttributes = LangfuseSpanAttributes & {
         [key: string]: number;
       }
     | OpenAiUsage;
-  /** Cost breakdown for the generation (totalCost, etc.) */
+  /** Cost breakdown for the generation in USD (input, output, total, etc.) */
   costDetails?: {
     [key: string]: number;
   };

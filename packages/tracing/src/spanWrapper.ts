@@ -1248,8 +1248,7 @@ type LangfuseGenerationParams = {
  *       totalTokens: response.usage.total_tokens
  *     },
  *     costDetails: {
- *       totalCost: 0.025,
- *       currency: 'USD'
+ *       total: 0.025
  *     }
  *   });
  * } catch (error) {
