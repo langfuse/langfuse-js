@@ -5,11 +5,13 @@ import {
   LangfuseAPIClient,
   LANGFUSE_SDK_VERSION,
   LangfuseOtelSpanAttributes,
+  LangfuseOtelContextKeys,
   getEnv,
   base64Encode,
   getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
   serializeMetadataValue,
+  serializeSkillsAvailable,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
@@ -30,6 +32,7 @@ import {
   SizeLimitedSpanExporter,
   resolveMaxBatchSizeBytesFromEnvironment,
 } from "./size-limited-span-exporter.js";
+import { readAvailableSkills } from "./skills.js";
 import { isDefaultExportSpan } from "./span-filter.js";
 
 /**
@@ -159,6 +162,16 @@ export interface LangfuseSpanProcessorParams {
   release?: string;
 
   /**
+   * Directory containing installed skill subdirectories, relative to the process working directory.
+   * Skills are discovered asynchronously once at initialization. For names and versions,
+   * `langfuse-skills.lock.json` is checked in the working directory first, then the skills directory.
+   * Discovered skills are attached only to spans created in a propagateAttributes({ skillsEnabled: true }) scope.
+   * Explicit or propagated skillsAvailable attributes override the discovered catalog.
+   * Span export waits for discovery; discovered attributes are added when spans end.
+   */
+  relativeSkillsPath?: string;
+
+  /**
    * Request timeout in seconds. Can also be set via LANGFUSE_TIMEOUT environment variable.
    * @defaultValue 5
    */
@@ -243,6 +256,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private baseUrl?: string;
   private environment?: string;
   private release?: string;
+  private skillsAvailable?: Promise<string | undefined>;
+  private skillsEnabledSpans = new WeakSet<ReadableSpan>();
   private mask?: MaskFunction;
   private shouldExportSpan: ShouldExportSpan;
   private mediaUploadEnabled: boolean;
@@ -364,6 +379,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     this.environment =
       params?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
     this.release = params?.release ?? getEnv("LANGFUSE_RELEASE");
+    if (params?.relativeSkillsPath !== undefined) {
+      this.skillsAvailable = this.discoverSkills(params.relativeSkillsPath);
+    }
     this.mask = params?.mask;
     this.shouldExportSpan =
       params?.shouldExportSpan ??
@@ -399,8 +417,28 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     return getGlobalLogger();
   }
 
+  private async discoverSkills(
+    relativeSkillsPath: string,
+  ): Promise<string | undefined> {
+    try {
+      const skills = await readAvailableSkills(relativeSkillsPath);
+      const references = Array.from(skills.values(), ({ name, version }) => ({
+        skillName: name,
+        skillVersion: version,
+      }));
+      return serializeSkillsAvailable(references) ?? undefined;
+    } catch (err) {
+      this.logger.warn(
+        "Failed to discover local skills. Automatic skill availability is disabled.",
+        { relativeSkillsPath },
+        err,
+      );
+      return undefined;
+    }
+  }
+
   /**
-   * Called when a span is started. Adds environment, release, and propagated attributes to the span.
+   * Called when a span is started. Adds environment, release, skill availability, and propagated attributes to the span.
    *
    * @param span - The span that was started
    * @param parentContext - The parent context
@@ -408,6 +446,12 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onStart(span: Span, parentContext: Context): void {
+    if (
+      parentContext.getValue(LangfuseOtelContextKeys.skillsEnabled) === true
+    ) {
+      this.skillsEnabledSpans.add(span);
+    }
+
     const propagatedAttributes =
       getPropagatedAttributesFromContext(parentContext);
 
@@ -421,6 +465,16 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       ];
       delete propagatedAttributes[
         LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
+      ];
+    }
+
+    if (
+      span.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+      ] != null
+    ) {
+      delete propagatedAttributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
       ];
     }
 
@@ -506,6 +560,21 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private async processEndedSpan(span: ReadableSpan) {
+    if (
+      this.skillsEnabledSpans.has(span) &&
+      this.skillsAvailable !== undefined &&
+      span.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+      ] == null
+    ) {
+      const skillsAvailable = await this.skillsAvailable;
+      if (skillsAvailable !== undefined) {
+        span.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+        ] ??= skillsAvailable;
+      }
+    }
+
     try {
       if (this.shouldExportSpan({ otelSpan: span }) === false) {
         this.logger.debug("Dropped span due to shouldExportSpan filter.", {

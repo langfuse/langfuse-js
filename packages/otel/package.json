@@ -49,5 +49,8 @@
     "@opentelemetry/exporter-trace-otlp-http": ">=0.202.0 <1.0.0",
     "@opentelemetry/otlp-exporter-base": ">=0.202.0 <1.0.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.1.0"
   }
 }
