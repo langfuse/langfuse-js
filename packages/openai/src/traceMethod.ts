@@ -5,6 +5,7 @@ import {
 } from "@langfuse/tracing";
 import type OpenAI from "openai";
 
+import { attachLangfuseIds } from "./langfuseIds.js";
 import {
   getToolCallOutput,
   parseChunk,
@@ -128,6 +129,8 @@ const wrapMethod = <T extends GenericMethod>(
                   metadata: metadataFromResponse,
                 })
                 .end();
+
+              attachLangfuseIds(result, generation);
 
               return result;
             })
@@ -258,5 +261,8 @@ function wrapAsyncIterable<R>(
       .end();
   }
 
-  return tracedOutputGenerator() as R;
+  const generator = tracedOutputGenerator();
+  attachLangfuseIds(generator, generation);
+
+  return generator as R;
 }
