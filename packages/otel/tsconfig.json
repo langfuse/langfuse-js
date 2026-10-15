@@ -4,6 +4,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["ES2021.String"]
+    "lib": ["ES2022"],
+    "types": ["node"]
   }
 }

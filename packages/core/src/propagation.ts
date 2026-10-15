@@ -19,6 +19,7 @@ import {
   LangfuseOtelSpanAttributes,
 } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
+import { SkillReference } from "./types.js";
 import { serializeMetadataValue } from "./utils.js";
 
 type CorrelatedKey =
@@ -29,6 +30,7 @@ type CorrelatedKey =
   | "tags"
   | "traceName"
   | "environment"
+  | "skillsAvailable"
   | "promptName"
   | "promptVersion";
 
@@ -54,7 +56,10 @@ type PropagatedExperimentAttributes = {
   experimentItemRootObservationId: string;
 };
 
-export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
+export const LangfuseOtelContextKeys: Record<
+  PropagatedKey | "skillsEnabled",
+  symbol
+> = {
   userId: createContextKey("langfuse_user_id"),
   sessionId: createContextKey("langfuse_session_id"),
   metadata: createContextKey("langfuse_metadata"),
@@ -62,6 +67,8 @@ export const LangfuseOtelContextKeys: Record<PropagatedKey, symbol> = {
   tags: createContextKey("langfuse_tags"),
   traceName: createContextKey("langfuse_trace_name"),
   environment: createContextKey("langfuse_environment"),
+  skillsAvailable: createContextKey("langfuse_skills_available"),
+  skillsEnabled: createContextKey("langfuse_skills_enabled"),
   promptName: createContextKey("langfuse_prompt_name"),
   promptVersion: createContextKey("langfuse_prompt_version"),
 
@@ -225,6 +232,22 @@ export interface PropagateAttributesParams {
    * set directly on an observation takes precedence over the propagated one.
    */
   prompt?: PropagatedPromptInput;
+
+  /**
+   * Skills available to generations in this scope, provided as names and optional versions.
+   * Updates the active observation and propagates to new child spans.
+   * Nested catalogs replace the outer catalog; an empty array clears it.
+   */
+  skillsAvailable?: SkillReference[];
+
+  /**
+   * Attach the processor's discovered skills to spans created in this scope.
+   * Requires relativeSkillsPath on LangfuseSpanProcessor. Defaults to disabled;
+   * nested scopes can set false to disable automatic availability.
+   * Explicit skillsAvailable catalogs work independently and take precedence.
+   * This flag is local to the process and is not sent as a span attribute or baggage.
+   */
+  skillsEnabled?: boolean;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -395,6 +418,8 @@ export function propagateAttributes<
     traceName,
     environment,
     prompt,
+    skillsAvailable,
+    skillsEnabled,
     _internalExperiment,
   } = params;
 
@@ -547,6 +572,26 @@ export function propagateAttributes<
     }
   }
 
+  if (skillsAvailable !== undefined) {
+    const serialized = serializeSkillsAvailable(skillsAvailable);
+    if (serialized !== null) {
+      context = setPropagatedAttribute({
+        key: "skillsAvailable",
+        value: serialized,
+        context,
+        span,
+        asBaggage,
+      });
+    }
+  }
+
+  if (typeof skillsEnabled === "boolean") {
+    context = context.setValue(
+      LangfuseOtelContextKeys.skillsEnabled,
+      skillsEnabled,
+    );
+  }
+
   // Handle experiment attributes
   if (_internalExperiment) {
     for (const [key, value] of Object.entries(_internalExperiment)) {
@@ -611,6 +656,42 @@ function extractPropagatedPrompt(
   }
 
   return { name, version };
+}
+
+/** Serialize skill names and versions for span attributes and baggage. @internal */
+export function serializeSkillsAvailable(value: unknown): string | null {
+  if (value === undefined) return null;
+
+  if (!Array.isArray(value) || !value.every(isValidSkillReference)) {
+    getGlobalLogger().warn(
+      "Propagated 'skillsAvailable' must be an array of skill names with an optional positive Int32 Langfuse version. Dropping value.",
+    );
+    return null;
+  }
+
+  return JSON.stringify(
+    value.map(({ skillName, skillVersion }) => ({
+      skillName,
+      skillVersion,
+    })),
+  );
+}
+
+function isValidSkillReference(skill: unknown): skill is SkillReference {
+  return (
+    skill !== null &&
+    typeof skill === "object" &&
+    "skillName" in skill &&
+    typeof skill.skillName === "string" &&
+    skill.skillName.length > 0 &&
+    skill.skillName.length <= 128 &&
+    (!("skillVersion" in skill) ||
+      skill.skillVersion == null ||
+      (typeof skill.skillVersion === "number" &&
+        Number.isInteger(skill.skillVersion) &&
+        skill.skillVersion > 0 &&
+        skill.skillVersion <= 2_147_483_647))
+  );
 }
 
 export function getPropagatedAttributesFromContext(
@@ -716,6 +797,15 @@ export function getPropagatedAttributesFromContext(
     propagatedAttributes[spanKey] = promptVersion;
   }
 
+  const skillsAvailable = context.getValue(
+    LangfuseOtelContextKeys["skillsAvailable"],
+  );
+  if (typeof skillsAvailable === "string") {
+    propagatedAttributes[
+      LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+    ] = skillsAvailable;
+  }
+
   const metadata = context.getValue(LangfuseOtelContextKeys["metadata"]);
   if (metadata && typeof metadata === "object" && metadata !== null) {
     for (const [k, v] of Object.entries(metadata)) {
@@ -762,6 +852,7 @@ type SetPropagatedAttributeParams = {
         | "traceName"
         | "environment"
         | "promptName"
+        | "skillsAvailable"
         | ExperimentKey;
       value: string;
     }
@@ -963,6 +1054,8 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.TRACE_NAME;
     case "environment":
       return LangfuseOtelSpanAttributes.ENVIRONMENT;
+    case "skillsAvailable":
+      return LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
     case "metadata":
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
     case "tags":
@@ -1007,6 +1100,8 @@ function getBaggageKeyForPropagatedKey(key: PropagatedKey): string {
       return `${LANGFUSE_BAGGAGE_PREFIX}trace_name`;
     case "environment":
       return `${LANGFUSE_BAGGAGE_PREFIX}environment`;
+    case "skillsAvailable":
+      return `${LANGFUSE_BAGGAGE_PREFIX}skills_available`;
     case "metadata":
       return `${LANGFUSE_BAGGAGE_PREFIX}metadata`;
     case "tags":
@@ -1060,6 +1155,8 @@ function getSpanKeyFromBaggageKey(baggageKey: string): string | undefined {
       return getSpanKeyForPropagatedKey("traceName");
     case "environment":
       return getSpanKeyForPropagatedKey("environment");
+    case "skills_available":
+      return getSpanKeyForPropagatedKey("skillsAvailable");
     case "tags":
       return getSpanKeyForPropagatedKey("tags");
     case "prompt_name":
