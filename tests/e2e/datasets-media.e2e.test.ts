@@ -3,8 +3,6 @@ import { LangfuseMedia, LangfuseMediaReference } from "@langfuse/core";
 import { nanoid } from "nanoid";
 import { describe, it, expect, beforeAll } from "vitest";
 
-import { waitForServerIngestion } from "./helpers/serverSetup.js";
-
 // Distinct bytes per tag -> distinct media id, so each JSONPath can be verified
 // to resolve to its own media via fetchBytes.
 const media = (tag: string): LangfuseMedia =>
@@ -39,8 +37,6 @@ describe("Langfuse Datasets Multimodal E2E", () => {
       expectedOutput: { reference: media("reference") }, // $['reference']
       metadata: { thumbnail: media("thumbnail") }, // $['thumbnail']
     });
-
-    await waitForServerIngestion(2000);
   });
 
   it("stores LangfuseMedia as reference strings (raw, unresolved)", async () => {
@@ -116,8 +112,6 @@ describe("Langfuse Datasets Multimodal E2E", () => {
       input: sourceItem!.input,
       expectedOutput: sourceItem!.expectedOutput,
     });
-
-    await waitForServerIngestion(2000);
 
     // Stored as a reference string, not a JSON object with an expiring URL
     // (checked via the raw list endpoint).

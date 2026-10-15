@@ -1,9 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { ScoreManager } from "@langfuse/client";
 import type { LangfuseAPIClient } from "@langfuse/core";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-type Batch = Parameters<LangfuseAPIClient["ingestion"]["batch"]>[0];
+type Batch = Parameters<LangfuseAPIClient["scores"]["create"]>[0];
 
 function createMockApiClient(options?: {
   /** Resolves when the first batch request is allowed to complete. */
@@ -13,7 +12,7 @@ function createMockApiClient(options?: {
   const sentNames: string[] = [];
   let calls = 0;
 
-  const batch = vi.fn((request: Batch) => {
+  const batch = vi.fn((request: Batch, _options?: unknown) => {
     const callIndex = calls++;
 
     if (options?.failWith === "throw") {
@@ -27,14 +26,16 @@ function createMockApiClient(options?: {
       if (options?.failWith === "reject") {
         throw new Error("ingestion failure");
       }
-      for (const event of request.batch) {
-        sentNames.push((event.body as { name: string }).name);
+      for (const score of request) {
+        sentNames.push(score.name);
       }
-      return { successes: [], errors: [] };
+      return { accepted: request.length, rejected: 0, errors: [] };
     })();
   });
 
-  const apiClient = { ingestion: { batch } } as unknown as LangfuseAPIClient;
+  const apiClient = {
+    scores: { create: batch },
+  } as unknown as LangfuseAPIClient;
 
   return { apiClient, batch, sentNames };
 }

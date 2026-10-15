@@ -5,6 +5,7 @@
 import * as LangfuseAPI from "../../../index.js";
 
 export interface CreateChatPromptRequest {
+  /** The full prompt name, including any folder path, with at most 255 characters. */
   name: string;
   prompt: LangfuseAPI.ChatMessageWithPlaceholders[];
   config?: unknown;

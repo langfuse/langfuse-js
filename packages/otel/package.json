@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/otel",
-  "version": "5.13.1",
+  "version": "6.0.0",
   "author": "Langfuse",
   "license": "MIT",
   "repository": {
@@ -9,7 +9,7 @@
     "directory": "packages/otel"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "description": "Langfuse OpenTelemetry export helpers",
   "type": "module",

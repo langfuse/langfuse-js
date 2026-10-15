@@ -9,7 +9,7 @@ import {
 import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { trace } from "@opentelemetry/api";
 import { NodeSDK } from "@opentelemetry/sdk-node";
-import { startObservation } from "@langfuse/tracing";
+import { propagateAttributes, startObservation } from "@langfuse/tracing";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
@@ -166,6 +166,258 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         "async-error-mask-span",
         "langfuse.observation.input",
         "<fully masked due to failed mask function>",
+      );
+    });
+
+    it("should mask each per-key observation metadata value and keep keys", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: () => "REDACTED",
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("metadata-masked-span", {
+        metadata: { password: "secret", nested: { token: "secret" } },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const exported = assertions.expectSpanWithName("metadata-masked-span");
+      const metadataAttributes = Object.fromEntries(
+        Object.entries(exported.attributes).filter(([key]) =>
+          key.startsWith("langfuse.observation.metadata."),
+        ),
+      );
+
+      expect(metadataAttributes).toEqual({
+        "langfuse.observation.metadata.password": '"REDACTED"',
+        "langfuse.observation.metadata.nested": '"REDACTED"',
+      });
+    });
+
+    it("should pass decoded observation metadata values to the mask and re-encode the result", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      const received: unknown[] = [];
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) => {
+            received.push(data);
+            if (typeof data === "string") return data.replace(/secret/g, "***");
+            if (typeof data === "number") return data + 1;
+            if (typeof data === "object" && data !== null) {
+              return { ...data, token: "***" };
+            }
+            return data;
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("metadata-decoded-mask-span", {
+        metadata: {
+          password: "secret",
+          count: 3,
+          nested: { token: "secret", keep: true },
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(received).toEqual(
+        expect.arrayContaining(["secret", 3, { token: "secret", keep: true }]),
+      );
+      assertions.expectSpanAttribute(
+        "metadata-decoded-mask-span",
+        "langfuse.observation.metadata.password",
+        '"***"',
+      );
+      assertions.expectSpanAttribute(
+        "metadata-decoded-mask-span",
+        "langfuse.observation.metadata.count",
+        "4",
+      );
+      assertions.expectSpanAttribute(
+        "metadata-decoded-mask-span",
+        "langfuse.observation.metadata.nested",
+        '{"token":"***","keep":true}',
+      );
+    });
+
+    it("should mask non-object observation metadata decoded and re-encode it", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) =>
+            Array.isArray(data) ? data.map(() => "***") : data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("metadata-array-mask-span", {
+        metadata: ["secret", 1] as any,
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "metadata-array-mask-span",
+        "langfuse.observation.metadata",
+        '["***","***"]',
+      );
+    });
+
+    it("should drop an observation metadata key when the mask returns null or undefined", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) =>
+            data === "drop-null" ? null : data === "drop" ? undefined : data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("metadata-dropped-mask-span", {
+        metadata: { a: "drop-null", b: "drop", c: "keep" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const exported = assertions.expectSpanWithName(
+        "metadata-dropped-mask-span",
+      );
+      expect(exported.attributes).not.toHaveProperty(
+        "langfuse.observation.metadata.a",
+      );
+      expect(exported.attributes).not.toHaveProperty(
+        "langfuse.observation.metadata.b",
+      );
+      expect(exported.attributes["langfuse.observation.metadata.c"]).toBe(
+        '"keep"',
+      );
+    });
+
+    it("should keep non-finite observation metadata when the mask leaves it unchanged", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) => data,
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("metadata-null-encoded-mask-span", {
+        metadata: {
+          nan: NaN,
+          inf: Infinity,
+          toJsonNull: { toJSON: () => null },
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const exported = assertions.expectSpanWithName(
+        "metadata-null-encoded-mask-span",
+      );
+      expect(exported.attributes["langfuse.observation.metadata.nan"]).toBe(
+        '"NaN"',
+      );
+      expect(exported.attributes["langfuse.observation.metadata.inf"]).toBe(
+        '"Infinity"',
+      );
+      expect(
+        exported.attributes["langfuse.observation.metadata.toJsonNull"],
+      ).toBe("null");
+    });
+
+    it("should not mask propagated trace metadata values", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      const mask = vi.fn(() => "REDACTED");
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: { mask },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      propagateAttributes({ metadata: { apiKey: "secret-key" } }, () => {
+        const span = startObservation("propagated-metadata-span");
+        span.end();
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "propagated-metadata-span",
+        "langfuse.trace.metadata.apiKey",
+        '"secret-key"',
+      );
+      expect(mask).not.toHaveBeenCalledWith({ data: "secret-key" });
+      expect(mask).not.toHaveBeenCalledWith({ data: '"secret-key"' });
+    });
+
+    it("should only replace metadata values when the mask throws", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          mask: ({ data }) => {
+            if (data === "one") {
+              throw new Error("Mask function error");
+            }
+            return typeof data === "string" ? `masked-${data}` : data;
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const span = startObservation("metadata-error-mask-span", {
+        metadata: { a: "one", b: "two" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      const fallback = "<fully masked due to failed mask function>";
+      assertions.expectSpanAttribute(
+        "metadata-error-mask-span",
+        "langfuse.observation.metadata.a",
+        JSON.stringify(fallback),
+      );
+      assertions.expectSpanAttribute(
+        "metadata-error-mask-span",
+        "langfuse.observation.metadata.b",
+        JSON.stringify("masked-two"),
+      );
+      assertions.expectSpanAttribute(
+        "metadata-error-mask-span",
+        "langfuse.observation.type",
+        "span",
+      );
+    });
+
+    it("should leave metadata unchanged when no mask is configured", async () => {
+      const span = startObservation("unmasked-metadata-span", {
+        metadata: { password: "secret" },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "unmasked-metadata-span",
+        "langfuse.observation.metadata.password",
+        '"secret"',
       );
     });
   });

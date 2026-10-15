@@ -2,8 +2,7 @@ import {
   generateUUID,
   LANGFUSE_SDK_NAME,
   LANGFUSE_SDK_VERSION,
-  type IngestionEvent,
-  type IngestionRequest,
+  type CreateScoreRequest,
 } from "@langfuse/core";
 
 import { LangfuseBrowserError } from "./errors.js";
@@ -11,11 +10,10 @@ import type {
   LangfuseBrowserClientOptions,
   LangfuseBrowserScoreBody,
   LangfuseBrowserScoreResult,
-  LangfuseIngestionResponse,
 } from "./types.js";
 import {
   filterAdditionalHeaders,
-  isIngestionResponse,
+  isCreateScoreResponse,
   parseErrorResponseBody,
   parseJsonResponse,
   removeTrailingSlash,
@@ -23,13 +21,6 @@ import {
 
 const DEFAULT_BASE_URL = "https://cloud.langfuse.com";
 const SDK_INTEGRATION = "browser";
-
-type LangfuseScoreCreateEvent = Extract<
-  IngestionEvent,
-  { type: "score-create" }
-> & {
-  body: LangfuseBrowserScoreBody & { id: string };
-};
 
 export class LangfuseBrowserClient {
   private readonly publicKey: string;
@@ -58,71 +49,25 @@ export class LangfuseBrowserClient {
   }
 
   /**
-   * Creates a score via the Langfuse ingestion API.
+   * Creates a score via `POST /api/public/scores`.
    *
-   * The browser SDK sends scores immediately as single-event ingestion batches.
+   * The browser SDK sends each score immediately as a single request.
    */
   public async score(
     body: LangfuseBrowserScoreBody,
   ): Promise<LangfuseBrowserScoreResult> {
-    const scoreId = body.id ?? generateUUID(globalThis);
-    const event = this.createScoreEvent(scoreId, body);
-    const response = await this.postIngestionBatch([event]);
+    const score = {
+      ...body,
+      id: body.id ?? generateUUID(globalThis),
+      environment: body.environment ?? this.environment,
+      timestamp: body.timestamp ?? new Date().toISOString(),
+    } as CreateScoreRequest;
 
-    if (response.errors.length > 0) {
-      throw new LangfuseBrowserError("Langfuse score ingestion failed.", {
-        errors: response.errors,
-        response,
-      });
-    }
-
-    const hasSuccess = response.successes.some(
-      (success) => success.id === event.id,
-    );
-    if (!hasSuccess) {
-      throw new LangfuseBrowserError(
-        "Langfuse score ingestion response did not include the created score event.",
-        { response },
-      );
-    }
-
-    return { id: scoreId };
-  }
-
-  private createScoreEvent(
-    scoreId: string,
-    body: LangfuseBrowserScoreBody,
-  ): LangfuseScoreCreateEvent {
-    return {
-      id: generateUUID(globalThis),
-      type: "score-create",
-      timestamp: new Date().toISOString(),
-      body: {
-        ...body,
-        id: scoreId,
-        environment: body.environment ?? this.environment,
-      },
-    };
-  }
-
-  private async postIngestionBatch(
-    batch: LangfuseScoreCreateEvent[],
-  ): Promise<LangfuseIngestionResponse> {
     let response: Response;
     try {
       const fetchImplementation = this.fetch;
-      const request: IngestionRequest = {
-        batch,
-        metadata: {
-          batch_size: batch.length,
-          sdk_name: LANGFUSE_SDK_NAME,
-          sdk_version: LANGFUSE_SDK_VERSION,
-          sdk_integration: SDK_INTEGRATION,
-          public_key: this.publicKey,
-        },
-      };
       response = await fetchImplementation(
-        `${this.baseUrl}/api/public/ingestion`,
+        `${this.baseUrl}/api/public/scores`,
         {
           method: "POST",
           headers: {
@@ -134,7 +79,7 @@ export class LangfuseBrowserClient {
             "X-Langfuse-Sdk-Version": LANGFUSE_SDK_VERSION,
             "X-Langfuse-Sdk-Integration": SDK_INTEGRATION,
           },
-          body: JSON.stringify(request),
+          body: JSON.stringify(score),
         },
       );
     } catch (error) {
@@ -146,7 +91,7 @@ export class LangfuseBrowserClient {
     if (!response.ok) {
       const responseBody = await parseErrorResponseBody(response);
       throw new LangfuseBrowserError(
-        `Langfuse ingestion request failed with status ${response.status}.`,
+        `Langfuse score request failed with status ${response.status}.`,
         {
           status: response.status,
           response: responseBody,
@@ -155,14 +100,14 @@ export class LangfuseBrowserClient {
     }
 
     const json = await parseJsonResponse(response);
-    if (!isIngestionResponse(json)) {
+    if (!isCreateScoreResponse(json)) {
       throw new LangfuseBrowserError(
-        "Langfuse ingestion response had an unexpected shape.",
+        "Langfuse score response had an unexpected shape.",
         { response: json },
       );
     }
 
-    return json;
+    return { id: json.id };
   }
 }
 

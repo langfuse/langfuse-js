@@ -176,22 +176,22 @@ describe("propagateAttributes", () => {
         child1?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.experiment`
         ],
-      ).toBe("variant_a");
+      ).toBe('"variant_a"');
       expect(
         child1?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.version`
         ],
-      ).toBe("1.0");
+      ).toBe('"1.0"');
       expect(
         child2?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.experiment`
         ],
-      ).toBe("variant_a");
+      ).toBe('"variant_a"');
       expect(
         child2?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.version`
         ],
-      ).toBe("1.0");
+      ).toBe('"1.0"');
     });
 
     it("should propagate all attributes together", async () => {
@@ -230,10 +230,10 @@ describe("propagateAttributes", () => {
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.experiment`
         ],
-      ).toBe("test");
+      ).toBe('"test"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
-      ).toBe("prod");
+      ).toBe('"prod"');
     });
 
     it("should maintain return value", async () => {
@@ -303,10 +303,10 @@ describe("propagateAttributes", () => {
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.experiment`
         ],
-      ).toBe("test");
+      ).toBe('"test"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
-      ).toBe("prod");
+      ).toBe('"prod"');
     });
   });
 
@@ -732,7 +732,7 @@ describe("propagateAttributes", () => {
       ]);
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.env`],
-      ).toBe("prod");
+      ).toBe('"prod"');
     });
   });
 
@@ -757,10 +757,10 @@ describe("propagateAttributes", () => {
       // Child should have both key1 and key2
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
-      ).toBe("value2");
+      ).toBe('"value2"');
     });
 
     it("should allow metadata values to be overwritten by subsequent calls", async () => {
@@ -783,7 +783,7 @@ describe("propagateAttributes", () => {
       // Newer value should override
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value2");
+      ).toBe('"value2"');
     });
 
     it("should preserve existing metadata when adding new keys", async () => {
@@ -812,7 +812,7 @@ describe("propagateAttributes", () => {
         child1?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.existing`
         ],
-      ).toBe("value");
+      ).toBe('"value"');
       expect(
         child1?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.new`],
       ).toBeUndefined();
@@ -822,10 +822,10 @@ describe("propagateAttributes", () => {
         child2?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.existing`
         ],
-      ).toBe("value");
+      ).toBe('"value"');
       expect(
         child2?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.new`],
-      ).toBe("value2");
+      ).toBe('"value2"');
     });
 
     it("should merge metadata across nested contexts", async () => {
@@ -865,12 +865,12 @@ describe("propagateAttributes", () => {
         spanOuter1?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.level`
         ],
-      ).toBe("outer");
+      ).toBe('"outer"');
       expect(
         spanOuter1?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.shared`
         ],
-      ).toBe("outer");
+      ).toBe('"outer"');
       expect(
         spanOuter1?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.extra`
@@ -882,29 +882,29 @@ describe("propagateAttributes", () => {
         spanInner?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.level`
         ],
-      ).toBe("outer");
+      ).toBe('"outer"');
       expect(
         spanInner?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.shared`
         ],
-      ).toBe("inner");
+      ).toBe('"inner"');
       expect(
         spanInner?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.extra`
         ],
-      ).toBe("inner");
+      ).toBe('"inner"');
 
       // spanOuter2: {level: "outer", shared: "outer"} (restored)
       expect(
         spanOuter2?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.level`
         ],
-      ).toBe("outer");
+      ).toBe('"outer"');
       expect(
         spanOuter2?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.shared`
         ],
-      ).toBe("outer");
+      ).toBe('"outer"');
       expect(
         spanOuter2?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.extra`
@@ -934,13 +934,13 @@ describe("propagateAttributes", () => {
       // All three keys should be present
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
-      ).toBe("value2");
+      ).toBe('"value2"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key3`],
-      ).toBe("value3");
+      ).toBe('"value3"');
     });
 
     it("should handle empty metadata object in merge", async () => {
@@ -963,7 +963,7 @@ describe("propagateAttributes", () => {
       // key1 should still be present
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
     });
 
     it("should handle undefined metadata in subsequent calls", async () => {
@@ -986,7 +986,7 @@ describe("propagateAttributes", () => {
       // Both metadata and userId should be present
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
       expect(child?.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
         "user123",
       );
@@ -1017,12 +1017,12 @@ describe("propagateAttributes", () => {
       // valid and additional should be present, invalid should be dropped
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.valid`],
-      ).toBe("ok");
+      ).toBe('"ok"');
       expect(
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.additional`
         ],
-      ).toBe("value");
+      ).toBe('"value"');
       expect(
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.invalid`
@@ -1059,10 +1059,10 @@ describe("propagateAttributes", () => {
       );
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
-      ).toBe("value2");
+      ).toBe('"value2"');
     });
 
     it("should merge metadata when only metadata is being updated", async () => {
@@ -1098,10 +1098,10 @@ describe("propagateAttributes", () => {
       ).toBe("session1");
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
-      ).toBe("value2");
+      ).toBe('"value2"');
     });
   });
 
@@ -1327,12 +1327,12 @@ describe("propagateAttributes", () => {
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.valid_key`
         ],
-      ).toBe("valid_value");
+      ).toBe('"valid_value"');
       expect(
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.another_valid`
         ],
-      ).toBe("ok");
+      ).toBe('"ok"');
       expect(
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.invalid_key`
@@ -1366,12 +1366,12 @@ describe("propagateAttributes", () => {
                 const key1Entry = entries.find(
                   ([key]) => key === "langfuse_metadata_key1",
                 );
-                expect(key1Entry?.[1].value).toBe("value1");
+                expect(key1Entry?.[1].value).toBe('"value1"');
 
                 const key2Entry = entries.find(
                   ([key]) => key === "langfuse_metadata_key2",
                 );
-                expect(key2Entry?.[1].value).toBe("value2");
+                expect(key2Entry?.[1].value).toBe('"value2"');
 
                 // Child span should also have both metadata keys
                 const child = startObservation("child");
@@ -1389,10 +1389,10 @@ describe("propagateAttributes", () => {
 
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
       expect(
         child?.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
-      ).toBe("value2");
+      ).toBe('"value2"');
     });
 
     it("should set baggage when asBaggage=true", async () => {
@@ -1449,7 +1449,7 @@ describe("propagateAttributes", () => {
             const envEntry = entries.find(
               ([key]) => key === "langfuse_metadata_env",
             );
-            expect(envEntry?.[1].value).toBe("test");
+            expect(envEntry?.[1].value).toBe('"test"');
           },
         );
         parentSpan.end();
@@ -1499,7 +1499,7 @@ describe("propagateAttributes", () => {
         child?.attributes[
           `${LangfuseOtelSpanAttributes.TRACE_METADATA}.source`
         ],
-      ).toBe("baggage");
+      ).toBe('"baggage"');
     });
 
     it("should not set baggage when asBaggage=false (default)", async () => {
@@ -2158,18 +2158,18 @@ describe("propagateAttributes", () => {
       const context = ROOT_CONTEXT.setValue(
         LangfuseOtelContextKeys["metadata"],
         {
-          key1: "value1",
-          key2: "value2",
+          key1: '"value1"',
+          key2: '"value2"',
         },
       );
       const attributes = getPropagatedAttributesFromContext(context);
 
       expect(
         attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key1`],
-      ).toBe("value1");
+      ).toBe('"value1"');
       expect(
         attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.key2`],
-      ).toBe("value2");
+      ).toBe('"value2"');
     });
 
     it("should read prompt from context", () => {

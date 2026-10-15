@@ -1,23 +1,65 @@
 import {
   LangfuseAPIClient,
-  IngestionEvent,
   getEnv,
   generateUUID,
   ScoreBody,
   getGlobalLogger,
   LogLevel,
   safeSetTimeout,
-  IngestionResponse,
+  LangfuseAPITimeoutError,
+  type CreateScoreRequest,
+  type CreateScoresResponse,
+  type CreateScoreBatchResults,
 } from "@langfuse/core";
 import { Span, trace } from "@opentelemetry/api";
 
+type ScoreInput = ScoreBody & {
+  /**
+   * ISO 8601 timestamp of the score. Defaults to the time the score is queued.
+   * To update an existing score, send it again with the same `id` and
+   * `timestamp`.
+   */
+  timestamp?: string;
+};
+
 const MAX_QUEUE_SIZE = 100_000; // prevent memory leaks
 const MAX_BATCH_SIZE = 100;
+const MAX_BATCH_ATTEMPTS_ON_TIMEOUT = 2;
+function isPartialBatchResult(
+  response: CreateScoresResponse | undefined,
+): response is CreateScoreBatchResults {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "rejected" in response &&
+    "errors" in response
+  );
+}
+
+function getScoreValidationError(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null) {
+    return "score data must be an object";
+  }
+
+  const { name, value } = data as Partial<ScoreBody>;
+  if (typeof name !== "string" || name.length === 0) {
+    return "'name' must be a non-empty string";
+  }
+
+  const isValidValue =
+    typeof value === "string" ||
+    (typeof value === "number" && Number.isFinite(value));
+  if (!isValidValue) {
+    return `'value' of score '${name}' must be a finite number or a string`;
+  }
+
+  return undefined;
+}
 
 /**
- * Manager for creating and batching score events in Langfuse.
+ * Manager for creating and batching scores in Langfuse.
  *
- * The ScoreManager handles automatic batching and flushing of score events
+ * The ScoreManager handles automatic batching and flushing of scores
  * to optimize API usage. Scores are automatically sent when the queue reaches
  * a certain size or after a time interval.
  *
@@ -25,20 +67,26 @@ const MAX_BATCH_SIZE = 100;
  */
 export class ScoreManager {
   private apiClient: LangfuseAPIClient;
-  private eventQueue: IngestionEvent[] = [];
+  private scoreQueue: CreateScoreRequest[] = [];
   private flushPromise: Promise<void> | null = null;
   private flushTimer: any = null;
   private flushAtCount: number;
   private flushIntervalSeconds: number;
+  private timeoutSeconds: number | undefined;
 
   /**
    * Creates a new ScoreManager instance.
    *
-   * @param params - Configuration object containing the API client
+   * @param params - Configuration object containing the API client and the
+   *   per-request timeout in seconds for score requests
    * @internal
    */
-  constructor(params: { apiClient: LangfuseAPIClient }) {
+  constructor(params: {
+    apiClient: LangfuseAPIClient;
+    timeoutSeconds?: number;
+  }) {
     this.apiClient = params.apiClient;
+    this.timeoutSeconds = params.timeoutSeconds;
 
     const envFlushAtCount = getEnv("LANGFUSE_FLUSH_AT");
     const envFlushIntervalSeconds = getEnv("LANGFUSE_FLUSH_INTERVAL");
@@ -54,11 +102,15 @@ export class ScoreManager {
   }
 
   /**
-   * Creates a new score event and adds it to the processing queue.
+   * Creates a new score and adds it to the processing queue.
    *
    * Scores are queued and sent in batches for efficiency. The score will be
    * automatically sent when the queue reaches the flush threshold or after
    * the flush interval expires.
+   *
+   * This method never throws. Invalid scores (missing or empty `name`, or a
+   * `value` that is neither a finite number nor a string) are logged at error
+   * level and dropped. Unexpected errors are logged as well.
    *
    * @param data - The score data to create
    *
@@ -72,36 +124,45 @@ export class ScoreManager {
    * });
    * ```
    */
-  public create(data: ScoreBody): void {
-    const scoreData: ScoreBody = {
+  public create(data: ScoreInput): void {
+    try {
+      this.enqueue(data);
+    } catch (err) {
+      this.logger.error("Failed to create score. Dropping score.", err);
+    }
+  }
+
+  private enqueue(data: ScoreInput): void {
+    const validationError = getScoreValidationError(data);
+    if (validationError) {
+      this.logger.error(`Invalid score: ${validationError}. Dropping score.`);
+
+      return;
+    }
+
+    const score = {
       ...data,
       id: data.id ?? generateUUID(),
       environment: data.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT"),
-    };
+      timestamp: data.timestamp ?? new Date().toISOString(),
+    } as CreateScoreRequest;
 
-    const scoreIngestionEvent: IngestionEvent = {
-      id: generateUUID(),
-      type: "score-create",
-      timestamp: new Date().toISOString(),
-      body: scoreData,
-    };
-
-    if (this.eventQueue.length >= MAX_QUEUE_SIZE) {
+    if (this.scoreQueue.length >= MAX_QUEUE_SIZE) {
       this.logger.error(
         `Score queue is at max size ${MAX_QUEUE_SIZE}. Dropping score.`,
       );
       return;
     }
 
-    this.eventQueue.push(scoreIngestionEvent);
     if (this.logger.isLevelEnabled(LogLevel.DEBUG)) {
       this.logger.debug(
-        "Added score event to queue:\n",
-        JSON.stringify(scoreIngestionEvent, null, 2),
+        "Adding score to queue:\n",
+        JSON.stringify(score, null, 2),
       );
     }
+    this.scoreQueue.push(score);
 
-    if (this.eventQueue.length >= this.flushAtCount) {
+    if (this.scoreQueue.length >= this.flushAtCount) {
       void this.startFlush();
     } else if (!this.flushTimer) {
       this.flushTimer = safeSetTimeout(() => {
@@ -133,17 +194,21 @@ export class ScoreManager {
   public observation(
     observation: { otelSpan: Span },
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const { spanId, traceId } = observation.otelSpan.spanContext();
+    try {
+      const { spanId, traceId } = observation.otelSpan.spanContext();
 
-    this.create({
-      ...data,
-      traceId,
-      observationId: spanId,
-    });
+      this.create({
+        ...data,
+        traceId,
+        observationId: spanId,
+      });
+    } catch (err) {
+      this.logger.error("Failed to score observation. Dropping score.", err);
+    }
   }
 
   /**
@@ -169,16 +234,20 @@ export class ScoreManager {
   public trace(
     observation: { otelSpan: Span },
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const { traceId } = observation.otelSpan.spanContext();
+    try {
+      const { traceId } = observation.otelSpan.spanContext();
 
-    this.create({
-      ...data,
-      traceId,
-    });
+      this.create({
+        ...data,
+        traceId,
+      });
+    } catch (err) {
+      this.logger.error("Failed to score trace. Dropping score.", err);
+    }
   }
 
   /**
@@ -205,24 +274,31 @@ export class ScoreManager {
    */
   public activeObservation(
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const currentOtelSpan = trace.getActiveSpan();
-    if (!currentOtelSpan) {
-      this.logger.warn("No active span in context to score.");
+    try {
+      const currentOtelSpan = trace.getActiveSpan();
+      if (!currentOtelSpan) {
+        this.logger.warn("No active span in context to score.");
 
-      return;
+        return;
+      }
+
+      const { spanId, traceId } = currentOtelSpan.spanContext();
+
+      this.create({
+        ...data,
+        traceId,
+        observationId: spanId,
+      });
+    } catch (err) {
+      this.logger.error(
+        "Failed to score active observation. Dropping score.",
+        err,
+      );
     }
-
-    const { spanId, traceId } = currentOtelSpan.spanContext();
-
-    this.create({
-      ...data,
-      traceId,
-      observationId: spanId,
-    });
   }
 
   /**
@@ -250,30 +326,70 @@ export class ScoreManager {
    */
   public activeTrace(
     data: Omit<
-      ScoreBody,
+      ScoreInput,
       "traceId" | "sessionId" | "observationId" | "datasetRunId"
     >,
   ) {
-    const currentOtelSpan = trace.getActiveSpan();
-    if (!currentOtelSpan) {
-      this.logger.warn("No active span in context to score trace.");
+    try {
+      const currentOtelSpan = trace.getActiveSpan();
+      if (!currentOtelSpan) {
+        this.logger.warn("No active span in context to score trace.");
 
-      return;
+        return;
+      }
+
+      const { traceId } = currentOtelSpan.spanContext();
+
+      this.create({
+        ...data,
+        traceId,
+      });
+    } catch (err) {
+      this.logger.error("Failed to score active trace. Dropping score.", err);
     }
-
-    const { traceId } = currentOtelSpan.spanContext();
-
-    this.create({
-      ...data,
-      traceId,
-    });
   }
 
   /**
-   * Starts a flush of the events currently in the queue, or returns the flush
+   * Sends one batch to `POST /api/public/scores`. The API client does not
+   * retry requests that time out, so a timed-out batch is sent once more
+   * before its scores are dropped. A partially accepted batch (HTTP 207) is
+   * not retried: the rejected scores failed validation and would fail again.
+   */
+  private async sendBatch(batch: CreateScoreRequest[]): Promise<void> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const res = await this.apiClient.scores.create(batch, {
+          timeoutInSeconds: this.timeoutSeconds,
+        });
+        if (isPartialBatchResult(res) && res.rejected > 0) {
+          this.logger.error(
+            `Langfuse rejected ${res.rejected} of ${batch.length} scores in batch:`,
+            res.errors,
+          );
+        }
+
+        return;
+      } catch (err) {
+        if (
+          err instanceof LangfuseAPITimeoutError &&
+          attempt < MAX_BATCH_ATTEMPTS_ON_TIMEOUT
+        ) {
+          this.logger.warn("Score batch request timed out. Retrying once.");
+          continue;
+        }
+
+        this.logger.error("Failed to export score batch:", err);
+
+        return;
+      }
+    }
+  }
+
+  /**
+   * Starts a flush of the scores currently in the queue, or returns the flush
    * that is already in flight. Only one flush runs at a time.
    *
-   * The returned promise never rejects. Events queued after the in-flight
+   * The returned promise never rejects. Scores queued after the in-flight
    * flush took its snapshot of the queue are not part of it.
    */
   private startFlush(): Promise<void> {
@@ -296,23 +412,12 @@ export class ScoreManager {
         this.flushTimer = null;
       }
 
-      const promises: Promise<IngestionResponse | void>[] = [];
+      const promises: Promise<void>[] = [];
 
-      while (this.eventQueue.length > 0) {
-        const batch = this.eventQueue.splice(0, MAX_BATCH_SIZE);
+      while (this.scoreQueue.length > 0) {
+        const batch = this.scoreQueue.splice(0, MAX_BATCH_SIZE);
 
-        promises.push(
-          this.apiClient.ingestion
-            .batch({ batch })
-            .then((res) => {
-              if (res.errors?.length > 0) {
-                this.logger.error("Error ingesting scores:", res.errors);
-              }
-            })
-            .catch((err) => {
-              this.logger.error("Failed to export score batch:", err);
-            }),
-        );
+        promises.push(this.sendBatch(batch));
       }
 
       await Promise.all(promises);
@@ -322,7 +427,7 @@ export class ScoreManager {
   }
 
   /**
-   * Flushes all pending score events to the Langfuse API.
+   * Flushes all pending scores to the Langfuse API.
    *
    * This method ensures all queued scores are sent immediately rather than
    * waiting for the automatic flush interval or batch size threshold.
@@ -336,9 +441,9 @@ export class ScoreManager {
    * ```
    */
   public async flush(): Promise<void> {
-    // A flush that is already in flight only covers the events that were
+    // A flush that is already in flight only covers the scores that were
     // queued when it started, so keep going until the queue is drained.
-    while (this.flushPromise || this.eventQueue.length > 0) {
+    while (this.flushPromise || this.scoreQueue.length > 0) {
       await this.startFlush();
     }
   }

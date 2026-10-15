@@ -8,15 +8,12 @@ import { AnnotationQueues } from "./api/resources/annotationQueues/client/Client
 import { BlobStorageIntegrations } from "./api/resources/blobStorageIntegrations/client/Client.js";
 import { Comments } from "./api/resources/comments/client/Client.js";
 import { DatasetItems } from "./api/resources/datasetItems/client/Client.js";
-import { DatasetRunItems } from "./api/resources/datasetRunItems/client/Client.js";
 import { Datasets } from "./api/resources/datasets/client/Client.js";
 import { EvaluationRules } from "./api/resources/evaluationRules/client/Client.js";
 import { Evaluators } from "./api/resources/evaluators/client/Client.js";
 import { Experiments } from "./api/resources/experiments/client/Client.js";
 import { Feedback } from "./api/resources/feedback/client/Client.js";
 import { Health } from "./api/resources/health/client/Client.js";
-import { Ingestion } from "./api/resources/ingestion/client/Client.js";
-import { Legacy } from "./api/resources/legacy/client/Client.js";
 import { LlmConnections } from "./api/resources/llmConnections/client/Client.js";
 import { Media } from "./api/resources/media/client/Client.js";
 import { Metrics } from "./api/resources/metrics/client/Client.js";
@@ -29,9 +26,7 @@ import { PromptVersion } from "./api/resources/promptVersion/client/Client.js";
 import { Prompts } from "./api/resources/prompts/client/Client.js";
 import { Scim } from "./api/resources/scim/client/Client.js";
 import { ScoreConfigs } from "./api/resources/scoreConfigs/client/Client.js";
-import { ScoresV3 } from "./api/resources/scoresV3/client/Client.js";
 import { Scores } from "./api/resources/scores/client/Client.js";
-import { Sessions } from "./api/resources/sessions/client/Client.js";
 import { Trace } from "./api/resources/trace/client/Client.js";
 import { Unstable } from "./api/resources/unstable/client/Client.js";
 
@@ -84,15 +79,12 @@ export class LangfuseAPIClient {
   protected _blobStorageIntegrations: BlobStorageIntegrations | undefined;
   protected _comments: Comments | undefined;
   protected _datasetItems: DatasetItems | undefined;
-  protected _datasetRunItems: DatasetRunItems | undefined;
   protected _datasets: Datasets | undefined;
   protected _evaluationRules: EvaluationRules | undefined;
   protected _evaluators: Evaluators | undefined;
   protected _experiments: Experiments | undefined;
   protected _feedback: Feedback | undefined;
   protected _health: Health | undefined;
-  protected _ingestion: Ingestion | undefined;
-  protected _legacy: Legacy | undefined;
   protected _llmConnections: LlmConnections | undefined;
   protected _media: Media | undefined;
   protected _metrics: Metrics | undefined;
@@ -105,9 +97,7 @@ export class LangfuseAPIClient {
   protected _prompts: Prompts | undefined;
   protected _scim: Scim | undefined;
   protected _scoreConfigs: ScoreConfigs | undefined;
-  protected _scoresV3: ScoresV3 | undefined;
   protected _scores: Scores | undefined;
-  protected _sessions: Sessions | undefined;
   protected _trace: Trace | undefined;
   protected _unstable: Unstable | undefined;
 
@@ -143,10 +133,6 @@ export class LangfuseAPIClient {
     return (this._datasetItems ??= new DatasetItems(this._options));
   }
 
-  public get datasetRunItems(): DatasetRunItems {
-    return (this._datasetRunItems ??= new DatasetRunItems(this._options));
-  }
-
   public get datasets(): Datasets {
     return (this._datasets ??= new Datasets(this._options));
   }
@@ -169,14 +155,6 @@ export class LangfuseAPIClient {
 
   public get health(): Health {
     return (this._health ??= new Health(this._options));
-  }
-
-  public get ingestion(): Ingestion {
-    return (this._ingestion ??= new Ingestion(this._options));
-  }
-
-  public get legacy(): Legacy {
-    return (this._legacy ??= new Legacy(this._options));
   }
 
   public get llmConnections(): LlmConnections {
@@ -227,16 +205,8 @@ export class LangfuseAPIClient {
     return (this._scoreConfigs ??= new ScoreConfigs(this._options));
   }
 
-  public get scoresV3(): ScoresV3 {
-    return (this._scoresV3 ??= new ScoresV3(this._options));
-  }
-
   public get scores(): Scores {
     return (this._scores ??= new Scores(this._options));
-  }
-
-  public get sessions(): Sessions {
-    return (this._sessions ??= new Sessions(this._options));
   }
 
   public get trace(): Trace {

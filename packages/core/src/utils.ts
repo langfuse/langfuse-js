@@ -1,3 +1,6 @@
+import { LangfuseOtelSpanAttributes } from "./constants.js";
+import { getGlobalLogger } from "./logger/index.js";
+
 type LangfuseEnvVar =
   | "LANGFUSE_PUBLIC_KEY"
   | "LANGFUSE_SECRET_KEY"
@@ -104,6 +107,38 @@ export async function createExperimentId(): Promise<string> {
 }
 
 /**
+ * Derive the experiment ID of a run on a Langfuse dataset: the first 16 hex
+ * characters of SHA-256 over
+ * `JSON.stringify(["langfuse-experiment-v1", projectId, datasetId, runName])`.
+ *
+ * Runs with the same project, dataset and run name share one experiment, and
+ * the ID matches the one the Langfuse platform and the Python SDK derive for
+ * the same run. Do not change the input layout: it is a cross-SDK contract.
+ * @internal
+ */
+export async function createStableExperimentId(params: {
+  projectId: string;
+  datasetId: string;
+  runName: string;
+}): Promise<string> {
+  const seed = JSON.stringify([
+    "langfuse-experiment-v1",
+    params.projectId,
+    params.datasetId,
+    params.runName,
+  ]);
+  const hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(seed),
+  );
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
+}
+
+/**
  * Generate experiment item ID from input hash (first 16 hex chars of SHA-256).
  * Skips serialization if input is already a string.
  * @internal
@@ -131,4 +166,154 @@ export function serializeValue(value: any): string | undefined {
   if (typeof value === "string") return value;
 
   return JSON.stringify(value);
+}
+
+function isObservationMetadataKey(key: string): boolean {
+  const prefix = LangfuseOtelSpanAttributes.OBSERVATION_METADATA;
+
+  return key === prefix || key.startsWith(`${prefix}.`);
+}
+
+/**
+ * Reads the attribute count limit of an OpenTelemetry SDK span. Returns
+ * `undefined` for spans without SDK limits, such as non-recording spans.
+ */
+function getSpanAttributeCountLimit(span: unknown): number | undefined {
+  // `_spanLimits` is private on the SDK span and has no public accessor
+  const limit = (
+    span as { _spanLimits?: { attributeCountLimit?: unknown } } | undefined
+  )?._spanLimits?.attributeCountLimit;
+
+  return typeof limit === "number" && Number.isFinite(limit)
+    ? limit
+    : undefined;
+}
+
+/**
+ * Drops new observation metadata attributes
+ * (`langfuse.observation.metadata.<key>`) that would exceed the span's
+ * attribute count limit (`spanLimits.attributeCountLimit`, default 128).
+ * OpenTelemetry JS silently drops new attributes once a span is full, so
+ * unbounded metadata would otherwise push out later attributes such as the
+ * output.
+ *
+ * Counts the attributes already on the span, the new keys with non-null
+ * values, and `reservedKeys` that are not on the span yet. Excess new metadata
+ * keys are dropped from the tail. Other attributes are never dropped, and
+ * overwrites of keys already on the span are always kept. Spans without SDK
+ * limits are left alone. Logs one warning if keys are dropped and never
+ * throws.
+ *
+ * @param span - Span the attributes are about to be set on
+ * @param attributes - Attributes about to be set on the span
+ * @param reservedKeys - Keys to keep room for, because they are written later
+ * @returns `attributes` without the dropped metadata keys
+ * @internal
+ */
+export function dropMetadataOverSpanAttributeLimit<
+  T extends Record<string, unknown>,
+>(span: unknown, attributes: T, reservedKeys: readonly string[]): T {
+  try {
+    const limit = getSpanAttributeCountLimit(span);
+    if (limit === undefined) {
+      return attributes;
+    }
+
+    const existing =
+      (span as { attributes?: Record<string, unknown> }).attributes ?? {};
+    const isExisting = (key: string) =>
+      Object.prototype.hasOwnProperty.call(existing, key);
+
+    const newKeys = Object.keys(attributes).filter(
+      (key) => attributes[key] != null && !isExisting(key),
+    );
+    const newKeySet = new Set(newKeys);
+    const reservedCount = new Set(
+      reservedKeys.filter((key) => !isExisting(key) && !newKeySet.has(key)),
+    ).size;
+    const usedCount = Object.keys(existing).length + reservedCount;
+
+    if (usedCount + newKeys.length <= limit) {
+      return attributes;
+    }
+
+    const newMetadataKeys = newKeys.filter(isObservationMetadataKey);
+    const freeSlots = Math.max(
+      0,
+      limit - usedCount - (newKeys.length - newMetadataKeys.length),
+    );
+    const dropped = newMetadataKeys.slice(freeSlots);
+    if (dropped.length === 0) {
+      return attributes;
+    }
+
+    const metadataPrefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+    getGlobalLogger().warn(
+      `Dropped ${dropped.length} metadata key(s) from observation '${(span as { name?: unknown }).name}' ` +
+        `to stay within the span attribute limit of ${limit} (spanLimits.attributeCountLimit / OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT). ` +
+        `Dropped keys include: ${dropped
+          .slice(0, 5)
+          .map((key) =>
+            key.startsWith(metadataPrefix)
+              ? key.slice(metadataPrefix.length)
+              : key,
+          )
+          .join(", ")}`,
+    );
+
+    const droppedKeys = new Set(dropped);
+
+    return Object.fromEntries(
+      Object.entries(attributes).filter(([key]) => !droppedKeys.has(key)),
+    ) as T;
+  } catch {
+    return attributes;
+  }
+}
+
+/**
+ * Serializes an observation metadata value into the JSON string written to
+ * its `langfuse.observation.metadata.<key>` span attribute.
+ *
+ * Every value is JSON-encoded, strings included (`"3"` becomes `"\"3\""`), so
+ * the server can tell the string `"3"` from the number `3` and the string
+ * `'{"a":1}'` from the object `{ a: 1 }`. Bigints, also nested ones, become
+ * JSON numbers if they are in the JS-safe integer range (`10n` becomes `"10"`)
+ * and JSON strings of their decimal digits otherwise (`2n ** 60n` becomes
+ * `"\"1152921504606846976\""`), matching the Python SDK. `NaN` and
+ * `±Infinity`, also nested, become the JSON strings `"NaN"`, `"Infinity"` and
+ * `"-Infinity"` instead of `null`, also matching the Python SDK. A value that fails to serialize becomes the JSON string `"\"<failed to serialize>\""`. `null`, `undefined`,
+ * functions and symbols return undefined and are not written.
+ *
+ * @param value - Metadata value to serialize
+ * @returns JSON string, or undefined if the value is not written
+ * @internal
+ */
+export function serializeMetadataValue(value: unknown): string | undefined {
+  if (
+    value == null ||
+    typeof value === "function" ||
+    typeof value === "symbol"
+  ) {
+    return undefined;
+  }
+
+  try {
+    // JSON.stringify returns undefined if a toJSON method returns undefined
+    return JSON.stringify(value, (_, v) => {
+      if (typeof v === "number" && !Number.isFinite(v)) {
+        // JSON.stringify would write null
+        return String(v);
+      }
+
+      if (typeof v !== "bigint") return v;
+
+      return v >= BigInt(Number.MIN_SAFE_INTEGER) &&
+        v <= BigInt(Number.MAX_SAFE_INTEGER)
+        ? Number(v)
+        : v.toString();
+    }) as string | undefined;
+  } catch {
+    return JSON.stringify("<failed to serialize>");
+  }
 }

@@ -4,7 +4,6 @@ import type { Document } from "@langchain/core/documents";
 import type { Serialized } from "@langchain/core/load/serializable";
 import {
   AIMessage,
-  AIMessageChunk,
   BaseMessage,
   type UsageMetadata,
   type BaseMessageFields,
@@ -23,6 +22,7 @@ import {
   LangfuseGenerationAttributes,
   LangfuseSpanAttributes,
   propagateAttributes,
+  type PropagateAttributesParams,
 } from "@langfuse/tracing";
 
 const LANGSMITH_HIDDEN_TAG = "langsmith:hidden";
@@ -77,6 +77,9 @@ export class CallbackHandler extends BaseCallbackHandler {
   private completionStartTimes: Record<string, Date> = {};
   private promptToParentRunMap;
   private runMap: Map<string, TrackedObservation> = new Map();
+  // Child runs start in later callbacks, outside the root's propagation context
+  private traceAttributesMap: Map<string, PropagateAttributesParams> =
+    new Map();
 
   public last_trace_id: string | null = null;
 
@@ -145,7 +148,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof inputs === "object" &&
         "input" in inputs &&
         Array.isArray(inputs["input"]) &&
-        inputs["input"].every((m: unknown) => m instanceof BaseMessage)
+        inputs["input"].every((m: unknown) => BaseMessage.isInstance(m))
       ) {
         finalInput = inputs["input"].map((m: BaseMessage) =>
           this.extractChatMessageContent(m),
@@ -154,7 +157,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof inputs === "object" &&
         "messages" in inputs &&
         Array.isArray(inputs["messages"]) &&
-        inputs["messages"].every((m: unknown) => m instanceof BaseMessage)
+        inputs["messages"].every((m: unknown) => BaseMessage.isInstance(m))
       ) {
         finalInput = inputs["messages"].map((m: BaseMessage) =>
           this.extractChatMessageContent(m),
@@ -187,48 +190,25 @@ export class CallbackHandler extends BaseCallbackHandler {
             ? metadata["langfuseSessionId"]
             : this.sessionId;
 
-        const traceMetadata = this.traceMetadata
-          ? Object.fromEntries(
-              Object.entries(this.traceMetadata).map(([k, v]) => [
-                k,
-                typeof v === "string" ? v : JSON.stringify(v),
-              ]),
-            )
-          : undefined;
-
-        propagateAttributes(
-          {
-            tags: traceTags,
-            userId: traceUserId,
-            sessionId: traceSessionId,
-            metadata: traceMetadata,
-            version: this.version,
-          },
-          () => {
-            this.startAndRegisterOtelSpan({
-              runName,
-              parentRunId,
-              runId,
-              tags,
-              metadata,
-              attributes: {
-                input: finalInput,
-              },
-            });
-          },
-        );
-      } else {
-        this.startAndRegisterOtelSpan({
-          runName,
-          parentRunId,
-          runId,
-          tags,
-          metadata,
-          attributes: {
-            input: finalInput,
-          },
+        this.traceAttributesMap.set(runId, {
+          tags: traceTags,
+          userId: traceUserId,
+          sessionId: traceSessionId,
+          metadata: this.traceMetadata,
+          version: this.version,
         });
       }
+
+      this.startAndRegisterOtelSpan({
+        runName,
+        parentRunId,
+        runId,
+        tags,
+        metadata,
+        attributes: {
+          input: finalInput,
+        },
+      });
     } catch (e) {
       this.logger.debug(e instanceof Error ? e.message : String(e));
     }
@@ -433,7 +413,7 @@ export class CallbackHandler extends BaseCallbackHandler {
         typeof outputs === "object" &&
         "messages" in outputs &&
         Array.isArray(outputs["messages"]) &&
-        outputs["messages"].every((m: unknown) => m instanceof BaseMessage)
+        outputs["messages"].every((m: unknown) => BaseMessage.isInstance(m))
       ) {
         finalOutput = {
           messages: outputs.messages.map((message: BaseMessage) =>
@@ -804,7 +784,14 @@ export class CallbackHandler extends BaseCallbackHandler {
       ? this.runMap.get(parentRunId)?.otelSpan.spanContext()
       : undefined;
 
-    const observation =
+    const traceAttributes =
+      this.traceAttributesMap.get(runId) ??
+      (parentRunId ? this.traceAttributesMap.get(parentRunId) : undefined);
+    if (traceAttributes) {
+      this.traceAttributesMap.set(runId, traceAttributes);
+    }
+
+    const observation = propagateAttributes(traceAttributes ?? {}, () =>
       type === "generation"
         ? startActiveObservation(
             runName,
@@ -841,7 +828,8 @@ export class CallbackHandler extends BaseCallbackHandler {
                 parentSpanContext,
                 endOnExit: false,
               },
-            );
+            ),
+    );
     this.runMap.set(runId, observation);
 
     return observation;
@@ -875,6 +863,7 @@ export class CallbackHandler extends BaseCallbackHandler {
 
     this.last_trace_id = span.traceId;
     this.runMap.delete(runId);
+    this.traceAttributesMap.delete(runId);
   }
   private parseAzureRefusalError(err: any): string {
     // Azure has the refusal status for harmful messages in the error property
@@ -934,14 +923,9 @@ export class CallbackHandler extends BaseCallbackHandler {
     generation: Generation,
   ): UsageMetadata | undefined {
     try {
-      const usageMetadata =
-        "message" in generation &&
-        (generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk)
-          ? generation["message"].usage_metadata
-          : undefined;
-
-      return usageMetadata;
+      return "message" in generation && AIMessage.isInstance(generation.message)
+        ? generation.message.usage_metadata
+        : undefined;
     } catch (err) {
       this.logger.debug(`Error extracting usage metadata: ${err}`);
 
@@ -951,10 +935,8 @@ export class CallbackHandler extends BaseCallbackHandler {
 
   private extractModelNameFromMetadata(generation: any): string | undefined {
     try {
-      return "message" in generation &&
-        (generation["message"] instanceof AIMessage ||
-          generation["message"] instanceof AIMessageChunk)
-        ? generation["message"].response_metadata.model_name
+      return "message" in generation && AIMessage.isInstance(generation.message)
+        ? generation.message.response_metadata.model_name
         : undefined;
     } catch {}
   }
@@ -964,14 +946,14 @@ export class CallbackHandler extends BaseCallbackHandler {
   ): LlmMessage | AnonymousLlmMessage | MessageContent {
     let response = undefined;
 
-    if (message.getType() === "human") {
+    if (message.type === "human") {
       response = { content: message.content, role: "user" };
-    } else if (message.getType() === "generic") {
+    } else if (message.type === "generic") {
       response = {
         content: message.content,
         role: "human",
       };
-    } else if (message.getType() === "ai") {
+    } else if (message.type === "ai") {
       response = { content: message.content, role: "assistant" };
 
       if (
@@ -988,16 +970,16 @@ export class CallbackHandler extends BaseCallbackHandler {
         (response as any)["tool_calls"] =
           message["additional_kwargs"]["tool_calls"];
       }
-    } else if (message.getType() === "system") {
+    } else if (message.type === "system") {
       response = { content: message.content, role: "system" };
-    } else if (message.getType() === "function") {
+    } else if (message.type === "function") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,
         role: "function",
         name: message.name,
       };
-    } else if (message.getType() === "tool") {
+    } else if (message.type === "tool") {
       response = {
         content: message.content,
         additional_kwargs: message.additional_kwargs,

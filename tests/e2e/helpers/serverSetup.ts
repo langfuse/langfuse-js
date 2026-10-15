@@ -73,13 +73,3 @@ export async function teardownServerTestEnvironment(
     console.warn("Error during E2E test environment teardown:", error);
   }
 }
-
-/**
- * Helper to wait for server-side ingestion processing
- * After forcing flush, we need to wait for async server-side processing
- */
-export async function waitForServerIngestion(
-  delayMs: number = 2000,
-): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, delayMs));
-}

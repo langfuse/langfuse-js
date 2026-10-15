@@ -406,6 +406,7 @@ export class Dashboards {
    * Get a dashboard by id.
    *
    * @param {string} dashboardId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
@@ -426,6 +427,7 @@ export class Dashboards {
    */
   public get(
     dashboardId: string,
+    request: Record<string, never> = {},
     requestOptions?: Dashboards.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.unstable.Dashboard> {
     return core.HttpResponsePromise.fromPromise(
@@ -743,6 +745,7 @@ export class Dashboards {
    * Delete a dashboard.
    *
    * @param {string} dashboardId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
@@ -763,6 +766,7 @@ export class Dashboards {
    */
   public delete(
     dashboardId: string,
+    request: Record<string, never> = {},
     requestOptions?: Dashboards.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteDashboardResponse> {
     return core.HttpResponsePromise.fromPromise(
@@ -1281,6 +1285,7 @@ export class Dashboards {
    *
    * @param {string} dashboardId
    * @param {string} placementId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Dashboards.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.unstable.BadRequestError}
@@ -1302,6 +1307,7 @@ export class Dashboards {
   public deletePlacement(
     dashboardId: string,
     placementId: string,
+    request: Record<string, never> = {},
     requestOptions?: Dashboards.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.unstable.DeleteDashboardPlacementResponse> {
     return core.HttpResponsePromise.fromPromise(

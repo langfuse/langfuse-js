@@ -13,16 +13,19 @@ import {
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import {
   AIMessage,
+  AIMessageChunk,
   FunctionMessage,
   HumanMessage,
   ToolMessage,
 } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
+import type { ChatGeneration } from "@langchain/core/outputs";
+import { RunnableLambda } from "@langchain/core/runnables";
 import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";
 import {
@@ -97,6 +100,43 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       "The result is: 100",
     );
+  });
+
+  it("should keep the output when run metadata exceeds the attribute limit", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    const echoTool = new DynamicTool({
+      name: "echo",
+      description: "Echoes the input",
+      func: async (input: string) => input,
+    });
+
+    const metadata = Object.fromEntries(
+      Array.from({ length: 150 }, (_, i) => [`key${i}`, i]),
+    );
+
+    try {
+      await echoTool.invoke("hi", {
+        callbacks: [new CallbackHandler()],
+        metadata,
+      });
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "echo",
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+        "hi",
+      );
+      expect(assertions.expectSpanWithName("echo").droppedAttributesCount).toBe(
+        0,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("span attribute limit of 128"),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("should not mark LangGraph interrupts as errors", async () => {
@@ -327,6 +367,49 @@ describe("LangChain callback handler integration tests", () => {
     );
   });
 
+  it("should propagate trace attributes to child observations", async () => {
+    const handler = new CallbackHandler({
+      sessionId: "session-1",
+      userId: "user-1",
+      tags: ["handler-tag"],
+      traceMetadata: { team: "core" },
+    });
+    const model = new FakeStreamingChatModel({
+      responses: [new AIMessage("Hi!")],
+    });
+    const chain = RunnableLambda.from((input: string) => [
+      new HumanMessage(input),
+    ]).pipe(model);
+
+    await chain.invoke("Hello", { callbacks: [handler] });
+
+    await waitForSpanExport(testEnv.mockExporter, 2);
+
+    const spans = testEnv.mockExporter.exportedSpans;
+    expect(
+      spans.some(
+        (span) =>
+          span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_TYPE] ===
+          "generation",
+      ),
+    ).toBe(true);
+
+    for (const span of spans) {
+      expect(span.attributes[LangfuseOtelSpanAttributes.TRACE_SESSION_ID]).toBe(
+        "session-1",
+      );
+      expect(span.attributes[LangfuseOtelSpanAttributes.TRACE_USER_ID]).toBe(
+        "user-1",
+      );
+      expect(span.attributes[LangfuseOtelSpanAttributes.TRACE_TAGS]).toEqual([
+        "handler-tag",
+      ]);
+      expect(
+        span.attributes[`${LangfuseOtelSpanAttributes.TRACE_METADATA}.team`],
+      ).toBe('"core"');
+    }
+  });
+
   it("should record completion start time from chat model stream events", async () => {
     class StreamEventPreferringHandler extends BaseCallbackHandler {
       name = "StreamEventPreferringHandler";
@@ -425,5 +508,53 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       '{"content":"1874.32","additional_kwargs":{},"role":"function","name":"get_debt"}',
     );
+  });
+
+  it("should read usage and model name from streamed AIMessageChunk generations", async () => {
+    const handler = new CallbackHandler();
+    const runId = "generation-with-chunk-usage";
+
+    await handler.handleChatModelStart(
+      { id: ["ChatOpenAI"] } as any,
+      [[new HumanMessage("hi")]],
+      runId,
+      undefined,
+      { invocation_params: {} },
+    );
+    await handler.handleLLMEnd(
+      {
+        generations: [
+          [
+            {
+              text: "hello",
+              message: new AIMessageChunk({
+                content: "hello",
+                usage_metadata: {
+                  input_tokens: 10,
+                  output_tokens: 5,
+                  total_tokens: 15,
+                },
+                response_metadata: { model_name: "gpt-4.1-mini-2025-04-14" },
+              }),
+            } as ChatGeneration,
+          ],
+        ],
+      },
+      runId,
+    );
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const generation = assertions.expectSpanWithName("ChatOpenAI");
+    expect(
+      generation.attributes[LangfuseOtelSpanAttributes.OBSERVATION_MODEL],
+    ).toBe("gpt-4.1-mini-2025-04-14");
+    expect(
+      JSON.parse(
+        generation.attributes[
+          LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS
+        ] as string,
+      ),
+    ).toEqual({ input: 10, output: 5, total: 15 });
   });
 });
