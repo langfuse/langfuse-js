@@ -9,6 +9,7 @@ import * as LangfuseAPI from "../../../index.js";
  */
 export interface ScoreConfig {
   id: string;
+  /** Score config name. Maximum 80 characters. */
   name: string;
   createdAt: string;
   updatedAt: string;

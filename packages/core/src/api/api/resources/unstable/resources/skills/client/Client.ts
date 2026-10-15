@@ -349,7 +349,7 @@ export class Skills {
   }
 
   /**
-   * Resolve a skill's metadata and file manifest by version or label. Defaults to the production label. Use each file's sha256Hash with getFileContents, individually or in batches across manifests.
+   * Resolve a skill's metadata and file manifest by version or label. Defaults to the production label. Set includeContent to return file contents inline, or use each file's sha256Hash with getFileContents.
    *
    * @param {string} skillName
    * @param {LangfuseAPI.unstable.GetSkillRequest} request
@@ -379,7 +379,7 @@ export class Skills {
     request: LangfuseAPI.unstable.GetSkillRequest = {},
     requestOptions?: Skills.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.unstable.SkillVersion>> {
-    const { version, label } = request;
+    const { version, label, includeContent } = request;
     const _queryParams: Record<
       string,
       string | string[] | object | object[] | null
@@ -390,6 +390,10 @@ export class Skills {
 
     if (label != null) {
       _queryParams["label"] = label;
+    }
+
+    if (includeContent != null) {
+      _queryParams["includeContent"] = includeContent.toString();
     }
 
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
