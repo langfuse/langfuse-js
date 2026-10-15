@@ -7,6 +7,7 @@ settings:
 overrides:
   '@grpc/proto-loader@0.8.1>protobufjs': 7.6.4
   ml-spectra-processing: 14.14.0
+  undici@<7.29.1: 7.29.1
 
 importers:
 
@@ -3843,16 +3844,8 @@ packages:
   undici-types@7.8.0:
     resolution: {integrity: sha512-9UJ2xGDvQ43tYyVMpuHlsgApydB8ZKfVYTsLDhXkFL/6gfkp+U8xTGdh8pMJv1SpZna0zxG1DwsKZsreLbXBxw==}
 
-  undici@7.24.5:
-    resolution: {integrity: sha512-3IWdCpjgxp15CbJnsi/Y9TCDE7HWVN19j1hmzVhoAkY/+CJx449tVxT5wZc1Gwg8J+P0LWvzlBzxYRnHJ+1i7Q==}
-    engines: {node: '>=20.18.1'}
-
-  undici@7.27.2:
-    resolution: {integrity: sha512-uZsKNuzQxDMUY6M3pIMvy5tvlGmtq8XJ2oLAkfRKGNu+1VQAIvLy2xIVG5ATZl5wDXl/tddByAWCizRbOme+TA==}
-    engines: {node: '>=20.18.1'}
-
-  undici@7.29.0:
-    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+  undici@7.29.1:
+    resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
     engines: {node: '>=20.18.1'}
 
   universal-user-agent@7.0.3:
@@ -4133,7 +4126,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.0.8
-      undici: 7.29.0
+      undici: 7.29.1
       zod: 3.25.76
 
   '@ai-sdk/provider@2.0.0':
@@ -5785,7 +5778,7 @@ snapshots:
       parse5: 7.3.0
       parse5-htmlparser2-tree-adapter: 7.1.0
       parse5-parser-stream: 7.1.2
-      undici: 7.27.2
+      undici: 7.29.1
       whatwg-mimetype: 4.0.0
 
   cheminfo-types@1.8.1: {}
@@ -6885,7 +6878,7 @@ snapshots:
     dependencies:
       '@babel/parser': 7.29.7
       '@babel/types': 7.29.7
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
     optional: true
 
   markdown-it@14.1.0:
@@ -7349,7 +7342,7 @@ snapshots:
       proxy-agent: 7.0.0
       semver: 7.7.4
       tinyglobby: 0.2.15
-      undici: 7.24.5
+      undici: 7.29.1
       url-join: 5.0.0
       wildcard-match: 5.1.4
       yargs-parser: 22.0.0
@@ -7837,11 +7830,7 @@ snapshots:
 
   undici-types@7.8.0: {}
 
-  undici@7.24.5: {}
-
-  undici@7.27.2: {}
-
-  undici@7.29.0: {}
+  undici@7.29.1: {}
 
   universal-user-agent@7.0.3: {}
 
