@@ -6,7 +6,7 @@ import {
 import type OpenAI from "openai";
 
 import {
-  getToolCallOutput,
+  getStreamOutput,
   parseChunk,
   parseCompletionOutput,
   parseInputArgs,
@@ -236,17 +236,13 @@ function wrapAsyncIterable<R>(
       if (!processedChunk.isToolCall) {
         textChunks.push(processedChunk.data);
       } else {
-        toolCallChunks.push(processedChunk.data);
+        toolCallChunks.push(...processedChunk.data);
       }
 
       yield rawChunk;
     }
 
-    output =
-      output ??
-      (toolCallChunks.length > 0
-        ? getToolCallOutput(toolCallChunks)
-        : textChunks.join(""));
+    output = output ?? getStreamOutput(textChunks, toolCallChunks);
 
     generation
       .update({
