@@ -237,6 +237,7 @@ function wrapAsyncIterable<R>(
         textChunks.push(processedChunk.data);
       } else {
         toolCallChunks.push(...processedChunk.data);
+        if (processedChunk.text) textChunks.push(processedChunk.text);
       }
 
       yield rawChunk;

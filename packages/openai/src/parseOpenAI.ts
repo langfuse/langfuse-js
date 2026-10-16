@@ -204,6 +204,7 @@ export const parseChunk = (
   | {
       isToolCall: true;
       data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[];
+      text: string;
     } => {
   let isToolCall = false;
   const _chunk = rawChunk as
@@ -219,7 +220,11 @@ export const parseChunk = (
     ) {
       isToolCall = true;
 
-      return { isToolCall, data: chunkData.delta.tool_calls };
+      return {
+        isToolCall,
+        data: chunkData.delta.tool_calls,
+        text: chunkData.delta.content || "",
+      };
     }
     if ("delta" in chunkData) {
       return { isToolCall, data: chunkData.delta?.content || "" };
@@ -285,7 +290,9 @@ export const getToolCallOutput = (
   }
 
   return {
-    tool_calls: [...toolCalls.values()],
+    tool_calls: [...toolCalls.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([, toolCall]) => toolCall),
   };
 };
 
