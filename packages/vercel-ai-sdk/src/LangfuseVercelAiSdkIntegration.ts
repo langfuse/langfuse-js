@@ -185,20 +185,18 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
   }
 
   experimental_onDecisionModelCallStart(
-    event: InferTelemetryEvent<Experimental_DecisionModelCallStartEvent>,
+    event: Experimental_DecisionModelCallStartEvent,
   ): void {
     this.delegate.experimental_onDecisionModelCallStart(event);
   }
 
   experimental_onDecisionModelCallEnd(
-    event: InferTelemetryEvent<Experimental_DecisionModelCallEndEvent>,
+    event: Experimental_DecisionModelCallEndEvent,
   ): void {
     this.delegate.experimental_onDecisionModelCallEnd(event);
   }
 
-  experimental_onDecideEnd(
-    event: InferTelemetryEvent<Experimental_DecideEndEvent>,
-  ): void {
+  experimental_onDecideEnd(event: Experimental_DecideEndEvent): void {
     this.delegate.experimental_onDecideEnd(event);
   }
 

@@ -8,11 +8,9 @@ import { describe, expect, it } from "vitest";
 
 import { LangfuseVercelAiSdkIntegration } from "../../packages/vercel-ai-sdk/src/LangfuseVercelAiSdkIntegration.js";
 
+// The event types come through the integration: tests resolve the root's older `ai`, which predates them.
 type DecideStart = Parameters<
   LangfuseVercelAiSdkIntegration["experimental_onDecideStart"]
->[0];
-type DecideEnd = Parameters<
-  LangfuseVercelAiSdkIntegration["experimental_onDecideEnd"]
 >[0];
 
 describe("vercel-ai-sdk experimental_decide telemetry", () => {
@@ -25,7 +23,7 @@ describe("vercel-ai-sdk experimental_decide telemetry", () => {
       tracer: provider.getTracer("test"),
     });
 
-    integration.experimental_onDecideStart({
+    const start: DecideStart = {
       callId: "call-1",
       operationId: "ai.decide",
       provider: "test-provider",
@@ -35,11 +33,19 @@ describe("vercel-ai-sdk experimental_decide telemetry", () => {
       maxRetries: 0,
       functionId: "approval-check",
       runtimeContext: { feature: "approvals" },
-    } as unknown as DecideStart);
+      headers: undefined,
+      providerOptions: {},
+    };
+    integration.experimental_onDecideStart(start);
     integration.experimental_onDecideEnd({
-      callId: "call-1",
+      ...start,
       answers: { approved: { type: "boolean", probability: 0.97 } },
-    } as unknown as DecideEnd);
+      usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+      warnings: [],
+      rounding: undefined,
+      providerMetadata: undefined,
+      response: { modelId: "test-decider", timestamp: new Date(0), id: "r1" },
+    });
 
     const [span] = exporter.getFinishedSpans();
     expect(span?.name).toBe("decide test-decider");
