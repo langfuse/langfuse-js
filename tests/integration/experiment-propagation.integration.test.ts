@@ -10,7 +10,11 @@ import {
   LangfuseOtelSpanAttributes,
   LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
 } from "@langfuse/core";
-import { startObservation, startActiveObservation } from "@langfuse/tracing";
+import {
+  createTraceId,
+  startObservation,
+  startActiveObservation,
+} from "@langfuse/tracing";
 import { trace as otelTrace } from "@opentelemetry/api";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
@@ -501,6 +505,39 @@ describe("Experiment Attribute Propagation", () => {
       // All local items should share the same experiment ID
       expect(experimentIds[0]).toBe(experimentIds[1]);
       expect(result.experimentId).toBe(experimentIds[0]);
+    });
+
+    it("should record separate runs into a caller-provided experiment ID", async () => {
+      const experimentId = await createTraceId("shared-experiment");
+
+      const results = await Promise.all(
+        [["shard-1-a", "shard-1-b"], ["shard-2-a"]].map((inputs) =>
+          langfuse.experiment.run({
+            name: "sharded-experiment",
+            runName: "sharded-run",
+            experimentId,
+            data: inputs.map((input) => ({ input })),
+            task: async (item) => {
+              startObservation("child").end();
+              return `output-${item.input}`;
+            },
+          }),
+        ),
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 6); // 3 roots + 3 children
+
+      expect(results.map((r) => r.experimentId)).toEqual([
+        experimentId,
+        experimentId,
+      ]);
+      const spans = testEnv.mockExporter.exportedSpans;
+      expect(spans).toHaveLength(6);
+      expect(
+        spans.map(
+          (s) => s.attributes[LangfuseOtelSpanAttributes.EXPERIMENT_ID],
+        ),
+      ).toEqual(Array(6).fill(experimentId));
     });
   });
 

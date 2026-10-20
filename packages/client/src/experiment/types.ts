@@ -183,6 +183,54 @@ export type ExperimentParams<
   runName?: string;
 
   /**
+   * Optional ID of the Langfuse experiment to record this run into.
+   *
+   * Langfuse groups experiment items by this ID, so separate `run` calls
+   * that pass the same ID (for example from parallel workers, or when
+   * resuming an interrupted run) land in one experiment. Use it for local
+   * data, which otherwise gets a new random ID on every call.
+   *
+   * When set, it is used as-is for every item of the run, including items
+   * from Langfuse datasets, and as the `datasetRunId` of run-level scores.
+   * Re-runs on a dataset with the same `runName` then join this ID rather
+   * than the derived one. When omitted, runs on Langfuse datasets derive a
+   * stable ID from the project, dataset and `runName`, and runs on local
+   * data get a random ID. Must not be empty or whitespace-only.
+   *
+   * Pass the same `runName` on every worker as well; otherwise each one
+   * records its own timestamped run name.
+   *
+   * Generate the ID once with `createTraceId` from `@langfuse/tracing` and
+   * share it with every worker, or derive it on each worker from a seed they
+   * all know. Seeded IDs match the Python SDK's `create_trace_id(seed=...)`,
+   * so Python and JS workers can share one experiment:
+   *
+   * ```typescript
+   * import { createTraceId } from "@langfuse/tracing";
+   *
+   * // Random: create once, then pass to every worker
+   * const experimentId = await createTraceId();
+   *
+   * // Deterministic: the same seed yields the same ID on every worker
+   * const experimentId = await createTraceId("nightly-eval-2026-10-20");
+   *
+   * await langfuse.experiment.run({
+   *   name: "Nightly eval",
+   *   runName: "nightly-eval-2026-10-20",
+   *   experimentId,
+   *   data: shardForThisWorker,
+   *   task,
+   * });
+   * ```
+   *
+   * Re-running an item records a new attempt: the item view shows the
+   * latest attempt, but run-level aggregates such as cost and score averages
+   * include every attempt. Run-level evaluators only see the items of their
+   * own `run` call.
+   */
+  experimentId?: string;
+
+  /**
    * Optional description explaining the experiment's purpose.
    *
    * Provide context about what you're testing, methodology, or goals.
@@ -338,7 +386,8 @@ export type ExperimentResult<
   /**
    * Identifier of the experiment in Langfuse, shared by all items of the run.
    *
-   * For Langfuse datasets, it is derived from the project, dataset and run
+   * Equal to the `experimentId` parameter when one was passed. Otherwise,
+   * for Langfuse datasets, it is derived from the project, dataset and run
    * name, so running again with the same `runName` continues the same
    * experiment. For local data, it is a random ID.
    */
