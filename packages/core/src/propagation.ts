@@ -57,7 +57,7 @@ type PropagatedExperimentAttributes = {
 };
 
 export const LangfuseOtelContextKeys: Record<
-  PropagatedKey | "includeDiscoveredSkills",
+  PropagatedKey | "attachDiscoveredSkills",
   symbol
 > = {
   userId: createContextKey("langfuse_user_id"),
@@ -68,7 +68,7 @@ export const LangfuseOtelContextKeys: Record<
   traceName: createContextKey("langfuse_trace_name"),
   environment: createContextKey("langfuse_environment"),
   availableSkills: createContextKey("langfuse_skills_available"),
-  includeDiscoveredSkills: createContextKey("langfuse_skills_enabled"),
+  attachDiscoveredSkills: createContextKey("langfuse_skills_enabled"),
   promptName: createContextKey("langfuse_prompt_name"),
   promptVersion: createContextKey("langfuse_prompt_version"),
 
@@ -245,12 +245,12 @@ export interface PropagateAttributesParams {
    * Attach the processor's configured skills to spans created in this scope.
    * Affects tracing only, not which skills the agent may invoke.
    * Requires skills.availableSkills on LangfuseSpanProcessor, or skills.dir
-   * on the Node.js processor. Overrides the processor's skills.includeByDefault
+   * on the Node.js processor. Overrides the processor's skills.attachByDefault
    * setting; nested scopes can set false to disable automatic availability.
    * Explicit availableSkills catalogs work independently and take precedence.
    * This flag is local to the process and is not sent as a span attribute or baggage.
    */
-  includeDiscoveredSkills?: boolean;
+  attachDiscoveredSkills?: boolean;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -422,7 +422,7 @@ export function propagateAttributes<
     environment,
     prompt,
     availableSkills,
-    includeDiscoveredSkills,
+    attachDiscoveredSkills,
     _internalExperiment,
   } = params;
 
@@ -588,10 +588,10 @@ export function propagateAttributes<
     }
   }
 
-  if (typeof includeDiscoveredSkills === "boolean") {
+  if (typeof attachDiscoveredSkills === "boolean") {
     context = context.setValue(
-      LangfuseOtelContextKeys.includeDiscoveredSkills,
-      includeDiscoveredSkills,
+      LangfuseOtelContextKeys.attachDiscoveredSkills,
+      attachDiscoveredSkills,
     );
   }
 

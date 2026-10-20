@@ -10,8 +10,8 @@ export { discoverSkills, type DiscoverSkillsOptions } from "./skills.js";
 
 type SkillDiscoveryConfig = DiscoverSkillsOptions & {
   availableSkills?: never;
-  /** Attach discovered skills by default; scopes can override with includeDiscoveredSkills. Defaults to false. */
-  includeByDefault?: boolean;
+  /** Attach discovered skills by default; scopes can override with attachDiscoveredSkills. Defaults to false. */
+  attachByDefault?: boolean;
 };
 
 type AvailableSkillsConfig = NonNullable<
@@ -27,8 +27,8 @@ export interface LangfuseSpanProcessorParams
   extends Omit<BaseLangfuseSpanProcessorParams, "skills"> {
   /**
    * Discover local skills or provide a catalog. Configure either dir or
-   * availableSkills, never both. Enable inclusion with includeByDefault or
-   * propagateAttributes({ includeDiscoveredSkills: true }, callback).
+   * availableSkills, never both. Enable inclusion with attachByDefault or
+   * propagateAttributes({ attachDiscoveredSkills: true }, callback).
    * Spans started before discovery completes have no automatic catalog.
    */
   skills?: SkillsConfig;
@@ -50,7 +50,7 @@ export class LangfuseSpanProcessor extends BaseLangfuseSpanProcessor {
         skills?.dir !== undefined
           ? {
               availableSkills: discoverSkills({ dir: skills.dir }),
-              includeByDefault: skills.includeByDefault,
+              attachByDefault: skills.attachByDefault,
             }
           : skills,
     });

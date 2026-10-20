@@ -63,7 +63,17 @@ Attach discovered skills to spans started after discovery completes, or provide 
 import { LangfuseSpanProcessor } from "@langfuse/otel/node";
 
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
-  skills: { dir: ".agents/skills", includeByDefault: true },
+  skills: { dir: ".agents/skills" },
+});
+```
+
+```typescript
+import { discoverSkills, LangfuseSpanProcessor } from "@langfuse/otel/node";
+
+// decide you want blocking discovery, use our discovery helper
+const availableSkills = await discoverSkills({ dir: ".agents/skills" });
+export const langfuseSpanProcessor = new LangfuseSpanProcessor({
+  skills: { availableSkills },
 });
 ```
 
@@ -74,7 +84,7 @@ await propagateAttributes(
   { availableSkills: [{ name: "customer-support", version: 2 }] },
   () => runAgent(),
 );
-await propagateAttributes({ includeDiscoveredSkills: false }, () => runAgent());
+await propagateAttributes({ attachDiscoveredSkills: true }, () => runAgent());
 ```
 
 ```typescript
