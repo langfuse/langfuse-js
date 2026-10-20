@@ -1,28 +1,33 @@
 import type { Stats } from "node:fs";
-import { lstat, readFile, readdir } from "node:fs/promises";
+import { lstat, readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-const LANGFUSE_SKILL_LOCK_FILE_NAME = "langfuse-skills.lock.json";
+import { getGlobalLogger, PropagatedSkillInput } from "@langfuse/core";
 
-/** A skill found on disk, with its managed version when known. */
-interface AvailableSkill {
-  name: string;
-  version?: number;
-  directory: string;
+const LANGFUSE_SKILL_LOCK_FILE_NAME = "langfuse-skills.lock";
+
+/** Options for discovering installed skills on the local filesystem. */
+export interface DiscoverSkillsOptions {
+  /**
+   * Directory containing skill subdirectories. Absolute paths and paths relative
+   * to the working directory are supported. The CLI lockfile is checked in this
+   * directory first, then in the working directory.
+   */
+  dir: string;
 }
 
 /**
- * Read immediate skill subdirectories containing SKILL.md. No network calls.
+ * Discover immediate skill subdirectories containing SKILL.md. No network calls.
  * CLI v1 locks provide names and versions; unlocked skills use directory names.
  * Installation records do not verify subsequent local edits.
- * @internal
+ * Missing directories return an empty catalog; unreadable or malformed locks reject.
  */
-export async function readAvailableSkills(
-  dir: string,
-): Promise<Map<string, AvailableSkill>> {
+export async function discoverSkills({
+  dir,
+}: DiscoverSkillsOptions): Promise<PropagatedSkillInput[]> {
   const root = resolve(dir);
-  const available = new Map<string, AvailableSkill>();
-  if (!(await statIfExists(root))) return available;
+  const available = new Map<string, PropagatedSkillInput>();
+  if (!(await statIfExists(root))) return [];
   const lockPath = await findCliLock(root);
   const locked = await readCliLock(lockPath);
   const skillDirEntries = await readdir(root, { withFileTypes: true });
@@ -35,23 +40,30 @@ export async function readAvailableSkills(
     if (!skillMdStats?.isFile()) continue;
     const identity = locked.get(candidateDirectory);
     const name = identity?.name ?? candidate.name;
-    if (name.length > 128)
-      throw new Error(`Skill name ${name} exceeds 128 characters.`);
-    if (available.has(name)) throw new Error(`Duplicate skill name ${name}.`);
-    available.set(name, { ...identity, name, directory: candidateDirectory });
+    if (name.length > 128) {
+      getGlobalLogger().warn(
+        `Skipping skill ${name}: name exceeds 128 characters.`,
+      );
+      continue;
+    }
+    if (available.has(name)) {
+      getGlobalLogger().warn(`Skipping duplicate skill name ${name}.`);
+      continue;
+    }
+    available.set(name, { ...identity, name });
   }
-  return available;
+  return Array.from(available.values());
 }
 
 async function findCliLock(directory: string): Promise<string | undefined> {
-  const cwdLockPath = join(process.cwd(), LANGFUSE_SKILL_LOCK_FILE_NAME);
-  if (await statIfExists(cwdLockPath)) {
-    return cwdLockPath;
-  }
-
   const skillsLockPath = join(directory, LANGFUSE_SKILL_LOCK_FILE_NAME);
   if (await statIfExists(skillsLockPath)) {
     return skillsLockPath;
+  }
+
+  const cwdLockPath = join(process.cwd(), LANGFUSE_SKILL_LOCK_FILE_NAME);
+  if (await statIfExists(cwdLockPath)) {
+    return cwdLockPath;
   }
 
   return undefined;
@@ -73,8 +85,10 @@ async function readCliLock(
   )
     throw new Error(`Unsupported or invalid skill lockfile ${file}.`);
   for (const skill of value.skills) {
-    if (!isValidLockedSkill(skill))
-      throw new Error(`Invalid skill entry in ${file}.`);
+    if (!isValidLockedSkill(skill)) {
+      getGlobalLogger().warn(`Skipping invalid skill entry in ${file}.`);
+      continue;
+    }
     locked.set(resolve(dirname(file), skill.path), {
       name: skill.name,
       version: skill.version,

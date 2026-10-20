@@ -57,21 +57,31 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 ## Skills
 
-Configure discovery on the processor, then enable skill availability for the agent's scope:
+Attach discovered skills to spans started after discovery completes, or provide a catalog explicitly.
 
 ```typescript
-import { LangfuseSpanProcessor } from "@langfuse/otel";
-import { propagateAttributes } from "@langfuse/tracing";
-import { NodeSDK } from "@opentelemetry/sdk-node";
+import { LangfuseSpanProcessor } from "@langfuse/otel/node";
 
-const sdk = new NodeSDK({
-  spanProcessors: [
-    new LangfuseSpanProcessor({ relativeSkillsPath: ".agents/skills" }),
-  ],
+export const langfuseSpanProcessor = new LangfuseSpanProcessor({
+  skills: { dir: ".agents/skills", includeByDefault: true },
 });
-sdk.start();
+```
 
-await propagateAttributes({ skillsEnabled: true }, () => runAgent());
+```typescript
+import { propagateAttributes } from "@langfuse/tracing";
+
+await propagateAttributes(
+  { availableSkills: [{ name: "customer-support", version: 2 }] },
+  () => runAgent(),
+);
+await propagateAttributes({ includeDiscoveredSkills: false }, () => runAgent());
+```
+
+```typescript
+import { discoverSkills } from "@langfuse/otel/node";
+
+const availableSkills = await discoverSkills({ dir: ".agents/skills" });
+await propagateAttributes({ availableSkills }, () => runAgent());
 ```
 
 ## Packages
