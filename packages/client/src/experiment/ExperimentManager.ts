@@ -111,6 +111,7 @@ export class ExperimentManager {
    * @param config - The experiment configuration
    * @param config.name - Human-readable name for the experiment
    * @param config.runName - Optional exact name for the experiment run (defaults to name + timestamp)
+   * @param config.experimentId - Optional ID of the experiment to record into, so several runs (e.g. parallel workers or resumed runs) share one experiment
    * @param config.description - Optional description of the experiment's purpose
    * @param config.metadata - Optional metadata to attach to the experiment run
    * @param config.data - Array of data items to process (ExperimentItem[] or DatasetItem[])
@@ -186,11 +187,18 @@ export class ExperimentManager {
       task,
       name,
       runName: providedRunName,
+      experimentId: providedExperimentId,
       description,
       metadata,
       maxConcurrency = 50,
       runEvaluators,
     } = config;
+
+    if (providedExperimentId !== undefined && !providedExperimentId.trim()) {
+      throw new Error(
+        "`experimentId` must be a non-empty string. Omit it to generate one.",
+      );
+    }
 
     const runName = this.createExperimentRunName({
       name,
@@ -217,23 +225,27 @@ export class ExperimentManager {
     const projectIdPromise = tracingEnabled
       ? this.resolveProjectId()
       : Promise.resolve(undefined);
-    const projectId = datasetId ? await projectIdPromise : undefined;
     const experimentIdsByDatasetId = new Map<string, string>();
-    for (const id of datasetIds) {
-      experimentIdsByDatasetId.set(
-        id,
-        await this.createRunExperimentId({
-          projectId,
-          datasetId: id,
-          runName,
-        }),
-      );
+    if (!providedExperimentId) {
+      const projectId = datasetId ? await projectIdPromise : undefined;
+      for (const id of datasetIds) {
+        experimentIdsByDatasetId.set(
+          id,
+          await this.createRunExperimentId({
+            projectId,
+            datasetId: id,
+            runName,
+          }),
+        );
+      }
     }
-    const experimentId = datasetId
-      ? experimentIdsByDatasetId.get(datasetId)!
-      : await createExperimentId();
+    const experimentId =
+      providedExperimentId ||
+      (datasetId
+        ? experimentIdsByDatasetId.get(datasetId)!
+        : await createExperimentId());
 
-    if (datasetIds.length > 1) {
+    if (datasetIds.length > 1 && !providedExperimentId) {
       this.logger.warn(
         `Experiment data contains items from ${datasetIds.length} datasets. Each dataset's items form a separate experiment; the result and run evaluator scores use the experiment of dataset ${datasetId}.`,
       );

@@ -1,5 +1,6 @@
 import { ExperimentManager } from "@langfuse/client";
 import { createStableExperimentId, getGlobalLogger } from "@langfuse/core";
+import { createTraceId } from "@langfuse/tracing";
 import { trace } from "@opentelemetry/api";
 import {
   AlwaysOnSampler,
@@ -261,6 +262,86 @@ describe("ExperimentManager experiment ids", () => {
       expect.stringContaining("items from 2 datasets"),
     );
   });
+
+  it("records local data into a caller-provided experiment id across runs", async () => {
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+    const experimentId = await createTraceId("shared-experiment");
+
+    const runShard = (inputs: string[]) =>
+      createManager(langfuseClient).run({
+        name: "sharded-run",
+        runName: "sharded-run",
+        experimentId,
+        data: inputs.map((input) => ({ input })),
+        task: async ({ input }) => input,
+        runEvaluators: [async () => ({ name: "run-score", value: 1 })],
+      });
+
+    const [first, second] = await Promise.all([
+      runShard(["a", "b"]),
+      runShard(["c"]),
+    ]);
+
+    expect(experimentId).toMatch(/^[0-9a-f]{32}$/);
+    expect(first.experimentId).toBe(experimentId);
+    expect(second.experimentId).toBe(experimentId);
+    expect(first.datasetRunId).toBeUndefined();
+    expect(first.experimentUrl).toBe(
+      `https://langfuse.test/project/project-1/experiments/results?baseline=${experimentId}`,
+    );
+    expect(langfuseClient.score.create).toHaveBeenCalledTimes(2);
+    expect(langfuseClient.score.create).toHaveBeenCalledWith({
+      datasetRunId: experimentId,
+      name: "run-score",
+      value: 1,
+    });
+  });
+
+  it("uses a caller-provided experiment id for dataset items", async () => {
+    const warn = vi
+      .spyOn(getGlobalLogger(), "warn")
+      .mockImplementation(() => {});
+    const langfuseClient = createLangfuseClientMock();
+
+    const result = await createManager(langfuseClient).run({
+      name: "dataset-run",
+      runName: "my-run",
+      experimentId: "custom-experiment",
+      data: [
+        datasetItem("item-1", "a", "dataset-1"),
+        datasetItem("item-2", "b", "dataset-2"),
+      ],
+      task: async ({ input }) => input,
+    });
+
+    expect(result.experimentId).toBe("custom-experiment");
+    expect(result.datasetRunId).toBe("custom-experiment");
+    expect(result.itemResults.map((r) => r.datasetRunId)).toEqual([
+      "custom-experiment",
+      "custom-experiment",
+    ]);
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("items from 2 datasets"),
+    );
+  });
+
+  it.each(["", "   "])(
+    "rejects a blank caller-provided experiment id (%j)",
+    async (experimentId) => {
+      const task = vi.fn(async ({ input }) => input);
+
+      await expect(
+        createManager().run({
+          name: "blank-id-run",
+          experimentId,
+          data: [{ input: "a" }],
+          task,
+        }),
+      ).rejects.toThrow("`experimentId` must be a non-empty string");
+      expect(task).not.toHaveBeenCalled();
+    },
+  );
 
   it("starts local-data items without waiting for the project id lookup", async () => {
     vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => {});
