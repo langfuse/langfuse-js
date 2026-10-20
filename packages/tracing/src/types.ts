@@ -1,6 +1,6 @@
-import { OpenAiUsage, SkillReference } from "@langfuse/core";
+import { OpenAiUsage, PropagatedSkillInput } from "@langfuse/core";
 
-export type { SkillReference } from "@langfuse/core";
+export type { PropagatedSkillInput } from "@langfuse/core";
 
 /**
  * Types of observations that can be created in Langfuse.
@@ -65,7 +65,7 @@ export type LangfuseSpanAttributes = {
   /** Environment where the operation is running (e.g., 'production', 'staging') */
   environment?: string;
   /** Skills available to this generation; overrides a propagated catalog */
-  skillsAvailable?: SkillReference[];
+  availableSkills?: PropagatedSkillInput[];
 };
 
 /**

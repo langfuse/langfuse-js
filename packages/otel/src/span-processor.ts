@@ -11,7 +11,8 @@ import {
   getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
   serializeMetadataValue,
-  serializeSkillsAvailable,
+  serializeAvailableSkills,
+  PropagatedSkillInput,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
@@ -32,7 +33,6 @@ import {
   SizeLimitedSpanExporter,
   resolveMaxBatchSizeBytesFromEnvironment,
 } from "./size-limited-span-exporter.js";
-import { readAvailableSkills } from "./skills.js";
 import { isDefaultExportSpan } from "./span-filter.js";
 
 /**
@@ -162,14 +162,18 @@ export interface LangfuseSpanProcessorParams {
   release?: string;
 
   /**
-   * Directory containing installed skill subdirectories, relative to the process working directory.
-   * Skills are discovered asynchronously once at initialization. For names and versions,
-   * `langfuse-skills.lock.json` is checked in the working directory first, then the skills directory.
-   * Discovered skills are attached only to spans created in a propagateAttributes({ skillsEnabled: true }) scope.
-   * Explicit or propagated skillsAvailable attributes override the discovered catalog.
-   * Span export waits for discovery; discovered attributes are added when spans end.
+   * Resolve a skill catalog in the background for availability tracing.
+   * Catalogs are attached at span start when enabled by includeByDefault
+   * or the scope's includeDiscoveredSkills flag.
+   * Spans started before resolution completes have no automatic catalog;
+   * resolution never delays span start, export, or flush.
+   * Explicit or propagated availableSkills always take precedence.
    */
-  relativeSkillsPath?: string;
+  skills?: {
+    availableSkills: PropagatedSkillInput[] | Promise<PropagatedSkillInput[]>;
+    /** Attach the catalog by default; scopes can override with includeDiscoveredSkills. Defaults to false. */
+    includeByDefault?: boolean;
+  };
 
   /**
    * Request timeout in seconds. Can also be set via LANGFUSE_TIMEOUT environment variable.
@@ -256,8 +260,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private baseUrl?: string;
   private environment?: string;
   private release?: string;
-  private skillsAvailable?: Promise<string | undefined>;
-  private skillsEnabledSpans = new WeakSet<ReadableSpan>();
+  private discoveredSkills?: string;
+  private includeSkillsByDefault: boolean;
   private mask?: MaskFunction;
   private shouldExportSpan: ShouldExportSpan;
   private mediaUploadEnabled: boolean;
@@ -379,8 +383,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     this.environment =
       params?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
     this.release = params?.release ?? getEnv("LANGFUSE_RELEASE");
-    if (params?.relativeSkillsPath !== undefined) {
-      this.skillsAvailable = this.discoverSkills(params.relativeSkillsPath);
+    this.includeSkillsByDefault = params?.skills?.includeByDefault ?? false;
+    if (params?.skills?.availableSkills !== undefined) {
+      this.resolveSkills(params.skills.availableSkills);
     }
     this.mask = params?.mask;
     this.shouldExportSpan =
@@ -417,24 +422,26 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     return getGlobalLogger();
   }
 
-  private async discoverSkills(
-    relativeSkillsPath: string,
-  ): Promise<string | undefined> {
-    try {
-      const skills = await readAvailableSkills(relativeSkillsPath);
-      const references = Array.from(skills.values(), ({ name, version }) => ({
-        skillName: name,
-        skillVersion: version,
-      }));
-      return serializeSkillsAvailable(references) ?? undefined;
-    } catch (err) {
-      this.logger.warn(
-        "Failed to discover local skills. Automatic skill availability is disabled.",
-        { relativeSkillsPath },
-        err,
-      );
-      return undefined;
+  private resolveSkills(
+    skills: PropagatedSkillInput[] | Promise<PropagatedSkillInput[]>,
+  ): void {
+    if (Array.isArray(skills)) {
+      this.discoveredSkills = serializeAvailableSkills(skills) ?? undefined;
+      return;
     }
+
+    void skills
+      .then((resolvedSkills) => {
+        if (!Array.isArray(resolvedSkills)) return;
+        this.discoveredSkills =
+          serializeAvailableSkills(resolvedSkills) ?? undefined;
+      })
+      .catch((err) => {
+        this.logger.warn(
+          "Failed to resolve skills. Automatic skill availability is disabled.",
+          err,
+        );
+      });
   }
 
   /**
@@ -446,12 +453,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
    * @override
    */
   public onStart(span: Span, parentContext: Context): void {
-    if (
-      parentContext.getValue(LangfuseOtelContextKeys.skillsEnabled) === true
-    ) {
-      this.skillsEnabledSpans.add(span);
-    }
-
     const propagatedAttributes =
       getPropagatedAttributesFromContext(parentContext);
 
@@ -476,6 +477,28 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       delete propagatedAttributes[
         LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
       ];
+    }
+
+    const includeDiscoveredSkills =
+      parentContext.getValue(LangfuseOtelContextKeys.includeDiscoveredSkills) ??
+      this.includeSkillsByDefault;
+    const hasCurrentSpanSkills =
+      span.attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+      ] != null;
+    const hasPropagateSkills =
+      propagatedAttributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+      ] != null;
+    if (
+      includeDiscoveredSkills === true &&
+      this.discoveredSkills !== undefined &&
+      !hasCurrentSpanSkills &&
+      !hasPropagateSkills
+    ) {
+      propagatedAttributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
+      ] = this.discoveredSkills;
     }
 
     // Set propagated attributes, environment and release attributes
@@ -560,21 +583,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private async processEndedSpan(span: ReadableSpan) {
-    if (
-      this.skillsEnabledSpans.has(span) &&
-      this.skillsAvailable !== undefined &&
-      span.attributes[
-        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-      ] == null
-    ) {
-      const skillsAvailable = await this.skillsAvailable;
-      if (skillsAvailable !== undefined) {
-        span.attributes[
-          LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-        ] ??= skillsAvailable;
-      }
-    }
-
     try {
       if (this.shouldExportSpan({ otelSpan: span }) === false) {
         this.logger.debug("Dropped span due to shouldExportSpan filter.", {
