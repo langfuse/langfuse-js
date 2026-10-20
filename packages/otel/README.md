@@ -57,13 +57,23 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 ## Skills
 
-Attach discovered skills to spans started after discovery completes, or provide a catalog explicitly.
+Attach available skills to spans to display them on generation observations in Langfuse
 
 ```typescript
 import { LangfuseSpanProcessor } from "@langfuse/otel/node";
 
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
-  skills: { dir: ".agents/skills" },
+  skills: { dir: ".agents/skills", attachByDefault: true },
+});
+```
+
+```typescript
+import { discoverSkills, LangfuseSpanProcessor } from "@langfuse/otel/node";
+
+// decide you want blocking discovery, use our discovery helper
+const availableSkills = await discoverSkills({ dir: ".agents/skills" });
+export const langfuseSpanProcessor = new LangfuseSpanProcessor({
+  skills: { availableSkills, attachByDefault: true },
 });
 ```
 
@@ -75,6 +85,14 @@ const availableSkills = await discoverSkills({ dir: ".agents/skills" });
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
   skills: { availableSkills },
 });
+await propagateAttributes({ attachDiscoveredSkills: true }, () => runAgent());
+```
+
+```typescript
+import { discoverSkills } from "@langfuse/otel/node";
+
+const availableSkills = await discoverSkills({ dir: ".agents/skills" });
+await propagateAttributes({ availableSkills }, () => runAgent());
 ```
 
 ```typescript
@@ -84,14 +102,6 @@ await propagateAttributes(
   { availableSkills: [{ name: "customer-support", version: 2 }] },
   () => runAgent(),
 );
-await propagateAttributes({ attachDiscoveredSkills: true }, () => runAgent());
-```
-
-```typescript
-import { discoverSkills } from "@langfuse/otel/node";
-
-const availableSkills = await discoverSkills({ dir: ".agents/skills" });
-await propagateAttributes({ availableSkills }, () => runAgent());
 ```
 
 ## Packages
