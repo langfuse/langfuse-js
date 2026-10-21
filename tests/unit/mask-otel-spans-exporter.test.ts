@@ -63,9 +63,11 @@ describe("MaskOtelSpansExporter", () => {
       maskOtelSpans,
     });
 
-    await exportSpans(exporter, [
-      createSpan("00000000000000a1", { "gen_ai.input.messages": "hi" }),
-    ]);
+    const original = createSpan("00000000000000a1", {
+      "gen_ai.input.messages": "hi",
+      "gen_ai.response.finish_reasons": ["stop"],
+    });
+    await exportSpans(exporter, [original]);
 
     const { spans } = maskOtelSpans.mock.calls[0][0];
     const span = spans.get(`${TRACE_ID}-00000000000000a1`);
@@ -76,11 +78,20 @@ describe("MaskOtelSpansExporter", () => {
       name: "span-00000000000000a1",
       instrumentationScopeName: "ai",
       instrumentationScopeVersion: "7.0.0",
-      attributes: { "gen_ai.input.messages": "hi" },
+      attributes: {
+        "gen_ai.input.messages": "hi",
+        "gen_ai.response.finish_reasons": ["stop"],
+      },
       resourceAttributes: { "service.name": "test" },
     });
     expect(Object.isFrozen(span)).toBe(true);
     expect(Object.isFrozen(span?.attributes)).toBe(true);
+    expect(
+      Object.isFrozen(span?.attributes["gen_ai.response.finish_reasons"]),
+    ).toBe(true);
+    expect(span?.attributes["gen_ai.response.finish_reasons"]).not.toBe(
+      original.attributes["gen_ai.response.finish_reasons"],
+    );
   });
 
   it("exports patched copies and leaves unpatched and original spans unchanged", async () => {
@@ -166,6 +177,39 @@ describe("MaskOtelSpansExporter", () => {
         ]),
       }),
     ],
+    [
+      "returns deleteAttributes as a string",
+      ({ spans }) => ({
+        spanPatches: new Map(
+          Array.from(spans.keys(), (key) => [
+            key,
+            { deleteAttributes: "key" as unknown as string[] },
+          ]),
+        ),
+      }),
+    ],
+    [
+      "returns setAttributes as an array",
+      ({ spans }) => ({
+        spanPatches: new Map(
+          Array.from(spans.keys(), (key) => [
+            key,
+            { setAttributes: ["masked"] as unknown as Attributes },
+          ]),
+        ),
+      }),
+    ],
+    [
+      "returns a patch that is not an object",
+      ({ spans }) => ({
+        spanPatches: new Map(
+          Array.from(spans.keys(), (key) => [
+            key,
+            true as unknown as OtelSpanPatch,
+          ]),
+        ),
+      }),
+    ],
   ])(
     "drops the whole batch when the function %s",
     async (_description, maskOtelSpans) => {
@@ -230,6 +274,24 @@ describe("MaskOtelSpansExporter", () => {
     expect(
       JSON.stringify(vi.mocked(getGlobalLogger().warn).mock.calls),
     ).not.toContain("jane@acme.example");
+  });
+
+  it("reports a throwing delegate as a failed export", async () => {
+    const error = new Error("exporter failed");
+    const delegate = createDelegate();
+    vi.mocked(delegate.export).mockImplementation(() => {
+      throw error;
+    });
+    const exporter = new MaskOtelSpansExporter({
+      delegate,
+      maskOtelSpans: () => undefined,
+    });
+
+    const result = await exportSpans(exporter, [
+      createSpan("00000000000000a1", { key: "value" }),
+    ]);
+
+    expect(result).toEqual({ code: ExportResultCode.FAILED, error });
   });
 
   it("delegates forceFlush and shutdown", async () => {

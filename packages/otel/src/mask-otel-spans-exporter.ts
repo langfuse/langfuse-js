@@ -1,10 +1,11 @@
 import { getGlobalLogger } from "@langfuse/core";
-import type { Attributes } from "@opentelemetry/api";
+import type { AttributeValue, Attributes } from "@opentelemetry/api";
 import { ExportResultCode, isAttributeValue } from "@opentelemetry/core";
 import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
 
 import type {
   MaskOtelSpansFunction,
+  OtelSpanAttributes,
   OtelSpanData,
   OtelSpanPatch,
 } from "./span-processor.js";
@@ -25,14 +26,18 @@ export class MaskOtelSpansExporter implements SpanExporter {
     spans: ReadableSpan[],
     resultCallback: Parameters<SpanExporter["export"]>[1],
   ): void {
-    void this.maskSpans(spans).then((maskedSpans) => {
-      if (maskedSpans.length === 0) {
-        resultCallback({ code: ExportResultCode.SUCCESS });
-        return;
-      }
+    void this.maskSpans(spans)
+      .then((maskedSpans) => {
+        if (maskedSpans.length === 0) {
+          resultCallback({ code: ExportResultCode.SUCCESS });
+          return;
+        }
 
-      this.delegate.export(maskedSpans, resultCallback);
-    });
+        this.delegate.export(maskedSpans, resultCallback);
+      })
+      .catch((error) => {
+        resultCallback({ code: ExportResultCode.FAILED, error });
+      });
   }
 
   forceFlush(): Promise<void> {
@@ -61,8 +66,8 @@ export class MaskOtelSpansExporter implements SpanExporter {
           name: span.name,
           instrumentationScopeName: span.instrumentationScope.name,
           instrumentationScopeVersion: span.instrumentationScope.version,
-          attributes: Object.freeze({ ...span.attributes }),
-          resourceAttributes: Object.freeze({ ...span.resource.attributes }),
+          attributes: freezeAttributes(span.attributes),
+          resourceAttributes: freezeAttributes(span.resource.attributes),
         }),
       );
     }
@@ -104,17 +109,40 @@ export class MaskOtelSpansExporter implements SpanExporter {
   }
 }
 
+function freezeAttributes(attributes: Attributes): OtelSpanAttributes {
+  const frozen: Record<string, Readonly<AttributeValue> | undefined> = {};
+
+  for (const [key, value] of Object.entries(attributes)) {
+    frozen[key] = Array.isArray(value) ? Object.freeze(value.slice()) : value;
+  }
+
+  return Object.freeze(frozen);
+}
+
 function applyOtelSpanPatch(
   span: ReadableSpan,
   patch: OtelSpanPatch,
 ): ReadableSpan {
+  const deleteAttributes = patch.deleteAttributes ?? [];
+  const setAttributes = patch.setAttributes ?? {};
+
+  // Untyped callers can return any shape, and a wrong one must not export unmasked data
+  if (
+    typeof patch !== "object" ||
+    !Array.isArray(deleteAttributes) ||
+    typeof setAttributes !== "object" ||
+    Array.isArray(setAttributes)
+  ) {
+    throw new TypeError("maskOtelSpans returned a malformed span patch");
+  }
+
   const attributes: Attributes = { ...span.attributes };
 
-  for (const key of patch.deleteAttributes ?? []) {
+  for (const key of deleteAttributes) {
     delete attributes[key];
   }
 
-  for (const [key, value] of Object.entries(patch.setAttributes ?? {})) {
+  for (const [key, value] of Object.entries(setAttributes)) {
     if (value === undefined || value === null || !isAttributeValue(value)) {
       delete attributes[key];
       getGlobalLogger().warn(

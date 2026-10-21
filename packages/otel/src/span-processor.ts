@@ -11,7 +11,7 @@ import {
   getPropagatedAttributesFromContext,
   serializeMetadataValue,
 } from "@langfuse/core";
-import { Attributes, Context } from "@opentelemetry/api";
+import { AttributeValue, Attributes, Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
@@ -69,6 +69,16 @@ import { isDefaultExportSpan } from "./span-filter.js";
 export type MaskFunction = (params: { data: any }) => any | Promise<any>;
 
 /**
+ * Frozen span attributes in an {@link OtelSpanData} snapshot. Array values are
+ * frozen copies.
+ *
+ * @public
+ */
+export type OtelSpanAttributes = {
+  readonly [key: string]: Readonly<AttributeValue> | undefined;
+};
+
+/**
  * Read-only snapshot of one span passed to {@link MaskOtelSpansFunction}.
  *
  * @public
@@ -81,9 +91,9 @@ export interface OtelSpanData {
   readonly instrumentationScopeName: string;
   readonly instrumentationScopeVersion?: string;
   /** Attributes that are exported unless a patch changes them. */
-  readonly attributes: Readonly<Attributes>;
+  readonly attributes: OtelSpanAttributes;
   /** Resource attributes of the span. They cannot be patched. */
-  readonly resourceAttributes: Readonly<Attributes>;
+  readonly resourceAttributes: OtelSpanAttributes;
 }
 
 /**
