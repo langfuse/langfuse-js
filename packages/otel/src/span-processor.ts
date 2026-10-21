@@ -9,10 +9,12 @@ import {
   base64Encode,
   getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
+  serializeMetadataValue,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
 import {
   Span,
   BatchSpanProcessor,
@@ -22,11 +24,26 @@ import {
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 
+import { withDefaultHeaders } from "./headers.js";
 import { MediaService } from "./MediaService.js";
+import {
+  SizeLimitedSpanExporter,
+  resolveMaxBatchSizeBytesFromEnvironment,
+} from "./size-limited-span-exporter.js";
 import { isDefaultExportSpan } from "./span-filter.js";
 
 /**
  * Function type for masking sensitive data in spans before export.
+ *
+ * Applied to the input and output of observations and traces, and to each
+ * observation metadata value, one attribute at a time. Metadata keys are never
+ * passed to the mask, so masked metadata keeps its keys. Trace metadata
+ * propagated with `propagateAttributes` is not masked.
+ *
+ * Observation metadata values are passed decoded, e.g. the string `"prod"`,
+ * the number `3` or an object, not their JSON encoding. The masked value is
+ * JSON-encoded again before export; if it is `null` or `undefined`, the
+ * metadata key is dropped.
  *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
@@ -78,6 +95,8 @@ export type ShouldExportSpan = (params: { otelSpan: ReadableSpan }) => boolean;
 export interface LangfuseSpanProcessorParams {
   /**
    * Custom OpenTelemetry span exporter. If not provided, a default OTLP exporter will be used.
+   * Custom exporters bypass Langfuse's OTLP batch byte limit and must enforce
+   * any transport-specific request limits themselves.
    */
   exporter?: SpanExporter;
 
@@ -147,8 +166,25 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Additional HTTP headers to include with requests.
+   * Overrides default span export headers with the same name, such as
+   * `x-langfuse-ingestion-version` (default `"4"`).
    */
   additionalHeaders?: Record<string, string>;
+
+  /**
+   * Compression for span export requests: `"gzip"` or `"none"`.
+   * Can also be set via LANGFUSE_OTEL_COMPRESSION environment variable.
+   * When unset, falls back to the OTEL_EXPORTER_OTLP_TRACES_COMPRESSION and
+   * OTEL_EXPORTER_OTLP_COMPRESSION environment variables, then to `"gzip"`.
+   * Set any of them to `"none"` to disable compression.
+   *
+   * Ignored when a custom `exporter` is provided. Only takes effect on Node.js and Bun;
+   * browser and edge runtimes ignore it. Every Langfuse v4 server accepts gzip.
+   *
+   * @defaultValue "gzip"
+   */
+  compression?: "gzip" | "none";
+
   /**
    * Span export mode to use.
    *
@@ -186,8 +222,10 @@ export interface LangfuseSpanProcessorParams {
  *       baseUrl: 'https://cloud.langfuse.com',
  *       environment: 'production',
  *       mask: ({ data }) => {
- *         // Mask sensitive data
- *         return data.replace(/api_key=\w+/g, 'api_key=***');
+ *         // Metadata values reach the mask decoded, so data is not always a string
+ *         return typeof data === 'string'
+ *           ? data.replace(/api_key=\w+/g, 'api_key=***')
+ *           : data;
  *       }
  *     })
  *   ]
@@ -261,6 +299,11 @@ export class LangfuseSpanProcessor implements SpanProcessor {
         "No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail.",
       );
     }
+    if (params?.exporter && params.compression !== undefined) {
+      logger.warn(
+        "The compression option is ignored because a custom exporter was provided. Configure compression on the exporter instead.",
+      );
+    }
     const flushAt = params?.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
     const flushIntervalSeconds =
       params?.flushInterval ?? getEnv("LANGFUSE_FLUSH_INTERVAL");
@@ -274,20 +317,37 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       (envMediaUploadEnabled
         ? !["false", "0"].includes(envMediaUploadEnabled.toLowerCase())
         : true);
+    const compression =
+      (params?.compression !== undefined
+        ? resolveCompression(params.compression, "compression")
+        : undefined) ??
+      resolveCompression(
+        getEnv("LANGFUSE_OTEL_COMPRESSION"),
+        "LANGFUSE_OTEL_COMPRESSION",
+      ) ??
+      getOtelCompressionFromEnv() ??
+      CompressionAlgorithm.GZIP;
 
-    const exporter =
-      params?.exporter ??
-      new OTLPTraceExporter({
-        url: `${baseUrl}/api/public/otel/v1/traces`,
-        headers: {
-          Authorization: `Basic ${authHeaderValue}`,
-          "x-langfuse-sdk-name": "javascript",
-          "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
-          "x-langfuse-public-key": publicKey ?? "<missing>",
-          ...params?.additionalHeaders,
-        },
-        timeoutMillis: timeoutSeconds * 1_000,
-      });
+    const exporter = params?.exporter
+      ? params.exporter
+      : new SizeLimitedSpanExporter({
+          maxBatchSizeBytes: resolveMaxBatchSizeBytesFromEnvironment(),
+          delegate: new OTLPTraceExporter({
+            url: `${baseUrl}/api/public/otel/v1/traces`,
+            headers: withDefaultHeaders(
+              {
+                Authorization: `Basic ${authHeaderValue}`,
+                "x-langfuse-sdk-name": "javascript",
+                "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+                "x-langfuse-public-key": publicKey ?? "<missing>",
+                "x-langfuse-ingestion-version": "4",
+              },
+              params?.additionalHeaders,
+            ),
+            timeoutMillis: timeoutSeconds * 1_000,
+            compression,
+          }),
+        });
 
     this.processor =
       params?.exportMode === "immediate"
@@ -331,6 +391,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       flushAt,
       flushIntervalSeconds,
       mediaUploadEnabled,
+      compression,
     });
   }
 
@@ -548,12 +609,13 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private async applyMaskInPlace(span: ReadableSpan): Promise<void> {
+    if (!this.mask) return;
+
     const maskCandidates = [
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       LangfuseOtelSpanAttributes.TRACE_INPUT,
       LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
       LangfuseOtelSpanAttributes.TRACE_OUTPUT,
-      LangfuseOtelSpanAttributes.OBSERVATION_METADATA,
       LangfuseOtelSpanAttributes.TRACE_METADATA,
     ];
 
@@ -563,6 +625,59 @@ export class LangfuseSpanProcessor implements SpanProcessor {
           span.attributes[maskCandidate],
         );
       }
+    }
+
+    // Object metadata is written as one attribute per top-level key, e.g.
+    // `langfuse.observation.metadata.<key>`. Mask each value separately so
+    // keys are kept and are never passed to the mask.
+    const observationMetadataPrefix = `${LangfuseOtelSpanAttributes.OBSERVATION_METADATA}.`;
+
+    for (const key of Object.keys(span.attributes)) {
+      if (
+        key === LangfuseOtelSpanAttributes.OBSERVATION_METADATA ||
+        key.startsWith(observationMetadataPrefix)
+      ) {
+        await this.applyMaskToObservationMetadata(span, key);
+      }
+    }
+  }
+
+  /**
+   * Observation metadata values are JSON-encoded (see
+   * `serializeMetadataValue`). Decode the value, mask the decoded value and
+   * JSON-encode the result again, so the mask never sees the encoding and the
+   * attribute stays valid JSON. If the masked value is not written by
+   * `serializeMetadataValue` (e.g. the mask returns null or undefined), the
+   * attribute is removed, as if the metadata value had been null. A stored
+   * `"null"` that the mask returns as null is kept.
+   */
+  private async applyMaskToObservationMetadata(
+    span: ReadableSpan,
+    key: string,
+  ): Promise<void> {
+    const raw = span.attributes[key];
+    let decoded: unknown = raw;
+
+    if (typeof raw === "string") {
+      try {
+        decoded = JSON.parse(raw);
+      } catch {
+        // Not written by the SDK; mask the raw string
+      }
+    }
+
+    const masked = await this.applyMask(decoded);
+    // toJSON() returning null is written as "null", which decodes to null.
+    // That key was set by the user, so keep it.
+    const serialized =
+      decoded === null && masked === null
+        ? "null"
+        : serializeMetadataValue(masked);
+
+    if (serialized === undefined) {
+      delete span.attributes[key];
+    } else {
+      span.attributes[key] = serialized;
     }
   }
 
@@ -579,4 +694,44 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       return "<fully masked due to failed mask function>";
     }
   }
+}
+
+function resolveCompression(
+  value: string | undefined,
+  setting: string,
+): CompressionAlgorithm | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === CompressionAlgorithm.GZIP) {
+    return CompressionAlgorithm.GZIP;
+  }
+  if (normalized === CompressionAlgorithm.NONE) {
+    return CompressionAlgorithm.NONE;
+  }
+
+  getGlobalLogger().warn(
+    `Invalid ${setting} value "${value}". Expected "gzip" or "none". Falling back to the next compression setting, then gzip.`,
+  );
+
+  return undefined;
+}
+
+/**
+ * Reads the OpenTelemetry compression environment variables with the same
+ * precedence as the OTLP exporter, ignoring case. Returns undefined outside
+ * Node.js-like runtimes or when neither variable holds a valid value.
+ */
+function getOtelCompressionFromEnv(): CompressionAlgorithm | undefined {
+  if (typeof process === "undefined" || !process.env) return undefined;
+
+  for (const key of [
+    "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION",
+    "OTEL_EXPORTER_OTLP_COMPRESSION",
+  ]) {
+    const value = process.env[key]?.trim().toLowerCase();
+    if (value === CompressionAlgorithm.GZIP) return CompressionAlgorithm.GZIP;
+    if (value === CompressionAlgorithm.NONE) return CompressionAlgorithm.NONE;
+  }
+
+  return undefined;
 }

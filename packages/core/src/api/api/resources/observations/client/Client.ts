@@ -63,6 +63,8 @@ export class Observations {
   /**
    * Get a list of observations with cursor-based pagination and flexible field selection.
    *
+   * Together with OpenTelemetry ingestion and Metrics API v2, this is the only real-time read path. Other public API endpoints can delay data by about 10 minutes.
+   *
    * ## Cursor-based Pagination
    * This endpoint uses cursor-based pagination for efficient traversal of large datasets.
    * The cursor is returned in the response metadata and should be passed in subsequent requests
@@ -75,7 +77,7 @@ export class Observations {
    * - `time` - completionStartTime, createdAt, updatedAt
    * - `io` - input, output
    * - `metadata` - metadata (truncated to 200 chars by default, use `expandMetadata` to get full values)
-   * - `model` - providedModelName, internalModelId, modelParameters
+   * - `model` - model, internalModelId, modelParameters
    * - `usage` - usageDetails, costDetails, totalCost, usagePricingTierName
    * - `prompt` - promptId, promptName, promptVersion
    * - `metrics` - latency, timeToFirstToken

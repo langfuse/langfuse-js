@@ -5,13 +5,12 @@ import {
   propagateAttributes,
 } from "@langfuse/tracing";
 import { nanoid } from "nanoid";
-import { describe, it, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import { ServerAssertions } from "./helpers/serverAssertions.js";
+import { ServerAssertions, parseIO } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
   teardownServerTestEnvironment,
-  waitForServerIngestion,
   type ServerTestEnvironment,
 } from "./helpers/serverSetup.js";
 
@@ -105,73 +104,51 @@ describe("Server Export E2E Tests", () => {
     // Force flush to send spans to server
     await testEnv.spanProcessor.forceFlush();
 
-    // Wait for server-side async ingestion processing
-    await waitForServerIngestion(2000);
-
-    // Fetch the trace from Langfuse server and verify
-    const traces = await assertions.fetchTraces({
-      name: traceName,
-      limit: 1,
-    });
-
-    if (traces.length === 0) {
-      throw new Error(`No traces found with name '${traceName}'`);
-    }
-
-    // Fetch the full trace with observations
-    const trace = await assertions.fetchTrace(traces[0].id);
-
-    // Assert trace properties
-    assertions.expectTraceExists(trace, {
-      name: traceName,
-      userId: "test-user-123",
-      sessionId: "test-session-456",
-      public: true,
-    });
-
-    // Assert we have 2 observations (1 span + 1 generation)
-    assertions.expectObservationCount(trace, 2);
-
-    // Assert parent span exists with correct properties
-    const parentObservation = assertions.expectObservationExists(
-      trace,
-      parentSpanName,
-      {
-        type: "SPAN",
-        level: "DEFAULT",
-      },
+    const observations = await assertions.waitForObservations(
+      parentSpan.traceId,
+      { count: 2 },
     );
 
+    // Assert we have 2 observations (1 span + 1 generation)
+    expect(observations).toHaveLength(2);
+
+    // Trace-level attributes are propagated onto every observation
+    for (const observation of observations) {
+      expect(observation).toMatchObject({
+        traceName,
+        userId: "test-user-123",
+        sessionId: "test-session-456",
+      });
+      expect(observation.tags).toEqual(expect.arrayContaining(["e2e", "test"]));
+    }
+
+    // Assert parent span exists with correct properties
+    assertions.expectObservation(observations, parentSpanName, {
+      type: "SPAN",
+      level: "DEFAULT",
+    });
+
     // Assert nested generation exists with correct properties
-    const generationObservation = assertions.expectObservationExists(
-      trace,
+    const generationObservation = assertions.expectObservation(
+      observations,
       generationName,
       {
         type: "GENERATION",
         model: "gpt-4",
         level: "DEFAULT",
+        public: true,
       },
     );
 
     // Assert parent-child relationship
-    assertions.expectObservationParent(trace, generationName, parentSpanName);
+    assertions.expectObservationParent(
+      observations,
+      generationName,
+      parentSpanName,
+    );
 
     // Assert generation has usage data
-    if (!generationObservation.usage) {
-      throw new Error("Generation observation missing usage data");
-    }
-
-    if (generationObservation.usage.total !== 40) {
-      throw new Error(
-        `Expected total tokens 40, got ${generationObservation.usage.total}`,
-      );
-    }
-
-    console.log(
-      "✅ E2E test passed: Trace exported successfully to Langfuse server",
-    );
-    console.log(`📊 Trace ID: ${trace.id}`);
-    console.log(`📈 Observations: ${trace.observations.length}`);
+    expect(generationObservation.usageDetails?.total).toBe(40);
   });
 
   it("should export startActiveObservation with nested startActiveObservation generation to Langfuse server", async () => {
@@ -179,6 +156,7 @@ describe("Server Export E2E Tests", () => {
     const traceName = `e2e-active-span-trace-${testId}`;
     const parentSpanName = `active-parent-operation-${testId}`;
     const generationName = `nested-active-generation-${testId}`;
+    let traceId = "";
 
     // Use propagateAttributes for trace-level attributes and startActiveObservation for context
     const result = await propagateAttributes(
@@ -193,6 +171,8 @@ describe("Server Export E2E Tests", () => {
         return await startActiveObservation(
           parentSpanName,
           async (parentSpan) => {
+            traceId = parentSpan.traceId;
+
             // Update parent span
             parentSpan.update({
               input: { workflow: "active span testing" },
@@ -256,42 +236,42 @@ describe("Server Export E2E Tests", () => {
       },
     );
 
+    expect(result).toBe("parent-operation-completed");
+
     // Force flush and wait for ingestion
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
 
-    // Verify the trace
-    const traces = await assertions.fetchTraces({
-      name: traceName,
-      limit: 1,
-    });
-
-    if (traces.length === 0) {
-      throw new Error(`No traces found with name '${traceName}'`);
-    }
-
-    // Fetch the full trace with observations
-    const trace = await assertions.fetchTrace(traces[0].id);
-
-    // Assert trace properties
-    assertions.expectTraceExists(trace, {
-      name: traceName,
-      userId: "active-user-789",
-      sessionId: "active-session-012",
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 2,
     });
 
     // Should have 2 observations: 1 span + 1 generation
-    assertions.expectObservationCount(trace, 2);
+    expect(observations).toHaveLength(2);
 
-    // Verify parent span
-    assertions.expectObservationExists(trace, parentSpanName, {
-      type: "SPAN",
-      level: "DEFAULT",
+    // Verify parent span, which also carries the root input/output
+    const parentObs = assertions.expectObservation(
+      observations,
+      parentSpanName,
+      {
+        type: "SPAN",
+        level: "DEFAULT",
+        traceName,
+        userId: "active-user-789",
+        sessionId: "active-session-012",
+      },
+    );
+    expect(assertions.getRootObservation(observations).id).toBe(parentObs.id);
+    expect(parseIO(parentObs.input)).toEqual({
+      workflow: "active span testing",
+    });
+    expect(parseIO(parentObs.output)).toMatchObject({
+      workflow: "completed",
+      generationResult: "generation-completed",
     });
 
     // Verify nested generation
-    const generationObs = assertions.expectObservationExists(
-      trace,
+    const generationObs = assertions.expectObservation(
+      observations,
       generationName,
       {
         type: "GENERATION",
@@ -301,17 +281,14 @@ describe("Server Export E2E Tests", () => {
     );
 
     // Verify parent-child relationship
-    assertions.expectObservationParent(trace, generationName, parentSpanName);
+    assertions.expectObservationParent(
+      observations,
+      generationName,
+      parentSpanName,
+    );
 
     // Verify usage data
-    if (generationObs.usage?.total !== 60) {
-      throw new Error(
-        `Expected total tokens 60, got ${generationObs.usage?.total}`,
-      );
-    }
-
-    console.log("✅ Active span/generation test passed");
-    console.log(`📊 Trace ID: ${trace.id}`);
+    expect(generationObs.usageDetails?.total).toBe(60);
   });
 
   it("should export observe wrapper with interoperability to Langfuse server", async () => {
@@ -322,6 +299,7 @@ describe("Server Export E2E Tests", () => {
     const internalGenerationName = `internal-llm-generation-${testId}`;
     const postProcessingName = `post-processing-${testId}`;
     const finalGenerationName = `final-summary-${testId}`;
+    let traceId = "";
 
     // Create an observed function that uses other tracing methods
     const observedLLMCall = observe(
@@ -408,6 +386,8 @@ describe("Server Export E2E Tests", () => {
         return await startActiveObservation(
           coordinatorSpanName,
           async (coordinatorSpan) => {
+            traceId = coordinatorSpan.traceId;
+
             coordinatorSpan.update({
               input: { workflow: "multi-method tracing test" },
               metadata: {
@@ -468,29 +448,10 @@ describe("Server Export E2E Tests", () => {
       },
     );
 
+    expect(workflowResult.status).toBe("success");
+
     // Force flush and wait for ingestion
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(2000);
-
-    // Verify the complex trace
-    const traces = await assertions.fetchTraces({
-      name: traceName,
-      limit: 1,
-    });
-
-    if (traces.length === 0) {
-      throw new Error(`No traces found with name '${traceName}'`);
-    }
-
-    // Fetch the full trace with observations
-    const trace = await assertions.fetchTrace(traces[0].id);
-
-    // Assert trace properties
-    assertions.expectTraceExists(trace, {
-      name: traceName,
-      userId: "observe-user-456",
-      sessionId: "observe-session-789",
-    });
 
     // Should have 5 observations:
     // 1. workflow-coordinator (span)
@@ -498,53 +459,62 @@ describe("Server Export E2E Tests", () => {
     // 3. internal-llm-generation (generation from startActiveGeneration)
     // 4. post-processing (span from manual startSpan)
     // 5. final-summary (generation from manual)
-    assertions.expectObservationCount(trace, 5);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 5,
+    });
+    expect(observations).toHaveLength(5);
 
     // Verify all observations exist
-    assertions.expectObservationExists(trace, coordinatorSpanName, {
+    assertions.expectObservation(observations, coordinatorSpanName, {
       type: "SPAN",
+      traceName,
+      userId: "observe-user-456",
+      sessionId: "observe-session-789",
     });
-    assertions.expectObservationExists(trace, observedSpanName, {
-      type: "SPAN",
-    });
-    assertions.expectObservationExists(trace, internalGenerationName, {
+    const observedObs = assertions.expectObservation(
+      observations,
+      observedSpanName,
+      { type: "SPAN" },
+    );
+    assertions.expectObservation(observations, internalGenerationName, {
       type: "GENERATION",
       model: "claude-3-sonnet",
     });
-    assertions.expectObservationExists(trace, postProcessingName, {
+    assertions.expectObservation(observations, postProcessingName, {
       type: "SPAN",
     });
-    assertions.expectObservationExists(trace, finalGenerationName, {
+    assertions.expectObservation(observations, finalGenerationName, {
       type: "GENERATION",
       model: "gpt-4",
     });
 
+    // observe() captures the function arguments and return value
+    expect(parseIO(observedObs.input)).toEqual([
+      "What is the meaning of life?",
+      { temperature: 0.7 },
+    ]);
+    expect(parseIO(observedObs.output)).toMatchObject({ processed: true });
+
     // Verify key parent-child relationships
     assertions.expectObservationParent(
-      trace,
+      observations,
       observedSpanName,
       coordinatorSpanName,
     );
     assertions.expectObservationParent(
-      trace,
+      observations,
       internalGenerationName,
       observedSpanName,
     );
     assertions.expectObservationParent(
-      trace,
+      observations,
       postProcessingName,
       observedSpanName,
     );
     assertions.expectObservationParent(
-      trace,
+      observations,
       finalGenerationName,
       coordinatorSpanName,
-    );
-
-    console.log("✅ Observe interoperability test passed");
-    console.log(`📊 Trace ID: ${trace.id}`);
-    console.log(
-      `🔗 Complex nesting with ${trace.observations.length} observations`,
     );
   });
 
@@ -559,6 +529,7 @@ describe("Server Export E2E Tests", () => {
     const fileStartEventName = `file-processing-started-${testId}`;
     const fileCompleteEventName = `file-processing-completed-${testId}`;
     const workflowCompleteEventName = `workflow-completed-${testId}`;
+    let traceId = "";
 
     // Create base64 image data for media testing
     const base64Image =
@@ -583,16 +554,7 @@ describe("Server Export E2E Tests", () => {
         return await startActiveObservation(
           coordinatorSpanName,
           async (coordinatorSpan) => {
-            // Set trace-level input/output using setTraceIO
-            coordinatorSpan.setTraceIO({
-              input: {
-                workflowType: "comprehensive-testing",
-                securityLevel: "enterprise",
-              },
-              output: {
-                status: "initializing",
-              },
-            });
+            traceId = coordinatorSpan.traceId;
 
             coordinatorSpan.update({
               input: {
@@ -911,16 +873,6 @@ Both media items were successfully processed. The image is a minimal transparent
               { asType: "event" },
             );
 
-            // Update trace output using setTraceIO
-            coordinatorSpan.setTraceIO({
-              output: {
-                status: "completed",
-                totalObservations: 8, // coordinator + generation + file span + 5 events
-                mediaItemsProcessed: 4, // 2 in generation + 2 in file processing
-                overallQuality: 0.94,
-              },
-            });
-
             coordinatorSpan.update({
               output: {
                 status: "completed",
@@ -976,156 +928,88 @@ Both media items were successfully processed. The image is a minimal transparent
       },
     );
 
+    expect(workflowResult.status).toBe("success");
+
     // Force flush and wait for ingestion
     await testEnv.spanProcessor.forceFlush();
-    await waitForServerIngestion(3000); // Longer wait for media processing
-
-    // Verify the trace with masking and media handling
-    const traces = await assertions.fetchTraces({
-      name: traceName,
-      limit: 1,
-    });
-
-    if (traces.length === 0) {
-      throw new Error(`No traces found with name '${traceName}'`);
-    }
-
-    // Fetch the full trace with observations
-    const trace = await assertions.fetchTrace(traces[0].id);
-
-    // Assert trace properties
-    assertions.expectTraceExists(trace, {
-      name: traceName,
-      userId: "secure-user-123",
-      sessionId: "secure-session-456",
-    });
 
     // Should have 8 observations: coordinator span + generation + file processing span + 5 events
-    assertions.expectObservationCount(trace, 8);
+    const observations = await assertions.waitForObservations(traceId, {
+      count: 8,
+    });
+    expect(observations).toHaveLength(8);
 
     // Verify all observations exist
-    const coordinatorObs = assertions.expectObservationExists(
-      trace,
+    const coordinatorObs = assertions.expectObservation(
+      observations,
       coordinatorSpanName,
       {
         type: "SPAN",
+        traceName,
+        userId: "secure-user-123",
+        sessionId: "secure-session-456",
+        statusMessage:
+          "Comprehensive masking and media workflow completed successfully",
       },
     );
-    const generationObs = assertions.expectObservationExists(
-      trace,
+    const generationObs = assertions.expectObservation(
+      observations,
       visionGenerationName,
       {
         type: "GENERATION",
         model: "gpt-4-vision-preview",
+        version: "1.5.0",
+        promptName: "summary-prompt",
+        promptVersion: 1,
       },
     );
-    const fileProcessingObs = assertions.expectObservationExists(
-      trace,
-      fileProcessingName,
-      {
-        type: "SPAN",
-      },
+    assertions.expectObservation(observations, fileProcessingName, {
+      type: "SPAN",
+      version: "3.2.1",
+    });
+
+    // The root observation carries the trace input/output
+    expect(assertions.getRootObservation(observations).id).toBe(
+      coordinatorObs.id,
     );
+    expect(parseIO(coordinatorObs.input)).toEqual({
+      workflow: "media processing",
+    });
+    expect(parseIO(coordinatorObs.output)).toMatchObject({
+      status: "completed",
+      fileProcessingCompleted: true,
+    });
 
     // Verify events exist
-    assertions.expectObservationExists(trace, workflowStartedEventName, {
-      type: "EVENT",
-    });
-    assertions.expectObservationExists(trace, analysisCompletedEventName, {
-      type: "EVENT",
-    });
-    assertions.expectObservationExists(trace, fileStartEventName, {
-      type: "EVENT",
-    });
-    assertions.expectObservationExists(trace, fileCompleteEventName, {
-      type: "EVENT",
-    });
-    assertions.expectObservationExists(trace, workflowCompleteEventName, {
-      type: "EVENT",
-    });
+    for (const eventName of [
+      workflowStartedEventName,
+      analysisCompletedEventName,
+      fileStartEventName,
+      fileCompleteEventName,
+      workflowCompleteEventName,
+    ]) {
+      assertions.expectObservation(observations, eventName, { type: "EVENT" });
+    }
 
     // Verify parent-child relationships
-    assertions.expectObservationParent(
-      trace,
-      visionGenerationName,
-      coordinatorSpanName,
-    );
-    assertions.expectObservationParent(
-      trace,
-      fileProcessingName,
-      coordinatorSpanName,
-    );
-
-    // Verify event relationships
-    assertions.expectObservationParent(
-      trace,
-      workflowStartedEventName,
-      coordinatorSpanName,
-    );
-    assertions.expectObservationParent(
-      trace,
-      analysisCompletedEventName,
-      visionGenerationName,
-    );
-    assertions.expectObservationParent(
-      trace,
-      fileStartEventName,
-      fileProcessingName,
-    );
-    assertions.expectObservationParent(
-      trace,
-      fileCompleteEventName,
-      fileProcessingName,
-    );
-    assertions.expectObservationParent(
-      trace,
-      workflowCompleteEventName,
-      coordinatorSpanName,
-    );
-
-    // Verify masking worked by checking trace metadata
-    if (trace.metadata) {
-      const metadataStr = JSON.stringify(trace.metadata);
-      if (
-        metadataStr.includes("sk-1234567890abcdef") ||
-        metadataStr.includes("user@example.com")
-      ) {
-        throw new Error(
-          "Sensitive data in trace metadata was not properly masked",
-        );
-      }
-      if (
-        !metadataStr.includes("***MASKED***") &&
-        !metadataStr.includes("***@")
-      ) {
-        console.warn(
-          "Warning: Expected to see masked values in trace metadata",
-        );
-      }
+    const expectedParents: Array<[string, string]> = [
+      [visionGenerationName, coordinatorSpanName],
+      [fileProcessingName, coordinatorSpanName],
+      [workflowStartedEventName, coordinatorSpanName],
+      [analysisCompletedEventName, visionGenerationName],
+      [fileStartEventName, fileProcessingName],
+      [fileCompleteEventName, fileProcessingName],
+      [workflowCompleteEventName, coordinatorSpanName],
+    ];
+    for (const [child, parent] of expectedParents) {
+      assertions.expectObservationParent(observations, child, parent);
     }
 
-    // Check that media content was processed (should be converted to media references)
-    if (generationObs.input) {
-      const inputStr = JSON.stringify(generationObs.input);
-      // Should not contain the full base64 data
-      if (inputStr.includes("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ")) {
-        console.warn(
-          "Warning: Base64 image data might not have been converted to media reference",
-        );
-      }
-      // Should contain media reference markers or be processed
-      if (
-        inputStr.includes("@@@langfuseMedia:") ||
-        !inputStr.includes("data:image/png;base64,iVBORw0K")
-      ) {
-        console.log("✅ Media content appears to be processed correctly");
-      }
-    }
-
-    console.log("✅ Masking and media handling test passed");
-    console.log(`📊 Trace ID: ${trace.id}`);
-    console.log(`🔒 Security: Sensitive data masked`);
-    console.log(`🎭 Media: Base64 content processed`);
-    console.log(`🔗 Observations: ${trace.observations.length}`);
+    // Base64 media is uploaded and replaced with media references
+    const generationInput = JSON.stringify(generationObs.input);
+    expect(generationInput).toContain("@@@langfuseMedia:");
+    expect(generationInput).not.toContain(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ",
+    );
   });
 });

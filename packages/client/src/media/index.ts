@@ -21,6 +21,34 @@ export type LangfuseMediaResolveMediaReferencesParams<T> = {
   maxDepth?: number;
 };
 
+async function readBody(
+  response: Response,
+  onProgress: () => void,
+): Promise<Uint8Array> {
+  if (!response.body) {
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    length += value.byteLength;
+    onProgress();
+  }
+
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
 /**
  * Manager for media operations in Langfuse.
  *
@@ -31,15 +59,21 @@ export type LangfuseMediaResolveMediaReferencesParams<T> = {
  */
 export class MediaManager {
   private apiClient: LangfuseAPIClient;
+  private timeoutSeconds: number | undefined;
 
   /**
    * Creates a new MediaManager instance.
    *
-   * @param params - Configuration object containing the API client
+   * @param params - Configuration object containing the API client and the
+   *   per-request timeout in seconds for media API requests
    * @internal
    */
-  constructor(params: { apiClient: LangfuseAPIClient }) {
+  constructor(params: {
+    apiClient: LangfuseAPIClient;
+    timeoutSeconds?: number;
+  }) {
     this.apiClient = params.apiClient;
+    this.timeoutSeconds = params.timeoutSeconds;
   }
 
   /**
@@ -106,18 +140,44 @@ export class MediaManager {
                 MediaManager.parseReferenceString(referenceString);
               const mediaData = await this.apiClient.media.get(
                 parsedMediaReference.mediaId,
+                {},
+                { timeoutInSeconds: this.timeoutSeconds },
               );
-              const mediaContent = await fetch(mediaData.url, {
-                method: "GET",
-                headers: {},
-              });
-              if (mediaContent.status !== 200) {
-                throw new Error("Failed to fetch media content");
-              }
+              // The timeout is an idle timeout: it bounds the wait for the
+              // response and for each body chunk, so large media that keeps
+              // streaming is not cut off but a stalled download is.
+              const controller = new AbortController();
+              const timeoutSeconds = this.timeoutSeconds;
+              let timer: ReturnType<typeof setTimeout> | undefined;
+              const armTimer = () => {
+                if (timeoutSeconds === undefined) return;
+                clearTimeout(timer);
+                timer = setTimeout(
+                  () =>
+                    controller.abort(
+                      new Error(
+                        `Media download timed out after ${timeoutSeconds}s without progress`,
+                      ),
+                    ),
+                  timeoutSeconds * 1_000,
+                );
+              };
 
-              const uint8Content = new Uint8Array(
-                await mediaContent.arrayBuffer(),
-              );
+              let uint8Content: Uint8Array;
+              try {
+                armTimer();
+                const mediaContent = await fetch(mediaData.url, {
+                  method: "GET",
+                  headers: {},
+                  signal: controller.signal,
+                });
+                if (mediaContent.status !== 200) {
+                  throw new Error("Failed to fetch media content");
+                }
+                uint8Content = await readBody(mediaContent, armTimer);
+              } finally {
+                clearTimeout(timer);
+              }
 
               const base64MediaContent = bytesToBase64(uint8Content);
               const base64DataUri = `data:${mediaData.contentType};base64,${base64MediaContent}`;

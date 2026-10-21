@@ -138,7 +138,7 @@ describe("Langfuse Prompts E2E", () => {
       expect(retrievedPrompt.config).toEqual({ temperature: 0.5 });
     });
 
-    it("should get a prompt by name only with getPrompt", async () => {
+    it("should get a prompt by name only", async () => {
       // First create a prompt
       await langfuse.prompt.create({
         name: "test-get-prompt",
@@ -148,7 +148,7 @@ describe("Langfuse Prompts E2E", () => {
       });
 
       // Then retrieve it
-      const retrievedPrompt = await langfuse.getPrompt("test-get-prompt");
+      const retrievedPrompt = await langfuse.prompt.get("test-get-prompt");
 
       expect(retrievedPrompt).toBeInstanceOf(TextPromptClient);
       expect(retrievedPrompt.name).toBe("test-get-prompt");

@@ -21,6 +21,21 @@ LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
 ```
 
+The batch byte limit applies to the final serialized OTLP/HTTP JSON request
+before compression. If a batch exceeds the limit, the entire batch is dropped;
+it is not split, retried, or truncated. Invalid values fall back to 64 MiB with
+a warning. Set the limit to a positive decimal safe integer; surrounding
+whitespace is ignored. Custom exporters passed to `LangfuseSpanProcessor`
+bypass this limit because they may use a different wire format or transport.
+The limit is approximate: it is compared against the batch's character
+count, which is never larger than the request, so a batch that fits is never
+dropped, but a sent request can be somewhat larger than the limit.
+
+Span exports are gzip-compressed by default on Node.js and Bun. To send
+uncompressed requests, set the `compression: "none"` option,
+`LANGFUSE_OTEL_COMPRESSION="none"`, or `OTEL_EXPORTER_OTLP_TRACES_COMPRESSION` /
+`OTEL_EXPORTER_OTLP_COMPRESSION` to `"none"`.
+
 ## Quickstart
 
 ```typescript
@@ -44,8 +59,8 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 | Package                                                                                             | NPM                                                                                                                       | Description                                                       | Environments |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------ |
-| [@langfuse/tracing](https://github.com/langfuse/langfuse-js/tree/main/packages/tracing)             | [![NPM](https://img.shields.io/npm/v/@langfuse/tracing.svg)](https://www.npmjs.com/package/@langfuse/tracing)             | OpenTelemetry-based tracing instrumentation                       | Node.js 20+  |
-| [@langfuse/otel](https://github.com/langfuse/langfuse-js/tree/main/packages/otel)                   | [![NPM](https://img.shields.io/npm/v/@langfuse/otel.svg)](https://www.npmjs.com/package/@langfuse/otel)                   | `LangfuseSpanProcessor` to export OpenTelemetry spans to Langfuse | Node.js 20+  |
+| [@langfuse/tracing](https://github.com/langfuse/langfuse-js/tree/main/packages/tracing)             | [![NPM](https://img.shields.io/npm/v/@langfuse/tracing.svg)](https://www.npmjs.com/package/@langfuse/tracing)             | OpenTelemetry-based tracing instrumentation                       | Node.js 22+  |
+| [@langfuse/otel](https://github.com/langfuse/langfuse-js/tree/main/packages/otel)                   | [![NPM](https://img.shields.io/npm/v/@langfuse/otel.svg)](https://www.npmjs.com/package/@langfuse/otel)                   | `LangfuseSpanProcessor` to export OpenTelemetry spans to Langfuse | Node.js 22+  |
 | [@langfuse/client](https://github.com/langfuse/langfuse-js/tree/main/packages/client)               | [![NPM](https://img.shields.io/npm/v/@langfuse/client.svg)](https://www.npmjs.com/package/@langfuse/client)               | Prompt management, datasets, experiments, scores, full REST API   | Universal JS |
 | [@langfuse/openai](https://github.com/langfuse/langfuse-js/tree/main/packages/openai)               | [![NPM](https://img.shields.io/npm/v/@langfuse/openai.svg)](https://www.npmjs.com/package/@langfuse/openai)               | `observeOpenAI` wrapper for tracing the OpenAI SDK                | Universal JS |
 | [@langfuse/langchain](https://github.com/langfuse/langfuse-js/tree/main/packages/langchain)         | [![NPM](https://img.shields.io/npm/v/@langfuse/langchain.svg)](https://www.npmjs.com/package/@langfuse/langchain)         | `CallbackHandler` for LangChain / LangGraph tracing               | Universal JS |
@@ -62,4 +77,4 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/langfuse/langfuse-js/blob/main/LICENSE)

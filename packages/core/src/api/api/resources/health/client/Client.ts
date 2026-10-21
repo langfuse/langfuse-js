@@ -63,6 +63,7 @@ export class Health {
   /**
    * Check health of API and database
    *
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Health.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.ServiceUnavailableError}
@@ -76,6 +77,7 @@ export class Health {
    *     await client.health.health()
    */
   public health(
+    request: Record<string, never> = {},
     requestOptions?: Health.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.HealthResponse> {
     return core.HttpResponsePromise.fromPromise(this.__health(requestOptions));

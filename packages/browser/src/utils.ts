@@ -1,5 +1,5 @@
 import { LangfuseBrowserError } from "./errors.js";
-import type { LangfuseIngestionResponse } from "./types.js";
+import type { LangfuseBrowserScoreResult } from "./types.js";
 
 const RESERVED_ADDITIONAL_HEADER_NAMES = new Set([
   "authorization",
@@ -21,7 +21,7 @@ export async function parseJsonResponse(response: Response): Promise<unknown> {
     return JSON.parse(text);
   } catch (error) {
     throw new LangfuseBrowserError(
-      "Langfuse ingestion response was not valid JSON.",
+      "Langfuse score response was not valid JSON.",
       {
         status: response.status,
         response: text,
@@ -46,16 +46,13 @@ export async function parseErrorResponseBody(
   }
 }
 
-export function isIngestionResponse(
+export function isCreateScoreResponse(
   value: unknown,
-): value is LangfuseIngestionResponse {
+): value is LangfuseBrowserScoreResult {
   return (
     typeof value === "object" &&
     value !== null &&
-    "successes" in value &&
-    "errors" in value &&
-    Array.isArray((value as LangfuseIngestionResponse).successes) &&
-    Array.isArray((value as LangfuseIngestionResponse).errors)
+    typeof (value as LangfuseBrowserScoreResult).id === "string"
   );
 }
 

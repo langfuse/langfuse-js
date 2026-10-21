@@ -10,9 +10,9 @@ export interface Dataset {
   /** Metadata associated with the dataset */
   metadata?: unknown;
   /** JSON Schema for validating dataset item inputs */
-  inputSchema: unknown | null;
+  inputSchema: Record<string, unknown> | null;
   /** JSON Schema for validating dataset item expected outputs */
-  expectedOutputSchema: unknown | null;
+  expectedOutputSchema: Record<string, unknown> | null;
   projectId: string;
   createdAt: string;
   updatedAt: string;

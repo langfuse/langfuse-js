@@ -64,6 +64,7 @@ export class Media {
    * Get a media record
    *
    * @param {string} mediaId - The unique langfuse identifier of a media record
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
    * @param {Media.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @throws {@link LangfuseAPI.Error}
@@ -77,6 +78,7 @@ export class Media {
    */
   public get(
     mediaId: string,
+    request: Record<string, never> = {},
     requestOptions?: Media.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.GetMediaResponse> {
     return core.HttpResponsePromise.fromPromise(

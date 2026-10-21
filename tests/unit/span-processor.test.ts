@@ -11,7 +11,7 @@ import type {
   Span,
   SpanExporter,
 } from "@opentelemetry/sdk-trace-base";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LangfuseSpanProcessor } from "@langfuse/otel";
 
@@ -103,6 +103,36 @@ describe("LangfuseSpanProcessor app-root marking", () => {
   beforeEach(() => {
     spanIdCounter = 0;
     processor = new LangfuseSpanProcessor({ exporter: noopExporter });
+  });
+
+  afterEach(() => {
+    delete process.env.LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES;
+  });
+
+  it("bypasses the batch byte limit for a custom exporter", async () => {
+    process.env.LANGFUSE_OTEL_MAX_BATCH_SIZE_BYTES = "1";
+    const exportSpy = vi.fn<SpanExporter["export"]>((_spans, callback) =>
+      callback({ code: ExportResultCode.SUCCESS }),
+    );
+    const customExporter: SpanExporter = {
+      export: exportSpy,
+      shutdown: async () => undefined,
+    };
+    const customProcessor = new LangfuseSpanProcessor({
+      exporter: customExporter,
+    });
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: LANGFUSE_TRACER_NAME,
+    });
+
+    customProcessor.onStart(span, ROOT_CONTEXT);
+    customProcessor.onEnd(span);
+    await customProcessor.forceFlush();
+
+    expect(exportSpy).toHaveBeenCalledOnce();
+    expect(exportSpy.mock.calls[0][0]).toEqual([span]);
+    await customProcessor.shutdown();
   });
 
   it("marks an exported child whose immediate parent is filtered", () => {

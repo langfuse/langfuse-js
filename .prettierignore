@@ -31,7 +31,6 @@ package-lock.json
 yarn.lock
 
 # Generated files
-CHANGELOG.md
 
 # Git
 .git/

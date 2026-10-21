@@ -46,7 +46,12 @@ export type LangfuseSpanAttributes = {
   input?: unknown;
   /** Output data from the operation */
   output?: unknown;
-  /** Additional metadata as key-value pairs */
+  /**
+   * Additional metadata as key-value pairs. Updates merge into earlier
+   * metadata by top-level key. Each top-level key is one span attribute; new
+   * keys that would exceed the span's attribute count limit
+   * (`spanLimits.attributeCountLimit`, default 128) are dropped with a warning.
+   */
   metadata?: Record<string, unknown>;
   /** Severity level of the observation */
   level?: ObservationLevel;
@@ -124,25 +129,6 @@ export type LangfuseObservationAttributes = LangfuseSpanAttributes &
   LangfuseRetrieverAttributes &
   LangfuseEvaluatorAttributes &
   LangfuseGuardrailAttributes;
-
-/**
- * Attributes for setting trace-level input and output only.
- *
- * This is a restricted type used by the deprecated setTraceIO methods,
- * which only allow setting input and output on traces for backward
- * compatibility with legacy Langfuse platform features.
- *
- * @deprecated This type is for backward compatibility with legacy platform features
- * that still rely on trace-level input/output. Use propagateAttributes for other trace attributes.
- *
- * @public
- */
-export type LangfuseTraceAttributes = {
-  /** Input data that initiated the trace */
-  input?: unknown;
-  /** Final output data from the trace */
-  output?: unknown;
-};
 
 /**
  * Context information for linking observations to traces.

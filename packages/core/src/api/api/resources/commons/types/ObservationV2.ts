@@ -60,9 +60,9 @@ export interface ObservationV2 {
   /** The output data of the observation */
   output?: unknown;
   /** Additional metadata of the observation */
-  metadata?: unknown;
+  metadata?: Record<string, unknown>;
   /** The model name as provided by the user */
-  providedModelName?: string | null;
+  model?: string | null;
   /** The internal model ID matched by Langfuse */
   internalModelId?: string | null;
   /** The parameters of the model used for the observation */

@@ -4,6 +4,5 @@ export * from "./AccessDeniedError.js";
 export * from "./NotFoundError.js";
 export * from "./MethodNotAllowedError.js";
 export * from "./ConflictError.js";
-export * from "./UnprocessableContentError.js";
 export * from "./TooManyRequestsError.js";
 export * from "./InternalServerError.js";

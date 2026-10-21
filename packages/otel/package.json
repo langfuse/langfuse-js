@@ -1,6 +1,6 @@
 {
   "name": "@langfuse/otel",
-  "version": "5.10.1",
+  "version": "6.0.1",
   "author": "Langfuse",
   "license": "MIT",
   "repository": {
@@ -9,7 +9,7 @@
     "directory": "packages/otel"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "description": "Langfuse OpenTelemetry export helpers",
   "type": "module",
@@ -47,6 +47,7 @@
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/core": "^2.0.1",
     "@opentelemetry/exporter-trace-otlp-http": ">=0.202.0 <1.0.0",
+    "@opentelemetry/otlp-exporter-base": ">=0.202.0 <1.0.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1"
   }
 }
