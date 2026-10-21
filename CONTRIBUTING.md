@@ -149,9 +149,25 @@ The automated workflow will:
 - Create a git commit and tag
 - Build all packages
 - Verify build artifacts and check for suspicious files
-- Publish to npm with provenance attestations via Trusted Publishing
 - Create a GitHub release with build artifacts
+- Stage every package on npm with provenance attestations via Trusted Publishing (`scripts/stage-publish.sh`)
 - Send Slack notifications (#releases for success, #team-engineering for failures)
+
+**Approving the staged release (required):**
+
+Staged versions are not installable until an npm maintainer approves them with
+2FA. The workflow run summary lists each stage id in dependency order; approve
+in that order (`@langfuse/core` first) so dependents never resolve to a missing
+version:
+
+```bash
+npm stage list                  # pending stage ids
+npm stage download <stage-id>   # optional: inspect the exact tarball
+npm stage approve <stage-id>    # prompts for 2FA
+```
+
+Approval can also be done on npmjs.com. If a staged release looks wrong, run
+`npm stage reject <stage-id>` for every package of that version.
 
 **Security Features:**
 
@@ -159,20 +175,22 @@ The automated workflow will:
 - Lockfile integrity checks
 - Build artifact verification
 - npm provenance attestations (cryptographic proof of origin)
+- npm staged publishing: CI can only stage; a human approves with npm 2FA, so stolen GitHub credentials alone cannot ship a release
 - Concurrency control (one release at a time)
 - Rollback detection and notification
 
 **Prerequisites:**
 
 - Write access to the repository
-- npm Trusted Publishing configured for `@langfuse/*` packages
+- npm Trusted Publishing configured for `@langfuse/*` packages, with stage publish allowed and direct publish disallowed on the trust relationship (`npm trust github <package> --file release.yml --repo langfuse/langfuse-js --env "protected branches" --allow-stage-publish`, without `--allow-publish`)
+- Package publishing access on npm set to "Require two-factor authentication and disallow tokens"
 
 **Dry Run Mode:**
 
 To test the release process without actually publishing:
 
 - Check the "Dry run" option when triggering the workflow
-- The workflow will perform all steps except npm publish and git push
+- The workflow will perform all steps except npm staging and git push
 - Useful for testing version bumps and verifying the release process
 
 ### Manual Local Releases (Fallback)
