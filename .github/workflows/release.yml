@@ -105,17 +105,6 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "" # Disable cache for release workflow (publishes to npm)
 
-      - name: Verify npm supports staged publishing (requires npm >= 11.15.0)
-        run: |
-          set -euo pipefail
-          NPM_VERSION="$(npm --version)"
-          MINIMUM="11.15.0"
-          if [ "$(printf '%s\n' "$MINIMUM" "$NPM_VERSION" | sort -V | head -n1)" != "$MINIMUM" ]; then
-            echo "::error::npm $NPM_VERSION is too old for npm stage publish (need >= $MINIMUM)"
-            exit 1
-          fi
-          echo "npm $NPM_VERSION"
-
       - name: Configure Git
         env:
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -310,7 +299,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*🔐 Action required:* an npm maintainer must approve each staged version with 2FA on npmjs.com or via `npm stage approve <id>`. The workflow run summary lists every stage id in approval order."
+                    "text": "*🔐 Action required:* an npm maintainer must approve each staged version with 2FA on npmjs.com or via `npm stage approve <id>`, starting with `@langfuse/core`. `npm stage list` shows the pending stage ids."
                   }
                 },
                 {
