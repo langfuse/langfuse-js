@@ -72,6 +72,9 @@ jobs:
       LANGFUSE_INIT_USER_NAME: "SDK Tests"
       LANGFUSE_INIT_USER_PASSWORD: "langfuse-ci-password"
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # GitHub withholds secrets from fork PRs, so provider calls there can only fail.
+      # Provider-backed e2e files still run on same-repo PRs and on main.
+      LANGFUSE_SKIP_PROVIDER_TESTS: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -166,6 +169,10 @@ jobs:
             sleep 5
           done
           echo "Langfuse server is up and running!"
+
+      - name: Note skipped provider tests
+        if: ${{ env.LANGFUSE_SKIP_PROVIDER_TESTS == 'true' }}
+        run: echo "::notice::Provider-backed e2e tests are skipped on fork PRs because provider secrets are unavailable. They run after merge on main."
 
       - run: pnpm test:e2e
 
