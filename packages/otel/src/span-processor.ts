@@ -11,7 +11,7 @@ import {
   getPropagatedAttributesFromContext,
   serializeMetadataValue,
 } from "@langfuse/core";
-import { Context } from "@opentelemetry/api";
+import { Attributes, Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
@@ -25,6 +25,7 @@ import {
 } from "@opentelemetry/sdk-trace-base";
 
 import { withDefaultHeaders } from "./headers.js";
+import { MaskOtelSpansExporter } from "./mask-otel-spans-exporter.js";
 import { MediaService } from "./MediaService.js";
 import {
   SizeLimitedSpanExporter,
@@ -45,6 +46,10 @@ import { isDefaultExportSpan } from "./span-filter.js";
  * JSON-encoded again before export; if it is `null` or `undefined`, the
  * metadata key is dropped.
  *
+ * Only attributes written by the Langfuse SDK are masked. To mask other spans,
+ * such as Vercel AI SDK spans with `gen_ai.*` attributes, use
+ * {@link MaskOtelSpansFunction}.
+ *
  * @param params - Object containing the data to be masked
  * @param params.data - The data that should be masked
  * @returns The masked data, or a promise resolving to it
@@ -62,6 +67,103 @@ import { isDefaultExportSpan } from "./span-filter.js";
  * @public
  */
 export type MaskFunction = (params: { data: any }) => any | Promise<any>;
+
+/**
+ * Read-only snapshot of one span passed to {@link MaskOtelSpansFunction}.
+ *
+ * @public
+ */
+export interface OtelSpanData {
+  readonly traceId: string;
+  readonly spanId: string;
+  readonly parentSpanId?: string;
+  readonly name: string;
+  readonly instrumentationScopeName: string;
+  readonly instrumentationScopeVersion?: string;
+  /** Attributes that are exported unless a patch changes them. */
+  readonly attributes: Readonly<Attributes>;
+  /** Resource attributes of the span. They cannot be patched. */
+  readonly resourceAttributes: Readonly<Attributes>;
+}
+
+/**
+ * Attribute changes for one span. `deleteAttributes` runs first, so a key in
+ * both fields is exported with its `setAttributes` value. A value that is not
+ * a valid OpenTelemetry attribute value removes that attribute from the export.
+ *
+ * @public
+ */
+export interface OtelSpanPatch {
+  setAttributes?: Attributes;
+  deleteAttributes?: readonly string[];
+}
+
+/**
+ * Input of {@link MaskOtelSpansFunction}.
+ *
+ * @public
+ */
+export interface MaskOtelSpansParams {
+  /** Spans of one export batch, keyed by `${traceId}-${spanId}`. */
+  spans: ReadonlyMap<string, OtelSpanData>;
+}
+
+/**
+ * Result of {@link MaskOtelSpansFunction}.
+ *
+ * @public
+ */
+export interface MaskOtelSpansResult {
+  /** Patches keyed like `spans`. Spans without a patch are exported unchanged. */
+  spanPatches: ReadonlyMap<string, OtelSpanPatch | undefined>;
+}
+
+/**
+ * Function type for masking the attributes of every span exported to
+ * Langfuse, including spans from other instrumentations such as the Vercel
+ * AI SDK.
+ *
+ * Called once per export batch, after `shouldExportSpan`, `mask` and media
+ * handling. A batch is not necessarily a complete trace. Return `undefined` to
+ * export the batch unchanged, or patches for the spans that should change.
+ * Patched spans are exported as copies, so other span processors keep the
+ * original attributes.
+ *
+ * If the function throws, rejects, or returns a patch for a span that is not
+ * in `spans`, the whole batch is dropped.
+ *
+ * Langfuse metadata attributes (`langfuse.observation.metadata.*` and
+ * `langfuse.trace.metadata.*`) hold JSON-encoded values.
+ *
+ * @param params - Object containing the spans of one export batch
+ * @returns Patches for the spans that should change, or a promise resolving to them
+ *
+ * @example
+ * ```typescript
+ * const maskOtelSpans: MaskOtelSpansFunction = ({ spans }) => {
+ *   const spanPatches = new Map<string, OtelSpanPatch>();
+ *
+ *   for (const [key, span] of spans) {
+ *     const messages = span.attributes["gen_ai.input.messages"];
+ *
+ *     if (typeof messages === "string") {
+ *       spanPatches.set(key, {
+ *         setAttributes: {
+ *           "gen_ai.input.messages": messages.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "<email>"),
+ *         },
+ *       });
+ *     }
+ *   }
+ *
+ *   return { spanPatches };
+ * };
+ * ```
+ *
+ * @public
+ */
+export type MaskOtelSpansFunction = (
+  params: MaskOtelSpansParams,
+) => MaskOtelSpansResult | undefined | Promise<MaskOtelSpansResult | undefined>;
 
 /**
  * Function type for determining whether a span should be exported to Langfuse.
@@ -128,8 +230,16 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Function to mask sensitive data in spans before export.
+   * Applies only to attributes written by the Langfuse SDK.
    */
   mask?: MaskFunction;
+
+  /**
+   * Function to mask the attributes of every exported span, including spans
+   * from other instrumentations such as the Vercel AI SDK. Runs once per
+   * export batch, after `mask`.
+   */
+  maskOtelSpans?: MaskOtelSpansFunction;
 
   /**
    * Function to determine whether a span should be exported to Langfuse.
@@ -328,7 +438,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       getOtelCompressionFromEnv() ??
       CompressionAlgorithm.GZIP;
 
-    const exporter = params?.exporter
+    const baseExporter = params?.exporter
       ? params.exporter
       : new SizeLimitedSpanExporter({
           maxBatchSizeBytes: resolveMaxBatchSizeBytesFromEnvironment(),
@@ -348,6 +458,12 @@ export class LangfuseSpanProcessor implements SpanProcessor {
             compression,
           }),
         });
+    const exporter = params?.maskOtelSpans
+      ? new MaskOtelSpansExporter({
+          delegate: baseExporter,
+          maskOtelSpans: params.maskOtelSpans,
+        })
+      : baseExporter;
 
     this.processor =
       params?.exportMode === "immediate"
