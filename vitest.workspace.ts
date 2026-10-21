@@ -1,4 +1,13 @@
-import { defineWorkspace } from "vitest/config";
+import { configDefaults, defineWorkspace } from "vitest/config";
+
+// E2E files that call model providers. CI sets LANGFUSE_SKIP_PROVIDER_TESTS on
+// fork PRs, where GitHub withholds the provider API keys.
+const providerE2ETests = [
+  "tests/e2e/experiments.e2e.test.ts",
+  "tests/e2e/langchain.e2e.test.ts",
+  "tests/e2e/openai.e2e.test.ts",
+  "tests/e2e/vercel-ai-sdk-v7.e2e.test.ts",
+];
 
 export default defineWorkspace([
   {
@@ -89,6 +98,10 @@ export default defineWorkspace([
       name: "e2e",
       environment: "node",
       include: ["tests/e2e/**/*.test.ts"],
+      exclude:
+        process.env.LANGFUSE_SKIP_PROVIDER_TESTS === "true"
+          ? [...configDefaults.exclude, ...providerE2ETests]
+          : configDefaults.exclude,
       setupFiles: ["./vitest.setup.ts"],
       testTimeout: 30000, // Longer timeout for real HTTP calls
     },
