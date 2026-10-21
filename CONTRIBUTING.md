@@ -17,7 +17,7 @@ This is a monorepo containing the Langfuse TypeScript/JavaScript SDK packages:
 
 - Node.js 22+ for SDK runtime compatibility (22.13+ for repository development);
   Node.js 24 is recommended for development and Codex/CI parity
-- pnpm 10.33.0 via Corepack
+- pnpm 12.14.0 via Corepack
 
 ### Installing dependencies
 
@@ -150,15 +150,14 @@ The automated workflow will:
 - Build all packages
 - Verify build artifacts and check for suspicious files
 - Create a GitHub release with build artifacts
-- Stage every package on npm with provenance attestations via Trusted Publishing (`scripts/stage-publish.sh`)
+- Stage every package on npm with provenance attestations via Trusted Publishing (`pnpm -r stage publish`)
 - Send Slack notifications (#releases for success, #team-engineering for failures)
 
 **Approving the staged release (required):**
 
 Staged versions are not installable until an npm maintainer approves them with
-2FA. The workflow run summary lists each stage id in dependency order; approve
-in that order (`@langfuse/core` first) so dependents never resolve to a missing
-version:
+2FA. The workflow stages them in dependency order; approve in that order
+(`@langfuse/core` first) so dependents never resolve to a missing version:
 
 ```bash
 npm stage list                  # pending stage ids
