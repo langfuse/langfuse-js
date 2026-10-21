@@ -99,6 +99,8 @@ End-to-end tests require a running Langfuse platform instance (dev server) to te
 pnpm test:e2e
 ```
 
+GitHub does not expose repository secrets to pull requests from forks, so CI skips the provider-backed e2e files on those PRs: `providerE2ETests` in `vitest.workspace.ts` lists them. They run on same-repo PRs and again after merge on `main`. Set `LANGFUSE_SKIP_PROVIDER_TESTS=true` to skip them locally when you have no `OPENAI_API_KEY`. Add any new e2e file that calls a model provider to that list.
+
 ## Code Quality
 
 ```bash
