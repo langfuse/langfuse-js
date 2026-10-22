@@ -39,6 +39,7 @@ const PLACEHOLDER_METHODS = [
   "evaluators.delete(evaluatorId)",
   "health.health()",
   "llmConnections.delete(id)",
+  "llmConnections.deleteOrganization(id)",
   "media.get(mediaId)",
   "models.get(id)",
   "models.delete(id)",
@@ -57,13 +58,13 @@ const PLACEHOLDER_METHODS = [
   "scim.deleteUser(userId)",
   "scoreConfigs.getById(configId)",
   "scores.delete(scoreId)",
+  "skills.deleteVersion(skillName, skillVersion)",
   "trace.delete(traceId)",
   "unstable.dashboardWidgets.get(widgetId)",
   "unstable.dashboardWidgets.delete(widgetId)",
   "unstable.dashboards.get(dashboardId)",
   "unstable.dashboards.delete(dashboardId)",
   "unstable.dashboards.deletePlacement(dashboardId, placementId)",
-  "unstable.skills.deleteVersion(skillName, skillVersion)",
 ];
 
 function runScript(...args: string[]): string {
