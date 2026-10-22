@@ -2,7 +2,7 @@ import type { Stats } from "node:fs";
 import { lstat, readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { getGlobalLogger, PropagatedSkillInput } from "@langfuse/core";
+import { getGlobalLogger, SkillReference } from "@langfuse/core";
 
 const LANGFUSE_SKILL_LOCK_FILE_NAME = "langfuse-skills.lock";
 
@@ -20,13 +20,13 @@ export interface DiscoverSkillsOptions {
  * Discover immediate skill subdirectories containing SKILL.md. No network calls.
  * CLI v1 locks provide names and versions; unlocked skills use directory names.
  * Installation records do not verify subsequent local edits.
- * Missing directories return an empty catalog; unreadable or malformed locks reject.
+ * Missing directories return an empty list; unreadable or malformed locks reject.
  */
 export async function discoverSkills({
   dir,
-}: DiscoverSkillsOptions): Promise<PropagatedSkillInput[]> {
+}: DiscoverSkillsOptions): Promise<SkillReference[]> {
   const root = resolve(dir);
-  const available = new Map<string, PropagatedSkillInput>();
+  const available = new Map<string, SkillReference>();
   if (!(await statIfExists(root))) return [];
   const lockPath = await findCliLock(root);
   const locked = await readCliLock(lockPath);

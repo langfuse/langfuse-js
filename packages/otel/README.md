@@ -57,52 +57,23 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 ## Skills
 
-Attach available skills to spans to display them on generation observations in Langfuse
+Attach available skills to spans to display them on generation observations in Langfuse.
 
 ```typescript
-import { LangfuseSpanProcessor } from "@langfuse/otel/node";
-
-export const langfuseSpanProcessor = new LangfuseSpanProcessor({
-  skills: { dir: ".agents/skills", attachByDefault: true },
-});
-```
-
-```typescript
-import { discoverSkills, LangfuseSpanProcessor } from "@langfuse/otel/node";
-
-// decide you want blocking discovery, use our discovery helper
-const availableSkills = await discoverSkills({ dir: ".agents/skills" });
-export const langfuseSpanProcessor = new LangfuseSpanProcessor({
-  skills: { availableSkills, attachByDefault: true },
-});
-```
-
-```typescript
-import { discoverSkills, LangfuseSpanProcessor } from "@langfuse/otel/node";
-
-// decide you want blocking discovery, use our discovery helper
-const availableSkills = await discoverSkills({ dir: ".agents/skills" });
-export const langfuseSpanProcessor = new LangfuseSpanProcessor({
-  skills: { availableSkills },
-});
-await propagateAttributes({ attachDiscoveredSkills: true }, () => runAgent());
-```
-
-```typescript
+import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { discoverSkills } from "@langfuse/otel/node";
-
-const availableSkills = await discoverSkills({ dir: ".agents/skills" });
-await propagateAttributes({ availableSkills }, () => runAgent());
-```
-
-```typescript
 import { propagateAttributes } from "@langfuse/tracing";
 
-await propagateAttributes(
-  { availableSkills: [{ name: "customer-support", version: 2 }] },
-  () => runAgent(),
+export const langfuseSpanProcessor = new LangfuseSpanProcessor({
+  skills: { availableSkills: await discoverSkills({ dir: ".agents/skills" }) },
+});
+
+await propagateAttributes({ shouldAttachAvailableSkills: true }, () =>
+  runAgent(),
 );
 ```
+
+The discovery helper reads `langfuse-skills.lock` from the configured directory or working directory and supports Node.js, Bun, and Deno through `node:fs`.
 
 ## Packages
 

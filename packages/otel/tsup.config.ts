@@ -5,6 +5,7 @@ export default defineConfig({
   format: ["cjs", "esm"],
   dts: true,
   splitting: false,
+  removeNodeProtocol: false,
   sourcemap: true,
   clean: true,
   outDir: "dist",

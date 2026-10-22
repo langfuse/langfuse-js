@@ -1,9 +1,7 @@
 import { MediaContentType } from "./api/api/index.js";
 
-/** A skill available to an observation. @public */
-export type PropagatedSkillInput = {
+export type SkillReference = {
   name: string;
-  /** Numeric version of the Langfuse-managed skill, when known */
   version?: number;
 };
 
