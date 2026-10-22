@@ -185,7 +185,6 @@ Approval can also be done on npmjs.com. If a staged release looks wrong, run
 - Write access to the repository
 - npm Trusted Publishing configured for `@langfuse/*` packages, with stage publish allowed and direct publish disallowed on the trust relationship (`npm trust github <package> --file release.yml --repo langfuse/langfuse-js --env "protected branches" --allow-stage-publish`, without `--allow-publish`)
 - Package publishing access on npm set to "Require two-factor authentication and disallow tokens"
-- A release GitHub App installed on this repository with only Contents read/write. Its client ID is the `RELEASE_APP_CLIENT_ID` variable and its private key the `RELEASE_APP_PRIVATE_KEY` secret, both on the `protected branches` environment. The App must be allowed to bypass the `main` pull request requirement and push restriction, and the `v*` tag rulesets, because release-it pushes the version commit and tag directly
 
 **Dry Run Mode:**
 

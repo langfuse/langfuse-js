@@ -33,7 +33,7 @@ on:
         default: ""
 
 permissions:
-  contents: read # Pushes and GitHub releases use the release GitHub App token
+  contents: read
   id-token: write # Required for npm provenance via OIDC
 
 concurrency:
@@ -220,9 +220,6 @@ jobs:
             echo "  $(basename $(dirname $dist_dir)): $size"
           done
 
-      # Minted after install and build so dependency scripts never see a write token.
-      # The App needs Contents read/write on this repo and must be allowed to bypass
-      # the main branch protection and the v* tag rulesets.
       - name: Create release GitHub App token
         id: release-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
