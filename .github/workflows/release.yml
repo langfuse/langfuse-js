@@ -33,9 +33,8 @@ on:
         default: ""
 
 permissions:
-  contents: write
+  contents: read
   id-token: write # Required for npm provenance via OIDC
-  pull-requests: write
 
 concurrency:
   group: js-sdk-release
@@ -92,7 +91,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
           persist-credentials: false
 
       - name: Setup pnpm
@@ -106,14 +104,9 @@ jobs:
           cache: "" # Disable cache for release workflow (publishes to npm)
 
       - name: Configure Git
-        env:
-          GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
           git config user.name "langfuse-bot"
           git config user.email "langfuse-bot@langfuse.com"
-
-          echo "$GH_ACCESS_TOKEN" | gh auth login --with-token
-          gh auth setup-git
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -227,12 +220,12 @@ jobs:
             echo "  $(basename $(dirname $dist_dir)): $size"
           done
 
-      - name: Run release-it (version, git, npm publish)
+      # release-it bumps, rebuilds (the build inlines the new version) and commits and tags
+      # locally. It runs dependency code, so it must never get the release token.
+      - name: Run release-it (version, build, commit, tag)
         id: release
         if: inputs.dry_run == false
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-          NPM_CONFIG_TAG: ${{ steps.release-params.outputs.tag }}
           STEPS_RELEASE_PARAMS_OUTPUTS_RELEASE_INCREMENT: ${{ steps.release-params.outputs.release_increment }}
           STEPS_RELEASE_PARAMS_OUTPUTS_PRE_RELEASE_FLAG: ${{ steps.release-params.outputs.pre_release_flag }}
         run: |
@@ -241,8 +234,6 @@ jobs:
       - name: Run release-it (dry run)
         if: inputs.dry_run == true
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-          NPM_CONFIG_TAG: ${{ steps.release-params.outputs.tag }}
           STEPS_RELEASE_PARAMS_OUTPUTS_RELEASE_INCREMENT: ${{ steps.release-params.outputs.release_increment }}
           STEPS_RELEASE_PARAMS_OUTPUTS_PRE_RELEASE_FLAG: ${{ steps.release-params.outputs.pre_release_flag }}
         run: |
@@ -252,6 +243,49 @@ jobs:
       - name: Get version
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Create release GitHub App token
+        id: release-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Push release commit and tag
+        id: push
+        if: inputs.dry_run == false
+        env:
+          GH_TOKEN: ${{ steps.release-token.outputs.token }}
+        run: |
+          gh auth setup-git
+          git push --follow-tags
+
+      - name: Create GitHub release
+        id: github-release
+        if: inputs.dry_run == false
+        env:
+          GH_TOKEN: ${{ steps.release-token.outputs.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PRE_RELEASE_FLAG: ${{ steps.release-params.outputs.pre_release_flag }}
+        run: |
+          prerelease_arg=""
+          if [ -n "${PRE_RELEASE_FLAG}" ]; then
+            prerelease_arg="--prerelease"
+          fi
+          gh release create "v${VERSION}" \
+            --verify-tag \
+            --title "v${VERSION}" \
+            --generate-notes \
+            $prerelease_arg \
+            release-artifacts/*.tar.gz
+
+      - name: Stage packages on npm
+        id: stage
+        if: inputs.dry_run == false
+        env:
+          NPM_CONFIG_TAG: ${{ steps.release-params.outputs.tag }}
+        run: pnpm -r stage publish --provenance --access public --no-git-checks --ignore-scripts --tag "$NPM_CONFIG_TAG"
 
       - name: Notify Slack on success
         if: success() && inputs.dry_run == false
@@ -524,10 +558,16 @@ jobs:
       - name: Rollback notification on partial failure
         if: failure() && steps.release.outcome == 'success'
         run: |
-          echo "⚠️  Release succeeded but post-release steps failed"
-          echo "Published version: v${STEPS_VERSION_OUTPUTS_VERSION}"
+          echo "⚠️  Release partially completed for v${STEPS_VERSION_OUTPUTS_VERSION}"
           echo ""
-          echo "Version bumped, GitHub release created, and all npm packages staged; they still need npm approval."
-          echo "Check the workflow logs for what failed in post-release steps (e.g., Slack notifications)."
+          echo "Push release commit and tag: ${PUSH_OUTCOME:-skipped}"
+          echo "Create GitHub release:       ${GITHUB_RELEASE_OUTCOME:-skipped}"
+          echo "Stage packages on npm:       ${STAGE_OUTCOME:-skipped}"
+          echo ""
+          echo "Steps marked success need no rerun; staged npm packages still need approval."
+          echo "Check the workflow logs for the failed step."
         env:
           STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+          GITHUB_RELEASE_OUTCOME: ${{ steps.github-release.outcome }}
+          STAGE_OUTCOME: ${{ steps.stage.outcome }}
