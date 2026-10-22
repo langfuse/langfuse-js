@@ -261,13 +261,13 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "✅ Langfuse JS/TS SDK v${{ steps.version.outputs.version }} published to npm",
+              "text": "⏳ Langfuse JS/TS SDK v${{ steps.version.outputs.version }} staged on npm, awaiting approval",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "✅ Langfuse JS/TS SDK Released",
+                    "text": "⏳ Langfuse JS/TS SDK Staged on npm",
                     "emoji": true
                   }
                 },
@@ -288,7 +288,7 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Packages:*\n6 packages published"
+                      "text": "*Packages:*\nall `packages/*` staged, none installable yet"
                     }
                   ]
                 },
@@ -299,7 +299,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*📦 Published Packages:*\n• `@langfuse/client`\n• `@langfuse/core`\n• `@langfuse/tracing`\n• `@langfuse/otel`\n• `@langfuse/openai`\n• `@langfuse/langchain`"
+                    "text": "*🔐 Action required:* an npm maintainer must approve each staged version with 2FA on npmjs.com or via `npm stage approve <id>`, starting with `@langfuse/core`. `npm stage list` shows the pending stage ids."
                   }
                 },
                 {
@@ -340,7 +340,7 @@ jobs:
                   "elements": [
                     {
                       "type": "mrkdwn",
-                      "text": "🔒 Published with provenance attestations • 🤖 Automated release"
+                      "text": "🔒 Staged with provenance attestations • 👤 Goes live only after npm 2FA approval"
                     }
                   ]
                 }
@@ -482,7 +482,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*🔍 Next Steps:*\n• Check the workflow logs for error details\n• Verify all prerequisites are met\n• Check npm Trusted Publishing configuration\n• Verify Slack webhook secrets are set"
+                    "text": "*🔍 Next Steps:*\n• Check the workflow logs for error details\n• Verify all prerequisites are met\n• Check npm Trusted Publishing configuration (stage publish must be allowed)\n• Reject any versions this run already staged (`npm stage list`) before retrying\n• Verify Slack webhook secrets are set"
                   }
                 },
                 {
@@ -527,7 +527,7 @@ jobs:
           echo "⚠️  Release succeeded but post-release steps failed"
           echo "Published version: v${STEPS_VERSION_OUTPUTS_VERSION}"
           echo ""
-          echo "The release is fully complete (version bumped, npm published, GitHub release with all artifacts created)."
+          echo "Version bumped, GitHub release created, and all npm packages staged; they still need npm approval."
           echo "Check the workflow logs for what failed in post-release steps (e.g., Slack notifications)."
         env:
           STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
