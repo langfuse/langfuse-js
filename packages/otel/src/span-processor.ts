@@ -12,7 +12,7 @@ import {
   getPropagatedAttributesFromContext,
   serializeMetadataValue,
   serializeAvailableSkills,
-  PropagatedSkillInput,
+  SkillReference,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
@@ -162,17 +162,11 @@ export interface LangfuseSpanProcessorParams {
   release?: string;
 
   /**
-   * Resolve a skill catalog in the background for availability tracing.
-   * Catalogs are attached at span start when enabled by attachByDefault
-   * or the scope's attachDiscoveredSkills flag.
-   * Spans started before resolution completes have no automatic catalog;
-   * resolution never delays span start, export, or flush.
-   * Explicit or propagated availableSkills always take precedence.
+   * Available skills to attach when a scope enables via shouldAttachAvailableSkills.
+   * Explicit span skills or propagated availableSkills take precedence.
    */
   skills?: {
-    availableSkills: PropagatedSkillInput[] | Promise<PropagatedSkillInput[]>;
-    /** Attach the catalog by default; scopes can override with attachDiscoveredSkills. Defaults to false. */
-    attachByDefault?: boolean;
+    availableSkills: SkillReference[];
   };
 
   /**
@@ -260,9 +254,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private baseUrl?: string;
   private environment?: string;
   private release?: string;
-  private discoveredSkills?: string;
-  private skillsResolutionPending = false;
-  private attachSkillsByDefault: boolean;
+  private availableSkills?: string;
   private mask?: MaskFunction;
   private shouldExportSpan: ShouldExportSpan;
   private mediaUploadEnabled: boolean;
@@ -384,10 +376,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     this.environment =
       params?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
     this.release = params?.release ?? getEnv("LANGFUSE_RELEASE");
-    this.attachSkillsByDefault = params?.skills?.attachByDefault ?? false;
-    if (params?.skills?.availableSkills !== undefined) {
-      this.resolveSkills(params.skills.availableSkills);
-    }
+    this.availableSkills =
+      serializeAvailableSkills(params?.skills?.availableSkills) ?? undefined;
     this.mask = params?.mask;
     this.shouldExportSpan =
       params?.shouldExportSpan ??
@@ -423,31 +413,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     return getGlobalLogger();
   }
 
-  private resolveSkills(
-    skills: PropagatedSkillInput[] | Promise<PropagatedSkillInput[]>,
-  ): void {
-    if (Array.isArray(skills)) {
-      this.discoveredSkills = serializeAvailableSkills(skills) ?? undefined;
-      return;
-    }
-
-    this.skillsResolutionPending = true;
-    void skills
-      .then((resolvedSkills) => {
-        this.skillsResolutionPending = false;
-        if (!Array.isArray(resolvedSkills)) return;
-        this.discoveredSkills =
-          serializeAvailableSkills(resolvedSkills) ?? undefined;
-      })
-      .catch((err) => {
-        this.skillsResolutionPending = false;
-        this.logger.warn(
-          "Failed to resolve skills. Automatic skill availability is disabled.",
-          err,
-        );
-      });
-  }
-
   /**
    * Called when a span is started. Adds environment, release, skill availability, and propagated attributes to the span.
    *
@@ -473,41 +438,23 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       ];
     }
 
-    if (
-      span.attributes[
-        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-      ] != null
-    ) {
-      delete propagatedAttributes[
-        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-      ];
-    }
+    const skillsKey = LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
+    const hasSkillsOnSpan = span.attributes[skillsKey] != null;
+    const shouldAttachAvailableSkills =
+      parentContext.getValue(
+        LangfuseOtelContextKeys.shouldAttachAvailableSkills,
+      ) === true;
 
-    const attachDiscoveredSkills =
-      parentContext.getValue(LangfuseOtelContextKeys.attachDiscoveredSkills) ??
-      this.attachSkillsByDefault;
-    const hasCurrentSpanSkills =
-      span.attributes[
-        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-      ] != null;
-    const hasPropagateSkills =
-      propagatedAttributes[
-        LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-      ] != null;
+    if (hasSkillsOnSpan) {
+      delete propagatedAttributes[skillsKey];
+    }
     if (
-      attachDiscoveredSkills === true &&
-      !hasCurrentSpanSkills &&
-      !hasPropagateSkills
+      !hasSkillsOnSpan &&
+      propagatedAttributes[skillsKey] == null &&
+      shouldAttachAvailableSkills &&
+      this.availableSkills !== undefined
     ) {
-      if (this.discoveredSkills !== undefined) {
-        propagatedAttributes[
-          LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-        ] = this.discoveredSkills;
-      } else if (this.skillsResolutionPending) {
-        this.logger.warn(
-          "Skills are still loading. Skipping automatic skill availability for this span.",
-        );
-      }
+      propagatedAttributes[skillsKey] = this.availableSkills;
     }
 
     // Set propagated attributes, environment and release attributes

@@ -19,7 +19,7 @@ import {
   LangfuseOtelSpanAttributes,
 } from "./constants.js";
 import { getGlobalLogger } from "./logger/index.js";
-import { PropagatedSkillInput } from "./types.js";
+import { SkillReference } from "./types.js";
 import { serializeMetadataValue } from "./utils.js";
 
 type CorrelatedKey =
@@ -57,7 +57,7 @@ type PropagatedExperimentAttributes = {
 };
 
 export const LangfuseOtelContextKeys: Record<
-  PropagatedKey | "attachDiscoveredSkills",
+  PropagatedKey | "shouldAttachAvailableSkills",
   symbol
 > = {
   userId: createContextKey("langfuse_user_id"),
@@ -68,7 +68,7 @@ export const LangfuseOtelContextKeys: Record<
   traceName: createContextKey("langfuse_trace_name"),
   environment: createContextKey("langfuse_environment"),
   availableSkills: createContextKey("langfuse_skills_available"),
-  attachDiscoveredSkills: createContextKey("langfuse_skills_enabled"),
+  shouldAttachAvailableSkills: createContextKey("langfuse_skills_enabled"),
   promptName: createContextKey("langfuse_prompt_name"),
   promptVersion: createContextKey("langfuse_prompt_version"),
 
@@ -236,21 +236,17 @@ export interface PropagateAttributesParams {
   /**
    * Skills available to generations in this scope, provided as names and optional versions.
    * Updates the active observation and propagates to new child spans.
-   * Nested catalogs replace the outer catalog; an empty array clears it.
+   * Nested lists replace the outer list; an empty array clears it.
    * Local to this process, even when asBaggage is enabled.
    */
-  availableSkills?: PropagatedSkillInput[];
+  availableSkills?: SkillReference[];
 
   /**
-   * Attach the processor's configured skills to spans created in this scope.
-   * Affects tracing only, not which skills the agent may invoke.
-   * Requires skills.availableSkills on LangfuseSpanProcessor, or skills.dir
-   * on the Node.js processor. Overrides the processor's skills.attachByDefault
-   * setting; nested scopes can set false to disable automatic availability.
-   * Explicit availableSkills catalogs work independently and take precedence.
-   * This flag is local to the process and is not sent as a span attribute or baggage.
+   * Attach the processor's skills.availableSkills to new spans in this scope.
+   * Affects tracing only; explicit availableSkills take precedence.
+   * Nested scopes can opt out with false. Never sent as an attribute or baggage.
    */
-  attachDiscoveredSkills?: boolean;
+  shouldAttachAvailableSkills?: boolean;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -422,7 +418,7 @@ export function propagateAttributes<
     environment,
     prompt,
     availableSkills,
-    attachDiscoveredSkills,
+    shouldAttachAvailableSkills,
     _internalExperiment,
   } = params;
 
@@ -588,10 +584,10 @@ export function propagateAttributes<
     }
   }
 
-  if (typeof attachDiscoveredSkills === "boolean") {
+  if (typeof shouldAttachAvailableSkills === "boolean") {
     context = context.setValue(
-      LangfuseOtelContextKeys.attachDiscoveredSkills,
-      attachDiscoveredSkills,
+      LangfuseOtelContextKeys.shouldAttachAvailableSkills,
+      shouldAttachAvailableSkills,
     );
   }
 
@@ -663,7 +659,7 @@ function extractPropagatedPrompt(
 
 /** Serialize skill references for the ingestion wire format. @internal */
 export function serializeAvailableSkills(
-  value: PropagatedSkillInput[] | undefined,
+  value: SkillReference[] | undefined,
 ): string | null {
   if (value === undefined) return null;
 
