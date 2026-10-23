@@ -68,9 +68,7 @@ export const langfuseSpanProcessor = new LangfuseSpanProcessor({
   skills: { availableSkills: await discoverSkills({ dir: ".agents/skills" }) },
 });
 
-await propagateAttributes({ shouldAttachAvailableSkills: true }, () =>
-  runAgent(),
-);
+await propagateAttributes({ attachSkills: true }, () => runAgent());
 ```
 
 The discovery helper reads `langfuse-skills.lock` from the configured directory or working directory and supports Node.js, Bun, and Deno through `node:fs`.

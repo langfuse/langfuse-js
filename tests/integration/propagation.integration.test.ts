@@ -2279,17 +2279,14 @@ describe("skill availability", () => {
 
   it("attaches configured skills only in enabled scopes and restores nested opt-outs", async () => {
     startObservation("default").end();
-    await propagateAttributes(
-      { shouldAttachAvailableSkills: true },
-      async () => {
-        await Promise.resolve();
-        startObservation("enabled").end();
-        propagateAttributes({ shouldAttachAvailableSkills: false }, () => {
-          startObservation("disabled").end();
-        });
-        startObservation("restored").end();
-      },
-    );
+    await propagateAttributes({ attachSkills: true }, async () => {
+      await Promise.resolve();
+      startObservation("enabled").end();
+      propagateAttributes({ attachSkills: false }, () => {
+        startObservation("disabled").end();
+      });
+      startObservation("restored").end();
+    });
     startObservation("outside").end();
 
     await waitForSpanExport(testEnv.mockExporter, 5);
@@ -2313,7 +2310,7 @@ describe("skill availability", () => {
     async ({ availableSkills }) => {
       propagateAttributes(
         {
-          shouldAttachAvailableSkills: true,
+          attachSkills: true,
           availableSkills: configuredSkills,
         },
         () => {
@@ -2357,7 +2354,7 @@ describe("skill availability", () => {
   it("preserves skills already set on a span over propagated skills", async () => {
     const explicitSkills = [{ name: "span", version: 3 }];
     propagateAttributes(
-      { availableSkills: configuredSkills, shouldAttachAvailableSkills: true },
+      { availableSkills: configuredSkills, attachSkills: true },
       () => {
         otelTrace
           .getTracer("langfuse-sdk")
@@ -2379,7 +2376,7 @@ describe("skill availability", () => {
       {
         userId: "user",
         availableSkills: configuredSkills,
-        shouldAttachAvailableSkills: true,
+        attachSkills: true,
         asBaggage: true,
       },
       () => {
