@@ -57,7 +57,7 @@ type PropagatedExperimentAttributes = {
 };
 
 export const LangfuseOtelContextKeys: Record<
-  PropagatedKey | "shouldAttachAvailableSkills",
+  PropagatedKey | "attachSkills",
   symbol
 > = {
   userId: createContextKey("langfuse_user_id"),
@@ -68,7 +68,7 @@ export const LangfuseOtelContextKeys: Record<
   traceName: createContextKey("langfuse_trace_name"),
   environment: createContextKey("langfuse_environment"),
   availableSkills: createContextKey("langfuse_skills_available"),
-  shouldAttachAvailableSkills: createContextKey("langfuse_skills_enabled"),
+  attachSkills: createContextKey("langfuse_skills_enabled"),
   promptName: createContextKey("langfuse_prompt_name"),
   promptVersion: createContextKey("langfuse_prompt_version"),
 
@@ -246,7 +246,7 @@ export interface PropagateAttributesParams {
    * Affects tracing only; explicit availableSkills take precedence.
    * Nested scopes can opt out with false. Never sent as an attribute or baggage.
    */
-  shouldAttachAvailableSkills?: boolean;
+  attachSkills?: boolean;
 
   /**
    * If true, propagates attributes using OpenTelemetry baggage for
@@ -418,7 +418,7 @@ export function propagateAttributes<
     environment,
     prompt,
     availableSkills,
-    shouldAttachAvailableSkills,
+    attachSkills,
     _internalExperiment,
   } = params;
 
@@ -584,10 +584,10 @@ export function propagateAttributes<
     }
   }
 
-  if (typeof shouldAttachAvailableSkills === "boolean") {
+  if (typeof attachSkills === "boolean") {
     context = context.setValue(
-      LangfuseOtelContextKeys.shouldAttachAvailableSkills,
-      shouldAttachAvailableSkills,
+      LangfuseOtelContextKeys.attachSkills,
+      attachSkills,
     );
   }
 

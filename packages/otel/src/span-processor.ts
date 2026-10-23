@@ -162,7 +162,7 @@ export interface LangfuseSpanProcessorParams {
   release?: string;
 
   /**
-   * Available skills to attach when a scope enables via shouldAttachAvailableSkills.
+   * Available skills to attach when a scope enables via attachSkills.
    * Explicit span skills or propagated availableSkills take precedence.
    */
   skills?: {
@@ -440,10 +440,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
     const skillsKey = LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
     const hasSkillsOnSpan = span.attributes[skillsKey] != null;
-    const shouldAttachAvailableSkills =
-      parentContext.getValue(
-        LangfuseOtelContextKeys.shouldAttachAvailableSkills,
-      ) === true;
+    const attachSkills =
+      parentContext.getValue(LangfuseOtelContextKeys.attachSkills) === true;
 
     if (hasSkillsOnSpan) {
       delete propagatedAttributes[skillsKey];
@@ -451,7 +449,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     if (
       !hasSkillsOnSpan &&
       propagatedAttributes[skillsKey] == null &&
-      shouldAttachAvailableSkills &&
+      attachSkills &&
       this.availableSkills !== undefined
     ) {
       propagatedAttributes[skillsKey] = this.availableSkills;
