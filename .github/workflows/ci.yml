@@ -195,6 +195,12 @@ jobs:
             echo "❌ Error: pnpm-lock.yaml was modified during install"
             exit 1
           }
+      - name: Verify lockfile is a single YAML document
+        run: |
+          if grep -qx -- '---' pnpm-lock.yaml; then
+            echo "❌ Error: pnpm-lock.yaml has multiple YAML documents; GitHub's dependency graph only reads the first. Keep pmOnFail: ignore in pnpm-workspace.yaml."
+            exit 1
+          fi
       - run: pnpm build
       - run: pnpm lint
       - run: pnpm format:check
