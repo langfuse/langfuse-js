@@ -4,6 +4,7 @@
 
 import * as LangfuseAPI from "../../../../../index.js";
 
-export interface SkillListPagination extends LangfuseAPI.utils.MetaResponse {
-  hasNextPage: boolean;
+export interface TopicFacetList {
+  data: LangfuseAPI.unstable.TopicFacet[];
+  meta: LangfuseAPI.utils.MetaResponse;
 }
