@@ -4,6 +4,10 @@ import type {
   EmbedStartEvent,
   EmbeddingModelCallEndEvent,
   EmbeddingModelCallStartEvent,
+  Experimental_DecideEndEvent,
+  Experimental_DecideStartEvent,
+  Experimental_DecisionModelCallEndEvent,
+  Experimental_DecisionModelCallStartEvent,
   GenerateObjectEndEvent,
   GenerateObjectStartEvent,
   GenerateObjectStepEndEvent,
@@ -13,6 +17,7 @@ import type {
   GenerateTextStartEvent,
   GenerateTextStepEndEvent,
   GenerateTextStepStartEvent,
+  InferTelemetryEvent,
   LanguageModelCallEndEvent,
   LanguageModelCallStartEvent,
   RerankEndEvent,
@@ -33,7 +38,7 @@ import { createLangfuseObservationAttributes } from "./utils.js";
  *
  * Register this once at application startup (or pass it per-call via
  * `telemetry.integrations`) and every AI SDK call — `generateText`,
- * `streamText`, `generateObject`, `embed`, tool executions — is traced as
+ * `streamText`, `generateObject`, `embed`, `experimental_decide`, tool executions — is traced as
  * Langfuse observations. Requires the `LangfuseSpanProcessor` from
  * `@langfuse/otel` to be registered with your OpenTelemetry setup; this
  * integration only creates spans, the processor exports them to Langfuse.
@@ -171,6 +176,28 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
 
   onRerankEnd(event: RerankingModelCallEndEvent): void {
     this.delegate.onRerankEnd(event);
+  }
+
+  experimental_onDecideStart(
+    event: InferTelemetryEvent<Experimental_DecideStartEvent>,
+  ): void {
+    this.delegate.experimental_onDecideStart(event);
+  }
+
+  experimental_onDecisionModelCallStart(
+    event: Experimental_DecisionModelCallStartEvent,
+  ): void {
+    this.delegate.experimental_onDecisionModelCallStart(event);
+  }
+
+  experimental_onDecisionModelCallEnd(
+    event: Experimental_DecisionModelCallEndEvent,
+  ): void {
+    this.delegate.experimental_onDecisionModelCallEnd(event);
+  }
+
+  experimental_onDecideEnd(event: Experimental_DecideEndEvent): void {
+    this.delegate.experimental_onDecideEnd(event);
   }
 
   onEnd(

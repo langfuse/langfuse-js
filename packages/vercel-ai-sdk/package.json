@@ -41,7 +41,7 @@
     "dist"
   ],
   "dependencies": {
-    "@ai-sdk/otel": "^1.0.44",
+    "@ai-sdk/otel": "^1.0.128",
     "@langfuse/core": "workspace:^"
   },
   "peerDependencies": {
@@ -49,6 +49,6 @@
     "ai": ">=7.0.0 <8"
   },
   "devDependencies": {
-    "ai": "7.0.44"
+    "ai": "7.0.128"
   }
 }
