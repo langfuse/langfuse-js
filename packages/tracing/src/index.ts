@@ -278,7 +278,7 @@ export function startObservation(
  * generation.update({
  *   output: { role: 'assistant', content: 'Quantum computing...' },
  *   usageDetails: { promptTokens: 12, completionTokens: 150, totalTokens: 162 },
- *   costDetails: { totalCost: 0.002, currency: 'USD' }
+ *   costDetails: { total: 0.002 }
  * });
  * generation.end();
  *
@@ -577,7 +577,7 @@ export function startActiveObservation<
  *           completionTokens: result.usage?.completion_tokens,
  *           totalTokens: result.usage?.total_tokens
  *         },
- *         costDetails: { totalCost: 0.002, currency: 'USD' }
+ *         costDetails: { total: 0.002 }
  *       });
  *
  *       return result.choices[0].message.content;
@@ -985,8 +985,7 @@ export function setActiveTraceAsPublic() {
  *       totalTokens: response.usage.total_tokens
  *     },
  *     costDetails: {
- *       totalCost: 0.025,
- *       currency: 'USD'
+ *       total: 0.025
  *     }
  *   }, { asType: 'generation' });
  * }, {}, { asType: 'generation' });
