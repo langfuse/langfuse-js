@@ -3,7 +3,9 @@
  */
 
 /**
- * Field group selecting which observation columns are included in the export. Applies to all export sources; groups without a counterpart in the legacy data model (e.g. `trace_context`) are omitted from the legacy observations export.
+ * Field group selecting which columns are included in the export. Applies to all export sources.
+ * - Observation groups (`core` through `trace_context`) select observation columns; groups without a counterpart in the legacy data model (e.g. `trace_context`) are omitted from the legacy observations export.
+ * - Score groups (`score_` prefix) add optional columns to the scores export. The core score columns (`id`, `timestamp`, `trace_id`, `name`, `value`, …) are always exported and are not a selectable group; score groups add columns on top of them. `score_metadata` adds the score `metadata` column. `score_provenance` adds the references to where a score came from: `author_user_id`, `config_id`, `queue_id`, `evaluator_id`, `evaluation_rule_id`, `execution_trace_id`. Score groups are never selected by default.
  */
 export type BlobStorageExportFieldGroup =
   | "core"
@@ -16,7 +18,9 @@ export type BlobStorageExportFieldGroup =
   | "prompt"
   | "metrics"
   | "tools"
-  | "trace_context";
+  | "trace_context"
+  | "score_metadata"
+  | "score_provenance";
 export const BlobStorageExportFieldGroup = {
   Core: "core",
   Basic: "basic",
@@ -29,4 +33,6 @@ export const BlobStorageExportFieldGroup = {
   Metrics: "metrics",
   Tools: "tools",
   TraceContext: "trace_context",
+  ScoreMetadata: "score_metadata",
+  ScoreProvenance: "score_provenance",
 } as const;
