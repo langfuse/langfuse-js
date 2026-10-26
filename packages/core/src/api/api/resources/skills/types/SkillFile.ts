@@ -9,4 +9,6 @@ export interface SkillFile {
   sha256Hash: string;
   contentType: string;
   contentLength: number;
+  /** UTF-8 text content, included when fetching a skill with includeContent enabled. */
+  content?: string;
 }
