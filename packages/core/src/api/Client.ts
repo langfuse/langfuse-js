@@ -27,6 +27,7 @@ import { Prompts } from "./api/resources/prompts/client/Client.js";
 import { Scim } from "./api/resources/scim/client/Client.js";
 import { ScoreConfigs } from "./api/resources/scoreConfigs/client/Client.js";
 import { Scores } from "./api/resources/scores/client/Client.js";
+import { Skills } from "./api/resources/skills/client/Client.js";
 import { Trace } from "./api/resources/trace/client/Client.js";
 import { Unstable } from "./api/resources/unstable/client/Client.js";
 
@@ -98,6 +99,7 @@ export class LangfuseAPIClient {
   protected _scim: Scim | undefined;
   protected _scoreConfigs: ScoreConfigs | undefined;
   protected _scores: Scores | undefined;
+  protected _skills: Skills | undefined;
   protected _trace: Trace | undefined;
   protected _unstable: Unstable | undefined;
 
@@ -207,6 +209,10 @@ export class LangfuseAPIClient {
 
   public get scores(): Scores {
     return (this._scores ??= new Scores(this._options));
+  }
+
+  public get skills(): Skills {
+    return (this._skills ??= new Skills(this._options));
   }
 
   public get trace(): Trace {
