@@ -10,8 +10,10 @@
 ## Install
 
 ```bash
-npm install @langfuse/otel @opentelemetry/sdk-trace-node
+npm install @langfuse/otel @opentelemetry/sdk-node
 ```
+
+Works with OpenTelemetry JS SDK 2.x (`@opentelemetry/sdk-trace` 2.9 or later) and 3.x.
 
 ## Environment variables
 
@@ -40,15 +42,15 @@ uncompressed requests, set the `compression: "none"` option,
 
 ```typescript
 import { LangfuseSpanProcessor } from "@langfuse/otel";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 
 export const langfuseSpanProcessor = new LangfuseSpanProcessor();
 
-const tracerProvider = new NodeTracerProvider({
+const sdk = new NodeSDK({
   spanProcessors: [langfuseSpanProcessor],
 });
 
-tracerProvider.register();
+sdk.start();
 ```
 
 By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*` attributes, and spans from known LLM instrumentation libraries — pass `shouldExportSpan` to override.

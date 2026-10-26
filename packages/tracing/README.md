@@ -10,7 +10,7 @@
 ## Install
 
 ```bash
-npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-trace-node
+npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node
 ```
 
 ## Environment variables
@@ -30,18 +30,18 @@ The most common setup: trace `streamText` / `generateText` calls in a Next.js ap
 ```typescript
 // instrumentation.ts (project root)
 import { LangfuseSpanProcessor } from "@langfuse/otel";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 
 // Exported so route handlers can flush it before the serverless
 // function is frozen or terminated.
 export const langfuseSpanProcessor = new LangfuseSpanProcessor();
 
 export function register() {
-  const tracerProvider = new NodeTracerProvider({
+  const sdk = new NodeSDK({
     spanProcessors: [langfuseSpanProcessor],
   });
 
-  tracerProvider.register();
+  sdk.start();
 }
 ```
 
