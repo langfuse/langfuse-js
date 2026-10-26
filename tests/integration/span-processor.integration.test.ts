@@ -1009,7 +1009,9 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
       try {
         const span = startObservation("oversized-default-export");
         span.end();
-        await spanProcessor.forceFlush();
+        // SimpleSpanProcessor rethrows the failed export from forceFlush on
+        // OpenTelemetry SDK 3.x and only reports it on 2.x.
+        await spanProcessor.forceFlush().catch(() => undefined);
 
         expect(requestCount).toBe(0);
         expect(warn).toHaveBeenCalledWith(

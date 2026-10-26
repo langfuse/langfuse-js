@@ -248,7 +248,6 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private mediaUploadEnabled: boolean;
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
-  private exportMode: "immediate" | "batched";
   private mediaService: MediaService;
   private spanExportExpectationById: Map<string, boolean> = new Map();
 
@@ -350,10 +349,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
           }),
         });
 
-    this.exportMode =
-      params?.exportMode === "immediate" ? "immediate" : "batched";
     this.processor =
-      this.exportMode === "immediate"
+      params?.exportMode === "immediate"
         ? new SimpleSpanProcessor({ exporter })
         : new BatchSpanProcessor({
             exporter,
@@ -493,18 +490,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   public async forceFlush(): Promise<void> {
     await this.flush();
 
-    if (this.exportMode === "batched") {
-      return this.processor.forceFlush();
-    }
-
-    try {
-      await this.processor.forceFlush();
-    } catch {
-      // SimpleSpanProcessor in @opentelemetry/sdk-trace 3.x reports failed
-      // exports to the OpenTelemetry global error handler and then rethrows
-      // them from forceFlush. 2.x only reports them, so the rethrow is dropped
-      // to resolve forceFlush the same way on both versions.
-    }
+    return this.processor.forceFlush();
   }
 
   /**
