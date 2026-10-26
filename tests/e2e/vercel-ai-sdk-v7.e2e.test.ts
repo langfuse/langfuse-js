@@ -160,7 +160,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
 
   it("should trace a generateText call", async () => {
     const testParams = {
-      modelName: "gpt-3.5-turbo-0125",
+      modelName: "gpt-4o-mini",
       maxTokens: 50,
       prompt: "Invent a new holiday and describe its traditions.",
       functionId: "test-vercel-v7-generate-text",
@@ -233,7 +233,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
   it("should work with toolCalls", async () => {
     const testParams = {
       functionId: "test-vercel-v7-tool-call",
-      modelName: "gpt-3.5-turbo-0125",
+      modelName: "gpt-4o-mini",
       maxTokens: 512,
       prompt: "What is the weather in San Francisco?",
       userId: "some-user-id",
@@ -304,7 +304,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
   it("should trace a streamText call", async () => {
     const testParams = {
       functionId: "test-vercel-v7-stream-text",
-      modelName: "gpt-3.5-turbo-0125",
+      modelName: "gpt-4o-mini",
       maxTokens: 512,
       prompt: "Invent a new holiday and describe its traditions.",
       userId: "some-user-id",
@@ -439,7 +439,7 @@ describe("Vercel AI SDK v7 integration E2E tests", () => {
 
     const testParams = {
       functionId: "test-vercel-v7-stream-text-prompt",
-      modelName: "gpt-3.5-turbo-0125",
+      modelName: "gpt-4o-mini",
       maxTokens: 512,
       prompt: fetchedPrompt.prompt,
       userId: "some-user-id",
