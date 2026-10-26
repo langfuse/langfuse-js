@@ -11,7 +11,6 @@ import { nanoid } from "nanoid";
 import OpenAI from "openai";
 import { describe, it, afterEach, beforeEach, expect, vi } from "vitest";
 
-import { itQuarantined } from "./helpers/quarantine.js";
 import { ServerAssertions } from "./helpers/serverAssertions.js";
 import {
   setupServerTestEnvironment,
@@ -742,47 +741,42 @@ describe("Langfuse Datasets E2E", () => {
       }
     });
 
-    itQuarantined(
-      "should handle evaluators with different execution times",
-      "the wall-clock bound includes OpenAI latency",
-      async () => {
-        const fastEvaluator: Evaluator = async () => ({
-          name: "fast-eval",
-          value: 1,
-        });
+    it("should handle evaluators with different execution times", async () => {
+      const fastEvaluator: Evaluator = async () => ({
+        name: "fast-eval",
+        value: 1,
+      });
 
-        const slowEvaluator: Evaluator = async () => {
-          await new Promise((resolve) => setTimeout(resolve, 200));
-          return {
-            name: "slow-eval",
-            value: 0.5,
-          };
+      const slowEvaluator: Evaluator = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return {
+          name: "slow-eval",
+          value: 0.5,
         };
+      };
 
-        const start = Date.now();
-        const result = await langfuse.experiment.run({
-          name: "Mixed speed evaluators test",
-          description: "Test evaluators with different execution times",
-          data: dataset.slice(0, 2),
-          task,
-          evaluators: [fastEvaluator, slowEvaluator],
-        });
-        const duration = Date.now() - start;
+      const start = Date.now();
+      const result = await langfuse.experiment.run({
+        name: "Mixed speed evaluators test",
+        description: "Test evaluators with different execution times",
+        data: dataset.slice(0, 2),
+        task: async ({ input }) => `capital of ${input}`,
+        evaluators: [fastEvaluator, slowEvaluator],
+      });
+      const duration = Date.now() - start;
 
-        await testEnv.spanProcessor.forceFlush();
+      await testEnv.spanProcessor.forceFlush();
 
-        expect(result.itemResults).toHaveLength(2);
-        result.itemResults.forEach((item) => {
-          expect(item.evaluations).toHaveLength(2);
-          expect(item.evaluations.map((e) => e.name)).toContain("fast-eval");
-          expect(item.evaluations.map((e) => e.name)).toContain("slow-eval");
-        });
+      expect(result.itemResults).toHaveLength(2);
+      result.itemResults.forEach((item) => {
+        expect(item.evaluations).toHaveLength(2);
+        expect(item.evaluations.map((e) => e.name)).toContain("fast-eval");
+        expect(item.evaluations.map((e) => e.name)).toContain("slow-eval");
+      });
 
-        // Should complete in reasonable time (parallel execution)
-        expect(duration).toBeLessThan(2000); // Should be much faster than 400ms * 2 items sequentially
-      },
-      10000,
-    );
+      // Should complete in reasonable time (parallel execution)
+      expect(duration).toBeLessThan(2000); // Should be much faster than 400ms * 2 items sequentially
+    }, 10000);
   });
 
   // Data Persistence and API Integration Tests
