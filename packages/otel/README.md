@@ -15,6 +15,12 @@ npm install @langfuse/otel @opentelemetry/sdk-node
 
 Works with OpenTelemetry JS SDK 2.x (`@opentelemetry/sdk-trace` 2.9 or later) and 3.x.
 
+If your app uses OpenTelemetry JS SDK 2.x, install the 2.x line of `@opentelemetry/sdk-trace` explicitly. Otherwise npm picks 3.x, which requires `@opentelemetry/api` 1.10 or later, and the install fails with `ERESOLVE`:
+
+```bash
+npm install @langfuse/otel @opentelemetry/sdk-trace@^2.9
+```
+
 ## Environment variables
 
 ```bash
