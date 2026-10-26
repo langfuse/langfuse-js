@@ -1,6 +1,6 @@
 import { observeOpenAI } from "@langfuse/openai";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
-import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
+import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { SpanAssertions } from "./helpers/assertions.js";

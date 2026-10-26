@@ -1,5 +1,5 @@
 import { LANGFUSE_TRACER_NAME } from "@langfuse/core";
-import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
+import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 import { describe, expect, it } from "vitest";
 
 import {

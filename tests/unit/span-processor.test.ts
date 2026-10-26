@@ -10,7 +10,7 @@ import type {
   ReadableSpan,
   Span,
   SpanExporter,
-} from "@opentelemetry/sdk-trace-base";
+} from "@opentelemetry/sdk-trace";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LangfuseSpanProcessor } from "@langfuse/otel";
@@ -405,5 +405,51 @@ describe("propagation: internal app-root baggage", () => {
     for (const key of Object.keys(propagated)) {
       expect(key).not.toContain("langfuse_trace_id");
     }
+  });
+});
+
+describe("LangfuseSpanProcessor forceFlush with a failing exporter", () => {
+  const failingExporter = (): SpanExporter => ({
+    export: vi.fn<SpanExporter["export"]>((_spans, callback) =>
+      callback({ code: ExportResultCode.FAILED, error: new Error("boom") }),
+    ),
+    shutdown: async () => undefined,
+  });
+
+  function endLangfuseSpan(processor: LangfuseSpanProcessor) {
+    const span = createTestSpan({
+      traceId: TRACE_ID,
+      instrumentationScopeName: LANGFUSE_TRACER_NAME,
+    });
+    processor.onStart(span, ROOT_CONTEXT);
+    processor.onEnd(span);
+  }
+
+  it("resolves in immediate mode", async () => {
+    const exporter = failingExporter();
+    const processor = new LangfuseSpanProcessor({
+      exporter,
+      exportMode: "immediate",
+    });
+
+    endLangfuseSpan(processor);
+
+    await expect(processor.forceFlush()).resolves.toBeUndefined();
+    expect(exporter.export).toHaveBeenCalledOnce();
+    await processor.shutdown();
+  });
+
+  it("rejects in batched mode", async () => {
+    const exporter = failingExporter();
+    const processor = new LangfuseSpanProcessor({
+      exporter,
+      exportMode: "batched",
+    });
+
+    endLangfuseSpan(processor);
+
+    await expect(processor.forceFlush()).rejects.toThrow("boom");
+    expect(exporter.export).toHaveBeenCalledOnce();
+    await processor.shutdown();
   });
 });

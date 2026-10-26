@@ -1,4 +1,4 @@
-import { SpanExporter, ReadableSpan } from "@opentelemetry/sdk-trace-base";
+import { SpanExporter, ReadableSpan } from "@opentelemetry/sdk-trace";
 import { ExportResult, ExportResultCode } from "@opentelemetry/core";
 
 /**

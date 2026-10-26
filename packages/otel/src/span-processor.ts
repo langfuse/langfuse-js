@@ -22,7 +22,7 @@ import {
   SpanExporter,
   ReadableSpan,
   SpanProcessor,
-} from "@opentelemetry/sdk-trace-base";
+} from "@opentelemetry/sdk-trace";
 
 import { withDefaultHeaders } from "./headers.js";
 import { MediaService } from "./MediaService.js";
@@ -248,6 +248,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private mediaUploadEnabled: boolean;
   private apiClient: LangfuseAPIClient;
   private processor: SpanProcessor;
+  private exportMode: "immediate" | "batched";
   private mediaService: MediaService;
   private spanExportExpectationById: Map<string, boolean> = new Map();
 
@@ -349,10 +350,13 @@ export class LangfuseSpanProcessor implements SpanProcessor {
           }),
         });
 
+    this.exportMode =
+      params?.exportMode === "immediate" ? "immediate" : "batched";
     this.processor =
-      params?.exportMode === "immediate"
-        ? new SimpleSpanProcessor(exporter)
-        : new BatchSpanProcessor(exporter, {
+      this.exportMode === "immediate"
+        ? new SimpleSpanProcessor({ exporter })
+        : new BatchSpanProcessor({
+            exporter,
             maxExportBatchSize: flushAt ? Number(flushAt) : undefined,
             scheduledDelayMillis: flushIntervalSeconds
               ? Number(flushIntervalSeconds) * 1_000
@@ -489,7 +493,18 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   public async forceFlush(): Promise<void> {
     await this.flush();
 
-    return this.processor.forceFlush();
+    if (this.exportMode === "batched") {
+      return this.processor.forceFlush();
+    }
+
+    try {
+      await this.processor.forceFlush();
+    } catch {
+      // SimpleSpanProcessor in @opentelemetry/sdk-trace 3.x reports failed
+      // exports to the OpenTelemetry global error handler and then rethrows
+      // them from forceFlush. 2.x only reports them, so the rethrow is dropped
+      // to resolve forceFlush the same way on both versions.
+    }
   }
 
   /**
@@ -587,7 +602,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private isExpectedExportedAtStart(span: Span): boolean {
-    // Span (from sdk-trace-base) already implements ReadableSpan, so the cast
+    // Span (from sdk-trace) already implements ReadableSpan, so the cast
     // is safe and avoids depending on private OTel APIs.
     const readable = span as unknown as ReadableSpan;
 

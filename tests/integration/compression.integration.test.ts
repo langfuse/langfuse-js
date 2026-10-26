@@ -6,7 +6,7 @@ import {
   LangfuseSpanProcessor,
   type LangfuseSpanProcessorParams,
 } from "@langfuse/otel";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { TracerProvider } from "@opentelemetry/sdk-trace";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type ExportRequest = { contentEncoding?: string; body: Buffer };
@@ -29,7 +29,7 @@ async function exportSpan(
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as AddressInfo;
 
-  const provider = new NodeTracerProvider({
+  const provider = new TracerProvider({
     spanProcessors: [
       new LangfuseSpanProcessor({
         baseUrl: `http://127.0.0.1:${port}`,

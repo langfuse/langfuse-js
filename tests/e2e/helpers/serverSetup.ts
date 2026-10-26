@@ -34,7 +34,7 @@ export async function setupServerTestEnvironment(
   const serviceName = options.serviceName || `e2e-test-service-${Date.now()}`;
 
   const sdk = new NodeSDK({
-    spanProcessor,
+    spanProcessors: [spanProcessor],
     instrumentations: options.enableInstrumentation ? undefined : [], // No auto-instrumentation by default
   });
 

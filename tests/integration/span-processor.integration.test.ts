@@ -1001,7 +1001,7 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         mediaUploadEnabled: false,
       });
       const sdk = new NodeSDK({
-        spanProcessor,
+        spanProcessors: [spanProcessor],
         instrumentations: [],
       });
       sdk.start();

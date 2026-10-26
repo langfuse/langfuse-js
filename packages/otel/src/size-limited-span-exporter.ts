@@ -1,7 +1,7 @@
 import { getEnv, getGlobalLogger } from "@langfuse/core";
 import type { Attributes } from "@opentelemetry/api";
 import { ExportResultCode } from "@opentelemetry/core";
-import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
+import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace";
 
 export const DEFAULT_MAX_BATCH_SIZE_BYTES = 64 * 1024 * 1024;
 

@@ -8,7 +8,7 @@ import {
   uploadMedia,
 } from "@langfuse/core";
 import type { MediaContentType } from "@langfuse/core";
-import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
+import { ReadableSpan } from "@opentelemetry/sdk-trace";
 
 export class MediaService {
   private pendingMediaUploads: Set<Promise<void>> = new Set();

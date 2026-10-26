@@ -4,9 +4,9 @@ import { createTraceId } from "@langfuse/tracing";
 import { trace } from "@opentelemetry/api";
 import {
   AlwaysOnSampler,
-  BasicTracerProvider,
+  TracerProvider,
   type Sampler,
-} from "@opentelemetry/sdk-trace-base";
+} from "@opentelemetry/sdk-trace";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Deferred<T> = {
@@ -25,7 +25,7 @@ function deferred<T>(): Deferred<T> {
 
 function registerTracerProvider(sampler: Sampler = new AlwaysOnSampler()) {
   trace.disable();
-  trace.setGlobalTracerProvider(new BasicTracerProvider({ sampler }));
+  trace.setGlobalTracerProvider(new TracerProvider({ sampler }));
 }
 
 function createLangfuseClientMock(
