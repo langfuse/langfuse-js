@@ -1,5 +1,5 @@
 import type { Stats } from "node:fs";
-import { lstat, readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { getGlobalLogger, SkillReference } from "@langfuse/core";
@@ -20,7 +20,8 @@ export interface DiscoverSkillsOptions {
  * Discover immediate skill subdirectories containing SKILL.md. No network calls.
  * CLI v1 locks provide names and versions; unlocked skills use directory names.
  * Installation records do not verify subsequent local edits.
- * Missing directories return an empty list; unreadable or malformed locks reject.
+ * Symlinks are followed. Missing directories return an empty list.
+ * Unreadable or malformed locks warn and fall back to directory names.
  */
 export async function discoverSkills({
   dir,
@@ -28,16 +29,34 @@ export async function discoverSkills({
   const root = resolve(dir);
   const available = new Map<string, SkillReference>();
   if (!(await statIfExists(root))) return [];
-  const lockPath = await findCliLock(root);
-  const locked = await readCliLock(lockPath);
+  let locked = new Map<string, SkillReference>();
+  try {
+    const lockPath = await findCliLock(root);
+    locked = await readCliLock(lockPath);
+  } catch (error) {
+    getGlobalLogger().warn(
+      `Could not read skill lockfile for ${root}. Using directory names without versions.`,
+      error,
+    );
+  }
   const skillDirEntries = await readdir(root, { withFileTypes: true });
   for (const candidate of skillDirEntries) {
-    if (!candidate.isDirectory() || candidate.name.startsWith(".")) continue;
+    if (candidate.name.startsWith(".")) continue;
     const candidateDirectory = join(root, candidate.name);
-    const skillMdStats = await statIfExists(
-      join(candidateDirectory, "SKILL.md"),
-    );
-    if (!skillMdStats?.isFile()) continue;
+    try {
+      const directoryStats = await statIfExists(candidateDirectory);
+      if (!directoryStats?.isDirectory()) continue;
+      const skillMdStats = await statIfExists(
+        join(candidateDirectory, "SKILL.md"),
+      );
+      if (!skillMdStats?.isFile()) continue;
+    } catch (error) {
+      getGlobalLogger().warn(
+        `Skipping skill directory ${candidateDirectory}: could not inspect files.`,
+        error,
+      );
+      continue;
+    }
     const identity = locked.get(candidateDirectory);
     const name = identity?.name ?? candidate.name;
     if (name.length > 128) {
@@ -124,7 +143,7 @@ function hasCode(error: unknown, code: string): boolean {
 
 async function statIfExists(path: string): Promise<Stats | undefined> {
   try {
-    return await lstat(path);
+    return await stat(path);
   } catch (error) {
     if (hasCode(error, "ENOENT")) return undefined;
     throw error;

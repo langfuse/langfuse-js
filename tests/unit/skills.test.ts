@@ -1,4 +1,11 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -98,11 +105,89 @@ describe("discoverSkills", () => {
     expect(await discoverSkills({ dir: join(cwd, "missing") })).toEqual([]);
   });
 
-  it.each(["not json", '{"lockVersion":2,"skills":[]}'])(
-    "rejects an invalid lockfile: %s",
-    async (content) => {
-      await writeFile(join(dir, "langfuse-skills.lock"), content);
-      await expect(discoverSkills({ dir })).rejects.toThrow();
+  it.each(["directory", "SKILL.md"])(
+    "skips a skill with a looping %s symlink and keeps valid skills",
+    async (target) => {
+      const warn = vi
+        .spyOn(getGlobalLogger(), "warn")
+        .mockImplementation(() => {});
+      const broken = join(dir, "broken");
+      if (target === "SKILL.md") await mkdir(broken);
+      const link = target === "directory" ? broken : join(broken, target);
+      await symlink(link, link);
+      await createSkill("support");
+
+      expect(await discoverSkills({ dir })).toEqual([{ name: "support" }]);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(broken),
+        expect.objectContaining({ code: "ELOOP" }),
+      );
     },
   );
+
+  it.each(["not json", '{"lockVersion":2,"skills":[]}'])(
+    "falls back to names for an invalid lockfile: %s",
+    async (content) => {
+      const warn = vi
+        .spyOn(getGlobalLogger(), "warn")
+        .mockImplementation(() => {});
+      await createSkill("support");
+      await writeLock(cwd, [
+        { path: "skills/support", name: "other", version: 3 },
+      ]);
+      await writeFile(join(dir, "langfuse-skills.lock"), content);
+
+      expect(await discoverSkills({ dir })).toEqual([{ name: "support" }]);
+      expect(warn).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(["directory", "unreadable", "symlink-loop"])(
+    "falls back to names when the lockfile is %s",
+    async (kind) => {
+      const warn = vi
+        .spyOn(getGlobalLogger(), "warn")
+        .mockImplementation(() => {});
+      await createSkill("support");
+      const lock = join(dir, "langfuse-skills.lock");
+      if (kind === "directory") await mkdir(lock);
+      else if (kind === "symlink-loop") await symlink(lock, lock);
+      else {
+        await writeLock(dir, []);
+        await chmod(lock, 0);
+      }
+      try {
+        expect(await discoverSkills({ dir })).toEqual([{ name: "support" }]);
+        expect(warn).toHaveBeenCalled();
+      } finally {
+        if (kind === "unreadable") await chmod(lock, 0o600);
+      }
+    },
+  );
+
+  it("discovers linked skill folders, entrypoints, and lockfiles", async () => {
+    const target = join(cwd, "shared-skill");
+    await mkdir(target);
+    await writeFile(join(target, "SKILL.md"), "# Shared");
+    await symlink(target, join(dir, "linked-directory"), "dir");
+    await mkdir(join(dir, "linked-file"));
+    await symlink(
+      join(target, "SKILL.md"),
+      join(dir, "linked-file", "SKILL.md"),
+    );
+    await symlink(join(cwd, "missing"), join(dir, "broken"), "dir");
+    await symlink(target, join(dir, ".hidden"), "dir");
+    await writeLock(cwd, [
+      { path: "linked-directory", name: "managed", version: 2 },
+    ]);
+    await symlink(
+      join(cwd, "langfuse-skills.lock"),
+      join(dir, "langfuse-skills.lock"),
+    );
+
+    expect(await discoverSkills({ dir })).toEqual([
+      { name: "managed", version: 2 },
+      { name: "linked-file" },
+    ]);
+  });
 });
