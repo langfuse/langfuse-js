@@ -18,10 +18,10 @@ Works with OpenTelemetry JS SDK 2.x (`@opentelemetry/sdk-trace` 2.9 or later) an
 If a peer isn't pinned in your app, npm installs its newest version, which is 3.x. 3.x packages need `@opentelemetry/api` 1.10, so on SDK 2.x the install fails with `ERESOLVE`. Pin the OpenTelemetry packages to the 2.x line:
 
 ```bash
-npm install @langfuse/otel @opentelemetry/api@~1.9 @opentelemetry/core@^2 @opentelemetry/sdk-trace@^2.9 "@opentelemetry/exporter-trace-otlp-http@<0.300" "@opentelemetry/otlp-exporter-base@<0.300" "@opentelemetry/sdk-node@<0.300"
+npm install @langfuse/otel @opentelemetry/api@~1.9 @opentelemetry/core@^2 @opentelemetry/sdk-trace@^2.9 "@opentelemetry/exporter-trace-otlp-http@<0.300" "@opentelemetry/otlp-exporter-base@<0.300"
 ```
 
-See the [migration notes](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6#opentelemetry-sdk) for both lines.
+See the [upgrade guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6#opentelemetry-sdk).
 
 ## Environment variables
 
