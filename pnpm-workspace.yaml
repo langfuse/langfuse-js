@@ -1,6 +1,12 @@
 packages:
   - 'packages/*'
 
+# Keeps pnpm-lock.yaml a single YAML document. With pnpm's version pin recorded,
+# pnpm writes an env document first, and GitHub's dependency graph reads only
+# that one, so Dependabot sees no project dependencies. CI pins pnpm through the
+# packageManager field instead (pnpm/action-setup, corepack).
+pmOnFail: ignore
+
 allowBuilds:
   esbuild: false
   protobufjs: false
