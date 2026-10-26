@@ -65,7 +65,7 @@ import { discoverSkills } from "@langfuse/otel/node";
 import { propagateAttributes } from "@langfuse/tracing";
 
 export const langfuseSpanProcessor = new LangfuseSpanProcessor({
-  skills: { availableSkills: await discoverSkills({ dir: ".agents/skills" }) },
+  skills: { available: await discoverSkills({ dir: ".agents/skills" }) },
 });
 
 await propagateAttributes({ attachSkills: true }, () => runAgent());

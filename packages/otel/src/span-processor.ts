@@ -163,10 +163,10 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Available skills to attach when a scope enables via attachSkills.
-   * Explicit span skills or propagated availableSkills take precedence.
+   * Explicit span skills or propagated skillsAvailable take precedence.
    */
   skills?: {
-    availableSkills: SkillReference[];
+    available: SkillReference[];
   };
 
   /**
@@ -377,7 +377,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       params?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
     this.release = params?.release ?? getEnv("LANGFUSE_RELEASE");
     this.availableSkills =
-      serializeAvailableSkills(params?.skills?.availableSkills) ?? undefined;
+      serializeAvailableSkills(params?.skills?.available) ?? undefined;
     this.mask = params?.mask;
     this.shouldExportSpan =
       params?.shouldExportSpan ??

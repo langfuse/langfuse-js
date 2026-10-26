@@ -30,7 +30,7 @@ type CorrelatedKey =
   | "tags"
   | "traceName"
   | "environment"
-  | "availableSkills"
+  | "skillsAvailable"
   | "promptName"
   | "promptVersion";
 
@@ -67,7 +67,7 @@ export const LangfuseOtelContextKeys: Record<
   tags: createContextKey("langfuse_tags"),
   traceName: createContextKey("langfuse_trace_name"),
   environment: createContextKey("langfuse_environment"),
-  availableSkills: createContextKey("langfuse_skills_available"),
+  skillsAvailable: createContextKey("langfuse_skills_available"),
   attachSkills: createContextKey("langfuse_skills_enabled"),
   promptName: createContextKey("langfuse_prompt_name"),
   promptVersion: createContextKey("langfuse_prompt_version"),
@@ -239,11 +239,11 @@ export interface PropagateAttributesParams {
    * Nested lists replace the outer list; an empty array clears it.
    * Local to this process, even when asBaggage is enabled.
    */
-  availableSkills?: SkillReference[];
+  skillsAvailable?: SkillReference[];
 
   /**
-   * Attach the processor's skills.availableSkills to new spans in this scope.
-   * Affects tracing only; explicit availableSkills take precedence.
+   * Attach the processor's skills.available to new spans in this scope.
+   * Affects tracing only; explicit skillsAvailable take precedence.
    * Nested scopes can opt out with false. Never sent as an attribute or baggage.
    */
   attachSkills?: boolean;
@@ -417,7 +417,7 @@ export function propagateAttributes<
     traceName,
     environment,
     prompt,
-    availableSkills,
+    skillsAvailable,
     attachSkills,
     _internalExperiment,
   } = params;
@@ -571,11 +571,11 @@ export function propagateAttributes<
     }
   }
 
-  if (availableSkills !== undefined) {
-    const serialized = serializeAvailableSkills(availableSkills);
+  if (skillsAvailable !== undefined) {
+    const serialized = serializeAvailableSkills(skillsAvailable);
     if (serialized !== null) {
       context = setPropagatedAttribute({
-        key: "availableSkills",
+        key: "skillsAvailable",
         value: serialized,
         context,
         span,
@@ -667,7 +667,7 @@ export function serializeAvailableSkills(
     return JSON.stringify(value);
   } catch {
     getGlobalLogger().warn(
-      "Could not serialize availableSkills. Dropping value.",
+      "Could not serialize skill references. Dropping value.",
     );
     return null;
   }
@@ -776,13 +776,13 @@ export function getPropagatedAttributesFromContext(
     propagatedAttributes[spanKey] = promptVersion;
   }
 
-  const availableSkills = context.getValue(
-    LangfuseOtelContextKeys["availableSkills"],
+  const skillsAvailable = context.getValue(
+    LangfuseOtelContextKeys["skillsAvailable"],
   );
-  if (typeof availableSkills === "string") {
+  if (typeof skillsAvailable === "string") {
     propagatedAttributes[
       LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE
-    ] = availableSkills;
+    ] = skillsAvailable;
   }
 
   const metadata = context.getValue(LangfuseOtelContextKeys["metadata"]);
@@ -831,7 +831,7 @@ type SetPropagatedAttributeParams = {
         | "traceName"
         | "environment"
         | "promptName"
-        | "availableSkills"
+        | "skillsAvailable"
         | ExperimentKey;
       value: string;
     }
@@ -888,7 +888,7 @@ function setPropagatedAttribute(params: SetPropagatedAttributeParams): Context {
   }
 
   // Set on baggage
-  if (asBaggage && key !== "availableSkills") {
+  if (asBaggage && key !== "skillsAvailable") {
     const baggageKey = getBaggageKeyForPropagatedKey(key);
     let baggage =
       propagation.getBaggage(context) || propagation.createBaggage();
@@ -1033,7 +1033,7 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
       return LangfuseOtelSpanAttributes.TRACE_NAME;
     case "environment":
       return LangfuseOtelSpanAttributes.ENVIRONMENT;
-    case "availableSkills":
+    case "skillsAvailable":
       return LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
     case "metadata":
       return LangfuseOtelSpanAttributes.TRACE_METADATA;
@@ -1066,7 +1066,7 @@ function getSpanKeyForPropagatedKey(key: PropagatedKey): string {
 }
 
 function getBaggageKeyForPropagatedKey(
-  key: Exclude<PropagatedKey, "availableSkills">,
+  key: Exclude<PropagatedKey, "skillsAvailable">,
 ): string {
   // baggage keys must be snake case for correct cross service propagation
   // second service might run Python SDK that is expecting snake case keys

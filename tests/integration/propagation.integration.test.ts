@@ -2269,7 +2269,7 @@ describe("skill availability", () => {
 
   beforeEach(async () => {
     testEnv = await setupTestEnvironment({
-      spanProcessorConfig: { skills: { availableSkills: configuredSkills } },
+      spanProcessorConfig: { skills: { available: configuredSkills } },
     });
   });
 
@@ -2303,18 +2303,18 @@ describe("skill availability", () => {
   });
 
   it.each([
-    { availableSkills: [] },
-    { availableSkills: [{ name: "explicit", version: 2 }] },
+    { skillsAvailable: [] },
+    { skillsAvailable: [{ name: "explicit", version: 2 }] },
   ])(
-    "lets an explicit list override configured and inherited skills: $availableSkills",
-    async ({ availableSkills }) => {
+    "lets an explicit list override configured and inherited skills: $skillsAvailable",
+    async ({ skillsAvailable }) => {
       propagateAttributes(
         {
           attachSkills: true,
-          availableSkills: configuredSkills,
+          skillsAvailable: configuredSkills,
         },
         () => {
-          propagateAttributes({ availableSkills }, () => {
+          propagateAttributes({ skillsAvailable }, () => {
             startObservation("explicit").end();
           });
           startObservation("outer").end();
@@ -2324,7 +2324,7 @@ describe("skill availability", () => {
       await waitForSpanExport(testEnv.mockExporter, 2);
       expect(
         testEnv.mockExporter.getSpanByName("explicit")?.attributes[skillsKey],
-      ).toBe(JSON.stringify(availableSkills));
+      ).toBe(JSON.stringify(skillsAvailable));
       expect(
         testEnv.mockExporter.getSpanByName("outer")?.attributes[skillsKey],
       ).toBe(JSON.stringify(configuredSkills));
@@ -2332,12 +2332,12 @@ describe("skill availability", () => {
   );
 
   it("propagates explicit skills without opt-in and preserves additional fields", async () => {
-    const availableSkills = [
+    const skillsAvailable = [
       { name: "support", version: 2, extra: "preserved" },
     ];
     const tracer = otelTrace.getTracer("langfuse-sdk");
     tracer.startActiveSpan("parent", (span) => {
-      propagateAttributes({ availableSkills }, () => {
+      propagateAttributes({ skillsAvailable }, () => {
         startObservation("child").end();
       });
       span.end();
@@ -2347,14 +2347,14 @@ describe("skill availability", () => {
     for (const name of ["parent", "child"]) {
       expect(
         testEnv.mockExporter.getSpanByName(name)?.attributes[skillsKey],
-      ).toBe(JSON.stringify(availableSkills));
+      ).toBe(JSON.stringify(skillsAvailable));
     }
   });
 
   it("preserves skills already set on a span over propagated skills", async () => {
     const explicitSkills = [{ name: "span", version: 3 }];
     propagateAttributes(
-      { availableSkills: configuredSkills, attachSkills: true },
+      { skillsAvailable: configuredSkills, attachSkills: true },
       () => {
         otelTrace
           .getTracer("langfuse-sdk")
@@ -2375,7 +2375,7 @@ describe("skill availability", () => {
     propagateAttributes(
       {
         userId: "user",
-        availableSkills: configuredSkills,
+        skillsAvailable: configuredSkills,
         attachSkills: true,
         asBaggage: true,
       },
