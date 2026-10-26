@@ -409,10 +409,16 @@ describe("propagation: internal app-root baggage", () => {
 });
 
 describe("LangfuseSpanProcessor forceFlush with a failing exporter", () => {
+  // Fails asynchronously, like a network export, so the export is still
+  // pending when forceFlush is called.
   const failingExporter = (): SpanExporter => ({
-    export: vi.fn<SpanExporter["export"]>((_spans, callback) =>
-      callback({ code: ExportResultCode.FAILED, error: new Error("boom") }),
-    ),
+    export: vi.fn<SpanExporter["export"]>((_spans, callback) => {
+      setTimeout(
+        () =>
+          callback({ code: ExportResultCode.FAILED, error: new Error("boom") }),
+        10,
+      );
+    }),
     shutdown: async () => undefined,
   });
 
