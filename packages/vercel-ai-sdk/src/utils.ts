@@ -4,7 +4,6 @@ import {
   LangfuseOtelSpanAttributes,
   serializeMetadataValue,
 } from "@langfuse/core";
-import type { Attributes } from "@opentelemetry/api";
 
 import type { LangfusePrompt } from "./types.js";
 
@@ -17,9 +16,9 @@ const PROMPT_SPAN_TYPES = new Set<OpenTelemetrySpanType>([
 export function createLangfuseObservationAttributes(params: {
   runtimeContext?: Record<string, unknown>;
   spanType: OpenTelemetrySpanType;
-}): Attributes {
+}): Record<string, string | number> {
   const { runtimeContext, spanType } = params;
-  const attributes: Attributes = {};
+  const attributes: Record<string, string | number> = {};
 
   if (!runtimeContext) {
     return attributes;
