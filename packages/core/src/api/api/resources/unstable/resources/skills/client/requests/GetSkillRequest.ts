@@ -9,6 +9,4 @@
 export interface GetSkillRequest {
   version?: number;
   label?: string;
-  /** Include UTF-8 text content in each file. Defaults to false. */
-  includeContent?: boolean;
 }
