@@ -130,7 +130,7 @@ describe("OpenAI integration E2E tests", () => {
       messages: [
         { role: "system", content: "Who is the president of America ?" },
       ],
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       stream: true,
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
@@ -161,7 +161,7 @@ describe("OpenAI integration E2E tests", () => {
       stream: "true",
     });
     expect(generation.usageDetails).toBeDefined();
-    expect(generation.model).toContain("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-4.1-mini");
     expect(generation.usageDetails).toMatchObject({
       input: expect.any(Number),
       output: expect.any(Number),
@@ -322,7 +322,7 @@ describe("OpenAI integration E2E tests", () => {
     });
 
     const res = await wrappedOpenAI.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       messages: [{ role: "user", content: "Explain how to assemble a PC" }],
       functions,
       function_call: functionCall,
@@ -352,7 +352,7 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
     });
     expect(generation.usageDetails).toBeDefined();
-    expect(generation.model).toContain("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-4.1-mini");
     expect(generation.usageDetails).toMatchObject({
       input: expect.any(Number),
       output: expect.any(Number),
@@ -384,7 +384,7 @@ describe("OpenAI integration E2E tests", () => {
     });
 
     const res = await wrappedOpenAI.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       messages: [
         { role: "user", content: "What's the weather like in Boston today?" },
       ],
@@ -435,7 +435,7 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
     });
     expect(generation.usageDetails).toBeDefined();
-    expect(generation.model).toContain("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-4.1-mini");
     expect(generation.usageDetails).toMatchObject({
       input: expect.any(Number),
       output: expect.any(Number),
@@ -487,7 +487,7 @@ describe("OpenAI integration E2E tests", () => {
 
     const stream = await wrappedOpenAI.chat.completions.create({
       stream: true,
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       messages: [
         { role: "user", content: "What's the weather like in Boston today?" },
       ],
@@ -537,7 +537,7 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
     });
     expect(generation.usageDetails).toBeDefined();
-    expect(generation.model).toContain("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-4.1-mini");
     expect(generation.usageDetails).toMatchObject({
       input: expect.any(Number),
       output: expect.any(Number),
@@ -581,7 +581,7 @@ describe("OpenAI integration E2E tests", () => {
     });
 
     const res1 = await wrappedOpenAI.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       messages: [
         { role: "user", content: "What's the weather like in Boston today?" },
       ],
@@ -590,7 +590,7 @@ describe("OpenAI integration E2E tests", () => {
     });
 
     await wrappedOpenAI.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       messages: [
         { role: "user", content: "What's the weather like in Boston today?" },
       ],
@@ -599,7 +599,7 @@ describe("OpenAI integration E2E tests", () => {
     });
 
     await wrappedOpenAI.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       messages: [
         { role: "user", content: "What's the weather like in Boston today?" },
       ],
@@ -629,7 +629,7 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
     });
     expect(generation.usageDetails).toBeDefined();
-    expect(generation.model).toContain("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-4.1-mini");
     expect(generation.usageDetails).toMatchObject({
       input: expect.any(Number),
       output: expect.any(Number),
@@ -656,7 +656,7 @@ describe("OpenAI integration E2E tests", () => {
 
     const res = await wrappedOpenAI.chat.completions.create({
       messages: [{ role: "system", content: "Tell me a story about a king." }],
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
@@ -685,7 +685,7 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
     });
     expect(generation.usageDetails).toBeDefined();
-    expect(generation.model).toContain("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-4.1-mini");
     expect(generation.usageDetails).toMatchObject({
       input: expect.any(Number),
       output: expect.any(Number),
@@ -775,7 +775,7 @@ describe("OpenAI integration E2E tests", () => {
 
     const res = await wrappedOpenAI.chat.completions.create({
       messages: [{ role: "system", content: "Tell me a story about a king." }],
-      model: "gpt-3.5-turbo",
+      model: "gpt-4.1-mini",
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
@@ -802,7 +802,7 @@ describe("OpenAI integration E2E tests", () => {
       max_tokens: 300,
     });
     expect(generation.usageDetails).toBeDefined();
-    expect(generation.model).toContain("gpt-3.5-turbo");
+    expect(generation.model).toContain("gpt-4.1-mini");
     expect(generation.usageDetails).toMatchObject({
       input: expect.any(Number),
       output: expect.any(Number),
