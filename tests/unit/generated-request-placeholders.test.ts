@@ -39,6 +39,7 @@ const PLACEHOLDER_METHODS = [
   "evaluators.delete(evaluatorId)",
   "health.health()",
   "llmConnections.delete(id)",
+  "llmConnections.deleteOrganization(id)",
   "media.get(mediaId)",
   "models.get(id)",
   "models.delete(id)",
@@ -64,6 +65,7 @@ const PLACEHOLDER_METHODS = [
   "unstable.dashboards.delete(dashboardId)",
   "unstable.dashboards.deletePlacement(dashboardId, placementId)",
   "unstable.skills.deleteVersion(skillName, skillVersion)",
+  "unstable.topics.getFacet(facetId)",
 ];
 
 function runScript(...args: string[]): string {

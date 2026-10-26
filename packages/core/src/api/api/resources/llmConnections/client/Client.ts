@@ -450,6 +450,396 @@ export class LlmConnections {
     }
   }
 
+  /**
+   * Get all organization-level LLM connections. Requires an organization-scoped API key.
+   *
+   * @param {LangfuseAPI.GetOrganizationLlmConnectionsRequest} request
+   * @param {LlmConnections.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.llmConnections.listOrganization()
+   */
+  public listOrganization(
+    request: LangfuseAPI.GetOrganizationLlmConnectionsRequest = {},
+    requestOptions?: LlmConnections.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.PaginatedLlmConnections> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__listOrganization(request, requestOptions),
+    );
+  }
+
+  private async __listOrganization(
+    request: LangfuseAPI.GetOrganizationLlmConnectionsRequest = {},
+    requestOptions?: LlmConnections.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.PaginatedLlmConnections>> {
+    const { page, limit } = request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (page != null) {
+      _queryParams["page"] = page.toString();
+    }
+
+    if (limit != null) {
+      _queryParams["limit"] = limit.toString();
+    }
+
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/organizations/llm-connections",
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.PaginatedLlmConnections,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/organizations/llm-connections.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Create or update an organization-level LLM connection. The connection is upserted on provider and inherited by projects without a provider override. Requires an organization-scoped API key.
+   *
+   * @param {LangfuseAPI.UpsertLlmConnectionRequest} request
+   * @param {LlmConnections.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.llmConnections.upsertOrganization({
+   *         provider: "provider",
+   *         adapter: "anthropic",
+   *         secretKey: "secretKey",
+   *         baseURL: undefined,
+   *         customModels: undefined,
+   *         withDefaultModels: undefined,
+   *         extraHeaders: undefined,
+   *         config: undefined
+   *     })
+   */
+  public upsertOrganization(
+    request: LangfuseAPI.UpsertLlmConnectionRequest,
+    requestOptions?: LlmConnections.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.LlmConnection> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__upsertOrganization(request, requestOptions),
+    );
+  }
+
+  private async __upsertOrganization(
+    request: LangfuseAPI.UpsertLlmConnectionRequest,
+    requestOptions?: LlmConnections.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.LlmConnection>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/organizations/llm-connections",
+      ),
+      method: "PUT",
+      headers: _headers,
+      contentType: "application/json",
+      queryParameters: requestOptions?.queryParams,
+      requestType: "json",
+      body: request,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.LlmConnection,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling PUT /api/public/organizations/llm-connections.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Delete an organization-level LLM connection by id. Evaluators in projects without an override for the provider are automatically paused. Requires an organization-scoped API key.
+   *
+   * @param {string} id
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
+   * @param {LlmConnections.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.llmConnections.deleteOrganization("id")
+   */
+  public deleteOrganization(
+    id: string,
+    request: Record<string, never> = {},
+    requestOptions?: LlmConnections.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.DeleteLlmConnectionResponse> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__deleteOrganization(id, requestOptions),
+    );
+  }
+
+  private async __deleteOrganization(
+    id: string,
+    requestOptions?: LlmConnections.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.DeleteLlmConnectionResponse>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/organizations/llm-connections/${encodeURIComponent(id)}`,
+      ),
+      method: "DELETE",
+      headers: _headers,
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.DeleteLlmConnectionResponse,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling DELETE /api/public/organizations/llm-connections/{id}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
   protected async _getAuthorizationHeader(): Promise<string | undefined> {
     const username = await core.Supplier.get(this._options.username);
     const password = await core.Supplier.get(this._options.password);

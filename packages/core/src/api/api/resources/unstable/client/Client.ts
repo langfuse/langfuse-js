@@ -6,6 +6,7 @@ import * as core from "../../../../core/index.js";
 import { DashboardWidgets } from "../resources/dashboardWidgets/client/Client.js";
 import { Dashboards } from "../resources/dashboards/client/Client.js";
 import { Skills } from "../resources/skills/client/Client.js";
+import { Topics } from "../resources/topics/client/Client.js";
 
 export declare namespace Unstable {
   export interface Options {
@@ -33,6 +34,7 @@ export class Unstable {
   protected _dashboardWidgets: DashboardWidgets | undefined;
   protected _dashboards: Dashboards | undefined;
   protected _skills: Skills | undefined;
+  protected _topics: Topics | undefined;
 
   constructor(_options: Unstable.Options) {
     this._options = _options;
@@ -48,5 +50,9 @@ export class Unstable {
 
   public get skills(): Skills {
     return (this._skills ??= new Skills(this._options));
+  }
+
+  public get topics(): Topics {
+    return (this._topics ??= new Topics(this._options));
   }
 }
