@@ -55,7 +55,7 @@
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.39.0",
     "ai": "7.0.2",
-    "autoevals": "^0.0.131",
+    "autoevals": "^0.4.1",
     "dotenv": "^17.2.0",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
