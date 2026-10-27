@@ -760,7 +760,7 @@ describe("Langfuse Datasets E2E", () => {
         name: "Mixed speed evaluators test",
         description: "Test evaluators with different execution times",
         data: dataset.slice(0, 2),
-        task,
+        task: async ({ input }) => `capital of ${input}`,
         evaluators: [fastEvaluator, slowEvaluator],
       });
       const duration = Date.now() - start;
