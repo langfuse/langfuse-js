@@ -55,6 +55,24 @@ By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*
 
 **Serverless / short-lived environments** (Vercel, AWS Lambda, Cloudflare Workers, edge): pass `exportMode: "immediate"` so spans are not held in a batch, and `await langfuseSpanProcessor.forceFlush()` before the function instance is frozen or terminated (e.g. inside Vercel's `after()` or the platform's `waitUntil()`). Spans still buffered when the process exits are lost.
 
+## Skills
+
+Attach available skills to spans to display them on generation observations in Langfuse.
+
+```typescript
+import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { discoverSkills } from "@langfuse/otel/node";
+import { propagateAttributes } from "@langfuse/tracing";
+
+export const langfuseSpanProcessor = new LangfuseSpanProcessor({
+  skills: { available: await discoverSkills({ dir: ".agents/skills" }) },
+});
+
+await propagateAttributes({ attachSkills: true }, () => runAgent());
+```
+
+The discovery helper reads `langfuse-skills.lock` from the configured directory or working directory and supports Node.js, Bun, and Deno through `node:fs`.
+
 ## Packages
 
 | Package                                                                                             | NPM                                                                                                                       | Description                                                       | Environments |

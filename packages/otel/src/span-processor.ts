@@ -5,11 +5,14 @@ import {
   LangfuseAPIClient,
   LANGFUSE_SDK_VERSION,
   LangfuseOtelSpanAttributes,
+  LangfuseOtelContextKeys,
   getEnv,
   base64Encode,
   getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
   serializeMetadataValue,
+  serializeAvailableSkills,
+  SkillReference,
 } from "@langfuse/core";
 import { Context } from "@opentelemetry/api";
 import { hrTimeToMilliseconds } from "@opentelemetry/core";
@@ -159,6 +162,14 @@ export interface LangfuseSpanProcessorParams {
   release?: string;
 
   /**
+   * Available skills to attach when a scope enables via attachSkills.
+   * Explicit span skills or propagated skillsAvailable take precedence.
+   */
+  skills?: {
+    available: SkillReference[];
+  };
+
+  /**
    * Request timeout in seconds. Can also be set via LANGFUSE_TIMEOUT environment variable.
    * @defaultValue 5
    */
@@ -243,6 +254,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   private baseUrl?: string;
   private environment?: string;
   private release?: string;
+  private availableSkills?: string;
   private mask?: MaskFunction;
   private shouldExportSpan: ShouldExportSpan;
   private mediaUploadEnabled: boolean;
@@ -364,6 +376,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     this.environment =
       params?.environment ?? getEnv("LANGFUSE_TRACING_ENVIRONMENT");
     this.release = params?.release ?? getEnv("LANGFUSE_RELEASE");
+    this.availableSkills =
+      serializeAvailableSkills(params?.skills?.available) ?? undefined;
     this.mask = params?.mask;
     this.shouldExportSpan =
       params?.shouldExportSpan ??
@@ -400,7 +414,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   /**
-   * Called when a span is started. Adds environment, release, and propagated attributes to the span.
+   * Called when a span is started. Adds environment, release, skill availability, and propagated attributes to the span.
    *
    * @param span - The span that was started
    * @param parentContext - The parent context
@@ -422,6 +436,23 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       delete propagatedAttributes[
         LangfuseOtelSpanAttributes.OBSERVATION_PROMPT_VERSION
       ];
+    }
+
+    const skillsKey = LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
+    const hasSkillsOnSpan = span.attributes[skillsKey] != null;
+    const attachSkills =
+      parentContext.getValue(LangfuseOtelContextKeys.attachSkills) === true;
+
+    if (hasSkillsOnSpan) {
+      delete propagatedAttributes[skillsKey];
+    }
+    if (
+      !hasSkillsOnSpan &&
+      propagatedAttributes[skillsKey] == null &&
+      attachSkills &&
+      this.availableSkills !== undefined
+    ) {
+      propagatedAttributes[skillsKey] = this.availableSkills;
     }
 
     // Set propagated attributes, environment and release attributes

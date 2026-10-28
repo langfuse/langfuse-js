@@ -2261,3 +2261,135 @@ describe("propagateAttributes", () => {
     });
   });
 });
+
+describe("skill availability", () => {
+  let testEnv: TestEnvironment;
+  const configuredSkills = [{ name: "configured", version: 1 }];
+  const skillsKey = LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE;
+
+  beforeEach(async () => {
+    testEnv = await setupTestEnvironment({
+      spanProcessorConfig: { skills: { available: configuredSkills } },
+    });
+  });
+
+  afterEach(async () => {
+    await teardownTestEnvironment(testEnv);
+  });
+
+  it("attaches configured skills only in enabled scopes and restores nested opt-outs", async () => {
+    startObservation("default").end();
+    await propagateAttributes({ attachSkills: true }, async () => {
+      await Promise.resolve();
+      startObservation("enabled").end();
+      propagateAttributes({ attachSkills: false }, () => {
+        startObservation("disabled").end();
+      });
+      startObservation("restored").end();
+    });
+    startObservation("outside").end();
+
+    await waitForSpanExport(testEnv.mockExporter, 5);
+    for (const name of ["enabled", "restored"]) {
+      expect(
+        testEnv.mockExporter.getSpanByName(name)?.attributes[skillsKey],
+      ).toBe(JSON.stringify(configuredSkills));
+    }
+    for (const name of ["default", "disabled", "outside"]) {
+      expect(
+        testEnv.mockExporter.getSpanByName(name)?.attributes[skillsKey],
+      ).toBeUndefined();
+    }
+  });
+
+  it.each([
+    { skillsAvailable: [] },
+    { skillsAvailable: [{ name: "explicit", version: 2 }] },
+  ])(
+    "lets an explicit list override configured and inherited skills: $skillsAvailable",
+    async ({ skillsAvailable }) => {
+      propagateAttributes(
+        {
+          attachSkills: true,
+          skillsAvailable: configuredSkills,
+        },
+        () => {
+          propagateAttributes({ skillsAvailable }, () => {
+            startObservation("explicit").end();
+          });
+          startObservation("outer").end();
+        },
+      );
+
+      await waitForSpanExport(testEnv.mockExporter, 2);
+      expect(
+        testEnv.mockExporter.getSpanByName("explicit")?.attributes[skillsKey],
+      ).toBe(JSON.stringify(skillsAvailable));
+      expect(
+        testEnv.mockExporter.getSpanByName("outer")?.attributes[skillsKey],
+      ).toBe(JSON.stringify(configuredSkills));
+    },
+  );
+
+  it("propagates explicit skills without opt-in and preserves additional fields", async () => {
+    const skillsAvailable = [
+      { name: "support", version: 2, extra: "preserved" },
+    ];
+    const tracer = otelTrace.getTracer("langfuse-sdk");
+    tracer.startActiveSpan("parent", (span) => {
+      propagateAttributes({ skillsAvailable }, () => {
+        startObservation("child").end();
+      });
+      span.end();
+    });
+
+    await waitForSpanExport(testEnv.mockExporter, 2);
+    for (const name of ["parent", "child"]) {
+      expect(
+        testEnv.mockExporter.getSpanByName(name)?.attributes[skillsKey],
+      ).toBe(JSON.stringify(skillsAvailable));
+    }
+  });
+
+  it("preserves skills already set on a span over propagated skills", async () => {
+    const explicitSkills = [{ name: "span", version: 3 }];
+    propagateAttributes(
+      { skillsAvailable: configuredSkills, attachSkills: true },
+      () => {
+        otelTrace
+          .getTracer("langfuse-sdk")
+          .startSpan("explicit", {
+            attributes: { [skillsKey]: JSON.stringify(explicitSkills) },
+          })
+          .end();
+      },
+    );
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+    expect(
+      testEnv.mockExporter.getSpanByName("explicit")?.attributes[skillsKey],
+    ).toBe(JSON.stringify(explicitSkills));
+  });
+
+  it("keeps both skill options out of baggage", () => {
+    propagateAttributes(
+      {
+        userId: "user",
+        skillsAvailable: configuredSkills,
+        attachSkills: true,
+        asBaggage: true,
+      },
+      () => {
+        expect(
+          propagation.getBaggage(otelContext.active())?.getAllEntries(),
+        ).toEqual([["langfuse_user_id", { value: "user" }]]);
+        expect(
+          getPropagatedAttributesFromContext(otelContext.active()),
+        ).toEqual({
+          [LangfuseOtelSpanAttributes.TRACE_USER_ID]: "user",
+          [skillsKey]: JSON.stringify(configuredSkills),
+        });
+      },
+    );
+  });
+});

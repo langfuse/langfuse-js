@@ -66,9 +66,14 @@ export default [
         {
           patterns: [
             {
+              group: ["**/node", "**/node/**"],
+              message:
+                "Files in node directories must not be imported into shared SDK code.",
+            },
+            {
               group: ["node:*", "fs", "path", "os", "crypto"],
               message:
-                "Node.js built-ins are not allowed in universal packages. Use @langfuse/otel for Node-specific functionality.",
+                "Node.js built-ins are not allowed in universal packages. Use @langfuse/otel/node for Node-specific functionality.",
             },
           ],
         },
@@ -76,7 +81,7 @@ export default [
     },
   },
   {
-    files: ["packages/otel/**/*.ts"],
+    files: ["packages/otel/src/node/**/*.ts"],
     rules: {
       "no-restricted-imports": "off",
     },
