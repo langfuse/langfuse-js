@@ -36,6 +36,25 @@ describe("base64ToBytes", () => {
     },
   );
 
+  it.each([
+    ["whitespace", "Zm9v Zg"],
+    ["missing padding", "Zm8"],
+  ])(
+    "decodes input atob accepts with %s to the same bytes with and without Buffer",
+    (_, base64) => {
+      expect(base64ToBytes(base64)).toEqual(decodeWithoutBuffer(base64));
+    },
+  );
+
+  it.each([
+    ["data after padding", "Zg==Zm8="],
+    ["a character outside the alphabet", "Zm9v!"],
+    ["a single character", "Z"],
+  ])("rejects malformed input with %s with and without Buffer", (_, base64) => {
+    expect(() => base64ToBytes(base64)).toThrow();
+    expect(() => decodeWithoutBuffer(base64)).toThrow();
+  });
+
   it("decodes to the original bytes", () => {
     expect(base64ToBytes("")).toEqual(new Uint8Array());
     expect(base64ToBytes("Zm9v")).toEqual(new Uint8Array([102, 111, 111]));
