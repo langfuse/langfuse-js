@@ -2,7 +2,7 @@
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { TracerProvider } from "@opentelemetry/sdk-trace";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -22,7 +22,7 @@ async function exportSpanHeaders(
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as AddressInfo;
 
-  const provider = new NodeTracerProvider({
+  const provider = new TracerProvider({
     spanProcessors: [
       new LangfuseSpanProcessor({
         baseUrl: `http://127.0.0.1:${port}`,

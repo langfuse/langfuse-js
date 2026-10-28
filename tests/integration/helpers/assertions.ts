@@ -1,4 +1,4 @@
-import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
+import { ReadableSpan } from "@opentelemetry/sdk-trace";
 import { SpanStatusCode } from "@opentelemetry/api";
 import { MockSpanExporter } from "./MockSpanExporter.js";
 import { expect } from "vitest";

@@ -22,7 +22,7 @@ import {
   SpanExporter,
   ReadableSpan,
   SpanProcessor,
-} from "@opentelemetry/sdk-trace-base";
+} from "@opentelemetry/sdk-trace";
 
 import { withDefaultHeaders } from "./headers.js";
 import { MediaService } from "./MediaService.js";
@@ -351,8 +351,9 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
     this.processor =
       params?.exportMode === "immediate"
-        ? new SimpleSpanProcessor(exporter)
-        : new BatchSpanProcessor(exporter, {
+        ? new SimpleSpanProcessor({ exporter })
+        : new BatchSpanProcessor({
+            exporter,
             maxExportBatchSize: flushAt ? Number(flushAt) : undefined,
             scheduledDelayMillis: flushIntervalSeconds
               ? Number(flushIntervalSeconds) * 1_000
@@ -587,7 +588,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
   }
 
   private isExpectedExportedAtStart(span: Span): boolean {
-    // Span (from sdk-trace-base) already implements ReadableSpan, so the cast
+    // Span (from sdk-trace) already implements ReadableSpan, so the cast
     // is safe and avoids depending on private OTel APIs.
     const readable = span as unknown as ReadableSpan;
 

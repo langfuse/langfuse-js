@@ -1,7 +1,7 @@
 import { getGlobalLogger } from "@langfuse/core";
 import { ExportResultCode } from "@opentelemetry/core";
 import { JsonTraceSerializer } from "@opentelemetry/otlp-transformer";
-import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base";
+import type { ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {

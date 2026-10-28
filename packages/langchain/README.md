@@ -10,7 +10,7 @@
 ## Install
 
 ```bash
-npm install @langfuse/langchain @langfuse/otel @opentelemetry/sdk-trace-node
+npm install @langfuse/langchain @langfuse/otel @opentelemetry/sdk-node
 ```
 
 Requires LangChain v1: `@langchain/core` `^1.0.0` is a peer dependency. LangChain `0.x` is not supported; stay on `@langfuse/langchain` v5 until you upgrade LangChain.
@@ -28,11 +28,11 @@ LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US
 ```typescript
 // Register the span processor once at startup
 import { LangfuseSpanProcessor } from "@langfuse/otel";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 
-new NodeTracerProvider({
+new NodeSDK({
   spanProcessors: [new LangfuseSpanProcessor()],
-}).register();
+}).start();
 
 // Pass the CallbackHandler to your LangChain invocations
 import { CallbackHandler } from "@langfuse/langchain";

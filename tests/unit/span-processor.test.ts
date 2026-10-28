@@ -10,7 +10,7 @@ import type {
   ReadableSpan,
   Span,
   SpanExporter,
-} from "@opentelemetry/sdk-trace-base";
+} from "@opentelemetry/sdk-trace";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LangfuseSpanProcessor } from "@langfuse/otel";

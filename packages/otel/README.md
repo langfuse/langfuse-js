@@ -10,8 +10,18 @@
 ## Install
 
 ```bash
-npm install @langfuse/otel @opentelemetry/sdk-trace-node
+npm install @langfuse/otel @opentelemetry/sdk-node
 ```
+
+Works with OpenTelemetry JS SDK 2.x (`@opentelemetry/sdk-trace` 2.9 or later) and 3.x.
+
+If a peer isn't pinned in your app, npm installs its newest version, which is 3.x. 3.x packages need `@opentelemetry/api` 1.10, so on SDK 2.x the install fails with `ERESOLVE`. Pin the OpenTelemetry packages to the 2.x line:
+
+```bash
+npm install @langfuse/otel @opentelemetry/api@~1.9 @opentelemetry/core@^2 @opentelemetry/sdk-trace@^2.9 "@opentelemetry/exporter-trace-otlp-http@<0.300" "@opentelemetry/otlp-exporter-base@<0.300"
+```
+
+See the [upgrade guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6#opentelemetry-sdk).
 
 ## Environment variables
 
@@ -40,20 +50,20 @@ uncompressed requests, set the `compression: "none"` option,
 
 ```typescript
 import { LangfuseSpanProcessor } from "@langfuse/otel";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 
 export const langfuseSpanProcessor = new LangfuseSpanProcessor();
 
-const tracerProvider = new NodeTracerProvider({
+const sdk = new NodeSDK({
   spanProcessors: [langfuseSpanProcessor],
 });
 
-tracerProvider.register();
+sdk.start();
 ```
 
 By default the processor exports Langfuse SDK spans, spans with `gen_ai.*`/`ai.*` attributes, and spans from known LLM instrumentation libraries — pass `shouldExportSpan` to override.
 
-**Serverless / short-lived environments** (Vercel, AWS Lambda, Cloudflare Workers, edge): pass `exportMode: "immediate"` so spans are not held in a batch, and `await langfuseSpanProcessor.forceFlush()` before the function instance is frozen or terminated (e.g. inside Vercel's `after()` or the platform's `waitUntil()`). Spans still buffered when the process exits are lost.
+**Serverless / short-lived environments** (Vercel, AWS Lambda, Cloudflare Workers, edge): pass `exportMode: "immediate"` so spans are not held in a batch, and `await langfuseSpanProcessor.forceFlush()` before the function instance is frozen or terminated (e.g. inside Vercel's `after()` or the platform's `waitUntil()`). Spans still buffered when the process exits are lost. With OpenTelemetry JS SDK 3.x, `forceFlush()` rejects if an export failed, in both export modes.
 
 ## Packages
 

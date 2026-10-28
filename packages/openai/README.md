@@ -10,7 +10,7 @@
 ## Install
 
 ```bash
-npm install @langfuse/openai @langfuse/otel openai @opentelemetry/sdk-trace-node
+npm install @langfuse/openai @langfuse/otel openai @opentelemetry/sdk-node
 ```
 
 ## Environment variables
@@ -26,11 +26,11 @@ LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US
 ```typescript
 // Register the span processor once at startup
 import { LangfuseSpanProcessor } from "@langfuse/otel";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 
-new NodeTracerProvider({
+new NodeSDK({
   spanProcessors: [new LangfuseSpanProcessor()],
-}).register();
+}).start();
 
 // Wrap the OpenAI client
 import OpenAI from "openai";

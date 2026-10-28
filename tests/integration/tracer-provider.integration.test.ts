@@ -6,7 +6,7 @@ import {
   getLangfuseTracer,
 } from "@langfuse/tracing";
 import { trace, context, SpanKind } from "@opentelemetry/api";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { TracerProvider } from "@opentelemetry/sdk-trace";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { MockSpanExporter } from "./helpers/MockSpanExporter.js";
@@ -21,7 +21,7 @@ describe("Tracer Provider Isolation Integration Tests", () => {
   let testEnv: TestEnvironment;
   let globalMockExporter: MockSpanExporter;
   let isolatedMockExporter: MockSpanExporter;
-  let isolatedProvider: NodeTracerProvider;
+  let isolatedProvider: TracerProvider;
 
   beforeEach(async () => {
     // Setup global test environment
@@ -37,7 +37,7 @@ describe("Tracer Provider Isolation Integration Tests", () => {
       timeout: 1000,
     });
 
-    isolatedProvider = new NodeTracerProvider({
+    isolatedProvider = new TracerProvider({
       spanProcessors: [isolatedSpanProcessor],
     });
 
@@ -85,7 +85,7 @@ describe("Tracer Provider Isolation Integration Tests", () => {
       const firstMockExporter = new MockSpanExporter();
       const secondMockExporter = new MockSpanExporter();
 
-      const firstProvider = new NodeTracerProvider({
+      const firstProvider = new TracerProvider({
         spanProcessors: [
           new LangfuseSpanProcessor({
             exporter: firstMockExporter,
@@ -94,7 +94,7 @@ describe("Tracer Provider Isolation Integration Tests", () => {
           }),
         ],
       });
-      const secondProvider = new NodeTracerProvider({
+      const secondProvider = new TracerProvider({
         spanProcessors: [
           new LangfuseSpanProcessor({
             exporter: secondMockExporter,
