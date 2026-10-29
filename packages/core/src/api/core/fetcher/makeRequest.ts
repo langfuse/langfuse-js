@@ -1,5 +1,10 @@
 import { anySignal, getTimeoutSignal } from "./signals.js";
 
+export interface MadeRequest {
+  response: Response;
+  cleanup: () => void;
+}
+
 export const makeRequest = async (
   fetchFn: (url: string, init: RequestInit) => Promise<Response>,
   url: string,
@@ -10,7 +15,7 @@ export const makeRequest = async (
   abortSignal?: AbortSignal,
   withCredentials?: boolean,
   duplex?: "half",
-): Promise<Response> => {
+): Promise<MadeRequest> => {
   const signals: AbortSignal[] = [];
 
   // Add timeout signal
@@ -25,20 +30,36 @@ export const makeRequest = async (
   if (abortSignal != null) {
     signals.push(abortSignal);
   }
-  let newSignals = anySignal(signals);
-  const response = await fetchFn(url, {
-    method: method,
-    headers,
-    body: requestBody,
-    signal: newSignals,
-    credentials: withCredentials ? "include" : undefined,
-    // @ts-ignore
-    duplex,
-  });
+  const { signal: newSignals, cleanup: cleanupSignals } = anySignal(signals);
+  let isCleanedUp = false;
+  const cleanup = () => {
+    if (isCleanedUp) {
+      return;
+    }
 
-  if (timeoutAbortId != null) {
-    clearTimeout(timeoutAbortId);
+    isCleanedUp = true;
+    newSignals.removeEventListener("abort", abortListener);
+    cleanupSignals();
+    if (timeoutAbortId != null) {
+      clearTimeout(timeoutAbortId);
+    }
+  };
+  const abortListener = () => cleanup();
+  newSignals.addEventListener("abort", abortListener);
+
+  try {
+    const response = await fetchFn(url, {
+      method,
+      headers,
+      body: requestBody,
+      signal: newSignals,
+      credentials: withCredentials ? "include" : undefined,
+      // @ts-ignore
+      duplex,
+    });
+    return { response, cleanup };
+  } catch (error) {
+    cleanup();
+    throw error;
   }
-
-  return response;
 };
