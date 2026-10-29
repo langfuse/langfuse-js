@@ -8,6 +8,7 @@ import {
   LangfuseOtelContextKeys,
   getEnv,
   base64Encode,
+  withProjectIdHeader,
   getLangfuseTraceIdFromBaggage,
   getPropagatedAttributesFromContext,
   serializeMetadataValue,
@@ -29,6 +30,7 @@ import {
 
 import { withDefaultHeaders } from "./headers.js";
 import { MediaService } from "./MediaService.js";
+import { MissingProjectHintSpanExporter } from "./missing-project-hint-span-exporter.js";
 import {
   SizeLimitedSpanExporter,
   resolveMaxBatchSizeBytesFromEnvironment,
@@ -118,6 +120,17 @@ export interface LangfuseSpanProcessorParams {
    * @defaultValue "https://cloud.langfuse.com"
    */
   baseUrl?: string;
+
+  /**
+   * ID of the project to export spans to. Required for organization API keys,
+   * which can access every project in their organization. Sent as the
+   * `x-langfuse-project-id` header on span export and media upload requests.
+   * Can also be set via LANGFUSE_PROJECT_ID environment variable.
+   *
+   * The constructor throws if `additionalHeaders` sets `x-langfuse-project-id`
+   * to a different value. A custom `exporter` must set the header itself.
+   */
+  projectId?: string;
 
   /**
    * Number of spans to batch before flushing. Can also be set via LANGFUSE_FLUSH_AT environment variable.
@@ -300,6 +313,8 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       getEnv("LANGFUSE_BASE_URL") ??
       getEnv("LANGFUSE_BASEURL") ?? // legacy v2
       "https://cloud.langfuse.com";
+    const projectId = params?.projectId ?? getEnv("LANGFUSE_PROJECT_ID");
+    const headers = withProjectIdHeader(projectId, params?.additionalHeaders);
 
     if (!params?.exporter && !publicKey) {
       logger.warn(
@@ -314,6 +329,11 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     if (params?.exporter && params.compression !== undefined) {
       logger.warn(
         "The compression option is ignored because a custom exporter was provided. Configure compression on the exporter instead.",
+      );
+    }
+    if (params?.exporter && projectId) {
+      logger.warn(
+        "A custom exporter was provided, so the projectId is not sent with span exports. Set the x-langfuse-project-id header on the exporter instead.",
       );
     }
     const flushAt = params?.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");
@@ -344,21 +364,24 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       ? params.exporter
       : new SizeLimitedSpanExporter({
           maxBatchSizeBytes: resolveMaxBatchSizeBytesFromEnvironment(),
-          delegate: new OTLPTraceExporter({
-            url: `${baseUrl}/api/public/otel/v1/traces`,
-            headers: withDefaultHeaders(
-              {
-                Authorization: `Basic ${authHeaderValue}`,
-                "x-langfuse-sdk-name": "javascript",
-                "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
-                "x-langfuse-public-key": publicKey ?? "<missing>",
-                "x-langfuse-ingestion-version": "4",
-              },
-              params?.additionalHeaders,
-            ),
-            timeoutMillis: timeoutSeconds * 1_000,
-            compression,
-          }),
+          delegate: new MissingProjectHintSpanExporter(
+            new OTLPTraceExporter({
+              url: `${baseUrl}/api/public/otel/v1/traces`,
+              headers: withDefaultHeaders(
+                {
+                  Authorization: `Basic ${authHeaderValue}`,
+                  "x-langfuse-sdk-name": "javascript",
+                  "x-langfuse-sdk-version": LANGFUSE_SDK_VERSION,
+                  "x-langfuse-public-key": publicKey ?? "<missing>",
+                  "x-langfuse-ingestion-version": "4",
+                },
+                headers,
+              ),
+              timeoutMillis: timeoutSeconds * 1_000,
+              compression,
+            }),
+            { projectId },
+          ),
         });
 
     this.processor =
@@ -391,7 +414,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
       xLangfuseSdkVersion: LANGFUSE_SDK_VERSION,
       xLangfuseSdkName: "javascript",
       environment: "", // noop as baseUrl is set
-      headers: params?.additionalHeaders,
+      headers,
     });
 
     this.mediaService = new MediaService({ apiClient: this.apiClient });
@@ -399,6 +422,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     logger.debug("Initialized LangfuseSpanProcessor with params:", {
       publicKey,
       baseUrl,
+      projectId,
       environment: this.environment,
       release: this.release,
       timeoutSeconds,

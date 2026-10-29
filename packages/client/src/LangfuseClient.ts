@@ -3,6 +3,7 @@ import {
   LANGFUSE_SDK_VERSION,
   getGlobalLogger,
   getEnv,
+  withProjectIdHeader,
 } from "@langfuse/core";
 
 import { DatasetManager } from "./dataset/index.js";
@@ -38,6 +39,17 @@ export interface LangfuseClientParams {
    * @defaultValue "https://cloud.langfuse.com"
    */
   baseUrl?: string;
+
+  /**
+   * ID of the project to send requests to. Required for organization API keys,
+   * which can access every project in their organization. Sent as the
+   * `x-langfuse-project-id` header on every request.
+   * Can also be provided via LANGFUSE_PROJECT_ID environment variable.
+   *
+   * The constructor throws if `additionalHeaders` sets `x-langfuse-project-id`
+   * to a different value.
+   */
+  projectId?: string;
 
   /**
    * Request timeout in seconds for each HTTP request made by the SDK managers:
@@ -190,7 +202,7 @@ export class LangfuseClient {
    *
    * @param params - Configuration parameters. If not provided, will use environment variables.
    *
-   * @throws Will log warnings if required credentials are not provided
+   * @throws If `additionalHeaders` sets a project ID header that conflicts with `projectId`
    *
    * @example
    * ```typescript
@@ -215,6 +227,9 @@ export class LangfuseClient {
       getEnv("LANGFUSE_BASE_URL") ??
       getEnv("LANGFUSE_BASEURL") ?? // legacy v2
       "https://cloud.langfuse.com";
+    const projectId = params?.projectId ?? getEnv("LANGFUSE_PROJECT_ID");
+    const headers = withProjectIdHeader(projectId, params?.additionalHeaders);
+    this.projectId = projectId || null;
 
     if (!publicKey) {
       logger.warn(
@@ -246,12 +261,13 @@ export class LangfuseClient {
       xLangfuseSdkVersion: LANGFUSE_SDK_VERSION,
       xLangfuseSdkName: "javascript",
       environment: "", // noop as baseUrl is set
-      headers: params?.additionalHeaders,
+      headers,
     });
 
     logger.debug("Initialized LangfuseClient with params:", {
       publicKey,
       baseUrl: this.baseUrl,
+      projectId,
       timeoutSeconds,
     });
 
@@ -332,8 +348,8 @@ export class LangfuseClient {
   }
 
   /**
-   * Returns the ID of the project the API keys belong to. Cached after the
-   * first successful lookup.
+   * Returns the configured `projectId`, or else the ID of the project the API
+   * keys belong to. Cached after the first successful lookup.
    *
    * @internal
    */
