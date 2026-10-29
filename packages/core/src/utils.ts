@@ -63,6 +63,11 @@ export function safeSetTimeout(fn: () => void, timeout: number): any {
 }
 
 export function base64ToBytes(base64: string): Uint8Array {
+  if (typeof Buffer !== "undefined") {
+    const buffer = Buffer.from(base64, "base64");
+    return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  }
+
   const binString = atob(base64);
 
   return Uint8Array.from(binString, (m) => m.codePointAt(0)!);
