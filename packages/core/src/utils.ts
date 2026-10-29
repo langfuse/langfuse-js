@@ -64,6 +64,11 @@ export function safeSetTimeout(fn: () => void, timeout: number): any {
 
 export function base64ToBytes(base64: string): Uint8Array {
   if (typeof Buffer !== "undefined") {
+    // Buffer.from is more lenient than atob (e.g. "aGVsbG8=AAAA" decodes to
+    // "hello" instead of throwing). LangfuseMedia.parseBase64DataUri relies on
+    // a decoding error to reject malformed payloads, so the fast path must keep
+    // atob's input contract: reject any string atob would reject.
+    assertAtobCompatibleBase64(base64);
     const buffer = Buffer.from(base64, "base64");
     return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   }
@@ -71,6 +76,38 @@ export function base64ToBytes(base64: string): Uint8Array {
   const binString = atob(base64);
 
   return Uint8Array.from(binString, (m) => m.codePointAt(0)!);
+}
+
+/**
+ * Reject base64 strings atob would reject: length % 4 === 1 (after stripping
+ * whitespace, which atob ignores), characters outside the base64 alphabet, or
+ * padding anywhere but the final one or two positions of a 4-block.
+ */
+function assertAtobCompatibleBase64(input: string): void {
+  const cleaned = input.replace(/[\t\n\f\r ]/g, "");
+  if (cleaned.length % 4 === 1) {
+    throw new Error("Invalid character");
+  }
+  const paddingStart = cleaned.indexOf("=");
+  if (paddingStart === -1) {
+    if (/[^A-Za-z0-9+/]/.test(cleaned)) {
+      throw new Error("Invalid character");
+    }
+    return;
+  }
+  const data = cleaned.slice(0, paddingStart);
+  if (/[^A-Za-z0-9+/]/.test(data)) {
+    throw new Error("Invalid character");
+  }
+  const padding = cleaned.length - paddingStart;
+  if (
+    padding > 2 ||
+    paddingStart % 4 < 2 ||
+    paddingStart % 4 + padding !== 4 ||
+    !/^=+$/.test(cleaned.slice(paddingStart))
+  ) {
+    throw new Error("Invalid character");
+  }
 }
 
 export function bytesToBase64(bytes: Uint8Array): string {
