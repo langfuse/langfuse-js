@@ -1,11 +1,9 @@
-const TIMEOUT = "timeout";
-
 export function getTimeoutSignal(timeoutMs: number): {
   signal: AbortSignal;
   abortId: NodeJS.Timeout;
 } {
   const controller = new AbortController();
-  const abortId = setTimeout(() => controller.abort(TIMEOUT), timeoutMs);
+  const abortId = setTimeout(() => controller.abort(), timeoutMs);
   return { signal: controller.signal, abortId };
 }
 
