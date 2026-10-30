@@ -18,9 +18,10 @@ export interface DiscoverSkillsOptions {
 
 /**
  * Discover immediate skill subdirectories containing SKILL.md. No network calls.
- * CLI v1 locks provide names and versions; unlocked skills use directory names.
+ * CLI locks provide names and versions; unlocked skills use directory names.
  * Installation records do not verify subsequent local edits.
- * Symlinks are followed. Missing directories return an empty list.
+ * Symlinks are followed. Missing directories return an empty list; unreadable
+ * ones warn and return an empty list.
  * Unreadable or malformed locks warn and fall back to directory names.
  */
 export async function discoverSkills({
@@ -28,7 +29,17 @@ export async function discoverSkills({
 }: DiscoverSkillsOptions): Promise<SkillReference[]> {
   const root = resolve(dir);
   const available = new Map<string, SkillReference>();
-  if (!(await statIfExists(root))) return [];
+  let skillDirEntries: string[];
+  try {
+    if (!(await statIfExists(root))) return [];
+    skillDirEntries = (await readdir(root)).sort();
+  } catch (error) {
+    getGlobalLogger().warn(
+      `Could not read skills directory ${root}. No skills discovered.`,
+      error,
+    );
+    return [];
+  }
   let locked = new Map<string, SkillReference>();
   try {
     const lockPath = await findCliLock(root);
@@ -39,10 +50,9 @@ export async function discoverSkills({
       error,
     );
   }
-  const skillDirEntries = await readdir(root, { withFileTypes: true });
-  for (const candidate of skillDirEntries) {
-    if (candidate.name.startsWith(".")) continue;
-    const candidateDirectory = join(root, candidate.name);
+  for (const entryName of skillDirEntries) {
+    if (entryName.startsWith(".")) continue;
+    const candidateDirectory = join(root, entryName);
     try {
       const directoryStats = await statIfExists(candidateDirectory);
       if (!directoryStats?.isDirectory()) continue;
@@ -58,7 +68,7 @@ export async function discoverSkills({
       continue;
     }
     const identity = locked.get(candidateDirectory);
-    const name = identity?.name ?? candidate.name;
+    const name = identity?.name ?? entryName;
     if (name.length > 128) {
       getGlobalLogger().warn(
         `Skipping skill ${name}: name exceeds 128 characters.`,
@@ -99,7 +109,7 @@ async function readCliLock(
   const value: unknown = JSON.parse(await readFile(file, "utf8"));
   if (
     !isRecord(value) ||
-    value.lockVersion !== 1 ||
+    !Number.isInteger(value.lockVersion) ||
     !Array.isArray(value.skills)
   )
     throw new Error(`Unsupported or invalid skill lockfile ${file}.`);

@@ -105,6 +105,24 @@ describe("discoverSkills", () => {
     expect(await discoverSkills({ dir: join(cwd, "missing") })).toEqual([]);
   });
 
+  it.each(["file", "symlink-loop"])(
+    "returns an empty list when the skills directory is a %s",
+    async (kind) => {
+      const warn = vi
+        .spyOn(getGlobalLogger(), "warn")
+        .mockImplementation(() => {});
+      const root = join(cwd, "broken-skills");
+      if (kind === "file") await writeFile(root, "not a directory");
+      else await symlink(root, root);
+
+      expect(await discoverSkills({ dir: root })).toEqual([]);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("Could not read skills directory"),
+        expect.anything(),
+      );
+    },
+  );
+
   it.each(["directory", "SKILL.md"])(
     "skips a skill with a looping %s symlink and keeps valid skills",
     async (target) => {
@@ -125,7 +143,22 @@ describe("discoverSkills", () => {
     },
   );
 
-  it.each(["not json", '{"lockVersion":2,"skills":[]}'])(
+  it("accepts lockfiles with other integer versions", async () => {
+    await createSkill("support");
+    await writeFile(
+      join(dir, "langfuse-skills.lock"),
+      JSON.stringify({
+        lockVersion: 2,
+        skills: [{ path: "support", name: "managed", version: 4 }],
+      }),
+    );
+
+    expect(await discoverSkills({ dir })).toEqual([
+      { name: "managed", version: 4 },
+    ]);
+  });
+
+  it.each(["not json", '{"lockVersion":"1","skills":[]}'])(
     "falls back to names for an invalid lockfile: %s",
     async (content) => {
       const warn = vi
