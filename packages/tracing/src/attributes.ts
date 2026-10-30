@@ -3,7 +3,6 @@ import {
   getGlobalLogger,
   LangfuseOtelSpanAttributes,
   serializeMetadataValue,
-  serializeAvailableSkills,
 } from "@langfuse/core";
 import { type Attributes, type Span } from "@opentelemetry/api";
 
@@ -30,7 +29,6 @@ export function createObservationAttributes(
     usageDetails,
     costDetails,
     prompt,
-    availableSkills,
   } = attributes;
 
   let otelAttributes: Attributes = {
@@ -41,8 +39,6 @@ export function createObservationAttributes(
     [LangfuseOtelSpanAttributes.ENVIRONMENT]: environment,
     [LangfuseOtelSpanAttributes.OBSERVATION_INPUT]: _serialize(input),
     [LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT]: _serialize(output),
-    [LangfuseOtelSpanAttributes.OBSERVATION_SKILLS_AVAILABLE]:
-      serializeAvailableSkills(availableSkills) ?? undefined,
     [LangfuseOtelSpanAttributes.OBSERVATION_MODEL]: model,
     [LangfuseOtelSpanAttributes.OBSERVATION_USAGE_DETAILS]:
       _serialize(usageDetails),

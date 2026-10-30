@@ -163,7 +163,7 @@ export interface LangfuseSpanProcessorParams {
 
   /**
    * Available skills to attach when a scope enables via attachSkills.
-   * Explicit span skills or propagated skillsAvailable take precedence.
+   * Propagated skillsAvailable take precedence.
    */
   skills?: {
     available: SkillReference[];
