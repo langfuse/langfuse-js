@@ -6,6 +6,7 @@ type LangfuseEnvVar =
   | "LANGFUSE_SECRET_KEY"
   | "LANGFUSE_BASE_URL"
   | "LANGFUSE_BASEURL" // legacy v2
+  | "LANGFUSE_PROJECT_ID"
   | "LANGFUSE_TIMEOUT"
   | "LANGFUSE_FLUSH_AT"
   | "LANGFUSE_FLUSH_INTERVAL"
@@ -25,6 +26,47 @@ export function getEnv(key: LangfuseEnvVar): string | undefined {
   }
 
   return;
+}
+
+/**
+ * Header that names the target project of a request. Required for
+ * organization API keys, which can access every project in their organization.
+ */
+export const LANGFUSE_PROJECT_ID_HEADER = "x-langfuse-project-id";
+
+const PROJECT_ID_HEADER_NAMES = [
+  LANGFUSE_PROJECT_ID_HEADER,
+  "langfuse-project-id",
+];
+
+/**
+ * Returns `headers` with the project ID header added when a project ID is
+ * configured. Throws if `headers` already names a different project.
+ *
+ * @internal
+ */
+export function withProjectIdHeader(
+  projectId: string | undefined,
+  headers: Record<string, string> = {},
+): Record<string, string> {
+  if (!projectId) return headers;
+
+  let hasProjectIdHeader = false;
+  for (const [name, value] of Object.entries(headers)) {
+    const lowerCaseName = name.toLowerCase();
+    if (!PROJECT_ID_HEADER_NAMES.includes(lowerCaseName)) continue;
+
+    if (value !== projectId) {
+      throw new Error(
+        `The '${name}' header in additionalHeaders ('${value}') conflicts with the configured projectId ('${projectId}'). Remove the header or make the values match.`,
+      );
+    }
+    if (lowerCaseName === LANGFUSE_PROJECT_ID_HEADER) hasProjectIdHeader = true;
+  }
+
+  return hasProjectIdHeader
+    ? headers
+    : { ...headers, [LANGFUSE_PROJECT_ID_HEADER]: projectId };
 }
 
 // https://stackoverflow.com/a/8809472
