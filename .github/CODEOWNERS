@@ -1,5 +1,13 @@
-# Currently inactive
-# * @langfuse/maintainers
+# Order matters: the last matching pattern takes precedence, so @hassiebp is
+# repeated on every specific rule that should still require his review.
+
+# Default owner for everything
+* @hassiebp
 
 # Require maintainer review for GitHub configuration changes
-.github/ @langfuse/maintainers
+.github/ @langfuse/maintainers @hassiebp
+
+# Fern-generated API client: intentionally unowned so PRs that only update the
+# generated client (Fern upgrades, API spec syncs) don't require code owner review.
+# Must stay last.
+/packages/core/src/api/
