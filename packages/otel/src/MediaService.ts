@@ -69,7 +69,8 @@ export class MediaService {
           const langfuseMediaTag = await media.getTag();
 
           if (!langfuseMediaTag) {
-            this.logger.warn(
+            // LangfuseMedia has already logged why at WARN level.
+            this.logger.debug(
               "Failed to create Langfuse media tag. Skipping media item.",
             );
 

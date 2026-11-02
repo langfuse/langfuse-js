@@ -130,7 +130,14 @@ export class LangfuseMedia {
 
       return [base64ToBytes(actualData), contentType as MediaContentType];
     } catch (error) {
-      getGlobalLogger().error("Error parsing base64 data URI", error);
+      // Callers such as the OTel MediaService find candidates with a regex, so
+      // an undecodable payload is an expected input, not an SDK failure. Log
+      // the message only: the raw error object (a DOMException from atob)
+      // prints dozens of lines.
+      const reason = error instanceof Error ? error.message : String(error);
+      getGlobalLogger().warn(
+        `Skipping base64 data URI that could not be parsed: ${reason}`,
+      );
       return [undefined, undefined];
     }
   }
