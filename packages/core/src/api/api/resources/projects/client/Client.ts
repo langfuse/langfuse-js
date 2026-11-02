@@ -438,7 +438,7 @@ export class Projects {
   }
 
   /**
-   * Delete a project by ID (requires organization-scoped API key). Project deletion is processed asynchronously.
+   * Delete a project by ID (requires organization-scoped API key). Project deletion is processed asynchronously. Deleting the AI Gateway ingestion project turns off the AI Gateway for the organization until another ingestion project is selected.
    *
    * @param {string} projectId
    * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
