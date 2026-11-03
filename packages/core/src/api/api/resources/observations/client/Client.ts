@@ -68,7 +68,10 @@ export class Observations {
    * ## Cursor-based Pagination
    * This endpoint uses cursor-based pagination for efficient traversal of large datasets.
    * The cursor is returned in the response metadata and should be passed in subsequent requests
-   * to retrieve the next page of results.
+   * to retrieve the next page of results. The `limit` parameter is a maximum: a page may contain
+   * fewer items than the requested limit, including zero items, while `meta.cursor` is present.
+   * Continue requesting pages until `meta.cursor` is absent.
+   * Requests without a lower start-time bound may search only from January 1, 2020.
    *
    * ## Field Selection
    * Use the `fields` parameter to control which observation fields are returned:
