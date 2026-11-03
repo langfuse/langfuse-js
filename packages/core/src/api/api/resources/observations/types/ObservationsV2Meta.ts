@@ -8,4 +8,7 @@ import * as LangfuseAPI from "../../../index.js";
  * Metadata for cursor-based pagination.
  */
 export interface ObservationsV2Meta
-  extends LangfuseAPI.utils.CursorMetaResponse {}
+  extends LangfuseAPI.utils.CursorMetaResponse {
+  /** Present when an empty page has a cursor; continue requesting pages until the cursor is absent. */
+  comment?: string;
+}
