@@ -375,21 +375,33 @@ export class ChatPromptClient extends BasePromptClient {
     }
 
     return messagesWithPlaceholdersReplaced.map((item) => {
-      if (
-        typeof item === "object" &&
-        item !== null &&
-        "role" in item &&
-        "content" in item &&
-        typeof item.content === "string"
-      ) {
-        return {
-          ...item,
-          content: mustache.render(item.content, variables ?? {}),
-        };
-      } else {
-        // Return placeholder or stringified value as-is
-        return item;
+      if (typeof item === "object" && item !== null && "role" in item && "content" in item) {
+        if (typeof item.content === "string") {
+          return {
+            ...item,
+            content: mustache.render(item.content, variables ?? {}),
+          };
+        } else if (Array.isArray(item.content)) {
+          // Multimodal content: apply mustache substitution to text-type parts only,
+          // leaving image_url, input_file, and other non-text parts untouched.
+          return {
+            ...item,
+            content: (item.content as any[]).map((part: any) => {
+              if (
+                typeof part === "object" &&
+                part !== null &&
+                part.type === "text" &&
+                typeof part.text === "string"
+              ) {
+                return { ...part, text: mustache.render(part.text, variables ?? {}) };
+              }
+              return part;
+            }),
+          };
+        }
       }
+      // Return placeholder or non-message items as-is
+      return item;
     });
   }
 
@@ -436,6 +448,22 @@ export class ChatPromptClient extends BasePromptClient {
           // Complete placeholder fill-in, replace with it
           messagesWithPlaceholdersReplaced.push(
             ...(placeholderValue as ChatMessage[]).map((msg) => {
+              if (Array.isArray(msg.content)) {
+                return {
+                  role: msg.role,
+                  content: (msg.content as any[]).map((part: any) => {
+                    if (
+                      typeof part === "object" &&
+                      part !== null &&
+                      part.type === "text" &&
+                      typeof part.text === "string"
+                    ) {
+                      return { ...part, text: this._transformToLangchainVariables(part.text) };
+                    }
+                    return part;
+                  }),
+                };
+              }
               return {
                 role: msg.role,
                 content: this._transformToLangchainVariables(msg.content),
@@ -469,7 +497,19 @@ export class ChatPromptClient extends BasePromptClient {
       ) {
         messagesWithPlaceholdersReplaced.push({
           role: item.role,
-          content: this._transformToLangchainVariables(item.content),
+          content: Array.isArray(item.content)
+            ? (item.content as any[]).map((part: any) => {
+                if (
+                  typeof part === "object" &&
+                  part !== null &&
+                  part.type === "text" &&
+                  typeof part.text === "string"
+                ) {
+                  return { ...part, text: this._transformToLangchainVariables(part.text) };
+                }
+                return part;
+              })
+            : this._transformToLangchainVariables(item.content),
         });
       }
     }
