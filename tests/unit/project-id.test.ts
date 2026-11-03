@@ -83,7 +83,7 @@ describe("withProjectIdHeader", () => {
   it("adds the project ID header", () => {
     expect(withProjectIdHeader("proj-1", { a: "1" })).toEqual({
       a: "1",
-      "x-langfuse-project-id": "proj-1",
+      "langfuse-project-id": "proj-1",
     });
   });
 
@@ -105,17 +105,14 @@ describe("withProjectIdHeader", () => {
     );
   });
 
-  it("accepts a header with the same value without duplicating it", () => {
-    expect(
-      withProjectIdHeader("proj-1", { "X-Langfuse-Project-Id": "proj-1" }),
-    ).toEqual({ "X-Langfuse-Project-Id": "proj-1" });
-    expect(
-      withProjectIdHeader("proj-1", { "langfuse-project-id": "proj-1" }),
-    ).toEqual({
-      "langfuse-project-id": "proj-1",
-      "x-langfuse-project-id": "proj-1",
-    });
-  });
+  it.each(["Langfuse-Project-Id", "X-Langfuse-Project-Id"])(
+    "accepts %s with the same value without adding another header",
+    (name) => {
+      expect(withProjectIdHeader("proj-1", { [name]: "proj-1" })).toEqual({
+        [name]: "proj-1",
+      });
+    },
+  );
 });
 
 describe("LangfuseClient projectId", () => {
@@ -124,24 +121,24 @@ describe("LangfuseClient projectId", () => {
     vi.unstubAllGlobals();
   });
 
-  it("sends the projectId option as x-langfuse-project-id", async () => {
+  it("sends the projectId option as langfuse-project-id", async () => {
     const headers = await apiRequestHeaders(
       new LangfuseClient({ ...keys, projectId: "proj-option" }),
     );
 
-    expect(headers.get("x-langfuse-project-id")).toBe("proj-option");
+    expect(headers.get("langfuse-project-id")).toBe("proj-option");
   });
 
   it("reads LANGFUSE_PROJECT_ID and lets the option win", async () => {
     vi.stubEnv("LANGFUSE_PROJECT_ID", "proj-env");
 
     const envHeaders = await apiRequestHeaders(new LangfuseClient(keys));
-    expect(envHeaders.get("x-langfuse-project-id")).toBe("proj-env");
+    expect(envHeaders.get("langfuse-project-id")).toBe("proj-env");
 
     const optionHeaders = await apiRequestHeaders(
       new LangfuseClient({ ...keys, projectId: "proj-option" }),
     );
-    expect(optionHeaders.get("x-langfuse-project-id")).toBe("proj-option");
+    expect(optionHeaders.get("langfuse-project-id")).toBe("proj-option");
   });
 
   it("does not send the header without a project ID", async () => {
@@ -149,7 +146,7 @@ describe("LangfuseClient projectId", () => {
 
     const headers = await apiRequestHeaders(new LangfuseClient(keys));
 
-    expect(headers.has("x-langfuse-project-id")).toBe(false);
+    expect(headers.has("langfuse-project-id")).toBe(false);
   });
 
   it("keeps a project ID header set only through additionalHeaders", async () => {
@@ -206,17 +203,17 @@ describe("LangfuseSpanProcessor projectId", () => {
   it("sends the projectId option on span exports", async () => {
     const [headers] = await exportSpans({ projectId: "proj-option" });
 
-    expect(headers["x-langfuse-project-id"]).toBe("proj-option");
+    expect(headers["langfuse-project-id"]).toBe("proj-option");
   });
 
   it("reads LANGFUSE_PROJECT_ID and lets the option win", async () => {
     vi.stubEnv("LANGFUSE_PROJECT_ID", "proj-env");
 
     const [envHeaders] = await exportSpans();
-    expect(envHeaders["x-langfuse-project-id"]).toBe("proj-env");
+    expect(envHeaders["langfuse-project-id"]).toBe("proj-env");
 
     const [optionHeaders] = await exportSpans({ projectId: "proj-option" });
-    expect(optionHeaders["x-langfuse-project-id"]).toBe("proj-option");
+    expect(optionHeaders["langfuse-project-id"]).toBe("proj-option");
   });
 
   it("sends a single header when additionalHeaders repeats the project ID", async () => {
@@ -226,6 +223,7 @@ describe("LangfuseSpanProcessor projectId", () => {
     });
 
     expect(headers["x-langfuse-project-id"]).toBe("proj-1");
+    expect(headers["langfuse-project-id"]).toBeUndefined();
   });
 
   it("throws on a conflicting additionalHeaders project ID", () => {

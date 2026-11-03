@@ -43,11 +43,11 @@ export interface LangfuseClientParams {
   /**
    * ID of the project to send requests to. Required for organization API keys,
    * which can access every project in their organization. Sent as the
-   * `x-langfuse-project-id` header on every request.
+   * `langfuse-project-id` header on every request.
    * Can also be provided via LANGFUSE_PROJECT_ID environment variable.
    *
-   * The constructor throws if `additionalHeaders` sets `x-langfuse-project-id`
-   * to a different value.
+   * The constructor throws if `additionalHeaders` sets `langfuse-project-id`
+   * or `x-langfuse-project-id` to a different value.
    */
   projectId?: string;
 

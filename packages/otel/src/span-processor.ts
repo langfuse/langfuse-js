@@ -124,11 +124,11 @@ export interface LangfuseSpanProcessorParams {
   /**
    * ID of the project to export spans to. Required for organization API keys,
    * which can access every project in their organization. Sent as the
-   * `x-langfuse-project-id` header on span export and media upload requests.
+   * `langfuse-project-id` header on span export and media upload requests.
    * Can also be set via LANGFUSE_PROJECT_ID environment variable.
    *
-   * The constructor throws if `additionalHeaders` sets `x-langfuse-project-id`
-   * to a different value. A custom `exporter` must set the header itself.
+   * The constructor throws if `additionalHeaders` sets `langfuse-project-id`
+   * or `x-langfuse-project-id` to a different value. A custom `exporter` must set the header itself.
    */
   projectId?: string;
 
@@ -333,7 +333,7 @@ export class LangfuseSpanProcessor implements SpanProcessor {
     }
     if (params?.exporter && projectId) {
       logger.warn(
-        "A custom exporter was provided, so the projectId is not sent with span exports. Set the x-langfuse-project-id header on the exporter instead.",
+        "A custom exporter was provided, so the projectId is not sent with span exports. Set the langfuse-project-id header on the exporter instead.",
       );
     }
     const flushAt = params?.flushAt ?? getEnv("LANGFUSE_FLUSH_AT");

@@ -32,16 +32,17 @@ export function getEnv(key: LangfuseEnvVar): string | undefined {
  * Header that names the target project of a request. Required for
  * organization API keys, which can access every project in their organization.
  */
-export const LANGFUSE_PROJECT_ID_HEADER = "x-langfuse-project-id";
+export const LANGFUSE_PROJECT_ID_HEADER = "langfuse-project-id";
 
 const PROJECT_ID_HEADER_NAMES = [
   LANGFUSE_PROJECT_ID_HEADER,
-  "langfuse-project-id",
+  "x-langfuse-project-id",
 ];
 
 /**
  * Returns `headers` with the project ID header added when a project ID is
- * configured. Throws if `headers` already names a different project.
+ * configured and `headers` does not already name it. Throws if `headers`
+ * names a different project.
  *
  * @internal
  */
@@ -53,15 +54,14 @@ export function withProjectIdHeader(
 
   let hasProjectIdHeader = false;
   for (const [name, value] of Object.entries(headers)) {
-    const lowerCaseName = name.toLowerCase();
-    if (!PROJECT_ID_HEADER_NAMES.includes(lowerCaseName)) continue;
+    if (!PROJECT_ID_HEADER_NAMES.includes(name.toLowerCase())) continue;
 
     if (value !== projectId) {
       throw new Error(
         `The '${name}' header in additionalHeaders ('${value}') conflicts with the configured projectId ('${projectId}'). Remove the header or make the values match.`,
       );
     }
-    if (lowerCaseName === LANGFUSE_PROJECT_ID_HEADER) hasProjectIdHeader = true;
+    hasProjectIdHeader = true;
   }
 
   return hasProjectIdHeader
