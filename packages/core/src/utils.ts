@@ -63,7 +63,16 @@ export function safeSetTimeout(fn: () => void, timeout: number): any {
 }
 
 export function base64ToBytes(base64: string): Uint8Array {
+  // atob validates and decodes; Buffer.from(base64) would silently truncate
+  // malformed input instead of throwing.
   const binString = atob(base64);
+
+  // Copying the binary string into bytes one callback per character is the
+  // slow part on Node.js; Buffer does it natively.
+  if (typeof Buffer !== "undefined") {
+    const buffer = Buffer.from(binString, "latin1");
+    return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  }
 
   return Uint8Array.from(binString, (m) => m.codePointAt(0)!);
 }
