@@ -52,9 +52,11 @@ export class MediaService {
           continue;
         }
 
-        // Find media base64 data URI
+        // Find media base64 data URI. The mediatype segment excludes commas
+        // (not just semicolons) so a plain-text "data:" mention earlier in the
+        // same payload can't greedily swallow a later, real data URI.
         let mediaReplacedValue = value;
-        const regex = /data:[^;]+;base64,[A-Za-z0-9+/]+=*/g;
+        const regex = /data:[^;,]+;base64,[A-Za-z0-9+/]+=*/g;
         const foundMedia = [...new Set(value.match(regex) ?? [])];
 
         if (foundMedia.length === 0) continue;
