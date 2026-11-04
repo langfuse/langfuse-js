@@ -12,6 +12,8 @@ export interface Topic {
   name: string;
   description: string;
   facet: LangfuseAPI.unstable.TopicFacetRef;
+  /** The rule whose live map has the topic. Null when the project has no rule. */
+  ruleId?: string;
   /** The run that produced this topic version. */
   runId: string;
   /** Traces in the window whose current result for the facet is this topic. */
