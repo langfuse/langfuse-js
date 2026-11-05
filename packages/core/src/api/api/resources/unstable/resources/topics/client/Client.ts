@@ -63,9 +63,9 @@ export class Topics {
   /**
    * Unstable: Topics is in closed beta. The shape may change without notice.
    *
-   * List the project's Topics facets. Only active facets (attached to the
-   * project's Topics rule, or all facets if the project has no rule) are
-   * returned unless `filter` contains an `active` condition.
+   * List the project's Topics facets. Only active facets (run by a Topics
+   * rule, or all facets if the project has no rule) are returned unless
+   * `filter` contains an `active` condition.
    *
    * `filter` is a JSON array of filter conditions combined with AND.
    * String matching is case-insensitive. Columns: `id` (stringOptions),
@@ -419,7 +419,7 @@ export class Topics {
   /**
    * Unstable: Topics is in closed beta. The shape may change without notice.
    *
-   * List the topics of each active facet's current published map, with
+   * List the topics of each active facet's live map, with
    * the number of traces currently assigned to each topic in the window.
    * Retired topics are not listed. `facets` holds per-facet trace counts
    * by topic status.
@@ -429,9 +429,9 @@ export class Topics {
    *
    * `filter` is a JSON array of filter conditions combined with AND.
    * String matching is case-insensitive. Columns: `facetId`
-   * (stringOptions), `facetName` (string, stringOptions), `id`
-   * (stringOptions), `name` (string, stringOptions). Facet conditions also
-   * restrict `facets`.
+   * (stringOptions), `facetName` (string, stringOptions), `ruleId`
+   * (stringOptions), `id` (stringOptions), `name` (string, stringOptions).
+   * Facet and rule conditions also restrict `facets`.
    *
    * @param {LangfuseAPI.unstable.ListTopicsRequest} request
    * @param {Topics.RequestOptions} requestOptions - Request-specific configuration.
@@ -626,9 +626,8 @@ export class Topics {
   /**
    * Unstable: Topics is in closed beta. The shape may change without notice.
    *
-   * Get one topic by its stable id. Topics on the current map are always
-   * found. A retired topic is found while traces in the window are still
-   * assigned to it, with `inCurrentMap: false`.
+   * Get one topic of a facet's current map by its stable id. Retired
+   * topics are not found.
    *
    * @param {string} topicId
    * @param {LangfuseAPI.unstable.GetTopicRequest} request
@@ -797,6 +796,823 @@ export class Topics {
       case "timeout":
         throw new errors.LangfuseAPITimeoutError(
           "Timeout exceeded when calling GET /api/public/unstable/topics/{topicId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Unstable: Topics is in closed beta. The shape may change without notice.
+   *
+   * List the project's Topics rules. A rule selects traces with an
+   * observation filter and a sampling rate, runs the facets in `facetIds`
+   * and keeps its own live topic map.
+   *
+   * `filter` is a JSON array of filter conditions combined with AND.
+   * String matching is case-insensitive. Columns: `id` (stringOptions),
+   * `name` (string, stringOptions).
+   *
+   * @param {LangfuseAPI.unstable.GetTopicRulesRequest} request
+   * @param {Topics.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.topics.listRules()
+   */
+  public listRules(
+    request: LangfuseAPI.unstable.GetTopicRulesRequest = {},
+    requestOptions?: Topics.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.TopicRuleList> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__listRules(request, requestOptions),
+    );
+  }
+
+  private async __listRules(
+    request: LangfuseAPI.unstable.GetTopicRulesRequest = {},
+    requestOptions?: Topics.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.TopicRuleList>> {
+    const { filter, page, limit } = request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (filter != null) {
+      _queryParams["filter"] = filter;
+    }
+
+    if (page != null) {
+      _queryParams["page"] = page.toString();
+    }
+
+    if (limit != null) {
+      _queryParams["limit"] = limit.toString();
+    }
+
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/unstable/topic-rules",
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.TopicRuleList,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/unstable/topic-rules.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Unstable: Topics is in closed beta. The shape may change without notice.
+   *
+   * Get one Topics rule by id.
+   *
+   * @param {string} ruleId
+   * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
+   * @param {Topics.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.topics.getRule("ruleId")
+   */
+  public getRule(
+    ruleId: string,
+    request: Record<string, never> = {},
+    requestOptions?: Topics.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.TopicRule> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__getRule(ruleId, requestOptions),
+    );
+  }
+
+  private async __getRule(
+    ruleId: string,
+    requestOptions?: Topics.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.TopicRule>> {
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        `/api/public/unstable/topic-rules/${encodeURIComponent(ruleId)}`,
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: requestOptions?.queryParams,
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.TopicRule,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/unstable/topic-rules/{ruleId}.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Unstable: Topics is in closed beta. The shape may change without notice.
+   *
+   * List the current Topics summary per trace and facet: what the trace
+   * is about from the facet's perspective. Summaries are shared by all
+   * rules. A trace that was re-summarized lists only its latest summary.
+   *
+   * The window applies to the trace start time. It defaults to the last
+   * 7 days and can span at most 30 days, starting no earlier than the
+   * plan's data access window. Without `fromTimestamp` and `toTimestamp`,
+   * a `traceId` `any of` filter reads the listed traces at their own start
+   * time within the last 93 days. Rows are ordered by trace start time.
+   *
+   * Each request scans a bounded number of candidate rows. A page shorter
+   * than `limit` (even an empty one) with a `meta.cursor` does not
+   * indicate completion; continue with the cursor until it is null.
+   *
+   * Only active facets (attached to a Topics rule, or all facets if the
+   * project has no rule) are read. Traces Topics never processed are not
+   * listed.
+   *
+   * `filter` is a JSON array of filter conditions combined with AND, with
+   * at most 100 `traceId` values. Columns: `traceId`, `facetId`, `facetName`, `ruleId`, `environment`
+   * (stringOptions), `timestamp`, `processedAt` (datetime), `state`,
+   * `topicId`, `topicName` (stringOptions), `assignmentStatus`
+   * (stringOptions, `any of` only). An unknown `topicName` matches nothing under `any of`
+   * and is ignored under `none of`.
+   *
+   * `state` values: `complete` (summarized), `not_applicable` (the facet
+   * does not apply to the trace), `insufficient_input` (too little input
+   * to summarize). `assignmentStatus` values: `assigned`, `outlier` (no
+   * topic fits), `awaiting_map` (summarized, not yet assigned).
+   *
+   * Common questions:
+   * - Summaries of specific traces: `traceId` `any of` the trace ids.
+   * - Summaries of a topic's traces: `topicId` or `topicName`.
+   * - Traces without a topic yet: `assignmentStatus` `any of` `["awaiting_map", "outlier"]`.
+   *
+   * @param {LangfuseAPI.unstable.GetTopicSummariesRequest} request
+   * @param {Topics.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.topics.listSummaries()
+   */
+  public listSummaries(
+    request: LangfuseAPI.unstable.GetTopicSummariesRequest = {},
+    requestOptions?: Topics.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.TopicSummaryList> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__listSummaries(request, requestOptions),
+    );
+  }
+
+  private async __listSummaries(
+    request: LangfuseAPI.unstable.GetTopicSummariesRequest = {},
+    requestOptions?: Topics.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.TopicSummaryList>> {
+    const {
+      fromTimestamp,
+      toTimestamp,
+      filter,
+      truncateSummaries,
+      orderBy,
+      limit,
+      cursor,
+    } = request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (fromTimestamp != null) {
+      _queryParams["fromTimestamp"] = fromTimestamp;
+    }
+
+    if (toTimestamp != null) {
+      _queryParams["toTimestamp"] = toTimestamp;
+    }
+
+    if (filter != null) {
+      _queryParams["filter"] = filter;
+    }
+
+    if (truncateSummaries != null) {
+      _queryParams["truncateSummaries"] = truncateSummaries.toString();
+    }
+
+    if (orderBy != null) {
+      _queryParams["orderBy"] = orderBy;
+    }
+
+    if (limit != null) {
+      _queryParams["limit"] = limit.toString();
+    }
+
+    if (cursor != null) {
+      _queryParams["cursor"] = cursor;
+    }
+
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/unstable/topic-summaries",
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.TopicSummaryList,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/unstable/topic-summaries.",
+        );
+      case "unknown":
+        throw new errors.LangfuseAPIError({
+          message: _response.error.errorMessage,
+          rawResponse: _response.rawResponse,
+        });
+    }
+  }
+
+  /**
+   * Unstable: Topics is in closed beta. The shape may change without notice.
+   *
+   * List the current topic per trace, facet and rule on each rule's live
+   * map: `assigned` with its topic, or `outlier` when no topic fits.
+   * Summarized traces that are not assigned yet are not listed; find
+   * them through `GET /topic-summaries` with `assignmentStatus`.
+   *
+   * The window applies to the trace start time. It defaults to the last
+   * 7 days and can span at most 30 days, starting no earlier than the
+   * plan's data access window. Without `fromTimestamp` and `toTimestamp`,
+   * a `traceId` `any of` filter reads the listed traces at their own start
+   * time within the last 93 days. Rows are ordered by trace start time.
+   *
+   * Each request scans a bounded number of candidate rows. A page shorter
+   * than `limit` (even an empty one) with a `meta.cursor` does not
+   * indicate completion; continue with the cursor until it is null.
+   *
+   * Only active facets (attached to a Topics rule, or all facets if the
+   * project has no rule) are read. Traces Topics never processed are not
+   * listed.
+   *
+   * `filter` is a JSON array of filter conditions combined with AND, with
+   * at most 100 `traceId` values. Columns: `traceId`, `facetId`, `facetName`, `ruleId`, `environment`,
+   * `topicId`, `topicName` (stringOptions), `status` (stringOptions,
+   * `any of` only: `assigned`, `outlier`), `timestamp` (datetime). An
+   * unknown `topicName` matches nothing under `any of` and is ignored
+   * under `none of`.
+   *
+   * Common questions:
+   * - Topics of specific traces: `traceId` `any of` the trace ids.
+   * - Traces in a topic: `topicId` or `topicName`.
+   *
+   * @param {LangfuseAPI.unstable.GetTopicAssignmentsRequest} request
+   * @param {Topics.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link LangfuseAPI.unstable.BadRequestError}
+   * @throws {@link LangfuseAPI.unstable.UnauthorizedError}
+   * @throws {@link LangfuseAPI.unstable.AccessDeniedError}
+   * @throws {@link LangfuseAPI.unstable.NotFoundError}
+   * @throws {@link LangfuseAPI.unstable.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.unstable.TooManyRequestsError}
+   * @throws {@link LangfuseAPI.unstable.InternalServerError}
+   * @throws {@link LangfuseAPI.Error}
+   * @throws {@link LangfuseAPI.UnauthorizedError}
+   * @throws {@link LangfuseAPI.AccessDeniedError}
+   * @throws {@link LangfuseAPI.MethodNotAllowedError}
+   * @throws {@link LangfuseAPI.NotFoundError}
+   *
+   * @example
+   *     await client.unstable.topics.listAssignments()
+   */
+  public listAssignments(
+    request: LangfuseAPI.unstable.GetTopicAssignmentsRequest = {},
+    requestOptions?: Topics.RequestOptions,
+  ): core.HttpResponsePromise<LangfuseAPI.unstable.TopicAssignmentList> {
+    return core.HttpResponsePromise.fromPromise(
+      this.__listAssignments(request, requestOptions),
+    );
+  }
+
+  private async __listAssignments(
+    request: LangfuseAPI.unstable.GetTopicAssignmentsRequest = {},
+    requestOptions?: Topics.RequestOptions,
+  ): Promise<core.WithRawResponse<LangfuseAPI.unstable.TopicAssignmentList>> {
+    const { fromTimestamp, toTimestamp, filter, orderBy, limit, cursor } =
+      request;
+    const _queryParams: Record<
+      string,
+      string | string[] | object | object[] | null
+    > = {};
+    if (fromTimestamp != null) {
+      _queryParams["fromTimestamp"] = fromTimestamp;
+    }
+
+    if (toTimestamp != null) {
+      _queryParams["toTimestamp"] = toTimestamp;
+    }
+
+    if (filter != null) {
+      _queryParams["filter"] = filter;
+    }
+
+    if (orderBy != null) {
+      _queryParams["orderBy"] = orderBy;
+    }
+
+    if (limit != null) {
+      _queryParams["limit"] = limit.toString();
+    }
+
+    if (cursor != null) {
+      _queryParams["cursor"] = cursor;
+    }
+
+    let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
+      this._options?.headers,
+      mergeOnlyDefinedHeaders({
+        Authorization: await this._getAuthorizationHeader(),
+        "X-Langfuse-Sdk-Name":
+          requestOptions?.xLangfuseSdkName ?? this._options?.xLangfuseSdkName,
+        "X-Langfuse-Sdk-Version":
+          requestOptions?.xLangfuseSdkVersion ??
+          this._options?.xLangfuseSdkVersion,
+        "X-Langfuse-Public-Key":
+          requestOptions?.xLangfusePublicKey ??
+          this._options?.xLangfusePublicKey,
+      }),
+      requestOptions?.headers,
+    );
+    const _response = await core.fetcher({
+      url: core.url.join(
+        (await core.Supplier.get(this._options.baseUrl)) ??
+          (await core.Supplier.get(this._options.environment)),
+        "/api/public/unstable/topic-assignments",
+      ),
+      method: "GET",
+      headers: _headers,
+      queryParameters: { ..._queryParams, ...requestOptions?.queryParams },
+      timeoutMs:
+        requestOptions?.timeoutInSeconds != null
+          ? requestOptions.timeoutInSeconds * 1000
+          : 60000,
+      maxRetries: requestOptions?.maxRetries,
+      abortSignal: requestOptions?.abortSignal,
+    });
+    if (_response.ok) {
+      return {
+        data: _response.body as LangfuseAPI.unstable.TopicAssignmentList,
+        rawResponse: _response.rawResponse,
+      };
+    }
+
+    if (_response.error.reason === "status-code") {
+      switch (_response.error.statusCode) {
+        case 400:
+          throw new LangfuseAPI.unstable.BadRequestError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.unstable.UnauthorizedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.unstable.AccessDeniedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.unstable.NotFoundError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.unstable.MethodNotAllowedError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 429:
+          throw new LangfuseAPI.unstable.TooManyRequestsError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 500:
+          throw new LangfuseAPI.unstable.InternalServerError(
+            _response.error.body as LangfuseAPI.unstable.PublicApiError,
+            _response.rawResponse,
+          );
+        case 400:
+          throw new LangfuseAPI.Error(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 401:
+          throw new LangfuseAPI.UnauthorizedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 403:
+          throw new LangfuseAPI.AccessDeniedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 405:
+          throw new LangfuseAPI.MethodNotAllowedError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        case 404:
+          throw new LangfuseAPI.NotFoundError(
+            _response.error.body as unknown,
+            _response.rawResponse,
+          );
+        default:
+          throw new errors.LangfuseAPIError({
+            statusCode: _response.error.statusCode,
+            body: _response.error.body,
+            rawResponse: _response.rawResponse,
+          });
+      }
+    }
+
+    switch (_response.error.reason) {
+      case "non-json":
+        throw new errors.LangfuseAPIError({
+          statusCode: _response.error.statusCode,
+          body: _response.error.rawBody,
+          rawResponse: _response.rawResponse,
+        });
+      case "timeout":
+        throw new errors.LangfuseAPITimeoutError(
+          "Timeout exceeded when calling GET /api/public/unstable/topic-assignments.",
         );
       case "unknown":
         throw new errors.LangfuseAPIError({
