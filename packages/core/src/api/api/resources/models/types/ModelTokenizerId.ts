@@ -3,7 +3,7 @@
  */
 
 /**
- * Tokenizer supported by Langfuse for model usage inference.
+ * Legacy tokenizer identifier retained for API compatibility. Ingestion no longer uses it to infer observation usage.
  */
 export type ModelTokenizerId = "openai" | "claude";
 export const ModelTokenizerId = {

@@ -5,7 +5,7 @@
 import * as LangfuseAPI from "../../../index.js";
 
 /**
- * Model definition used for transforming usage into USD cost and/or tokenization.
+ * Model definition used for calculating USD cost from usage submitted with observations.
  *
  * Models can have either simple flat pricing or tiered pricing:
  * - Flat pricing: Single price per usage type (legacy, but still supported)
@@ -31,9 +31,9 @@ export interface Model {
   outputPrice: number | null;
   /** Deprecated. See 'prices' instead. Price (USD) per total unit. Cannot be set if input or output price is set. */
   totalPrice: number | null;
-  /** Optional. Tokenizer to be applied to observations which match to this model. See docs for more details. */
+  /** Legacy tokenizer identifier retained for API compatibility. Ingestion no longer uses it to infer observation usage. */
   tokenizerId: string | null;
-  /** Optional. Configuration for the selected tokenizer. Needs to be JSON. See docs for more details. */
+  /** Legacy tokenizer configuration retained for API compatibility. Ingestion no longer uses it to infer observation usage. */
   tokenizerConfig?: unknown;
   isLangfuseManaged: boolean;
   /** Timestamp when the model was created */
