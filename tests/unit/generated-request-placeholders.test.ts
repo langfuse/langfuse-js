@@ -66,6 +66,7 @@ const PLACEHOLDER_METHODS = [
   "unstable.dashboards.delete(dashboardId)",
   "unstable.dashboards.deletePlacement(dashboardId, placementId)",
   "unstable.topics.getFacet(facetId)",
+  "unstable.topics.getRule(ruleId)",
 ];
 
 function runScript(...args: string[]): string {
