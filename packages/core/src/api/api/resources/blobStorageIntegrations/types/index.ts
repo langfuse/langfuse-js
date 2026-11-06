@@ -1,4 +1,5 @@
 export * from "./BlobStorageIntegrationType.js";
+export * from "./BlobStorageIntegrationAuthType.js";
 export * from "./BlobStorageIntegrationFileType.js";
 export * from "./BlobStorageIntegrationFileTypeResponse.js";
 export * from "./BlobStorageExportMode.js";

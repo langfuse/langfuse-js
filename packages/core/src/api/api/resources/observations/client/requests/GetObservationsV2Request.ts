@@ -23,7 +23,7 @@ export interface GetObservationsV2Request {
    * Example: "key1,key2"
    */
   expandMetadata?: string;
-  /** Number of items to return per page. Maximum 1000, default 50. */
+  /** Maximum number of items to return per page. A page may contain fewer items, including zero items, while meta.cursor is present. Maximum 1000, default 50. */
   limit?: number;
   /** Base64-encoded cursor for pagination. Use the cursor from the previous response to get the next page. */
   cursor?: string;

@@ -5,7 +5,7 @@
 import * as LangfuseAPI from "../../../../../index.js";
 
 export interface TopicWithStatus extends LangfuseAPI.unstable.Topic {
-  /** False for retired topics that still have assigned traces in the window. */
+  /** Always true; retired topics are not returned. */
   inCurrentMap: boolean;
   window: LangfuseAPI.unstable.TopicWindow;
 }
