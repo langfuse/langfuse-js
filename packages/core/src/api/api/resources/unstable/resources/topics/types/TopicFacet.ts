@@ -9,8 +9,10 @@ export interface TopicFacet {
   name: string;
   description: string;
   isBuiltIn: boolean;
-  /** Whether the facet is attached to the project's Topics rule. True for all facets if the project has no rule. */
+  /** Whether a Topics rule runs the facet. True for all facets if the project has no rule. */
   active: boolean;
+  /** The rules that run the facet. */
+  ruleIds: string[];
   /** Latest facet version. */
   version: number;
   /** Prompt of the latest facet version. */

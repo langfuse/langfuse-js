@@ -6,6 +6,7 @@ import * as LangfuseAPI from "../../../../../index.js";
 
 export interface TopicFacetCounts {
   facet: LangfuseAPI.unstable.TopicFacetRef;
+  ruleId?: string;
   publishedRunId?: string;
   counts: LangfuseAPI.unstable.TopicStatusCounts;
 }

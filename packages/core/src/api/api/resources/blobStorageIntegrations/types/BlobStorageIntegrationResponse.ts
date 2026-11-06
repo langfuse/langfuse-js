@@ -11,7 +11,14 @@ export interface BlobStorageIntegrationResponse {
   bucketName: string;
   endpoint: string | null;
   region: string;
+  authType: LangfuseAPI.BlobStorageIntegrationAuthType;
   accessKeyId: string | null;
+  /** IAM role Langfuse assumes. May be set while `authType` is `ACCESS_KEYS` if the integration used `ROLE_ARN` before. */
+  roleArn: string | null;
+  /** External ID Langfuse passes when assuming `roleArn`. Require it in the role's trust policy with an `sts:ExternalId` condition. Null until the integration first uses `ROLE_ARN`. */
+  externalId: string | null;
+  /** Langfuse role that must be trusted by `roleArn`. Null when the deployment does not support IAM role auth or the organization is not on an Enterprise plan. */
+  crossAccountRoleArn: string | null;
   prefix: string;
   exportFrequency: LangfuseAPI.BlobStorageExportFrequency;
   enabled: boolean;

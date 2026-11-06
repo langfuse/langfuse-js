@@ -201,6 +201,8 @@ export class BlobStorageIntegrations {
    *         bucketName: "bucketName",
    *         endpoint: undefined,
    *         region: "region",
+   *         authType: undefined,
+   *         roleArn: undefined,
    *         accessKeyId: undefined,
    *         secretAccessKey: undefined,
    *         prefix: undefined,
