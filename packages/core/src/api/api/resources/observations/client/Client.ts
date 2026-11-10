@@ -90,7 +90,7 @@ export class Observations {
    *
    * ## Filters
    * Multiple filtering options are available via query parameters or the structured `filter` parameter.
-   * When using the `filter` parameter, it takes precedence over individual query parameter filters.
+   * A condition in the `filter` parameter replaces the query parameter for the same field. Query parameters for other fields still apply. A `startTime` condition replaces both `fromStartTime` and `toStartTime`.
    *
    * @param {LangfuseAPI.GetObservationsV2Request} request
    * @param {Observations.RequestOptions} requestOptions - Request-specific configuration.
