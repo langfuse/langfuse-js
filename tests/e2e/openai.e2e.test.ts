@@ -132,6 +132,7 @@ describe("OpenAI integration E2E tests", () => {
       ],
       model: "gpt-4o-mini",
       stream: true,
+      stream_options: { include_usage: true },
       user: "langfuse-user@gmail.com",
       max_tokens: 300,
     });
@@ -249,6 +250,7 @@ describe("OpenAI integration E2E tests", () => {
       prompt: "Say this is a test",
       model: "gpt-3.5-turbo-instruct",
       stream: true,
+      stream_options: { include_usage: true },
       user: "langfuse-user@gmail.com",
       temperature: 0,
       max_tokens: 300,
@@ -487,6 +489,7 @@ describe("OpenAI integration E2E tests", () => {
 
     const stream = await wrappedOpenAI.chat.completions.create({
       stream: true,
+      stream_options: { include_usage: true },
       model: "gpt-4o-mini",
       messages: [
         { role: "user", content: "What's the weather like in Boston today?" },
