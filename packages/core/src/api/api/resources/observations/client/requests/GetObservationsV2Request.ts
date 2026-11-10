@@ -62,7 +62,7 @@ export interface GetObservationsV2Request {
   /** Optional filter to only include observations with a certain version. */
   version?: string;
   /**
-   * JSON string containing an array of filter conditions. When provided, this takes precedence over query parameter filters (userId, name, type, level, environment, fromStartTime, ...).
+   * JSON string containing an array of filter conditions. A condition on the same field as a query parameter filter (userId, name, type, level, environment, fromStartTime, ...) replaces that parameter. Query parameters for other fields still apply. A `startTime` condition replaces both `fromStartTime` and `toStartTime`.
    *
    * ## Filter Structure
    * Each filter condition has the following structure:
