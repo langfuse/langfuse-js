@@ -63,7 +63,8 @@ import * as LangfuseAPI from "../../../index.js";
  *     {
  *         type: "null",
  *         column: "parentObservationId",
- *         operator: LangfuseAPI.EvaluationRuleNullFilterOperator.IsNull
+ *         operator: LangfuseAPI.EvaluationRuleNullFilterOperator.IsNull,
+ *         value: ""
  *     }
  *
  * @example
