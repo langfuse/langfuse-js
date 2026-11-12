@@ -8,6 +8,6 @@ export interface NullEvaluationRuleFilter {
   /** Column to filter on, for example `parentObservationId`. */
   column: string;
   operator: LangfuseAPI.EvaluationRuleNullFilterOperator;
-  /** Required empty-string placeholder used by the runtime filter contract. */
-  value: "";
+  /** Optional. Defaults to an empty string. */
+  value?: "";
 }

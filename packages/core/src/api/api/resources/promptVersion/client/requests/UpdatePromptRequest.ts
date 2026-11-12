@@ -5,10 +5,13 @@
 /**
  * @example
  *     {
- *         newLabels: ["newLabels", "newLabels"]
+ *         newLabels: undefined,
+ *         removeLabels: undefined
  *     }
  */
 export interface UpdatePromptRequest {
   /** New labels for the prompt version. Labels are unique across versions. The "latest" label is reserved and managed by Langfuse. */
-  newLabels: string[];
+  newLabels?: string[];
+  /** Labels to remove from the prompt version. The "latest" label is reserved and managed by Langfuse. */
+  removeLabels?: string[];
 }
