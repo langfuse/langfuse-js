@@ -1,4 +1,5 @@
 import { ResponseWithBody } from "./ResponseWithBody.js";
+import { withCleanup } from "./withCleanup.js";
 
 export type BinaryResponse = {
   /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Request/bodyUsed) */
@@ -19,17 +20,39 @@ export type BinaryResponse = {
   bytes?(): Promise<Uint8Array>;
 };
 
-export function getBinaryResponse(response: ResponseWithBody): BinaryResponse {
+export function getBinaryResponse(
+  response: ResponseWithBody,
+  cleanup?: () => void,
+): BinaryResponse {
+  let stream: ReadableStream<Uint8Array> | undefined;
   const binaryResponse: BinaryResponse = {
     get bodyUsed() {
       return response.bodyUsed;
     },
-    stream: () => response.body,
-    arrayBuffer: response.arrayBuffer.bind(response),
-    blob: response.blob.bind(response),
+    stream: () => (stream ??= withCleanup(response.body, cleanup)),
+    arrayBuffer: async () => {
+      try {
+        return await response.arrayBuffer();
+      } finally {
+        cleanup?.();
+      }
+    },
+    blob: async () => {
+      try {
+        return await response.blob();
+      } finally {
+        cleanup?.();
+      }
+    },
   };
   if ("bytes" in response && typeof response.bytes === "function") {
-    binaryResponse.bytes = response.bytes.bind(response);
+    binaryResponse.bytes = async () => {
+      try {
+        return await response.bytes!();
+      } finally {
+        cleanup?.();
+      }
+    };
   }
 
   return binaryResponse;
