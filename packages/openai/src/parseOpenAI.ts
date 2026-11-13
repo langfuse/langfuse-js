@@ -205,6 +205,10 @@ export const parseChunk = (
       isToolCall: true;
       data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall;
     } => {
+  if (isResponseOutputTextDelta(rawChunk)) {
+    return { isToolCall: false, data: rawChunk.delta };
+  }
+
   let isToolCall = false;
   const _chunk = rawChunk as
     | OpenAI.ChatCompletionChunk
@@ -232,6 +236,19 @@ export const parseChunk = (
 
   return { isToolCall: false, data: "" };
 };
+
+function isResponseOutputTextDelta(
+  rawChunk: unknown,
+): rawChunk is { type: "response.output_text.delta"; delta: string } {
+  return (
+    typeof rawChunk === "object" &&
+    rawChunk !== null &&
+    "type" in rawChunk &&
+    rawChunk.type === "response.output_text.delta" &&
+    "delta" in rawChunk &&
+    typeof rawChunk.delta === "string"
+  );
+}
 
 // Type guard to check if an unknown object is a UsageResponse
 function hasCompletionUsage(
