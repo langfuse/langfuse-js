@@ -203,7 +203,7 @@ export const parseChunk = (
   | { isToolCall: false; data: string }
   | {
       isToolCall: true;
-      data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall;
+      data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[];
     } => {
   let isToolCall = false;
   const _chunk = rawChunk as
@@ -219,7 +219,7 @@ export const parseChunk = (
     ) {
       isToolCall = true;
 
-      return { isToolCall, data: chunkData.delta.tool_calls[0] };
+      return { isToolCall, data: chunkData.delta.tool_calls };
     }
     if ("delta" in chunkData) {
       return { isToolCall, data: chunkData.delta?.content || "" };
@@ -262,23 +262,28 @@ export const getToolCallOutput = (
     };
   }[];
 } => {
-  let name = "";
-  let toolArguments = "";
+  const byIndex = new Map<number, { name: string; arguments: string }>();
 
   for (const toolCall of toolCallChunks) {
-    name = toolCall.function?.name || name;
-    toolArguments += toolCall.function?.arguments || "";
+    const index = toolCall.index ?? 0;
+    const current = byIndex.get(index) ?? { name: "", arguments: "" };
+
+    if (toolCall.function?.name) {
+      current.name = toolCall.function.name;
+    }
+    current.arguments += toolCall.function?.arguments || "";
+    byIndex.set(index, current);
   }
 
   return {
-    tool_calls: [
-      {
+    tool_calls: [...byIndex.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([, call]) => ({
         function: {
-          name,
-          arguments: toolArguments,
+          name: call.name,
+          arguments: call.arguments,
         },
-      },
-    ],
+      })),
   };
 };
 
