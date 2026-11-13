@@ -1,5 +1,4 @@
 import {
-  DatasetItem,
   getGlobalLogger,
   propagateAttributes,
   serializeValue,
@@ -18,7 +17,6 @@ import {
   ExperimentParams,
   ExperimentResult,
   ExperimentTask,
-  ExperimentItem,
   ExperimentItemResult,
   Evaluator,
   Evaluation,
@@ -358,7 +356,6 @@ export class ExperimentManager {
         await this.prettyPrintResults({
           experimentUrl,
           itemResults,
-          originalData: data,
           runEvaluations,
           name: config.name,
           runName,
@@ -583,7 +580,6 @@ export class ExperimentManager {
    * @param params - Formatting parameters
    * @param params.experimentUrl - Optional URL to the experiment in the Langfuse UI
    * @param params.itemResults - Results from processing each data item
-   * @param params.originalData - The original input data items
    * @param params.runEvaluations - Results from run-level evaluators
    * @param params.name - Name of the experiment
    * @param params.description - Optional description of the experiment
@@ -636,9 +632,6 @@ export class ExperimentManager {
   >(params: {
     experimentUrl?: string;
     itemResults: ExperimentItemResult<Input, ExpectedOutput, Metadata>[];
-    originalData:
-      | ExperimentItem<Input, ExpectedOutput, Metadata>[]
-      | DatasetItem[];
     runEvaluations: Evaluation[];
     name: string;
     runName: string;
@@ -647,7 +640,6 @@ export class ExperimentManager {
   }): Promise<string> {
     const {
       itemResults,
-      originalData,
       runEvaluations,
       name,
       runName,
@@ -665,7 +657,7 @@ export class ExperimentManager {
     if (includeItemResults) {
       for (let index = 0; index < itemResults.length; index++) {
         const result = itemResults[index];
-        const originalItem = originalData[index];
+        const originalItem = result.item;
 
         output += `\n${index + 1}. Item ${index + 1}:\n`;
 
