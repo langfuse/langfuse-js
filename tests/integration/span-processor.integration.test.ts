@@ -6,7 +6,7 @@ import {
   configureGlobalLogger,
   resetGlobalLogger,
 } from "@langfuse/core";
-import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { LangfuseSpanProcessor, type OtelSpanPatch } from "@langfuse/otel";
 import { trace } from "@opentelemetry/api";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { propagateAttributes, startObservation } from "@langfuse/tracing";
@@ -418,6 +418,51 @@ describe("LangfuseSpanProcessor E2E Tests", () => {
         "unmasked-metadata-span",
         "langfuse.observation.metadata.password",
         '"secret"',
+      );
+    });
+
+    it("should apply maskOtelSpans to spans from other instrumentations", async () => {
+      await teardownTestEnvironment(testEnv);
+
+      const email = /[\w.+-]+@[\w-]+\.[\w.]+/g;
+      testEnv = await setupTestEnvironment({
+        spanProcessorConfig: {
+          maskOtelSpans: ({ spans }) => {
+            const spanPatches = new Map<string, OtelSpanPatch>();
+
+            for (const [key, span] of spans) {
+              const messages = span.attributes["gen_ai.input.messages"];
+
+              if (typeof messages === "string") {
+                spanPatches.set(key, {
+                  setAttributes: {
+                    "gen_ai.input.messages": messages.replace(email, "<email>"),
+                  },
+                });
+              }
+            }
+
+            return { spanPatches };
+          },
+        },
+      });
+      assertions = new SpanAssertions(testEnv.mockExporter);
+
+      const messages = (content: string) =>
+        JSON.stringify([{ role: "user", parts: [{ type: "text", content }] }]);
+      const span = trace.getTracer("ai").startSpan("chat mock-model-id", {
+        attributes: {
+          "gen_ai.input.messages": messages("Write to jane.doe@acme.example"),
+        },
+      });
+      span.end();
+
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanAttribute(
+        "chat mock-model-id",
+        "gen_ai.input.messages",
+        messages("Write to <email>"),
       );
     });
   });
