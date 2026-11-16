@@ -77,13 +77,14 @@ export class PromptVersion {
    *
    * @example
    *     await client.promptVersion.update("name", 1, {
-   *         newLabels: ["newLabels", "newLabels"]
+   *         newLabels: undefined,
+   *         removeLabels: undefined
    *     })
    */
   public update(
     name: string,
     version: number,
-    request: LangfuseAPI.UpdatePromptRequest,
+    request: LangfuseAPI.UpdatePromptRequest = {},
     requestOptions?: PromptVersion.RequestOptions,
   ): core.HttpResponsePromise<LangfuseAPI.Prompt> {
     return core.HttpResponsePromise.fromPromise(
@@ -94,7 +95,7 @@ export class PromptVersion {
   private async __update(
     name: string,
     version: number,
-    request: LangfuseAPI.UpdatePromptRequest,
+    request: LangfuseAPI.UpdatePromptRequest = {},
     requestOptions?: PromptVersion.RequestOptions,
   ): Promise<core.WithRawResponse<LangfuseAPI.Prompt>> {
     let _headers: core.Fetcher.Args["headers"] = mergeHeaders(
