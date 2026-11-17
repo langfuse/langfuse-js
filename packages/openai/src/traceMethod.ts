@@ -236,7 +236,7 @@ function wrapAsyncIterable<R>(
       if (!processedChunk.isToolCall) {
         textChunks.push(processedChunk.data);
       } else {
-        toolCallChunks.push(processedChunk.data);
+        toolCallChunks.push(...processedChunk.data);
       }
 
       yield rawChunk;
