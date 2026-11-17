@@ -9,6 +9,7 @@ import { LangfuseClient } from "@langfuse/client";
 import {
   LangfuseOtelSpanAttributes,
   LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT,
+  type DatasetItem,
 } from "@langfuse/core";
 import {
   createTraceId,
@@ -40,6 +41,138 @@ describe("Experiment Attribute Propagation", () => {
 
   afterEach(async () => {
     await teardownTestEnvironment(testEnv);
+  });
+
+  describe("Formatted Experiment Results", () => {
+    it.each([
+      { scenario: "first task fails", failedIndex: 0 },
+      { scenario: "middle task fails", failedIndex: 1 },
+      { scenario: "all tasks succeed", failedIndex: undefined },
+    ])(
+      "keeps successful items aligned when $scenario",
+      async ({ failedIndex }) => {
+        const data: DatasetItem[] = ["alpha", "beta", "gamma"].map(
+          (input, index) => ({
+            id: `item-${index}`,
+            datasetId: "format-dataset",
+            datasetName: "format-dataset",
+            status: "ACTIVE",
+            input,
+            expectedOutput: `expected-${input}`,
+            sourceTraceId: null,
+            sourceObservationId: null,
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:00:00Z",
+            mediaReferences: [],
+          }),
+        );
+        const postedScores: Array<{
+          traceId: string;
+          name: string;
+          value: number;
+        }> = [];
+        vi.spyOn(globalThis, "fetch").mockImplementation(
+          async (input, init) => {
+            const url = new URL(input as string);
+            if (url.pathname === "/api/public/projects") {
+              return new Response(
+                JSON.stringify({
+                  data: [
+                    {
+                      id: "format-project",
+                      name: "format-project",
+                      organization: { id: "format-org", name: "format-org" },
+                      metadata: {},
+                    },
+                  ],
+                }),
+                {
+                  status: 200,
+                  headers: { "content-type": "application/json" },
+                },
+              );
+            }
+            if (url.pathname === "/api/public/scores") {
+              postedScores.push(...JSON.parse(init!.body as string));
+              return new Response(null, { status: 202 });
+            }
+            throw new Error(`Unexpected request: ${url.pathname}`);
+          },
+        );
+
+        try {
+          const result = await langfuse.experiment.run({
+            name: "formatted-items",
+            runName: "formatted-items",
+            data,
+            task: async ({ input }) => {
+              if (
+                failedIndex !== undefined &&
+                input === data[failedIndex].input
+              ) {
+                throw new Error("task failed");
+              }
+              return `output-${input}`;
+            },
+            evaluators: [
+              async ({ input }) => ({
+                name: "quality",
+                value: data.findIndex((item) => item.input === input) + 1,
+              }),
+            ],
+          });
+          const successfulItems = data.filter(
+            (_, index) => index !== failedIndex,
+          );
+          expect(result.itemResults.map(({ item }) => item)).toEqual(
+            successfulItems,
+          );
+
+          await waitForSpanExport(testEnv.mockExporter, data.length);
+          const formatted = await result.format({ includeItemResults: true });
+          const sections = formatted.split(/\n\d+\. Item \d+:\n/).slice(1);
+          expect(sections).toHaveLength(successfulItems.length);
+          expect(postedScores).toHaveLength(successfulItems.length);
+
+          successfulItems.forEach((item, index) => {
+            const itemResult = result.itemResults[index];
+            const score = data.indexOf(item) + 1;
+            expect(itemResult.output).toBe(`output-${item.input}`);
+            expect(sections[index]).toContain(`Input:    ${item.input}`);
+            expect(sections[index]).toContain(
+              `Expected: ${item.expectedOutput}`,
+            );
+            expect(sections[index]).toContain(`Actual:   ${itemResult.output}`);
+            expect(sections[index]).toContain(`quality: ${score.toFixed(3)}`);
+            expect(sections[index]).toContain(
+              `/datasets/${item.datasetId}/items/${item.id}`,
+            );
+            expect(sections[index]).toContain(`/traces/${itemResult.traceId}`);
+            expect(postedScores).toContainEqual(
+              expect.objectContaining({
+                traceId: itemResult.traceId,
+                name: "quality",
+                value: score,
+              }),
+            );
+            const span = testEnv.mockExporter.exportedSpans.find(
+              (candidate) =>
+                candidate.name === "experiment-item-run" &&
+                candidate.spanContext().traceId === itemResult.traceId,
+            );
+            expect(
+              span?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_INPUT],
+            ).toBe(item.input);
+            expect(
+              span?.attributes[LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT],
+            ).toBe(itemResult.output);
+          });
+        } finally {
+          await langfuse.shutdown();
+          vi.restoreAllMocks();
+        }
+      },
+    );
   });
 
   describe("Basic Experiment Propagation", () => {
