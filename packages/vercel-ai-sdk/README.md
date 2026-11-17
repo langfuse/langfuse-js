@@ -22,6 +22,7 @@ pnpm add @langfuse/vercel-ai-sdk @langfuse/otel ai
 LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
+LANGFUSE_PROJECT_ID="..." # Only needed for organization API keys
 ```
 
 `LANGFUSE_BASE_URL` is the canonical spelling.

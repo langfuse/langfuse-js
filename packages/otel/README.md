@@ -19,6 +19,7 @@ npm install @langfuse/otel @opentelemetry/sdk-trace-node
 LANGFUSE_PUBLIC_KEY="pk-lf-..."
 LANGFUSE_SECRET_KEY="sk-lf-..."
 LANGFUSE_BASE_URL="https://cloud.langfuse.com" # 🇪🇺 EU region. 🇺🇸 US: https://us.cloud.langfuse.com
+LANGFUSE_PROJECT_ID="..." # Only needed for organization API keys
 ```
 
 The batch byte limit applies to the final serialized OTLP/HTTP JSON request
