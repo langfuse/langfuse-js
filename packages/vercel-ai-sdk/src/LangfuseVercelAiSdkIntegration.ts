@@ -1,4 +1,5 @@
 import { OpenTelemetry } from "@ai-sdk/otel";
+import { trace, type Span } from "@opentelemetry/api";
 import type {
   EmbedEndEvent,
   EmbedStartEvent,
@@ -83,6 +84,8 @@ import { createLangfuseObservationAttributes } from "./utils.js";
  */
 export class LangfuseVercelAiSdkIntegration implements Telemetry {
   private readonly delegate: OpenTelemetry;
+  // Model-call span per callId, so usage can be added before the delegate ends it.
+  private readonly modelCallSpans = new Map<string, Span>();
 
   constructor(options: LangfuseVercelAiSdkIntegrationOptions = {}) {
     const openTelemetryOptions: ConstructorParameters<typeof OpenTelemetry>[0] =
@@ -110,7 +113,19 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
     callId: string;
     execute: () => PromiseLike<T>;
   }): PromiseLike<T> {
-    return this.delegate.executeLanguageModelCall(params);
+    const parentSpan = trace.getActiveSpan();
+
+    return this.delegate.executeLanguageModelCall({
+      ...params,
+      execute: () => {
+        const span = trace.getActiveSpan();
+        if (span && span !== parentSpan) {
+          this.modelCallSpans.set(params.callId, span);
+        }
+
+        return params.execute();
+      },
+    });
   }
 
   onStart(
@@ -132,6 +147,19 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
   }
 
   onLanguageModelCallEnd(event: LanguageModelCallEndEvent<ToolSet>): void {
+    const span = this.modelCallSpans.get(event.callId);
+    this.modelCallSpans.delete(event.callId);
+
+    // @ai-sdk/otel writes gen_ai.usage.output_tokens (text + reasoning) but not
+    // the reasoning part, so Langfuse cannot split it out of output.
+    const reasoningTokens = event.usage.outputTokenDetails?.reasoningTokens;
+    if (span && reasoningTokens != null) {
+      span.setAttribute(
+        "gen_ai.usage.reasoning.output_tokens",
+        reasoningTokens,
+      );
+    }
+
     this.delegate.onLanguageModelCallEnd(event);
   }
 
@@ -180,14 +208,20 @@ export class LangfuseVercelAiSdkIntegration implements Telemetry {
       | EmbedEndEvent
       | RerankEndEvent,
   ): void {
+    this.modelCallSpans.delete(event.callId);
     this.delegate.onEnd(event);
   }
 
   onAbort(event: GenerateTextAbortEvent<ToolSet>): void {
+    this.modelCallSpans.delete(event.callId);
     this.delegate.onAbort(event);
   }
 
   onError(error: unknown): void {
+    const callId = (error as { callId?: unknown } | null)?.callId;
+    if (typeof callId === "string") {
+      this.modelCallSpans.delete(callId);
+    }
     this.delegate.onError(error);
   }
 }
