@@ -27,12 +27,12 @@ function stubMediaUploads() {
       const url = String(input);
       return new Promise((resolve, reject) => {
         const respond = (body: unknown) =>
-          resolve({
-            ok: true,
-            status: 200,
-            text: async () => "",
-            json: async () => body,
-          } as Response);
+          resolve(
+            new Response(JSON.stringify(body), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }),
+          );
         calls.push({ url, resolve: respond, reject });
       });
     }),
@@ -41,6 +41,11 @@ function stubMediaUploads() {
     calls,
     mediaCalls: () => calls.filter((c) => c.url.includes("/api/public/media")),
   };
+}
+
+/** Let the upload promise chain (fetch settle -> body parse -> key bookkeeping) run to completion. */
+async function settleUploadChain() {
+  for (let i = 0; i < 50; i++) await Promise.resolve();
 }
 
 describe("Media upload deduplication", () => {
@@ -152,15 +157,39 @@ describe("Media upload deduplication", () => {
     expect(uploads.mediaCalls()).toHaveLength(2);
   });
 
-  it("retries on a later span after a failed upload", async () => {
+  it("keeps sharing an upload with later spans once it completed", async () => {
+    const root = startObservation("root", { input: { image: IMAGE } });
+    root.end();
+    await waitForSpanExport(testEnv.mockExporter, 1);
+    uploads.mediaCalls()[0].resolve({ uploadUrl: null, mediaId: "m" });
+    await settleUploadChain();
+
+    const child = startObservation(
+      "child",
+      { input: { image: IMAGE } },
+      { parentSpanContext: root.otelSpan.spanContext() },
+    );
+    child.end();
+    await waitForSpanExport(testEnv.mockExporter, 2);
+    for (const call of uploads.mediaCalls())
+      call.resolve({ uploadUrl: null, mediaId: "m" });
+    await testEnv.spanProcessor.forceFlush();
+
+    expect(uploads.mediaCalls()).toHaveLength(1);
+  });
+
+  it("retries on a later span of the same trace after a failed upload", async () => {
     const first = startObservation("first", { input: { image: IMAGE } });
     first.end();
     await waitForSpanExport(testEnv.mockExporter, 1);
     uploads.mediaCalls()[0].reject(new Error("network down"));
-    // Drain the upload promise chain so the failure has freed its dedup key.
-    for (let i = 0; i < 8; i++) await Promise.resolve();
+    await settleUploadChain();
 
-    const second = startObservation("second", { input: { image: IMAGE } });
+    const second = startObservation(
+      "second",
+      { input: { image: IMAGE } },
+      { parentSpanContext: first.otelSpan.spanContext() },
+    );
     second.end();
     await waitForSpanExport(testEnv.mockExporter, 2);
     for (const call of uploads.mediaCalls())
@@ -168,5 +197,10 @@ describe("Media upload deduplication", () => {
     await testEnv.spanProcessor.forceFlush();
 
     expect(uploads.mediaCalls()).toHaveLength(2);
+    expect(
+      new Set(
+        testEnv.mockExporter.exportedSpans.map((s) => s.spanContext().traceId),
+      ).size,
+    ).toBe(1);
   });
 });

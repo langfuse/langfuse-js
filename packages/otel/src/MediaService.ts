@@ -11,6 +11,7 @@ import type { MediaContentType } from "@langfuse/core";
 import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 
 export class MediaService {
+  private static readonly MAX_TRACKED_UPLOADS = 10_000;
   private pendingMediaUploads: Set<Promise<void>> = new Set();
   // One upload per (trace, field, media tag): spans that replay the same media
   // share the upload instead of requesting one upload URL per span. A failed
@@ -304,6 +305,17 @@ export class MediaService {
       });
 
     this.uploadByKey.set(key, uploadPromise);
+    // Bounded without relying on flush(): timed batch exports never call it,
+    // so a long-running service would accumulate entries forever. Evicting an
+    // old entry only risks one duplicate upload later; the server dedupes the
+    // bytes by hash.
+    const oldest = this.uploadByKey.keys().next();
+    if (
+      this.uploadByKey.size > MediaService.MAX_TRACKED_UPLOADS &&
+      !oldest.done
+    ) {
+      this.uploadByKey.delete(oldest.value);
+    }
     this.pendingMediaUploads.add(uploadPromise);
   }
 }
