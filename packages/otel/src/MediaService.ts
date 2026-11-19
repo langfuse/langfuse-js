@@ -11,7 +11,14 @@ import type { MediaContentType } from "@langfuse/core";
 import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 
 export class MediaService {
-  private pendingMediaUploads: Set<Promise<void>> = new Set();
+  private static readonly MAX_TRACKED_UPLOADS = 10_000;
+  // One upload per (trace, field, media tag): spans that replay the same media
+  // share the upload instead of requesting one upload URL per span. Completed
+  // uploads are remembered as plain keys — retaining settled promises here
+  // would pin their async contexts (request stores under AsyncLocalStorage)
+  // alive. A failed upload leaves no key behind, so a later span retries it.
+  private completedUploadKeys: Set<string> = new Set();
+  private inFlightUploads: Map<string, Promise<void>> = new Map();
   private apiClient: LangfuseAPIClient;
 
   constructor(params: { apiClient: LangfuseAPIClient }) {
@@ -23,7 +30,8 @@ export class MediaService {
   }
 
   public async flush(): Promise<void> {
-    await Promise.all(Array.from(this.pendingMediaUploads));
+    await Promise.all(this.inFlightUploads.values());
+    this.completedUploadKeys.clear();
   }
 
   public async process(span: ReadableSpan) {
@@ -79,6 +87,7 @@ export class MediaService {
           this.scheduleUpload({
             span,
             media,
+            tag: langfuseMediaTag,
             field: mediaAttribute.includes("input")
               ? "input"
               : mediaAttribute.includes("output")
@@ -260,6 +269,7 @@ export class MediaService {
     this.scheduleUpload({
       span: params.span,
       media,
+      tag: langfuseMediaTag,
       field: params.field,
     });
 
@@ -273,48 +283,41 @@ export class MediaService {
     span: ReadableSpan;
     field: string;
     media: LangfuseMedia;
+    tag: string;
   }) {
-    const { span, field, media } = params;
+    const { span, field, media, tag } = params;
+    const key = `${span.spanContext().traceId}|${field}|${tag}`;
+    if (this.inFlightUploads.has(key) || this.completedUploadKeys.has(key)) {
+      return;
+    }
 
-    const uploadPromise: Promise<void> = this.handleUpload({
+    const uploadPromise: Promise<void> = uploadMedia({
+      apiClient: this.apiClient,
       media,
       traceId: span.spanContext().traceId,
       observationId: span.spanContext().spanId,
       field,
-    }).catch((err) => {
-      this.logger.error("Media upload failed with error: ", err);
-    });
-
-    this.pendingMediaUploads.add(uploadPromise);
-
-    uploadPromise.finally(() => {
-      this.pendingMediaUploads.delete(uploadPromise);
-    });
-  }
-
-  private async handleUpload({
-    media,
-    traceId,
-    observationId,
-    field,
-  }: {
-    media: LangfuseMedia;
-    traceId: string;
-    observationId?: string;
-    field: string;
-  }): Promise<void> {
-    try {
-      await uploadMedia({
-        apiClient: this.apiClient,
-        media,
-        traceId,
-        observationId,
-        field,
-        logger: this.logger,
+      logger: this.logger,
+    })
+      .then(() => {
+        // Bounded without relying on flush(): timed batch exports never call
+        // it, so a long-running service would accumulate keys forever.
+        // Evicting an old key only risks one duplicate upload later; the
+        // server dedupes the bytes by hash.
+        this.completedUploadKeys.add(key);
+        if (this.completedUploadKeys.size > MediaService.MAX_TRACKED_UPLOADS) {
+          const oldest = this.completedUploadKeys.values().next().value;
+          if (oldest !== undefined) this.completedUploadKeys.delete(oldest);
+        }
+      })
+      .catch((err) => {
+        this.logger.error("Media upload failed with error: ", err);
+      })
+      .finally(() => {
+        this.inFlightUploads.delete(key);
       });
-    } catch (err) {
-      this.logger.error(`Error processing media item: ${err}`);
-    }
+
+    this.inFlightUploads.set(key, uploadPromise);
   }
 }
 
