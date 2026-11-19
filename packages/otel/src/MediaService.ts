@@ -14,10 +14,12 @@ export class MediaService {
   private static readonly MAX_TRACKED_UPLOADS = 10_000;
   private pendingMediaUploads: Set<Promise<void>> = new Set();
   // One upload per (trace, field, media tag): spans that replay the same media
-  // share the upload instead of requesting one upload URL per span. A failed
-  // upload drops its key so a later span retries it, and flush() clears the map
-  // to bound memory in long-lived processes.
-  private uploadByKey: Map<string, Promise<void>> = new Map();
+  // share the upload instead of requesting one upload URL per span. Completed
+  // uploads are remembered as plain keys — retaining settled promises here
+  // would pin their async contexts (request stores under AsyncLocalStorage)
+  // alive. A failed upload leaves no key behind, so a later span retries it.
+  private completedUploadKeys: Set<string> = new Set();
+  private inFlightUploads: Map<string, Promise<void>> = new Map();
   private apiClient: LangfuseAPIClient;
 
   constructor(params: { apiClient: LangfuseAPIClient }) {
@@ -30,7 +32,8 @@ export class MediaService {
 
   public async flush(): Promise<void> {
     await Promise.all(Array.from(this.pendingMediaUploads));
-    this.uploadByKey.clear();
+    this.completedUploadKeys.clear();
+    this.inFlightUploads.clear();
   }
 
   public async process(span: ReadableSpan) {
@@ -286,7 +289,9 @@ export class MediaService {
   }) {
     const { span, field, media, tag } = params;
     const key = `${span.spanContext().traceId}|${field}|${tag}`;
-    if (this.uploadByKey.has(key)) return;
+    if (this.inFlightUploads.has(key) || this.completedUploadKeys.has(key)) {
+      return;
+    }
 
     const uploadPromise: Promise<void> = uploadMedia({
       apiClient: this.apiClient,
@@ -296,26 +301,29 @@ export class MediaService {
       field,
       logger: this.logger,
     })
+      .then(() => {
+        // Bounded without relying on flush(): timed batch exports never call
+        // it, so a long-running service would accumulate keys forever.
+        // Evicting an old key only risks one duplicate upload later; the
+        // server dedupes the bytes by hash.
+        this.completedUploadKeys.add(key);
+        const oldest = this.completedUploadKeys.keys().next();
+        if (
+          this.completedUploadKeys.size > MediaService.MAX_TRACKED_UPLOADS &&
+          !oldest.done
+        ) {
+          this.completedUploadKeys.delete(oldest.value);
+        }
+      })
       .catch((err) => {
-        this.uploadByKey.delete(key);
         this.logger.error("Media upload failed with error: ", err);
       })
       .finally(() => {
+        this.inFlightUploads.delete(key);
         this.pendingMediaUploads.delete(uploadPromise);
       });
 
-    this.uploadByKey.set(key, uploadPromise);
-    // Bounded without relying on flush(): timed batch exports never call it,
-    // so a long-running service would accumulate entries forever. Evicting an
-    // old entry only risks one duplicate upload later; the server dedupes the
-    // bytes by hash.
-    const oldest = this.uploadByKey.keys().next();
-    if (
-      this.uploadByKey.size > MediaService.MAX_TRACKED_UPLOADS &&
-      !oldest.done
-    ) {
-      this.uploadByKey.delete(oldest.value);
-    }
+    this.inFlightUploads.set(key, uploadPromise);
     this.pendingMediaUploads.add(uploadPromise);
   }
 }
