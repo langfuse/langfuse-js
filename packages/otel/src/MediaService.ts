@@ -12,7 +12,6 @@ import { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 
 export class MediaService {
   private static readonly MAX_TRACKED_UPLOADS = 10_000;
-  private pendingMediaUploads: Set<Promise<void>> = new Set();
   // One upload per (trace, field, media tag): spans that replay the same media
   // share the upload instead of requesting one upload URL per span. Completed
   // uploads are remembered as plain keys — retaining settled promises here
@@ -31,9 +30,8 @@ export class MediaService {
   }
 
   public async flush(): Promise<void> {
-    await Promise.all(Array.from(this.pendingMediaUploads));
+    await Promise.all(this.inFlightUploads.values());
     this.completedUploadKeys.clear();
-    this.inFlightUploads.clear();
   }
 
   public async process(span: ReadableSpan) {
@@ -307,12 +305,9 @@ export class MediaService {
         // Evicting an old key only risks one duplicate upload later; the
         // server dedupes the bytes by hash.
         this.completedUploadKeys.add(key);
-        const oldest = this.completedUploadKeys.keys().next();
-        if (
-          this.completedUploadKeys.size > MediaService.MAX_TRACKED_UPLOADS &&
-          !oldest.done
-        ) {
-          this.completedUploadKeys.delete(oldest.value);
+        if (this.completedUploadKeys.size > MediaService.MAX_TRACKED_UPLOADS) {
+          const oldest = this.completedUploadKeys.values().next().value;
+          if (oldest !== undefined) this.completedUploadKeys.delete(oldest);
         }
       })
       .catch((err) => {
@@ -320,11 +315,9 @@ export class MediaService {
       })
       .finally(() => {
         this.inFlightUploads.delete(key);
-        this.pendingMediaUploads.delete(uploadPromise);
       });
 
     this.inFlightUploads.set(key, uploadPromise);
-    this.pendingMediaUploads.add(uploadPromise);
   }
 }
 

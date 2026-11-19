@@ -38,7 +38,6 @@ function stubMediaUploads() {
     }),
   );
   return {
-    calls,
     mediaCalls: () => calls.filter((c) => c.url.includes("/api/public/media")),
   };
 }
@@ -62,6 +61,12 @@ describe("Media upload deduplication", () => {
     vi.unstubAllGlobals();
   });
 
+  async function resolveUploads() {
+    for (const call of uploads.mediaCalls())
+      call.resolve({ uploadUrl: null, mediaId: "m" });
+    await testEnv.spanProcessor.forceFlush();
+  }
+
   it("uploads a media once for all spans of a trace and tags every occurrence identically", async () => {
     const root = startObservation("root", { input: { image: IMAGE } });
     const child = startObservation(
@@ -73,9 +78,7 @@ describe("Media upload deduplication", () => {
     child.end();
 
     await waitForSpanExport(testEnv.mockExporter, 2);
-    for (const call of uploads.mediaCalls())
-      call.resolve({ uploadUrl: null, mediaId: "m" });
-    await testEnv.spanProcessor.forceFlush();
+    await resolveUploads();
 
     expect(uploads.mediaCalls()).toHaveLength(1);
 
@@ -110,9 +113,7 @@ describe("Media upload deduplication", () => {
     await waitForSpanExport(testEnv.mockExporter, 2);
     expect(uploads.mediaCalls()).toHaveLength(1);
 
-    for (const call of uploads.mediaCalls())
-      call.resolve({ uploadUrl: null, mediaId: "m" });
-    await testEnv.spanProcessor.forceFlush();
+    await resolveUploads();
   });
 
   it("uploads a media once per trace", async () => {
@@ -121,9 +122,7 @@ describe("Media upload deduplication", () => {
       span.end();
       await waitForSpanExport(testEnv.mockExporter, name === "first" ? 1 : 2);
     }
-    for (const call of uploads.mediaCalls())
-      call.resolve({ uploadUrl: null, mediaId: "m" });
-    await testEnv.spanProcessor.forceFlush();
+    await resolveUploads();
 
     expect(uploads.mediaCalls()).toHaveLength(2);
   });
@@ -136,9 +135,7 @@ describe("Media upload deduplication", () => {
     span.end();
 
     await waitForSpanExport(testEnv.mockExporter, 1);
-    for (const call of uploads.mediaCalls())
-      call.resolve({ uploadUrl: null, mediaId: "m" });
-    await testEnv.spanProcessor.forceFlush();
+    await resolveUploads();
 
     expect(uploads.mediaCalls()).toHaveLength(2);
   });
@@ -150,9 +147,7 @@ describe("Media upload deduplication", () => {
     span.end();
 
     await waitForSpanExport(testEnv.mockExporter, 1);
-    for (const call of uploads.mediaCalls())
-      call.resolve({ uploadUrl: null, mediaId: "m" });
-    await testEnv.spanProcessor.forceFlush();
+    await resolveUploads();
 
     expect(uploads.mediaCalls()).toHaveLength(2);
   });
@@ -171,9 +166,7 @@ describe("Media upload deduplication", () => {
     );
     child.end();
     await waitForSpanExport(testEnv.mockExporter, 2);
-    for (const call of uploads.mediaCalls())
-      call.resolve({ uploadUrl: null, mediaId: "m" });
-    await testEnv.spanProcessor.forceFlush();
+    await resolveUploads();
 
     expect(uploads.mediaCalls()).toHaveLength(1);
   });
@@ -192,9 +185,7 @@ describe("Media upload deduplication", () => {
     );
     second.end();
     await waitForSpanExport(testEnv.mockExporter, 2);
-    for (const call of uploads.mediaCalls())
-      call.resolve({ uploadUrl: null, mediaId: "m" });
-    await testEnv.spanProcessor.forceFlush();
+    await resolveUploads();
 
     expect(uploads.mediaCalls()).toHaveLength(2);
     expect(
