@@ -87,8 +87,10 @@ export class SizeLimitedSpanExporter implements SpanExporter {
           spanCount: spans.length,
         },
       );
+      // Report SUCCESS so the BatchSpanProcessor discards this batch instead
+      // of retrying it (it re-exports FAILED results), per the README contract.
       resultCallback({
-        code: ExportResultCode.FAILED,
+        code: ExportResultCode.SUCCESS,
         error: new Error(
           `OpenTelemetry span batch size of at least ${sizeLowerBoundBytes} bytes exceeds the configured limit of ${this.maxBatchSizeBytes} bytes.`,
         ),
