@@ -47,6 +47,30 @@ describe("LangfusePromptCache.invalidate", () => {
     }
   });
 
+  it("does not invalidate a hyphenated name that merely starts with the invalidated name", () => {
+    const cache = new LangfusePromptCache();
+    const fooKeys = [
+      cache.createKey({ name: "foo", label: "production" }),
+      cache.createKey({ name: "foo", version: 1 }),
+    ];
+    const hyphenatedKeys = [
+      cache.createKey({ name: "foo-other", label: "production" }),
+      cache.createKey({ name: "foo-other", version: 3 }),
+    ];
+    for (const key of [...fooKeys, ...hyphenatedKeys]) {
+      cache.set(key, makeCachedPrompt(key));
+    }
+
+    cache.invalidate("foo");
+
+    for (const key of fooKeys) {
+      expect(valueAt(cache, key), `${key} should be invalidated`).toBeNull();
+    }
+    for (const key of hyphenatedKeys) {
+      expect(valueAt(cache, key), `${key} should survive`).not.toBeNull();
+    }
+  });
+
   it("still invalidates every cached version of the exact name (control)", () => {
     const { cache, fooKeys, foobarKeys } = seededCache();
 
