@@ -86,8 +86,10 @@ export class LangfusePromptCache {
       this._cache.keys(),
     );
 
+    const keyPrefix = `${promptName}-`;
+
     for (const key of this._cache.keys()) {
-      if (key.startsWith(promptName)) {
+      if (key === promptName || key.startsWith(keyPrefix)) {
         this._cache.delete(key);
       }
     }
