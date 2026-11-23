@@ -3,6 +3,7 @@
  */
 
 import * as core from "../../../../core/index.js";
+import { BillableUnits } from "../resources/billableUnits/client/Client.js";
 import { DashboardWidgets } from "../resources/dashboardWidgets/client/Client.js";
 import { Dashboards } from "../resources/dashboards/client/Client.js";
 import { Topics } from "../resources/topics/client/Client.js";
@@ -30,12 +31,17 @@ export declare namespace Unstable {
 
 export class Unstable {
   protected readonly _options: Unstable.Options;
+  protected _billableUnits: BillableUnits | undefined;
   protected _dashboardWidgets: DashboardWidgets | undefined;
   protected _dashboards: Dashboards | undefined;
   protected _topics: Topics | undefined;
 
   constructor(_options: Unstable.Options) {
     this._options = _options;
+  }
+
+  public get billableUnits(): BillableUnits {
+    return (this._billableUnits ??= new BillableUnits(this._options));
   }
 
   public get dashboardWidgets(): DashboardWidgets {

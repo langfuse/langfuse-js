@@ -1,3 +1,5 @@
+export * as billableUnits from "./billableUnits/index.js";
+export * from "./billableUnits/types/index.js";
 export * as dashboardWidgets from "./dashboardWidgets/index.js";
 export * from "./dashboardWidgets/types/index.js";
 export * as dashboards from "./dashboards/index.js";
@@ -7,6 +9,7 @@ export * from "./errors/types/index.js";
 export * as topics from "./topics/index.js";
 export * from "./topics/types/index.js";
 export * from "./errors/errors/index.js";
+export * from "./billableUnits/client/requests/index.js";
 export * from "./dashboardWidgets/client/requests/index.js";
 export * from "./dashboards/client/requests/index.js";
 export * from "./topics/client/requests/index.js";
