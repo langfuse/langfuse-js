@@ -46,6 +46,29 @@ describe("span-filter", () => {
     expect(isDefaultExportSpan(span)).toBe(true);
   });
 
+  it("matches spans with only ai.* attributes and an unrelated scope", () => {
+    const aiSpan = createTestSpan({
+      instrumentationScopeName: "custom.instrumentation",
+      attributes: {
+        "ai.model.id": "gpt-4.1",
+      },
+    });
+
+    expect(isGenAISpan(aiSpan)).toBe(true);
+    expect(isDefaultExportSpan(aiSpan)).toBe(true);
+
+    // Control: neither gen_ai.* nor ai.* attributes with an unrelated scope
+    const unrelatedSpan = createTestSpan({
+      instrumentationScopeName: "custom.instrumentation",
+      attributes: {
+        "http.method": "GET",
+      },
+    });
+
+    expect(isGenAISpan(unrelatedSpan)).toBe(false);
+    expect(isDefaultExportSpan(unrelatedSpan)).toBe(false);
+  });
+
   it("matches known exact instrumentation scopes", () => {
     const span = createTestSpan({
       instrumentationScopeName: "haystack",
