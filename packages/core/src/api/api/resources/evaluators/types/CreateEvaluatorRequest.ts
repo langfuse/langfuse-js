@@ -9,7 +9,8 @@ import * as LangfuseAPI from "../../../index.js";
  */
 export type CreateEvaluatorRequest =
   | LangfuseAPI.CreateEvaluatorRequest.LlmAsJudge
-  | LangfuseAPI.CreateEvaluatorRequest.Code;
+  | LangfuseAPI.CreateEvaluatorRequest.Code
+  | LangfuseAPI.CreateEvaluatorRequest.DecisionModel;
 
 export namespace CreateEvaluatorRequest {
   export interface LlmAsJudge
@@ -19,5 +20,10 @@ export namespace CreateEvaluatorRequest {
 
   export interface Code extends LangfuseAPI.CreateCodeEvaluatorRequest {
     type: "code";
+  }
+
+  export interface DecisionModel
+    extends LangfuseAPI.CreateDecisionModelEvaluatorRequest {
+    type: "decision_model";
   }
 }

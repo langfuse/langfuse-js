@@ -6,7 +6,8 @@ import * as LangfuseAPI from "../../../index.js";
 
 export type EvaluatorVersion =
   | LangfuseAPI.EvaluatorVersion.LlmAsJudge
-  | LangfuseAPI.EvaluatorVersion.Code;
+  | LangfuseAPI.EvaluatorVersion.Code
+  | LangfuseAPI.EvaluatorVersion.DecisionModel;
 
 export namespace EvaluatorVersion {
   export interface LlmAsJudge extends LangfuseAPI.LlmAsJudgeEvaluatorVersion {
@@ -15,5 +16,10 @@ export namespace EvaluatorVersion {
 
   export interface Code extends LangfuseAPI.CodeEvaluatorVersion {
     type: "code";
+  }
+
+  export interface DecisionModel
+    extends LangfuseAPI.DecisionModelEvaluatorVersion {
+    type: "decision_model";
   }
 }

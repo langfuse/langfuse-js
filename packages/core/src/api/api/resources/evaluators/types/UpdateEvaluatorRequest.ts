@@ -10,4 +10,5 @@ import * as LangfuseAPI from "../../../index.js";
 export type UpdateEvaluatorRequest =
   | LangfuseAPI.UpdateEvaluatorMetadataRequest
   | LangfuseAPI.UpdateLlmAsJudgeEvaluatorRequest
-  | LangfuseAPI.UpdateCodeEvaluatorRequest;
+  | LangfuseAPI.UpdateCodeEvaluatorRequest
+  | LangfuseAPI.UpdateDecisionModelEvaluatorRequest;
