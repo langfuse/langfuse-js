@@ -10,7 +10,7 @@ export * from "./TopicAssignmentTopic.js";
 export * from "./TopicAssignment.js";
 export * from "./TopicAssignmentList.js";
 export * from "./TopicsOrderBy.js";
-export * from "./TopicFacetPublishedRun.js";
+export * from "./TopicFacetPublishedMap.js";
 export * from "./TopicFacet.js";
 export * from "./TopicFacetList.js";
 export * from "./TopicFacetRef.js";

@@ -5,9 +5,13 @@
 export type TopicSummaryState =
   | "complete"
   | "not_applicable"
-  | "insufficient_input";
+  | "insufficient_input"
+  | "empty_input"
+  | "input_too_large";
 export const TopicSummaryState = {
   Complete: "complete",
   NotApplicable: "not_applicable",
   InsufficientInput: "insufficient_input",
+  EmptyInput: "empty_input",
+  InputTooLarge: "input_too_large",
 } as const;
