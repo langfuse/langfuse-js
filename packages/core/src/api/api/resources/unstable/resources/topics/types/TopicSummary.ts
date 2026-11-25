@@ -17,5 +17,5 @@ export interface TopicSummary {
   /** Set when `state` is `complete`. */
   summary?: string;
   summaryTruncated: boolean;
-  processedAt: string;
+  createdAt: string;
 }
