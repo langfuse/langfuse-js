@@ -11,7 +11,8 @@ import * as LangfuseAPI from "../../../index.js";
  */
 export type Evaluator =
   | LangfuseAPI.Evaluator.LlmAsJudge
-  | LangfuseAPI.Evaluator.Code;
+  | LangfuseAPI.Evaluator.Code
+  | LangfuseAPI.Evaluator.DecisionModel;
 
 export namespace Evaluator {
   export interface LlmAsJudge extends LangfuseAPI.LlmAsJudgeEvaluator {
@@ -20,5 +21,9 @@ export namespace Evaluator {
 
   export interface Code extends LangfuseAPI.CodeEvaluator {
     type: "code";
+  }
+
+  export interface DecisionModel extends LangfuseAPI.DecisionModelEvaluator {
+    type: "decision_model";
   }
 }
