@@ -4,7 +4,8 @@
 
 export interface TopicAssignmentTopic {
   /** Stable topic id. */
-  id: string;
+  stableId: string;
+  /** Id of this topic version. */
   versionId: string;
   name: string;
 }

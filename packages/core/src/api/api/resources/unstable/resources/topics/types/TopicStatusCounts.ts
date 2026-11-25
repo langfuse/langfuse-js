@@ -11,4 +11,6 @@ export interface TopicStatusCounts {
   awaitingMap: number;
   notApplicable: number;
   insufficientInput: number;
+  emptyInput: number;
+  inputTooLarge: number;
 }

@@ -6,7 +6,7 @@ import * as LangfuseAPI from "../../../../../index.js";
 
 export interface Topic {
   /** Stable topic id, kept across map updates. */
-  id: string;
+  stableId: string;
   /** Id of this topic version. */
   versionId: string;
   name: string;
@@ -14,8 +14,8 @@ export interface Topic {
   facet: LangfuseAPI.unstable.TopicFacetRef;
   /** The rule whose live map has the topic. Null when the project has no rule. */
   ruleId?: string;
-  /** The run that produced this topic version. */
-  runId: string;
+  /** The map that produced this topic version. */
+  mapId: string;
   /** Traces in the window whose current result for the facet is this topic. */
   traceCount: number;
 }

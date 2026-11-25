@@ -17,6 +17,6 @@ export interface TopicFacet {
   version: number;
   /** Prompt of the latest facet version. */
   prompt: string;
-  /** The run that produced the facet's current map. Null before the first map. */
-  publishedRun?: LangfuseAPI.unstable.TopicFacetPublishedRun;
+  /** The facet's current published topic map. Null before the first map. */
+  publishedMap?: LangfuseAPI.unstable.TopicFacetPublishedMap;
 }

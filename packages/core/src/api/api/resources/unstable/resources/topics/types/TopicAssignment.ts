@@ -16,7 +16,7 @@ export interface TopicAssignment {
   status: LangfuseAPI.unstable.TopicAssignmentStatus;
   /** Set when `status` is `assigned`. */
   topic?: LangfuseAPI.unstable.TopicAssignmentTopic;
-  /** The run that assigned the trace. Null for assignments made as traces arrive. */
-  runId?: string;
-  assignedAt: string;
+  /** The map that assigned the trace. */
+  mapId?: string;
+  createdAt: string;
 }
