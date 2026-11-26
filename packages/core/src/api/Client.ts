@@ -20,6 +20,7 @@ import { Metrics } from "./api/resources/metrics/client/Client.js";
 import { Models } from "./api/resources/models/client/Client.js";
 import { Observations } from "./api/resources/observations/client/Client.js";
 import { Opentelemetry } from "./api/resources/opentelemetry/client/Client.js";
+import { OrganizationModels } from "./api/resources/organizationModels/client/Client.js";
 import { Organizations } from "./api/resources/organizations/client/Client.js";
 import { Projects } from "./api/resources/projects/client/Client.js";
 import { PromptVersion } from "./api/resources/promptVersion/client/Client.js";
@@ -92,6 +93,7 @@ export class LangfuseAPIClient {
   protected _models: Models | undefined;
   protected _observations: Observations | undefined;
   protected _opentelemetry: Opentelemetry | undefined;
+  protected _organizationModels: OrganizationModels | undefined;
   protected _organizations: Organizations | undefined;
   protected _projects: Projects | undefined;
   protected _promptVersion: PromptVersion | undefined;
@@ -181,6 +183,10 @@ export class LangfuseAPIClient {
 
   public get opentelemetry(): Opentelemetry {
     return (this._opentelemetry ??= new Opentelemetry(this._options));
+  }
+
+  public get organizationModels(): OrganizationModels {
+    return (this._organizationModels ??= new OrganizationModels(this._options));
   }
 
   public get organizations(): Organizations {
