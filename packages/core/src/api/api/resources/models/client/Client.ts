@@ -196,7 +196,7 @@ export class Models {
   }
 
   /**
-   * Create or replace a project-owned model using its id. Built-in models cannot be modified.
+   * Create or replace a project-owned model using its id. Organization and built-in models cannot be modified; targeting an organization model returns 403.
    *
    * @param {string} id
    * @param {LangfuseAPI.CreateModelRequest} request
@@ -589,7 +589,7 @@ export class Models {
   }
 
   /**
-   * Delete a model. Cannot delete models managed by Langfuse. You can create your own definition with the same modelName to override the definition though.
+   * Delete a project-owned model. Cannot delete organization models (returns 403) or models managed by Langfuse. You can create your own definition with the same modelName to override the definition though.
    *
    * @param {string} id
    * @param {Record<string, never>} request - Takes no fields yet. Reserves the position for query parameters that later API versions may add, so `requestOptions` never moves.
