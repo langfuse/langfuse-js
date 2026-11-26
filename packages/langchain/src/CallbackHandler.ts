@@ -36,6 +36,35 @@ function isLangGraphControlFlowError(error: unknown): boolean {
   );
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+
+  return prototype === Object.prototype || prototype === null;
+}
+
+function isMessageList(value: unknown): value is BaseMessage[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item: unknown) => BaseMessage.isInstance(item))
+  );
+}
+
+// Prompt values are matched by their LangChain serialization id rather than
+// `instanceof`, because an app can load several copies of `@langchain/core`.
+function isPromptValue(
+  value: object,
+  className: "StringPromptValue" | "ChatPromptValue",
+): value is Record<string, unknown> {
+  const lcId = (value as { lc_id?: unknown }).lc_id;
+
+  return Array.isArray(lcId) && lcId.at(-1) === className;
+}
+
 type LangfusePrompt = {
   name: string;
   version: number;
@@ -402,7 +431,7 @@ export class CallbackHandler extends BaseCallbackHandler {
     try {
       this.logger.debug(`Chain end with ID: ${runId}`);
 
-      let finalOutput: ChainValues | string = outputs;
+      let finalOutput: unknown = outputs;
       if (
         typeof outputs === "object" &&
         "output" in outputs &&
@@ -420,6 +449,17 @@ export class CallbackHandler extends BaseCallbackHandler {
             this.extractChatMessageContent(message),
           ),
         };
+      } else if (
+        typeof outputs === "object" &&
+        isMessageList(outputs["output"]) &&
+        Object.keys(outputs).length === 1
+      ) {
+        // LangChain wraps list results, e.g. from message prompt templates, as { output: [...] }
+        finalOutput = outputs["output"].map((message) =>
+          this.extractChatMessageContent(message),
+        );
+      } else {
+        finalOutput = this.extractChainOutput(outputs);
       }
 
       this.handleOtelSpanEnd({
@@ -939,6 +979,81 @@ export class CallbackHandler extends BaseCallbackHandler {
         ? generation.message.response_metadata.model_name
         : undefined;
     } catch {}
+  }
+
+  /**
+   * Replaces the prompt values and message lists that prompt templates produce
+   * with display-ready equivalents, also when nested in arrays and plain
+   * objects (e.g. the output of a `RunnableMap`). Everything else is returned
+   * untouched, and the raw outputs are kept if they cannot be traversed.
+   */
+  private extractChainOutput(outputs: unknown): unknown {
+    try {
+      return this.normalizeChainValue(outputs);
+    } catch (e) {
+      this.logger.debug(e instanceof Error ? e.message : String(e));
+
+      return outputs;
+    }
+  }
+
+  private normalizeChainValue(value: unknown): unknown {
+    if (typeof value !== "object" || value === null) {
+      return value;
+    }
+
+    if (isMessageList(value)) {
+      return value.map((message) => this.extractChatMessageContent(message));
+    }
+
+    if (Array.isArray(value)) {
+      let normalized: unknown[] | undefined;
+
+      for (let i = 0; i < value.length; i++) {
+        const current = value[i];
+        const item = this.normalizeChainValue(current);
+
+        if (!Object.is(item, current)) {
+          normalized ??= [...value];
+          normalized[i] = item;
+        }
+      }
+
+      return normalized ?? value;
+    }
+
+    if (
+      isPromptValue(value, "StringPromptValue") &&
+      typeof value["value"] === "string"
+    ) {
+      return value["value"];
+    }
+
+    if (
+      isPromptValue(value, "ChatPromptValue") &&
+      Array.isArray(value["messages"])
+    ) {
+      // Same shape as a chain whose output is a chat prompt value, see handleChainEnd
+      return { messages: this.normalizeChainValue(value["messages"]) };
+    }
+
+    if (isPlainObject(value)) {
+      let normalized: Record<string, unknown> | undefined;
+
+      for (const key of Object.keys(value)) {
+        const current = value[key];
+        const item = this.normalizeChainValue(current);
+
+        if (!Object.is(item, current)) {
+          normalized ??= { ...value };
+          normalized[key] = item;
+        }
+      }
+
+      return normalized ?? value;
+    }
+
+    return value;
   }
 
   private extractChatMessageContent(

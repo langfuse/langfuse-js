@@ -20,7 +20,14 @@ import {
 } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import type { ChatGeneration } from "@langchain/core/outputs";
-import { RunnableLambda } from "@langchain/core/runnables";
+import {
+  AIMessagePromptTemplate,
+  ChatPromptTemplate,
+  HumanMessagePromptTemplate,
+  PromptTemplate,
+  SystemMessagePromptTemplate,
+} from "@langchain/core/prompts";
+import { RunnableLambda, RunnableMap } from "@langchain/core/runnables";
 import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
@@ -556,5 +563,230 @@ describe("LangChain callback handler integration tests", () => {
         ] as string,
       ),
     ).toEqual({ input: 10, output: 5, total: 15 });
+  });
+
+  describe("chain outputs", () => {
+    const getOutputAttribute = (spanName: string) =>
+      assertions.expectSpanWithName(spanName).attributes[
+        LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT
+      ];
+    const getJsonOutput = (spanName: string) =>
+      JSON.parse(getOutputAttribute(spanName) as string);
+
+    it("should extract display-ready prompt template outputs", async () => {
+      const template = "Tell me a joke about {topic}.";
+      const map = RunnableMap.from({
+        String: PromptTemplate.fromTemplate(template),
+        Human: HumanMessagePromptTemplate.fromTemplate(template),
+        AI: AIMessagePromptTemplate.fromTemplate(template),
+        System: SystemMessagePromptTemplate.fromTemplate(template),
+      });
+
+      const result = await map.invoke(
+        { topic: "bears" },
+        { callbacks: [new CallbackHandler()] },
+      );
+      await waitForSpanExport(testEnv.mockExporter, 5);
+
+      const text = "Tell me a joke about bears.";
+      const messages = {
+        Human: [{ role: "user", content: text }],
+        AI: [{ role: "assistant", content: text }],
+        System: [{ role: "system", content: text }],
+      };
+
+      expect(getOutputAttribute("PromptTemplate")).toBe(text);
+      expect(getJsonOutput("HumanMessagePromptTemplate")).toEqual(
+        messages.Human,
+      );
+      expect(getJsonOutput("AIMessagePromptTemplate")).toEqual(messages.AI);
+      expect(getJsonOutput("SystemMessagePromptTemplate")).toEqual(
+        messages.System,
+      );
+      expect(getJsonOutput("RunnableMap")).toEqual({
+        String: text,
+        ...messages,
+      });
+
+      // Only what is reported changes, never the values flowing through the chain
+      expect(HumanMessage.isInstance(result.Human[0])).toBe(true);
+    });
+
+    it("should keep chat prompt template outputs as role/content messages", async () => {
+      const chatPrompt = ChatPromptTemplate.fromMessages([
+        ["system", "You are a {role}."],
+        ["human", "Tell me a joke about {topic}."],
+      ]);
+      const input = { role: "comedian", topic: "bears" };
+      const handler = new CallbackHandler();
+
+      await chatPrompt.invoke(input, {
+        callbacks: [handler],
+        runName: "chat-prompt",
+      });
+      await RunnableMap.from({
+        Chat: chatPrompt,
+        String: PromptTemplate.fromTemplate("Tell me a joke about {topic}."),
+      }).invoke(input, { callbacks: [handler], runName: "prompt-map" });
+      await waitForSpanExport(testEnv.mockExporter, 4);
+
+      const chatMessages = {
+        messages: [
+          { role: "system", content: "You are a comedian." },
+          { role: "user", content: "Tell me a joke about bears." },
+        ],
+      };
+
+      expect(getJsonOutput("chat-prompt")).toEqual(chatMessages);
+      expect(getJsonOutput("prompt-map")).toEqual({
+        Chat: chatMessages,
+        String: "Tell me a joke about bears.",
+      });
+    });
+
+    it("should normalize message lists returned by runnables", async () => {
+      const handler = new CallbackHandler();
+      const messageList = () => [
+        new HumanMessage("hi"),
+        new AIMessage("hello"),
+      ];
+
+      await RunnableLambda.from(messageList).invoke("input", {
+        callbacks: [handler],
+        runName: "message-list",
+      });
+      await RunnableLambda.from(() => ({
+        question: "hi",
+        cursor: null,
+        history: messageList(),
+        turns: [[new HumanMessage("a")], [new AIMessage("b")]],
+      })).invoke("input", { callbacks: [handler], runName: "nested-list" });
+      await RunnableLambda.from(() => ({
+        output: messageList(),
+        sources: ["a"],
+      })).invoke("input", { callbacks: [handler], runName: "list-with-keys" });
+      await waitForSpanExport(testEnv.mockExporter, 3);
+
+      const history = [
+        { role: "user", content: "hi" },
+        { role: "assistant", content: "hello" },
+      ];
+
+      expect(getJsonOutput("message-list")).toEqual(history);
+      expect(getJsonOutput("nested-list")).toEqual({
+        question: "hi",
+        cursor: null,
+        history,
+        turns: [
+          [{ role: "user", content: "a" }],
+          [{ role: "assistant", content: "b" }],
+        ],
+      });
+      expect(getJsonOutput("list-with-keys")).toEqual({
+        output: history,
+        sources: ["a"],
+      });
+    });
+
+    it("should not modify the outputs it reports", async () => {
+      const history = [new HumanMessage("hi")];
+      const turns = [[new HumanMessage("a")]];
+      const scores = [Number.NaN, 1];
+      const outputs = { history, turns, scores };
+
+      const result = await RunnableLambda.from(() => outputs).invoke("input", {
+        callbacks: [new CallbackHandler()],
+      });
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(result).toBe(outputs);
+      expect(outputs.history).toBe(history);
+      expect(outputs.turns).toBe(turns);
+      expect(outputs.scores).toBe(scores);
+      expect(HumanMessage.isInstance(history[0])).toBe(true);
+      expect(HumanMessage.isInstance(turns[0][0])).toBe(true);
+      expect(getJsonOutput("RunnableLambda")).toEqual({
+        history: [{ role: "user", content: "hi" }],
+        turns: [[{ role: "user", content: "a" }]],
+        scores: [null, 1],
+      });
+    });
+
+    const mixedList = ["a", new HumanMessage("hi")];
+    const aiMessage = new AIMessage("answer");
+    const conversation = new (class Conversation {
+      history = [new HumanMessage("hi")];
+    })();
+
+    // These outputs are reported as LangChain hands them over. Results that are
+    // not objects arrive as `{ output: result }`, of which only a string is
+    // unwrapped
+    it.each([
+      { name: "a string", value: "plain text", reported: "plain text" },
+      { name: "an empty list", value: [], reported: '{"output":[]}' },
+      {
+        name: "a list of strings",
+        value: ["a", "b"],
+        reported: '{"output":["a","b"]}',
+      },
+      {
+        name: "plain data",
+        value: { a: 1, nested: { list: [1, { b: 2 }] } },
+        reported: '{"a":1,"nested":{"list":[1,{"b":2}]}}',
+      },
+      {
+        name: "a list mixing strings and messages",
+        value: mixedList,
+        reported: JSON.stringify({ output: mixedList }),
+      },
+      {
+        name: "a single message",
+        value: aiMessage,
+        reported: JSON.stringify(aiMessage),
+      },
+      {
+        name: "a class instance holding messages",
+        value: conversation,
+        reported: JSON.stringify(conversation),
+      },
+    ])("should leave $name unchanged", async ({ value, reported }) => {
+      await RunnableLambda.from(() => value).invoke("input", {
+        callbacks: [new CallbackHandler()],
+      });
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(getOutputAttribute("RunnableLambda")).toBe(reported);
+    });
+
+    it("should still end the observation when the output cannot be traversed", async () => {
+      // A circular output can be neither traversed nor serialized, but the
+      // observation must still end and be exported
+      const circular: Record<string, unknown> = { name: "circular" };
+      circular.self = circular;
+
+      await RunnableLambda.from(() => circular).invoke("input", {
+        callbacks: [new CallbackHandler()],
+      });
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      assertions.expectSpanWithName("RunnableLambda");
+    });
+
+    it("should report the raw output when it cannot be traversed", async () => {
+      // Reading `unreadable` throws, but JSON serialization only calls `toJSON`
+      const output = {
+        get unreadable(): string {
+          throw new Error("cannot be read");
+        },
+        toJSON: () => ({ readable: true }),
+      };
+
+      await RunnableLambda.from(() => output).invoke("input", {
+        callbacks: [new CallbackHandler()],
+      });
+      await waitForSpanExport(testEnv.mockExporter, 1);
+
+      expect(getOutputAttribute("RunnableLambda")).toBe('{"readable":true}');
+    });
   });
 });
