@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > **This package is not the latest Langfuse JS/TS SDK.** `npm install langfuse` installs a **deprecated** v3 client (`new Langfuse()`, `trace()`, `span()`, `api.traceList`). Do **not** use it for new instrumentation.
 >
-> **Latest JS/TS SDK (OpenTelemetry):** `npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node`. Use `@langfuse/tracing` (`startActiveObservation` / `startObservation`) + `LangfuseSpanProcessor` from `@langfuse/otel`. Prompts/datasets/scores: `@langfuse/client`. Docs: https://langfuse.com/docs/observability/sdk/overview — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5).
+> **Latest JS/TS SDK (OpenTelemetry):** `npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node`. Use `@langfuse/tracing` (`startActiveObservation` / `startObservation`) + `LangfuseSpanProcessor` from `@langfuse/otel`. Prompts/datasets/scores: `@langfuse/client`. Docs: https://langfuse.com/docs/observability/sdk/overview — Upgrade: [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5), [v5 → v6](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6).
 >
 > Query traces with [Observations API v2](https://langfuse.com/docs/api-and-data-platform/features/observations-api) (`GET /api/public/v2/observations`, [API reference](https://api.reference.langfuse.com/#tag/observationsv2)), not `GET /api/public/traces` / `api.traceList`.
 >
@@ -33,7 +33,7 @@ npm install @langfuse/client
 | [`@langfuse/vercel-ai-sdk`](https://www.npmjs.com/package/@langfuse/vercel-ai-sdk) | Vercel AI SDK v7 integration (AI SDK ≤6: `experimental_telemetry` + `@langfuse/otel`) | `langfuse-vercel`                    |
 
 - **Docs (current SDK):** https://langfuse.com/docs/observability/sdk/overview
-- **Upgrade path:** [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5)
+- **Upgrade path:** [v3 → v4](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v3-to-v4), [v4 → v5](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5), [v5 → v6](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6)
 
 ---
 
