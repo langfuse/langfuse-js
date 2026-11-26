@@ -13,7 +13,7 @@ Modular mono repo for the Langfuse JS/TS client libraries.
 ## Packages
 
 > [!IMPORTANT]
-> The SDK was rewritten in v5 and released in March 2026. Refer to the [v5 migration guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v4-to-v5) for instructions on updating your code.
+> JS/TS SDK v6 is the current major version. v5 was the rewrite released in March 2026. Refer to the [v5 to v6 migration guide](https://langfuse.com/docs/observability/sdk/upgrade-path/js-v5-to-v6) for instructions on updating your code. v6 needs Node.js 22 or newer.
 >
 > **`langfuse` on npm is not the latest Langfuse JS/TS SDK.** The unscoped packages `langfuse`, `langfuse-core`, `langfuse-node`, and `langfuse-langchain` are the **deprecated** v3 client (`new Langfuse()`, `trace()`, `span()`, `api.traceList`). Do **not** `npm install langfuse` for new instrumentation.
 >
