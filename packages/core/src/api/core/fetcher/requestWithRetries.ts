@@ -1,3 +1,5 @@
+import type { MadeRequest } from "./makeRequest.js";
+
 const INITIAL_RETRY_DELAY = 1000; // in milliseconds
 const MAX_RETRY_DELAY = 60000; // in milliseconds
 const DEFAULT_MAX_RETRIES = 2;
@@ -58,21 +60,32 @@ function getRetryDelayFromHeaders(
 }
 
 export async function requestWithRetries(
-  requestFn: () => Promise<Response>,
+  requestFn: () => Promise<MadeRequest>,
   maxRetries: number = DEFAULT_MAX_RETRIES,
-): Promise<Response> {
-  let response: Response = await requestFn();
+): Promise<MadeRequest> {
+  let request = await requestFn();
 
   for (let i = 0; i < maxRetries; ++i) {
-    if ([408, 429].includes(response.status) || response.status >= 500) {
+    if (
+      [408, 429].includes(request.response.status) ||
+      request.response.status >= 500
+    ) {
       // Get delay with appropriate jitter applied
-      const delay = getRetryDelayFromHeaders(response, i);
+      const delay = getRetryDelayFromHeaders(request.response, i);
+
+      try {
+        await request.response.body?.cancel();
+      } catch {
+        // The response body is only being discarded before retrying.
+      } finally {
+        request.cleanup();
+      }
 
       await new Promise((resolve) => setTimeout(resolve, delay));
-      response = await requestFn();
+      request = await requestFn();
     } else {
       break;
     }
   }
-  return response!;
+  return request;
 }
