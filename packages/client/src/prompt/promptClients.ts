@@ -110,18 +110,47 @@ abstract class BasePromptClient {
    */
   protected escapeJsonForLangchain(text: string): string {
     const out: string[] = []; // collected characters
-    const stack: boolean[] = []; // true = “this { belongs to JSON”, false = normal “{”
+    // how each open brace was treated: "json" (doubled), "plain" or "double" (an existing “{{”)
+    const stack: ("json" | "plain" | "double")[] = [];
+    // quote character of the JSON string we are inside, if any
+    let quote: string | null = null;
     let i = 0;
     const n = text.length;
 
     while (i < n) {
       const ch = text[i];
 
+      // ---------- inside a JSON string: braces are content, not structure ----------
+      if (quote !== null) {
+        if (ch === "\\" && i + 1 < n) {
+          out.push(ch, text[i + 1]);
+          i += 2;
+          continue;
+        }
+        if (ch === quote) {
+          quote = null;
+        } else if (ch === "{" || ch === "}") {
+          // leave existing “{{” / “}}” untouched, double a lone brace so it stays literal
+          if (i + 1 < n && text[i + 1] === ch) {
+            out.push(ch + ch);
+            i += 2;
+            continue;
+          }
+          out.push(ch + ch);
+          i += 1;
+          continue;
+        }
+        out.push(ch);
+        i += 1;
+        continue;
+      }
+
       // ---------- opening brace ----------
       if (ch === "{") {
         // leave existing “{{ …” untouched
         if (i + 1 < n && text[i + 1] === "{") {
           out.push("{{");
+          stack.push("double");
           i += 2;
           continue;
         }
@@ -134,27 +163,38 @@ abstract class BasePromptClient {
 
         const isJson = j < n && (text[j] === "'" || text[j] === '"');
         out.push(isJson ? "{{" : "{");
-        stack.push(isJson); // remember how this “{” was treated
+        stack.push(isJson ? "json" : "plain"); // remember how this “{” was treated
         i += 1;
         continue;
       }
 
       // ---------- closing brace ----------
       if (ch === "}") {
-        // leave existing “… }}” untouched
-        if (i + 1 < n && text[i + 1] === "}") {
+        // leave existing “… }}” untouched, unless this “}” closes a JSON brace
+        // (e.g. the end of nested JSON like `{"a": {"b": 1}}`)
+        if (
+          i + 1 < n &&
+          text[i + 1] === "}" &&
+          stack[stack.length - 1] !== "json"
+        ) {
+          if (stack[stack.length - 1] === "double") {
+            stack.pop();
+          }
           out.push("}}");
           i += 2;
           continue;
         }
 
-        const isJson = stack.pop() ?? false;
+        const isJson = stack.pop() === "json";
         out.push(isJson ? "}}" : "}");
         i += 1;
         continue;
       }
 
       // ---------- any other character ----------
+      if ((ch === '"' || ch === "'") && stack[stack.length - 1] === "json") {
+        quote = ch;
+      }
       out.push(ch);
       i += 1;
     }
