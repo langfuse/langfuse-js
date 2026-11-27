@@ -30,8 +30,9 @@ export function isLangfuseSpan(span: ReadableSpan): boolean {
 }
 
 export function isGenAISpan(span: ReadableSpan): boolean {
-  return Object.keys(span.attributes).some((attributeKey) =>
-    attributeKey.startsWith("gen_ai."),
+  return Object.keys(span.attributes).some(
+    (attributeKey) =>
+      attributeKey.startsWith("gen_ai.") || attributeKey.startsWith("ai."),
   );
 }
 
