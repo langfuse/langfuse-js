@@ -1400,7 +1400,7 @@ export function observe<T extends (...args: any[]) => any>(
     // Create the appropriate observation type
     const observation = startObservation(
       name,
-      inputData ? { input: inputData } : {},
+      inputData !== undefined ? { input: inputData } : {},
       {
         asType: asType as "span", // typecast necessary as ts cannot narrow down type
         parentSpanContext,

@@ -3806,6 +3806,30 @@ describe("Tracing Methods Interoperability E2E Tests", () => {
     });
 
     describe("Input/Output capture", () => {
+      it.each([
+        ["zero", 0, "0"],
+        ["false", false, "false"],
+        ["an empty string", "", ""],
+      ])("should capture %s as input", async (_label, argument, expected) => {
+        const originalFunc = (value: number | boolean | string) => value;
+        const wrappedFunc = observe(originalFunc);
+
+        wrappedFunc(argument);
+
+        await waitForSpanExport(testEnv.mockExporter, 1);
+
+        const spanAttributes =
+          testEnv.mockExporter.getSpanAttributes("originalFunc");
+        expect(spanAttributes).toHaveProperty(
+          LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
+          expected,
+        );
+        expect(spanAttributes).toHaveProperty(
+          LangfuseOtelSpanAttributes.OBSERVATION_OUTPUT,
+          expected,
+        );
+      });
+
       it("should capture single argument as input", async () => {
         const originalFunc = (data: { key: string }) => "response";
         const wrappedFunc = observe(originalFunc);
