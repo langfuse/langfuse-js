@@ -1,3 +1,4 @@
+import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { Serialized } from "@langchain/core/load/serializable";
 import { DynamicTool } from "@langchain/core/tools";
 import {
@@ -14,18 +15,56 @@ import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import {
   AIMessage,
   AIMessageChunk,
+  type BaseMessage,
   FunctionMessage,
   HumanMessage,
   ToolMessage,
 } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
-import type { ChatGeneration } from "@langchain/core/outputs";
+import type { ChatGeneration, ChatResult } from "@langchain/core/outputs";
 import { RunnableLambda } from "@langchain/core/runnables";
-import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
+import {
+  FakeListChatModel,
+  FakeStreamingChatModel,
+} from "@langchain/core/utils/testing";
 import { CallbackHandler } from "@langfuse/langchain";
 import { LangfuseOtelSpanAttributes } from "@langfuse/tracing";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * Minimal fake chat model that reports a provider-computed cost on
+ * `response_metadata.usage.cost`, the way OpenAI-compatible providers such
+ * as OpenRouter do. Used to reproduce https://github.com/langfuse/langfuse-js/issues/828:
+ * the LangChain CallbackHandler previously never forwarded this value to
+ * Langfuse's `costDetails`, silently discarding it.
+ */
+class FakeChatModelWithProviderCost extends BaseChatModel {
+  _llmType(): string {
+    return "fake-provider-cost";
+  }
+
+  async _generate(messages: BaseMessage[]): Promise<ChatResult> {
+    const text = messages.map((m) => String(m.content)).join("\n");
+
+    return {
+      generations: [
+        {
+          text,
+          message: new AIMessage({
+            content: `Echo: ${text}`,
+            response_metadata: {
+              model_name: "fake-provider-cost-model",
+              usage: {
+                cost: 0.0042,
+              },
+            },
+          }),
+        },
+      ],
+    };
+  }
+}
 
 import { SpanAssertions } from "./helpers/assertions.js";
 import {
@@ -365,6 +404,43 @@ describe("LangChain callback handler integration tests", () => {
       LangfuseOtelSpanAttributes.OBSERVATION_INPUT,
       '[{"role":"user","content":"hi"}]',
     );
+  });
+
+  it("forwards provider-reported cost from response_metadata.usage.cost to costDetails", async () => {
+    const model = new FakeChatModelWithProviderCost({});
+    const handler = new CallbackHandler();
+
+    await model.invoke("Hello", {
+      runName: "cost-forwarding-llm",
+      callbacks: [handler],
+    });
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    assertions.expectSpanCount(1);
+    assertions.expectSpanWithName("cost-forwarding-llm");
+    assertions.expectSpanAttribute(
+      "cost-forwarding-llm",
+      LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS,
+      JSON.stringify({ total: 0.0042 }),
+    );
+  });
+
+  it("omits costDetails on a generation that reports no provider cost", async () => {
+    const model = new FakeListChatModel({ responses: ["hi there"] });
+    const handler = new CallbackHandler();
+
+    await model.invoke("Hello", {
+      runName: "no-cost-forwarding-llm",
+      callbacks: [handler],
+    });
+
+    await waitForSpanExport(testEnv.mockExporter, 1);
+
+    const span = assertions.expectSpanWithName("no-cost-forwarding-llm");
+    expect(
+      span.attributes[LangfuseOtelSpanAttributes.OBSERVATION_COST_DETAILS],
+    ).toBeUndefined();
   });
 
   it("should propagate trace attributes to child observations", async () => {
