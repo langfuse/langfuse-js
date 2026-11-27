@@ -6,6 +6,10 @@ export const LANGFUSE_SDK_NAME = "javascript";
 
 export const LANGFUSE_SDK_EXPERIMENT_ENVIRONMENT = "sdk-experiment";
 
+// Appended to the "no public key / no secret key" warnings.
+export const LANGFUSE_MISSING_CREDENTIALS_HINT =
+  "No Langfuse account? For local development, run `npx langfuse-lite serve` and set LANGFUSE_BASE_URL=http://localhost:3000 with any placeholder keys (e.g. LANGFUSE_PUBLIC_KEY=pk-lf-local, LANGFUSE_SECRET_KEY=sk-lf-local). See https://github.com/langfuse/langfuse-lite";
+
 // From Langfuse platform: web/src/features/otel/server/attributes.ts
 export enum LangfuseOtelSpanAttributes {
   // Langfuse-Trace attributes
