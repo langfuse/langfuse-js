@@ -86,8 +86,13 @@ export class LangfusePromptCache {
       this._cache.keys(),
     );
 
+    // Keys are ``name-version:N`` or ``name-label:X``. Match the full suffix
+    // marker so a prompt named ``foo`` cannot invalidate ``foo-other``.
+    const versionPrefix = `${promptName}-version:`;
+    const labelPrefix = `${promptName}-label:`;
+
     for (const key of this._cache.keys()) {
-      if (key.startsWith(promptName)) {
+      if (key.startsWith(versionPrefix) || key.startsWith(labelPrefix)) {
         this._cache.delete(key);
       }
     }
