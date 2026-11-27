@@ -1,5 +1,6 @@
 import {
   LangfuseAPIClient,
+  LANGFUSE_MISSING_CREDENTIALS_HINT,
   LANGFUSE_SDK_VERSION,
   getGlobalLogger,
   getEnv,
@@ -218,12 +219,12 @@ export class LangfuseClient {
 
     if (!publicKey) {
       logger.warn(
-        "No public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Client operations will fail.",
+        `No public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Client operations will fail. ${LANGFUSE_MISSING_CREDENTIALS_HINT}`,
       );
     }
     if (!secretKey) {
       logger.warn(
-        "No secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Client operations will fail.",
+        `No secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Client operations will fail. ${LANGFUSE_MISSING_CREDENTIALS_HINT}`,
       );
     }
     const configuredTimeoutSeconds =

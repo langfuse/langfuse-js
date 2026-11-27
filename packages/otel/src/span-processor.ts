@@ -3,6 +3,7 @@ import {
   LogLevel,
   getGlobalLogger,
   LangfuseAPIClient,
+  LANGFUSE_MISSING_CREDENTIALS_HINT,
   LANGFUSE_SDK_VERSION,
   LangfuseOtelSpanAttributes,
   LangfuseOtelContextKeys,
@@ -303,12 +304,12 @@ export class LangfuseSpanProcessor implements SpanProcessor {
 
     if (!params?.exporter && !publicKey) {
       logger.warn(
-        "No exporter configured and no public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Span exports will fail.",
+        `No exporter configured and no public key provided in constructor or as LANGFUSE_PUBLIC_KEY env var. Span exports will fail. ${LANGFUSE_MISSING_CREDENTIALS_HINT}`,
       );
     }
     if (!params?.exporter && !secretKey) {
       logger.warn(
-        "No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail.",
+        `No exporter configured and no secret key provided in constructor or as LANGFUSE_SECRET_KEY env var. Span exports will fail. ${LANGFUSE_MISSING_CREDENTIALS_HINT}`,
       );
     }
     if (params?.exporter && params.compression !== undefined) {
