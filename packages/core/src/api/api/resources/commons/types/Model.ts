@@ -35,6 +35,13 @@ export interface Model {
   tokenizerId: string | null;
   /** Legacy tokenizer configuration retained for API compatibility. Ingestion no longer uses it to infer observation usage. */
   tokenizerConfig?: unknown;
+  /** Owner of the model definition. Only `PROJECT` models can be changed through the project models API. */
+  scope: LangfuseAPI.ModelScope;
+  /**
+   * Deprecated. Use 'scope' instead. True when the model cannot be changed through the project models API, i.e. `scope` is `ORGANIZATION` or `LANGFUSE`.
+   *
+   * @deprecated Use scope instead.
+   */
   isLangfuseManaged: boolean;
   /** Timestamp when the model was created */
   createdAt: string;

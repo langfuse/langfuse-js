@@ -43,6 +43,8 @@ const PLACEHOLDER_METHODS = [
   "media.get(mediaId)",
   "models.get(id)",
   "models.delete(id)",
+  "organizationModels.get(id)",
+  "organizationModels.delete(id)",
   "organizations.getOrganizationMemberships()",
   "organizations.getProjectMemberships(projectId)",
   "organizations.getOrganizationProjects()",

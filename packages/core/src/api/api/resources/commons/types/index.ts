@@ -29,6 +29,7 @@ export * from "./PricingTier.js";
 export * from "./PricingTierInput.js";
 export * from "./PricingTierOperator.js";
 export * from "./ModelUsageUnit.js";
+export * from "./ModelScope.js";
 export * from "./ObservationLevel.js";
 export * from "./MapValue.js";
 export * from "./CommentObjectType.js";
