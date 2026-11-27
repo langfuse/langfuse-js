@@ -77,9 +77,7 @@ describe("SizeLimitedSpanExporter", () => {
       );
       expect(callback).toHaveBeenCalledOnce();
       expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: forwarded ? ExportResultCode.SUCCESS : ExportResultCode.FAILED,
-        }),
+        expect.objectContaining({ code: ExportResultCode.SUCCESS }),
       );
     },
   );
@@ -105,7 +103,7 @@ describe("SizeLimitedSpanExporter", () => {
     expect(delegate.export).not.toHaveBeenCalled();
     expect(callback).toHaveBeenCalledOnce();
     expect(callback).toHaveBeenCalledWith(
-      expect.objectContaining({ code: ExportResultCode.FAILED }),
+      expect.objectContaining({ code: ExportResultCode.SUCCESS }),
     );
     expect(getGlobalLogger().warn).toHaveBeenCalledWith(
       expect.stringContaining("Dropping OpenTelemetry span batch"),
@@ -118,6 +116,54 @@ describe("SizeLimitedSpanExporter", () => {
     expect(
       JSON.stringify(vi.mocked(getGlobalLogger().warn).mock.calls),
     ).not.toContain(sensitivePayload);
+  });
+
+  it("reports SUCCESS on a size drop so the processor discards the batch without retrying", () => {
+    vi.spyOn(getGlobalLogger(), "warn").mockImplementation(() => undefined);
+
+    // Oversized batch: a deliberate drop must look like SUCCESS to the BSP.
+    const oversizedSpans = [createSpan("oversized", "x".repeat(1_000))];
+    const oversizedDelegate = createDelegate();
+    const oversizedExporter = new SizeLimitedSpanExporter({
+      delegate: oversizedDelegate,
+      maxBatchSizeBytes: 10,
+    });
+
+    // Model BatchSpanProcessor: it re-exports only FAILED results. Retries are
+    // bounded so the old behavior fails an assertion instead of hanging.
+    const codes: ExportResultCode[] = [];
+    const exportBatch = (remainingRetries: number) =>
+      oversizedExporter.export(oversizedSpans, (result) => {
+        codes.push(result.code);
+        if (result.code === ExportResultCode.FAILED && remainingRetries > 0) {
+          exportBatch(remainingRetries - 1);
+        }
+      });
+
+    exportBatch(2);
+
+    expect(codes).toEqual([ExportResultCode.SUCCESS]);
+    expect(oversizedDelegate.export).not.toHaveBeenCalled();
+    expect(getGlobalLogger().warn).toHaveBeenCalledWith(
+      expect.stringContaining("Dropping OpenTelemetry span batch"),
+      expect.any(Object),
+    );
+
+    // Normal-size control: still forwarded and reported SUCCESS.
+    const spans = [createSpan("normal", "ok")];
+    const delegate = createDelegate();
+    const exporter = new SizeLimitedSpanExporter({
+      delegate,
+      maxBatchSizeBytes: getBatchSizeLowerBoundBytes(spans),
+    });
+    const callback = vi.fn();
+
+    exporter.export(spans, callback);
+
+    expect(delegate.export).toHaveBeenCalledWith(spans, callback);
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({ code: ExportResultCode.SUCCESS }),
+    );
   });
 
   it("keeps the size lower bound within the serialized OTLP JSON request size and close to it for ASCII", () => {
