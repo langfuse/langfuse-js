@@ -203,7 +203,8 @@ export const parseChunk = (
   | { isToolCall: false; data: string }
   | {
       isToolCall: true;
-      data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall;
+      data: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[];
+      text: string;
     } => {
   let isToolCall = false;
   const _chunk = rawChunk as
@@ -219,7 +220,11 @@ export const parseChunk = (
     ) {
       isToolCall = true;
 
-      return { isToolCall, data: chunkData.delta.tool_calls[0] };
+      return {
+        isToolCall,
+        data: chunkData.delta.tool_calls,
+        text: chunkData.delta.content || "",
+      };
     }
     if ("delta" in chunkData) {
       return { isToolCall, data: chunkData.delta?.content || "" };
@@ -252,33 +257,57 @@ function hasCompletionUsage(
   );
 }
 
+type StreamedToolCall = {
+  id?: string;
+  type?: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
+
 export const getToolCallOutput = (
   toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[],
 ): {
-  tool_calls: {
-    function: {
-      name: string;
-      arguments: string;
-    };
-  }[];
+  tool_calls: StreamedToolCall[];
 } => {
-  let name = "";
-  let toolArguments = "";
+  // Parallel calls stream as fragments of several calls; `index` says which call each continues.
+  const toolCalls = new Map<number, StreamedToolCall>();
 
   for (const toolCall of toolCallChunks) {
-    name = toolCall.function?.name || name;
-    toolArguments += toolCall.function?.arguments || "";
+    const index = toolCall.index ?? 0;
+    const streamedToolCall = toolCalls.get(index) ?? {
+      function: { name: "", arguments: "" },
+    };
+
+    if (toolCall.id) streamedToolCall.id = toolCall.id;
+    if (toolCall.type) streamedToolCall.type = toolCall.type;
+    if (toolCall.function?.name)
+      streamedToolCall.function.name = toolCall.function.name;
+    streamedToolCall.function.arguments += toolCall.function?.arguments || "";
+
+    toolCalls.set(index, streamedToolCall);
   }
 
   return {
-    tool_calls: [
-      {
-        function: {
-          name,
-          arguments: toolArguments,
-        },
-      },
-    ],
+    tool_calls: [...toolCalls.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([, toolCall]) => toolCall),
+  };
+};
+
+export const getStreamOutput = (
+  textChunks: string[],
+  toolCallChunks: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[],
+): string | { content?: string; tool_calls: StreamedToolCall[] } => {
+  const content = textChunks.join("");
+  if (toolCallChunks.length === 0) {
+    return content;
+  }
+
+  return {
+    ...(content ? { content } : {}),
+    ...getToolCallOutput(toolCallChunks),
   };
 };
 
